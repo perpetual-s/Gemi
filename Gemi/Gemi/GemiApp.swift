@@ -94,6 +94,7 @@ struct MainAppView: View {
     // MARK: - State
     
     @State private var showingAuthenticationFailure = false
+    @State private var selectedEntry: JournalEntry?
     
     // MARK: - Body
     
@@ -101,11 +102,17 @@ struct MainAppView: View {
         Group {
             if authManager.isAuthenticated {
                 // User is authenticated - show main app interface
-                TimelineView()
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                        removal: .move(edge: .leading).combined(with: .opacity)
-                    ))
+                NavigationSplitView {
+                    // Sidebar - Timeline of entries
+                    TimelineView(selectedEntry: $selectedEntry)
+                } detail: {
+                    // Detail - Compose view for new or selected entry
+                    ComposeView(entry: $selectedEntry)
+                }
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .leading).combined(with: .opacity)
+                ))
             } else {
                 // User needs authentication - show authentication flow
                 authenticationFlow

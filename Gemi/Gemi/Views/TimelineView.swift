@@ -25,11 +25,17 @@ struct TimelineView: View {
     @State private var showingChat = false
     
     /// Selected entry for potential future detail view or actions
-    @State private var selectedEntryId: UUID?
+    @Binding var selectedEntry: JournalEntry?
     
     /// Controls the alert for entry deletion confirmation
     @State private var showingDeleteAlert = false
     @State private var entryToDelete: JournalEntry?
+    
+    private var groupedEntries: [Date: [JournalEntry]] {
+        Dictionary(grouping: journalStore.entries) { entry in
+            Calendar.current.startOfDay(for: entry.date)
+        }
+    }
     
     // MARK: - Body
     
@@ -118,13 +124,19 @@ struct TimelineView: View {
     
     @ViewBuilder
     private var timelineList: some View {
-        List(journalStore.entries, selection: $selectedEntryId) { entry in
-            TimelineEntryRow(entry: entry) {
-                // Delete action
-                entryToDelete = entry
-                showingDeleteAlert = true
+        List(selection: $selectedEntry) {
+            ForEach(groupedEntries.keys.sorted(by: >), id: \.self) { date in
+                Section(header: Text(date, style: .date)) {
+                    ForEach(groupedEntries[date]!) { entry in
+                        TimelineEntryRow(entry: entry) {
+                            // Delete action
+                            entryToDelete = entry
+                            showingDeleteAlert = true
+                        }
+                        .tag(entry)
+                    }
+                }
             }
-            .listRowSeparator(.visible)
         }
         .listStyle(.inset(alternatesRowBackgrounds: true))
         .refreshable {
@@ -368,7 +380,7 @@ private struct TimelineEntryRow: View {
         }
     }()
     
-    return TimelineView()
+    return TimelineView(selectedEntry: .constant(nil))
         .environment(store)
         .frame(width: 800, height: 600)
 }
@@ -382,7 +394,7 @@ private struct TimelineEntryRow: View {
         }
     }()
     
-    return TimelineView()
+    return TimelineView(selectedEntry: .constant(nil))
         .environment(emptyStore)
         .frame(width: 800, height: 600)
 } 
