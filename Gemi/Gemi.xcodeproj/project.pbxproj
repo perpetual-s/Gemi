@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		8C5A7E012E10FBDC00FEAA52 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = 8C5A7DD12E10D20000FEAA52 /* GRDB */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		8C5A7DA12E10D1EE00FEAA52 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8C5A7E012E10FBDC00FEAA52 /* GRDB in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = Gemi;
 			packageProductDependencies = (
+				8C5A7DD12E10D20000FEAA52 /* GRDB */,
 			);
 			productName = Gemi;
 			productReference = 8C5A7D922E10D1ED00FEAA52 /* Gemi.app */;
@@ -195,6 +201,9 @@
 			);
 			mainGroup = 8C5A7D892E10D1ED00FEAA52;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				8C5A7DD02E10D20000FEAA52 /* XCRemoteSwiftPackageReference "GRDB" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8C5A7D932E10D1ED00FEAA52 /* Products */;
 			projectDirPath = "";
@@ -408,7 +417,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
 		};
@@ -433,7 +442,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
 		};
@@ -449,7 +458,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "perpetual-s-Inc.GemiTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Gemi.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Gemi";
 			};
 			name = Debug;
@@ -466,7 +475,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "perpetual-s-Inc.GemiTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Gemi.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Gemi";
 			};
 			name = Release;
@@ -481,7 +490,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "perpetual-s-Inc.GemiUITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TEST_TARGET_NAME = Gemi;
 			};
 			name = Debug;
@@ -496,7 +505,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "perpetual-s-Inc.GemiUITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TEST_TARGET_NAME = Gemi;
 			};
 			name = Release;
@@ -541,6 +550,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		8C5A7DD02E10D20000FEAA52 /* XCRemoteSwiftPackageReference "GRDB" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/groue/GRDB.swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 6.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		8C5A7DD12E10D20000FEAA52 /* GRDB */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8C5A7DD02E10D20000FEAA52 /* XCRemoteSwiftPackageReference "GRDB" */;
+			productName = GRDB;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 8C5A7D8A2E10D1ED00FEAA52 /* Project object */;
 }
