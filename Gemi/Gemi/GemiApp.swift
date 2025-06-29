@@ -92,6 +92,7 @@ struct MainWindowView: View {
     @State private var showingChat = false
     @State private var showingSettings = false
     @State private var sidebarVisibility: NavigationSplitViewVisibility = .all
+    @State private var isCreatingNewEntry = false
     
     // MARK: - Body
     
@@ -102,7 +103,8 @@ struct MainWindowView: View {
                 selectedEntry: $selectedEntry,
                 showingCompose: $showingCompose,
                 showingChat: $showingChat,
-                showingSettings: $showingSettings
+                showingSettings: $showingSettings,
+                isCreatingNewEntry: $isCreatingNewEntry
             )
             .navigationSplitViewColumnWidth(
                 min: DesignSystem.Spacing.sidebarWidth,
@@ -119,7 +121,10 @@ struct MainWindowView: View {
                 )
                 } detail: {
             // MARK: Detail/Editor (Flexible)
-            DetailView(selectedEntry: $selectedEntry)
+            DetailView(
+                selectedEntry: $selectedEntry,
+                isCreatingNewEntry: $isCreatingNewEntry
+            )
         }
         .navigationSplitViewStyle(.balanced)
         .toolbar {
@@ -132,7 +137,7 @@ struct MainWindowView: View {
                 .help("Start a conversation with your AI companion")
                 
                 Button {
-                    showingCompose = true
+                    startNewEntry()
                 } label: {
                     Label("New Entry", systemImage: "square.and.pencil")
                 }
@@ -164,6 +169,14 @@ struct MainWindowView: View {
             await journalStore.refreshEntries()
         }
     }
+    
+    // MARK: - Actions
+    
+    private func startNewEntry() {
+        // Clear selected entry and set creating mode
+        selectedEntry = nil
+        isCreatingNewEntry = true
+    }
 }
 
 // MARK: - Sidebar
@@ -177,6 +190,7 @@ struct SidebarView: View {
     @Binding var showingCompose: Bool
     @Binding var showingChat: Bool
     @Binding var showingSettings: Bool
+    @Binding var isCreatingNewEntry: Bool
     
     // MARK: - Dependencies
     
@@ -257,7 +271,10 @@ struct SidebarView: View {
                     icon: "square.and.pencil",
                     title: "New Entry",
                     subtitle: "Start writing",
-                    action: { showingCompose = true }
+                    action: { 
+                        selectedEntry = nil
+                        isCreatingNewEntry = true
+                    }
                 )
                 
                 SidebarButton(
@@ -477,12 +494,49 @@ struct StatCard: View {
 /// The detail/editor pane that shows selected entry or compose interface
 struct DetailView: View {
     @Binding var selectedEntry: JournalEntry?
+    @Binding var isCreatingNewEntry: Bool
+    
+    @Environment(JournalStore.self) private var journalStore
     
     var body: some View {
         Group {
-            if let entry = selectedEntry {
+            if isCreatingNewEntry {
+                // Show new entry compose view
+                NavigationStack {
+                    ComposeView(entry: .constant(nil)) {
+                        // Reset state after saving
+                        isCreatingNewEntry = false
+                    }
+                    .environment(journalStore)
+                    .navigationTitle("New Entry")
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") {
+                                isCreatingNewEntry = false
+                            }
+                        }
+                    }
+                }
+                .onChange(of: isCreatingNewEntry) { _, newValue in
+                    if !newValue {
+                        // Reset when exiting create mode
+                        selectedEntry = nil
+                    }
+                }
+            } else if let entry = selectedEntry {
                 // Show selected entry in read/edit mode
-                ComposeView(entry: .constant(entry))
+                NavigationStack {
+                    ComposeView(entry: .constant(entry))
+                        .environment(journalStore)
+                        .navigationTitle("Edit Entry")
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Back") {
+                                    selectedEntry = nil
+                                }
+                            }
+                        }
+                }
             } else {
                 // Empty state
                 VStack(spacing: DesignSystem.Spacing.large) {
@@ -496,14 +550,23 @@ struct DetailView: View {
                             .fontWeight(.semibold)
                             .foregroundStyle(DesignSystem.Colors.textPrimary)
                         
-                        Text("Choose an entry from the timeline to read or edit")
+                        Text("Choose an entry from the timeline to read or edit, or create a new one")
                             .font(DesignSystem.Typography.body)
                             .foregroundStyle(DesignSystem.Colors.textSecondary)
                             .multilineTextAlignment(.center)
                     }
+                    
+                    Button {
+                        isCreatingNewEntry = true
+                    } label: {
+                        Label("Create New Entry", systemImage: "square.and.pencil")
+                    }
+                    .gemiPrimaryButton()
+                    .frame(maxWidth: 200)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(DesignSystem.Colors.systemBackground)
+                .padding()
             }
         }
     }

@@ -95,6 +95,27 @@ final class DatabaseManager: Sendable {
         print("Journal entry saved with ID: \(entry.id)")
     }
     
+    /// Updates an existing journal entry in the database with encrypted content
+    /// - Parameter entry: The journal entry to update
+    /// - Throws: DatabaseError or EncryptionError
+    func updateEntry(_ entry: JournalEntry) async throws {
+        // Encrypt the content before storing
+        let encryptedContent = try await encryptContent(entry.content)
+        
+        // Create encrypted entry for storage
+        let encryptedEntry = JournalEntry(
+            id: entry.id,
+            date: entry.date,
+            content: encryptedContent
+        )
+        
+        try await dbQueue.write { db in
+            try encryptedEntry.update(db)
+        }
+        
+        print("Journal entry updated with ID: \(entry.id)")
+    }
+    
     /// Fetches all journal entries from the database with decrypted content
     /// - Returns: Array of decrypted journal entries, ordered by date (newest first)
     /// - Throws: DatabaseError or DecryptionError

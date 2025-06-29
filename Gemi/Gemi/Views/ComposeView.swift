@@ -25,8 +25,21 @@ struct ComposeView: View {
     /// The entry to be edited (if any)
     @Binding var entry: JournalEntry?
     
+    /// Local editable content
+    @State private var content: String = ""
+    
+    /// Optional callback when entry is saved (for parent state management)
+    var onSave: (() -> Void)?
+    
     /// Loading state for save operation
     @State private var isSaving: Bool = false
+    
+    // MARK: - Initialization
+    
+    init(entry: Binding<JournalEntry?>, onSave: (() -> Void)? = nil) {
+        self._entry = entry
+        self.onSave = onSave
+    }
     
     /// Error state for displaying save errors
     @State private var errorMessage: String?
@@ -82,8 +95,17 @@ struct ComposeView: View {
                 Text(errorMessage ?? "An unknown error occurred while saving your journal entry.")
             }
             .onAppear {
+                // Initialize content from entry if editing, otherwise start fresh
+                if let existingEntry = entry {
+                    content = existingEntry.content
+                } else {
+                    content = ""
+                }
+                
                 // Focus the text editor when the view appears
-                isTextEditorFocused = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    isTextEditorFocused = true
+                }
             }
             .onDisappear {
                 // Clean up speech recognition when view disappears
@@ -123,7 +145,7 @@ struct ComposeView: View {
                 .stroke(.separator, lineWidth: 1)
             
             // Text editor
-            TextEditor(text: Binding(get: { entry?.content ?? "" }, set: { entry?.content = $0 }))
+            TextEditor(text: $content)
                 .focused($isTextEditorFocused)
                 .font(.body)
                 .lineSpacing(4)
@@ -131,7 +153,7 @@ struct ComposeView: View {
                 .padding(16)
             
             // Placeholder text (shown when content is empty)
-            if entry?.content.isEmpty ?? true {
+            if content.isEmpty {
                 Text(placeholderText)
                     .font(.body)
                     .foregroundStyle(.tertiary)
@@ -268,18 +290,18 @@ struct ComposeView: View {
     
     /// Returns the current word count of the entry
     private var entryWordCount: String {
-        let wordCount = entry?.content
+        let wordCount = content
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .components(separatedBy: .whitespacesAndNewlines)
             .filter { !$0.isEmpty }
-            .count ?? 0
+            .count
         
         return "\(wordCount) \(wordCount == 1 ? "word" : "words")"
     }
     
     /// Returns true if the entry can be saved
     private var canSave: Bool {
-        (entry?.content.trimmingCharacters(in: .whitespacesAndNewlines).count ?? 0) >= minimumContentLength
+        content.trimmingCharacters(in: .whitespacesAndNewlines).count >= minimumContentLength
     }
     
     /// Returns the appropriate icon for the microphone button based on recording state
@@ -296,14 +318,26 @@ struct ComposeView: View {
     /// Saves the journal entry to the database
     @MainActor
     private func saveEntry() async {
-        guard canSave, var entryToSave = entry else { return }
+        guard canSave else { return }
         
         isSaving = true
         
         do {
-            try await journalStore.addEntry(content: entryToSave.content)
+            if let existingEntry = entry {
+                // Update existing entry
+                try await journalStore.updateEntry(existingEntry, content: content)
+                
+                // Update the binding to reflect changes
+                entry?.content = content
+            } else {
+                // Create new entry
+                try await journalStore.addEntry(content: content)
+            }
             
             print("Journal entry saved successfully")
+            
+            // Call onSave callback if provided
+            onSave?()
             
             // Close the compose view after successful save
             dismiss()
@@ -386,11 +420,11 @@ struct ComposeView: View {
         guard !trimmedTranscription.isEmpty else { return }
         
         // Add appropriate spacing
-        if !(entry?.content.isEmpty ?? true) && !(entry?.content.hasSuffix(" ") ?? true) && !(entry?.content.hasSuffix("\n") ?? true) {
-            entry?.content += " "
+        if !content.isEmpty && !content.hasSuffix(" ") && !content.hasSuffix("\n") {
+            content += " "
         }
         
-        entry?.content += trimmedTranscription
+        content += trimmedTranscription
         
         print("Appended transcription: \(trimmedTranscription)")
     }
@@ -418,17 +452,17 @@ struct ComposeView: View {
         let imagePlaceholder = "[Image: \(fileName)]"
         
         // Add appropriate spacing before the image placeholder
-        if !(entry?.content.isEmpty ?? true) && !(entry?.content.hasSuffix("\n") ?? true) && !(entry?.content.hasSuffix(" ") ?? true) {
-            entry?.content += "\n\n"
-        } else if !(entry?.content.isEmpty ?? true) && (entry?.content.hasSuffix("\n") ?? false) && !(entry?.content.hasSuffix("\n\n") ?? true) {
-            entry?.content += "\n"
+        if !content.isEmpty && !content.hasSuffix("\n") && !content.hasSuffix(" ") {
+            content += "\n\n"
+        } else if !content.isEmpty && content.hasSuffix("\n") && !content.hasSuffix("\n\n") {
+            content += "\n"
         }
         
-        entry?.content += imagePlaceholder
+        content += imagePlaceholder
         
         // Add spacing after the placeholder for continued writing
-        if !(entry?.content.hasSuffix("\n") ?? true) {
-            entry?.content += "\n\n"
+        if !content.hasSuffix("\n") {
+            content += "\n\n"
         }
         
         print("Inserted image placeholder: \(imagePlaceholder)")
