@@ -26,7 +26,7 @@ struct GemiApp: App {
             let store = try JournalStore()
             self._journalStore = State(initialValue: store)
             
-            print("✅ Gemi app initialized successfully")
+            print("Gemi app initialized successfully")
         } catch {
             // If database initialization fails, create a fallback state
             // This should rarely happen, but provides graceful error handling
@@ -57,9 +57,9 @@ struct GemiApp: App {
         configureMacOSAppearance()
         
         // Log app startup
-        print("🚀 Gemi: Privacy-First AI Diary started")
-        print("📊 Database encryption: Enabled")
-        print("🔐 Privacy mode: Local-only processing")
+        print("Gemi: Privacy-First AI Diary started")
+        print("Database encryption: Enabled")
+        print("Privacy mode: Local-only processing")
     }
     
     /// Configure macOS-specific appearance and behavior

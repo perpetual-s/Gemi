@@ -94,8 +94,7 @@ struct TimelineView: View {
             }
         }
         .sheet(isPresented: $showingNewEntry) {
-            // TODO: Replace with actual ComposeView when implemented
-            newEntryPlaceholder
+            ComposeView()
         }
         .sheet(isPresented: $showingChat) {
             // TODO: Replace with actual ChatOverlay when implemented
@@ -226,40 +225,6 @@ struct TimelineView: View {
     }
     
     // MARK: - Placeholder Views (TODO: Replace with actual implementations)
-    
-    @ViewBuilder
-    private var newEntryPlaceholder: some View {
-        NavigationStack {
-            VStack(spacing: 20) {
-                Image(systemName: "square.and.pencil")
-                    .font(.system(size: 48))
-                    .foregroundStyle(.secondary)
-                
-                Text("New Entry Composer")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                
-                Text("This will be replaced with the actual ComposeView in the next phase.")
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                
-                Button("Close") {
-                    showingNewEntry = false
-                }
-                .buttonStyle(.borderedProminent)
-            }
-            .padding()
-            .navigationTitle("New Entry")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        showingNewEntry = false
-                    }
-                }
-            }
-        }
-    }
     
     @ViewBuilder
     private var chatPlaceholder: some View {
