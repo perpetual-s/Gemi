@@ -248,11 +248,11 @@ struct LoginView: View {
     private var footerSection: some View {
         VStack(spacing: DesignSystem.Spacing.internalPadding) {
             Text("Gemi • Privacy-First AI Diary")
-                .font(DesignSystem.Fonts.caption)
+                .font(DesignSystem.Fonts.caption1)
                 .foregroundStyle(DesignSystem.Colors.textSecondary)
             
             Text("All data stays on your Mac")
-                .font(DesignSystem.Fonts.caption)
+                .font(DesignSystem.Fonts.caption1)
                 .foregroundStyle(DesignSystem.Colors.textTertiary)
         }
         .padding(.bottom, 32)

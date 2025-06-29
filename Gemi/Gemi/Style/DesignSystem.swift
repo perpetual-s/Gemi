@@ -56,6 +56,9 @@ enum DesignSystem {
         static let mono = Font.custom("SF Mono", size: 13, relativeTo: .body)
     }
     
+    /// Alias for Typography to maintain compatibility
+    typealias Fonts = Typography
+    
     // MARK: - Sophisticated Color Palette
     
     enum Colors {
@@ -66,6 +69,12 @@ enum DesignSystem {
         
         /// Secondary brand accent
         static let secondary = Color.blue.opacity(0.8)
+        
+        /// Brand color alias
+        static let brand = primary
+        
+        /// Background color alias
+        static let background = backgroundPrimary
         
         /// Success states - calming green
         static let success = Color.green
@@ -166,6 +175,14 @@ enum DesignSystem {
         
         /// Maximum timeline width (400pt)
         static let timelineMaxWidth: CGFloat = 400
+        
+        // MARK: Semantic Spacing
+        
+        /// Standard margin spacing (16pt)
+        static let margin: CGFloat = base
+        
+        /// Internal padding for components (12pt)
+        static let internalPadding: CGFloat = medium
     }
     
     // MARK: - Component Specifications
@@ -181,6 +198,12 @@ enum DesignSystem {
         
         /// Large radius for major containers
         static let radiusLarge: CGFloat = 16
+        
+        /// Base corner radius alias
+        static let radiusBase: CGFloat = radiusMedium
+        
+        /// Corner radius alias
+        static let cornerRadius: CGFloat = radiusMedium
         
         // MARK: Shadows
         

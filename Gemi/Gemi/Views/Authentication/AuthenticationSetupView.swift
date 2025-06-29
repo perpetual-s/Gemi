@@ -288,7 +288,7 @@ struct AuthenticationSetupView: View {
             
             if selectedMethod == .biometric {
                 Text("You'll be prompted to authenticate after setup")
-                    .font(DesignSystem.Fonts.caption)
+                    .font(DesignSystem.Fonts.caption1)
                     .foregroundStyle(DesignSystem.Colors.textSecondary)
                     .multilineTextAlignment(.center)
             }
@@ -330,7 +330,7 @@ struct AuthenticationSetupView: View {
                         
                         if isRecommended {
                             Text("Recommended")
-                                .font(DesignSystem.Fonts.caption)
+                                .font(DesignSystem.Fonts.caption1)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 2)
                                 .background(DesignSystem.Colors.success.opacity(0.2))
@@ -340,7 +340,7 @@ struct AuthenticationSetupView: View {
                         
                         if !isAvailable {
                             Text("Not Available")
-                                .font(DesignSystem.Fonts.caption)
+                                .font(DesignSystem.Fonts.caption1)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 2)
                                 .background(DesignSystem.Colors.textSecondary.opacity(0.2))
@@ -385,7 +385,7 @@ struct AuthenticationSetupView: View {
                 .foregroundStyle(isValid ? DesignSystem.Colors.success : DesignSystem.Colors.textSecondary)
             
             Text(text)
-                .font(DesignSystem.Fonts.caption)
+                .font(DesignSystem.Fonts.caption1)
                 .foregroundStyle(isValid ? DesignSystem.Colors.success : DesignSystem.Colors.textSecondary)
         }
     }
