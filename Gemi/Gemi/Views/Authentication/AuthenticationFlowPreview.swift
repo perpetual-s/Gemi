@@ -63,7 +63,7 @@ struct AuthenticationFlowPreview: View {
             // Authentication flow display
             Divider()
             
-            MainAppView()
+            MainWindowView()
                 .environment(authManager)
                 .environment(journalStore)
         }

@@ -74,7 +74,7 @@ struct AuthenticationFlowTester: View {
                         .font(.system(.headline, design: .default, weight: .semibold))
                         .padding(.top, 16)
                     
-                    MainAppView()
+                    MainWindowView()
                         .environment(authManager)
                         .environment(journalStore)
                 }

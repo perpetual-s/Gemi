@@ -60,7 +60,7 @@ struct TimelineView: View {
                 }
             }
             .navigationTitle("Gemi")
-            .toolbar {
+            .toolbar(content: {
                 ToolbarItemGroup(placement: .primaryAction) {
                     // Talk to Gemi button
                     Button {
@@ -92,7 +92,7 @@ struct TimelineView: View {
                     .help("Refresh journal entries")
                     .disabled(journalStore.isLoading)
                 }
-            }
+            })
         }
         .onAppear {
             Task {
@@ -100,7 +100,7 @@ struct TimelineView: View {
             }
         }
         .sheet(isPresented: $showingNewEntry) {
-            ComposeView()
+            ComposeView(entry: .constant(nil))
         }
         .sheet(isPresented: $showingChat) {
             // TODO: Replace with actual ChatOverlay when implemented
@@ -148,64 +148,66 @@ struct TimelineView: View {
     
     @ViewBuilder
     private var loadingView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: DesignSystem.Spacing.base) {
             ProgressView()
                 .scaleEffect(1.2)
+                .tint(DesignSystem.Colors.primary)
             
             Text("Loading your journal entries...")
-                .font(.headline)
-                .foregroundStyle(.secondary)
+                .font(DesignSystem.Typography.headline)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(DesignSystem.Colors.backgroundPrimary)
     }
     
     // MARK: - Empty State
     
     @ViewBuilder
     private var emptyStateView: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: DesignSystem.Spacing.extraLarge) {
             // Icon
             Image(systemName: "book.pages")
                 .font(.system(size: 64))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DesignSystem.Colors.textTertiary)
             
             // Title and description
-            VStack(spacing: 8) {
+            VStack(spacing: DesignSystem.Spacing.small) {
                 Text("Welcome to Gemi")
-                    .font(.title2)
+                    .font(DesignSystem.Typography.title2)
                     .fontWeight(.semibold)
+                    .foregroundStyle(DesignSystem.Colors.textPrimary)
                 
                 Text("Your private AI journal companion")
-                    .font(.headline)
-                    .foregroundStyle(.secondary)
+                    .font(DesignSystem.Typography.headline)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
                 
                 Text("Start by creating your first journal entry, or chat with Gemi about your thoughts and feelings.")
-                    .font(.body)
-                    .foregroundStyle(.tertiary)
+                    .font(DesignSystem.Typography.body)
+                    .foregroundStyle(DesignSystem.Colors.textTertiary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
             }
             
             // Action buttons
-            HStack(spacing: 16) {
+            HStack(spacing: DesignSystem.Spacing.base) {
                 Button {
                     showingNewEntry = true
                 } label: {
                     Label("Write First Entry", systemImage: "square.and.pencil")
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                .gemiPrimaryButton()
                 
                 Button {
                     showingChat = true
                 } label: {
                     Label("Talk to Gemi", systemImage: "message.circle")
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
+                .gemiSecondaryButton()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(DesignSystem.Colors.backgroundPrimary)
         .padding()
     }
     
@@ -286,31 +288,32 @@ private struct TimelineEntryRow: View {
     private let contentPreviewLength = 150
     
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: DesignSystem.Spacing.medium) {
             // Date indicator
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.tiny) {
                 Text(entry.date, style: .date)
-                    .font(.caption)
+                    .font(DesignSystem.Typography.caption1)
                     .fontWeight(.medium)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
                 
                 Text(entry.date, style: .time)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .font(DesignSystem.Typography.caption2)
+                    .foregroundStyle(DesignSystem.Colors.textTertiary)
             }
             .frame(width: 80, alignment: .leading)
             
             // Content preview
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.small) {
                 Text(contentPreview)
-                    .font(.body)
+                    .font(DesignSystem.Typography.body)
                     .lineLimit(maxContentLines)
                     .multilineTextAlignment(.leading)
+                    .foregroundStyle(DesignSystem.Colors.textPrimary)
                 
                 // Word count indicator
                 Text("\(wordCount) words")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .font(DesignSystem.Typography.caption2)
+                    .foregroundStyle(DesignSystem.Colors.textTertiary)
             }
             
             Spacer()
@@ -333,12 +336,12 @@ private struct TimelineEntryRow: View {
                 }
             } label: {
                 Image(systemName: "ellipsis.circle")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
             }
             .menuStyle(.borderlessButton)
             .help("Entry options")
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, DesignSystem.Spacing.small)
         .contentShape(Rectangle())
     }
     

@@ -133,13 +133,13 @@ struct AuthenticationSetupView: View {
                 dismiss()
             }
             .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(DesignSystem.Colors.textSecondary)
             
             Spacer()
             
             Text("Secure Setup")
-                .font(.system(.headline, design: .default, weight: .medium))
-                .foregroundStyle(.primary)
+                .font(DesignSystem.Fonts.headline)
+                .foregroundStyle(DesignSystem.Colors.textPrimary)
             
             Spacer()
             
@@ -151,29 +151,29 @@ struct AuthenticationSetupView: View {
             .opacity(0)
             .disabled(true)
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 16)
-        .background(Color(NSColor.windowBackgroundColor))
+        .padding(.horizontal, DesignSystem.Spacing.large)
+        .padding(.vertical, DesignSystem.Spacing.margin)
+        .background(DesignSystem.Colors.background)
         .overlay(alignment: .bottom) {
             Divider()
         }
     }
     
     private var titleSection: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: DesignSystem.Spacing.margin) {
             Image(systemName: "lock.shield.fill")
                 .font(.system(size: 64, weight: .light))
-                .foregroundStyle(.blue)
+                .foregroundStyle(DesignSystem.Colors.brand)
                 .symbolEffect(.pulse, value: animateContent)
             
-            VStack(spacing: 8) {
+            VStack(spacing: DesignSystem.Spacing.internalPadding) {
                 Text("Secure Your Diary")
-                    .font(.system(.largeTitle, design: .default, weight: .medium))
-                    .foregroundStyle(.primary)
+                    .font(DesignSystem.Fonts.display)
+                    .foregroundStyle(DesignSystem.Colors.textPrimary)
                 
                 Text("Choose how you'd like to protect your private thoughts and conversations")
-                    .font(.system(.body, design: .default))
-                    .foregroundStyle(.secondary)
+                    .font(DesignSystem.Fonts.body)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
                     .multilineTextAlignment(.center)
                     .lineLimit(nil)
             }
@@ -183,7 +183,7 @@ struct AuthenticationSetupView: View {
     }
     
     private var methodSelectionSection: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: DesignSystem.Spacing.margin) {
             // Biometric option
             authMethodCard(
                 method: .biometric,
@@ -209,18 +209,18 @@ struct AuthenticationSetupView: View {
     }
     
     private var passwordSection: some View {
-        VStack(spacing: 20) {
-            VStack(alignment: .leading, spacing: 12) {
+        VStack(spacing: DesignSystem.Spacing.medium) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
                 Text("Create Secure Password")
-                    .font(.system(.headline, design: .default, weight: .medium))
-                    .foregroundStyle(.primary)
+                    .font(DesignSystem.Fonts.headline)
+                    .foregroundStyle(DesignSystem.Colors.textPrimary)
                 
-                VStack(spacing: 16) {
+                VStack(spacing: DesignSystem.Spacing.margin) {
                     // Password field
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.internalPadding) {
                         Text("Password")
-                            .font(.system(.callout, design: .default, weight: .medium))
-                            .foregroundStyle(.secondary)
+                            .font(DesignSystem.Fonts.body)
+                            .foregroundStyle(DesignSystem.Colors.textSecondary)
                         
                         SecureField("Enter password", text: $password)
                             .textFieldStyle(.roundedBorder)
@@ -228,10 +228,10 @@ struct AuthenticationSetupView: View {
                     }
                     
                     // Confirm password field
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.internalPadding) {
                         Text("Confirm Password")
-                            .font(.system(.callout, design: .default, weight: .medium))
-                            .foregroundStyle(.secondary)
+                            .font(DesignSystem.Fonts.body)
+                            .foregroundStyle(DesignSystem.Colors.textSecondary)
                         
                         SecureField("Confirm password", text: $confirmPassword)
                             .textFieldStyle(.roundedBorder)
@@ -241,7 +241,7 @@ struct AuthenticationSetupView: View {
             }
             
             // Password requirements
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.internalPadding) {
                 passwordRequirement(
                     text: "At least 8 characters",
                     isValid: password.count >= 8
@@ -254,18 +254,18 @@ struct AuthenticationSetupView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(24)
+        .padding(DesignSystem.Spacing.large)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(NSColor.controlBackgroundColor))
+            RoundedRectangle(cornerRadius: DesignSystem.Components.cornerRadius)
+                .fill(DesignSystem.Colors.backgroundSecondary)
                 .stroke(Color(NSColor.separatorColor), lineWidth: 0.5)
         )
     }
     
     private var setupButtonSection: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: DesignSystem.Spacing.margin) {
             Button(action: setupAuthentication) {
-                HStack(spacing: 12) {
+                HStack(spacing: DesignSystem.Spacing.medium) {
                     if isSettingUp {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
@@ -273,13 +273,13 @@ struct AuthenticationSetupView: View {
                     }
                     
                     Text(isSettingUp ? "Setting up..." : "Complete Setup")
-                        .font(.system(.body, design: .default, weight: .medium))
+                        .font(DesignSystem.Fonts.headline)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 44)
-                .background(canProceed ? .blue : Color(NSColor.disabledControlTextColor))
+                .frame(height: DesignSystem.Components.buttonHeight)
+                .background(canProceed ? DesignSystem.Colors.brand : Color(NSColor.disabledControlTextColor))
                 .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.Components.cornerRadius))
             }
             .buttonStyle(.plain)
             .disabled(!canProceed || isSettingUp)
@@ -288,8 +288,8 @@ struct AuthenticationSetupView: View {
             
             if selectedMethod == .biometric {
                 Text("You'll be prompted to authenticate after setup")
-                    .font(.system(.caption, design: .default))
-                    .foregroundStyle(.secondary)
+                    .font(DesignSystem.Fonts.caption)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
                     .multilineTextAlignment(.center)
             }
         }
@@ -310,48 +310,48 @@ struct AuthenticationSetupView: View {
                 selectedMethod = method
             }
         }) {
-            HStack(spacing: 16) {
+            HStack(spacing: DesignSystem.Spacing.margin) {
                 // Icon
                 Image(systemName: icon)
                     .font(.system(size: 32, weight: .medium))
-                    .foregroundStyle(isAvailable ? .blue : .secondary)
+                    .foregroundStyle(isAvailable ? DesignSystem.Colors.brand : DesignSystem.Colors.textSecondary)
                     .frame(width: 48, height: 48)
                     .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill((isAvailable ? Color.blue : Color.secondary).opacity(0.1))
+                        RoundedRectangle(cornerRadius: DesignSystem.Components.cornerRadius)
+                            .fill((isAvailable ? DesignSystem.Colors.brand : DesignSystem.Colors.textSecondary).opacity(0.1))
                     )
                 
                 // Content
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.internalPadding) {
+                    HStack(spacing: DesignSystem.Spacing.internalPadding) {
                         Text(title)
-                            .font(.system(.body, design: .default, weight: .medium))
-                            .foregroundStyle(isAvailable ? .primary : .secondary)
+                            .font(DesignSystem.Fonts.headline)
+                            .foregroundStyle(isAvailable ? DesignSystem.Colors.textPrimary : DesignSystem.Colors.textSecondary)
                         
                         if isRecommended {
                             Text("Recommended")
-                                .font(.system(.caption, design: .default, weight: .medium))
+                                .font(DesignSystem.Fonts.caption)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 2)
-                                .background(.green.opacity(0.2))
-                                .foregroundStyle(.green)
+                                .background(DesignSystem.Colors.success.opacity(0.2))
+                                .foregroundStyle(DesignSystem.Colors.success)
                                 .clipShape(Capsule())
                         }
                         
                         if !isAvailable {
                             Text("Not Available")
-                                .font(.system(.caption, design: .default, weight: .medium))
+                                .font(DesignSystem.Fonts.caption)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 2)
-                                .background(.secondary.opacity(0.2))
-                                .foregroundStyle(.secondary)
+                                .background(DesignSystem.Colors.textSecondary.opacity(0.2))
+                                .foregroundStyle(DesignSystem.Colors.textSecondary)
                                 .clipShape(Capsule())
                         }
                     }
                     
                     Text(description)
-                        .font(.system(.callout, design: .default))
-                        .foregroundStyle(.secondary)
+                        .font(DesignSystem.Fonts.body)
+                        .foregroundStyle(DesignSystem.Colors.textSecondary)
                         .lineLimit(2)
                 }
                 
@@ -361,15 +361,15 @@ struct AuthenticationSetupView: View {
                 if isAvailable {
                     Image(systemName: selectedMethod == method ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: 20, weight: .medium))
-                        .foregroundStyle(selectedMethod == method ? .blue : .secondary)
+                        .foregroundStyle(selectedMethod == method ? DesignSystem.Colors.brand : DesignSystem.Colors.textSecondary)
                 }
             }
-            .padding(20)
+            .padding(DesignSystem.Spacing.large)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(NSColor.controlBackgroundColor))
+                RoundedRectangle(cornerRadius: DesignSystem.Components.cornerRadius)
+                    .fill(DesignSystem.Colors.backgroundSecondary)
                     .stroke(
-                        selectedMethod == method && isAvailable ? Color.blue : Color(NSColor.separatorColor),
+                        selectedMethod == method && isAvailable ? DesignSystem.Colors.brand : Color(NSColor.separatorColor),
                         lineWidth: selectedMethod == method && isAvailable ? 2 : 0.5
                     )
             )
@@ -379,14 +379,14 @@ struct AuthenticationSetupView: View {
     }
     
     private func passwordRequirement(text: String, isValid: Bool) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DesignSystem.Spacing.internalPadding) {
             Image(systemName: isValid ? "checkmark.circle.fill" : "circle")
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(isValid ? .green : .secondary)
+                .foregroundStyle(isValid ? DesignSystem.Colors.success : DesignSystem.Colors.textSecondary)
             
             Text(text)
-                .font(.system(.caption, design: .default))
-                .foregroundStyle(isValid ? .green : .secondary)
+                .font(DesignSystem.Fonts.caption)
+                .foregroundStyle(isValid ? DesignSystem.Colors.success : DesignSystem.Colors.textSecondary)
         }
     }
     

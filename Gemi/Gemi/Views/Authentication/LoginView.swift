@@ -103,21 +103,21 @@ struct LoginView: View {
     // MARK: - View Components
     
     private var headerSection: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: DesignSystem.Spacing.large) {
             // App icon
             Image(systemName: "book.closed.fill")
                 .font(.system(size: 72, weight: .light))
-                .foregroundStyle(.tint)
+                .foregroundStyle(DesignSystem.Colors.primary)
                 .symbolEffect(.pulse, options: .repeat(.continuous), value: pulseIcon)
             
-            VStack(spacing: 8) {
+            VStack(spacing: DesignSystem.Spacing.internalPadding) {
                 Text("Welcome Back")
-                    .font(.system(.largeTitle, design: .default, weight: .medium))
-                    .foregroundStyle(.primary)
+                    .font(DesignSystem.Typography.display)
+                    .foregroundStyle(DesignSystem.Colors.textPrimary)
                 
                 Text("Authenticate to access your private diary")
-                    .font(.system(.body, design: .default))
-                    .foregroundStyle(.secondary)
+                    .font(DesignSystem.Typography.body)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
                     .multilineTextAlignment(.center)
             }
         }
@@ -126,7 +126,7 @@ struct LoginView: View {
     }
     
     private var authenticationSection: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: DesignSystem.Spacing.large) {
             if requiresPassword {
                 passwordAuthSection
             } else {
@@ -138,27 +138,27 @@ struct LoginView: View {
     }
     
     private var biometricAuthSection: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: DesignSystem.Spacing.medium) {
             // Biometric icon
             Image(systemName: biometricIcon)
                 .font(.system(size: 64, weight: .light))
-                .foregroundStyle(.blue)
+                .foregroundStyle(DesignSystem.Colors.primary)
                 .frame(height: 80)
             
-            VStack(spacing: 12) {
+            VStack(spacing: DesignSystem.Spacing.medium) {
                 Text("Authenticate with \(biometricType)")
-                    .font(.system(.headline, design: .default, weight: .medium))
-                    .foregroundStyle(.primary)
+                    .font(DesignSystem.Typography.headline)
+                    .foregroundStyle(DesignSystem.Colors.textPrimary)
                 
                 if authManager.isAuthenticating {
-                    HStack(spacing: 8) {
+                    HStack(spacing: DesignSystem.Spacing.internalPadding) {
                         ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .blue))
+                            .progressViewStyle(CircularProgressViewStyle(tint: DesignSystem.Colors.brand))
                             .scaleEffect(0.8)
                         
                         Text("Authenticating...")
-                            .font(.system(.callout, design: .default))
-                            .foregroundStyle(.secondary)
+                            .font(DesignSystem.Typography.body)
+                            .foregroundStyle(DesignSystem.Colors.textSecondary)
                     }
                 } else {
                     Button("Authenticate") {
@@ -171,19 +171,19 @@ struct LoginView: View {
     }
     
     private var passwordAuthSection: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: DesignSystem.Spacing.medium) {
             // Password icon
             Image(systemName: "key.fill")
                 .font(.system(size: 64, weight: .light))
-                .foregroundStyle(.blue)
+                .foregroundStyle(DesignSystem.Colors.primary)
                 .frame(height: 80)
             
-            VStack(spacing: 16) {
+            VStack(spacing: DesignSystem.Spacing.margin) {
                 Text("Enter Your Password")
-                    .font(.system(.headline, design: .default, weight: .medium))
-                    .foregroundStyle(.primary)
+                    .font(DesignSystem.Typography.headline)
+                    .foregroundStyle(DesignSystem.Colors.textPrimary)
                 
-                VStack(spacing: 12) {
+                VStack(spacing: DesignSystem.Spacing.medium) {
                     SecureField("Password", text: $password)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .frame(height: 32)
@@ -192,14 +192,14 @@ struct LoginView: View {
                         }
                     
                     if authManager.isAuthenticating {
-                        HStack(spacing: 8) {
+                        HStack(spacing: DesignSystem.Spacing.internalPadding) {
                             ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .blue))
+                                .progressViewStyle(CircularProgressViewStyle(tint: DesignSystem.Colors.brand))
                                 .scaleEffect(0.8)
                             
                             Text("Authenticating...")
-                                .font(.system(.callout, design: .default))
-                                .foregroundStyle(.secondary)
+                                .font(DesignSystem.Fonts.body)
+                                .foregroundStyle(DesignSystem.Colors.textSecondary)
                         }
                     } else {
                         Button("Sign In") {
@@ -214,15 +214,15 @@ struct LoginView: View {
     }
     
     private func errorSection(_ error: AuthenticationError) -> some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 12) {
+        VStack(spacing: DesignSystem.Spacing.medium) {
+            HStack(spacing: DesignSystem.Spacing.medium) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(DesignSystem.Colors.warning)
                 
                 Text(error.localizedDescription)
-                    .font(.system(.callout, design: .default))
-                    .foregroundStyle(.primary)
+                    .font(DesignSystem.Fonts.body)
+                    .foregroundStyle(DesignSystem.Colors.textPrimary)
                     .multilineTextAlignment(.leading)
                 
                 Spacer()
@@ -233,27 +233,27 @@ struct LoginView: View {
                 Button("Use Password Instead") {
                     switchToPasswordAuth()
                 }
-                .font(.system(.callout, design: .default, weight: .medium))
-                .foregroundStyle(.blue)
+                .font(DesignSystem.Fonts.body)
+                .foregroundStyle(DesignSystem.Colors.brand)
             }
         }
-        .padding(16)
+        .padding(DesignSystem.Spacing.base)
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(.orange.opacity(0.1))
-                .stroke(.orange.opacity(0.3), lineWidth: 1)
+            RoundedRectangle(cornerRadius: DesignSystem.Components.radiusBase)
+                .fill(DesignSystem.Colors.warning.opacity(0.1))
+                .stroke(DesignSystem.Colors.warning.opacity(0.3), lineWidth: 1)
         )
     }
     
     private var footerSection: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: DesignSystem.Spacing.internalPadding) {
             Text("Gemi • Privacy-First AI Diary")
-                .font(.system(.caption, design: .default, weight: .medium))
-                .foregroundStyle(.secondary)
+                .font(DesignSystem.Fonts.caption)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
             
             Text("All data stays on your Mac")
-                .font(.system(.caption2, design: .default))
-                .foregroundStyle(.tertiary)
+                .font(DesignSystem.Fonts.caption)
+                .foregroundStyle(DesignSystem.Colors.textTertiary)
         }
         .padding(.bottom, 32)
         .opacity(animateContent ? 1 : 0)

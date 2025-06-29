@@ -58,42 +58,42 @@ struct WelcomeView: View {
     // MARK: - View Components
     
     private var headerSection: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: DesignSystem.Spacing.large) {
             // App icon
             Image(systemName: "book.closed.fill")
                 .font(.system(size: 80, weight: .light))
-                .foregroundStyle(.tint)
+                .foregroundStyle(DesignSystem.Colors.primary)
                 .symbolEffect(.bounce, value: animateContent)
             
-            VStack(spacing: 8) {
+            VStack(spacing: DesignSystem.Spacing.small) {
                 Text("Welcome to Gemi")
-                    .font(.system(.largeTitle, design: .default, weight: .medium))
-                    .foregroundStyle(.primary)
+                    .font(DesignSystem.Typography.display)
+                    .foregroundStyle(DesignSystem.Colors.textPrimary)
                 
                 Text("Your Private AI Diary Companion")
-                    .font(.system(.title2, design: .default, weight: .regular))
-                    .foregroundStyle(.secondary)
+                    .font(DesignSystem.Typography.headline)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
             }
         }
         .opacity(animateContent ? 1 : 0)
-        .animation(.easeInOut(duration: 0.8).delay(0.2), value: animateContent)
+        .animation(DesignSystem.Animation.smooth.delay(0.2), value: animateContent)
     }
     
     private var privacySection: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: DesignSystem.Spacing.medium) {
             HStack {
                 Image(systemName: "lock.shield.fill")
-                    .font(.title2)
-                    .foregroundStyle(.green)
+                    .font(DesignSystem.Typography.title3)
+                    .foregroundStyle(DesignSystem.Colors.success)
                 
                 Text("Complete Privacy")
-                    .font(.system(.title2, design: .default, weight: .semibold))
-                    .foregroundStyle(.primary)
+                    .font(DesignSystem.Typography.title3)
+                    .foregroundStyle(DesignSystem.Colors.textPrimary)
                 
                 Spacer()
             }
             
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
                 privacyFeature(
                     icon: "desktopcomputer",
                     title: "100% Local Processing",
@@ -113,31 +113,27 @@ struct WelcomeView: View {
                 )
             }
         }
-        .padding(32)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(NSColor.controlBackgroundColor))
-                .stroke(Color(NSColor.separatorColor), lineWidth: 0.5)
-        )
+        .gemiCardPadding()
+        .gemiCard()
         .opacity(animateContent ? 1 : 0)
-        .animation(.easeInOut(duration: 0.8).delay(0.4), value: animateContent)
+        .animation(DesignSystem.Animation.smooth.delay(0.4), value: animateContent)
     }
     
     private var featuresSection: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: DesignSystem.Spacing.large) {
             HStack {
                 Image(systemName: "sparkles")
-                    .font(.title2)
-                    .foregroundStyle(.blue)
+                    .font(DesignSystem.Typography.title3)
+                    .foregroundStyle(DesignSystem.Colors.primary)
                 
                 Text("AI-Powered Journaling")
-                    .font(.system(.title2, design: .default, weight: .semibold))
-                    .foregroundStyle(.primary)
+                    .font(DesignSystem.Typography.title3)
+                    .foregroundStyle(DesignSystem.Colors.textPrimary)
                 
                 Spacer()
             }
             
-            VStack(spacing: 20) {
+            VStack(spacing: DesignSystem.Spacing.medium) {
                 featureRow(
                     icon: "message.fill",
                     title: "Conversational AI",
@@ -158,34 +154,29 @@ struct WelcomeView: View {
             }
         }
         .opacity(animateContent ? 1 : 0)
-        .animation(.easeInOut(duration: 0.8).delay(0.6), value: animateContent)
+        .animation(DesignSystem.Animation.smooth.delay(0.6), value: animateContent)
     }
     
     private var actionSection: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: DesignSystem.Spacing.medium) {
             Button(action: {
                 showSetup = true
             }) {
-                HStack(spacing: 12) {
+                HStack(spacing: DesignSystem.Spacing.medium) {
                     Image(systemName: "lock.shield")
                         .font(.system(size: 16, weight: .medium))
                     
                     Text("Set Up Secure Access")
-                        .font(.system(.body, design: .default, weight: .medium))
+                        .font(DesignSystem.Typography.headline)
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 44)
-                .background(.tint)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
             }
-            .buttonStyle(.plain)
+            .gemiPrimaryButton()
             .scaleEffect(animateContent ? 1 : 0.9)
-            .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.8), value: animateContent)
+            .animation(DesignSystem.Animation.spring.delay(0.8), value: animateContent)
             
             Text("Choose Face ID, Touch ID, or a secure password")
-                .font(.system(.caption, design: .default))
-                .foregroundStyle(.secondary)
+                .font(DesignSystem.Typography.caption1)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: 300)
@@ -194,20 +185,20 @@ struct WelcomeView: View {
     // MARK: - Helper Views
     
     private func privacyFeature(icon: String, title: String, description: String) -> some View {
-        HStack(alignment: .top, spacing: 16) {
+        HStack(alignment: .top, spacing: DesignSystem.Spacing.medium) {
             Image(systemName: icon)
                 .font(.system(size: 20, weight: .medium))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
                 .frame(width: 24)
             
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.small) {
                 Text(title)
-                    .font(.system(.body, design: .default, weight: .medium))
-                    .foregroundStyle(.primary)
+                    .font(DesignSystem.Typography.headline)
+                    .foregroundStyle(DesignSystem.Colors.textPrimary)
                 
                 Text(description)
-                    .font(.system(.callout, design: .default))
-                    .foregroundStyle(.secondary)
+                    .font(DesignSystem.Typography.callout)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
                     .lineLimit(nil)
             }
             
@@ -216,24 +207,24 @@ struct WelcomeView: View {
     }
     
     private func featureRow(icon: String, title: String, description: String) -> some View {
-        HStack(spacing: 16) {
+        HStack(spacing: DesignSystem.Spacing.medium) {
             Image(systemName: icon)
                 .font(.system(size: 24, weight: .medium))
-                .foregroundStyle(.blue)
+                .foregroundStyle(DesignSystem.Colors.primary)
                 .frame(width: 32, height: 32)
                 .background(
                     Circle()
-                        .fill(.blue.opacity(0.1))
+                        .fill(DesignSystem.Colors.primary.opacity(0.1))
                 )
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(.body, design: .default, weight: .medium))
-                    .foregroundStyle(.primary)
+                    .font(DesignSystem.Typography.headline)
+                    .foregroundStyle(DesignSystem.Colors.textPrimary)
                 
                 Text(description)
-                    .font(.system(.callout, design: .default))
-                    .foregroundStyle(.secondary)
+                    .font(DesignSystem.Typography.callout)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
             }
             
             Spacer()
