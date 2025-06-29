@@ -42,8 +42,8 @@ final class DatabaseManager: Sendable {
         // Setup database schema
         try setupDatabase()
         
-        print("✅ DatabaseManager initialized successfully")
-        print("📁 Database location: \(databaseURL.path)")
+        print("DatabaseManager initialized successfully")
+        print("Database location: \(databaseURL.path)")
     }
     
     // MARK: - Database Setup
@@ -85,7 +85,7 @@ final class DatabaseManager: Sendable {
             try encryptedEntry.insert(db)
         }
         
-        print("✅ Journal entry saved with ID: \(entry.id)")
+        print("Journal entry saved with ID: \(entry.id)")
     }
     
     /// Fetches all journal entries from the database with decrypted content
