@@ -176,77 +176,69 @@ struct AuthenticationFlowPreview: View {
     // MARK: - Test Scenario Setup
     
     private func setupTestScenario() {
-        Task {
-            await MainActor.run {
-                // Reset authentication state
-                authManager.signOut()
-                authManager.authenticationError = nil
+        Task { @MainActor in
+            // Reset authentication state
+            authManager.signOut()
+            authManager.authenticationError = nil
+            
+            // Configure scenario
+            switch selectedScenario {
+            case .firstTimeUser:
+                // Simulate first-time user (clear setup flag)
+                UserDefaults.standard.removeObject(forKey: "gemi.auth.hasCompletedSetup")
                 
-                // Configure scenario
-                switch selectedScenario {
-                case .firstTimeUser:
-                    // Simulate first-time user (clear setup flag)
-                    UserDefaults.standard.removeObject(forKey: "gemi.auth.hasCompletedSetup")
-                    
-                case .returningUserBiometric:
-                    // Simulate returning user with biometric preference
-                    UserDefaults.standard.set(true, forKey: "gemi.auth.hasCompletedSetup")
-                    UserDefaults.standard.set("biometric", forKey: "gemi.auth.preferredMethod")
-                    
-                case .returningUserPassword:
-                    // Simulate returning user with password preference
-                    UserDefaults.standard.set(true, forKey: "gemi.auth.hasCompletedSetup")
-                    UserDefaults.standard.set("password", forKey: "gemi.auth.preferredMethod")
-                    
-                case .authenticationError:
-                    // Simulate authentication error
-                    UserDefaults.standard.set(true, forKey: "gemi.auth.hasCompletedSetup")
-                    authManager.authenticationError = .biometricLockout
-                    
-                case .sessionExpired:
-                    // Simulate expired session
-                    UserDefaults.standard.set(true, forKey: "gemi.auth.hasCompletedSetup")
-                    // This would be handled by the session timeout logic
-                }
+            case .returningUserBiometric:
+                // Simulate returning user with biometric preference
+                UserDefaults.standard.set(true, forKey: "gemi.auth.hasCompletedSetup")
+                UserDefaults.standard.set("biometric", forKey: "gemi.auth.preferredMethod")
                 
-                print("Test scenario configured: \(selectedScenario.rawValue)")
+            case .returningUserPassword:
+                // Simulate returning user with password preference
+                UserDefaults.standard.set(true, forKey: "gemi.auth.hasCompletedSetup")
+                UserDefaults.standard.set("password", forKey: "gemi.auth.preferredMethod")
+                
+            case .authenticationError:
+                // Simulate authentication error
+                UserDefaults.standard.set(true, forKey: "gemi.auth.hasCompletedSetup")
+                authManager.authenticationError = .biometricLockout
+                
+            case .sessionExpired:
+                // Simulate expired session
+                UserDefaults.standard.set(true, forKey: "gemi.auth.hasCompletedSetup")
+                // This would be handled by the session timeout logic
             }
+            
+            print("Test scenario configured: \(selectedScenario.rawValue)")
         }
     }
     
     // MARK: - Test Actions
     
     private func resetAuthentication() {
-        Task {
-            await MainActor.run {
-                authManager.signOut()
-                authManager.authenticationError = nil
-                UserDefaults.standard.removeObject(forKey: "gemi.auth.hasCompletedSetup")
-                UserDefaults.standard.removeObject(forKey: "gemi.auth.preferredMethod")
-                
-                print("Authentication reset to initial state")
-            }
+        Task { @MainActor in
+            authManager.signOut()
+            authManager.authenticationError = nil
+            UserDefaults.standard.removeObject(forKey: "gemi.auth.hasCompletedSetup")
+            UserDefaults.standard.removeObject(forKey: "gemi.auth.preferredMethod")
+            
+            print("Authentication reset to initial state")
         }
     }
     
     private func simulateAuthSuccess() {
-        Task {
-            await MainActor.run {
-                // Simulate successful authentication
-                let success = await authManager.setupAuthentication(method: .biometric)
-                if success {
-                    print("Simulated authentication success")
-                }
+        Task { @MainActor in
+            // Simulate successful authentication
+            let success = await authManager.setupAuthentication(method: .biometric)
+            if success {
+                print("Simulated authentication success")
             }
         }
     }
     
     private func simulateAuthError() {
-        Task {
-            await MainActor.run {
-                authManager.authenticationError = .biometricLockout
-                print("Simulated authentication error")
-            }
+        Task { @MainActor in
+            authManager.authenticationError = .biometricLockout
+            print("Simulated authentication error")
         }
     }
 }

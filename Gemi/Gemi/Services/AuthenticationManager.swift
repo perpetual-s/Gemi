@@ -80,7 +80,8 @@ final class AuthenticationManager {
     
     /// Available biometric type on this device
     var availableBiometricType: LABiometryType {
-        context.biometryType
+        let typeContext = LAContext()
+        return typeContext.biometryType
     }
     
     /// User's preferred authentication method
@@ -96,7 +97,6 @@ final class AuthenticationManager {
     
     // MARK: - Private Properties
     
-    private let context = LAContext()
     private let keychain = KeychainManager()
     private var sessionStartTime: Date?
     private let sessionTimeoutInterval: TimeInterval = 12 * 60 * 60 // 12 hours
@@ -125,7 +125,8 @@ final class AuthenticationManager {
     /// Check if biometric authentication is available and configured
     func checkBiometricAvailability() -> (available: Bool, error: AuthenticationError?) {
         var error: NSError?
-        let available = context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error)
+        let checkContext = LAContext()
+        let available = checkContext.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error)
         
         guard available else {
             if let nsError = error {
@@ -189,7 +190,9 @@ final class AuthenticationManager {
         
         do {
             let reason = "Authenticate to access your private diary"
-            let success = try await context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason)
+            // Create a new context for this authentication to avoid concurrency issues
+            let authContext = LAContext()
+            let success = try await authContext.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason)
             
             if success {
                 return true
@@ -288,9 +291,6 @@ final class AuthenticationManager {
         isAuthenticated = false
         sessionStartTime = nil
         authenticationError = nil
-        
-        // Clear the context to ensure fresh authentication
-        context.invalidate()
     }
     
     /// Check if the current session is still valid
