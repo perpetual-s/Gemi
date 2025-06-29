@@ -51,17 +51,24 @@ final class DatabaseManager: Sendable {
     /// Sets up the database schema and ensures all tables exist
     /// - Throws: Database errors during setup
     private func setupDatabase() throws {
-        try dbQueue.write { db in
-            // Create the journal entries table
-            try JournalEntry.createTable(db)
-            
+        // Configure database pragmas outside of any transaction
+        try dbQueue.inDatabase { db in
             // Enable WAL mode for better concurrency
             try db.execute(sql: "PRAGMA journal_mode = WAL")
             
             // Enable foreign key constraints
             try db.execute(sql: "PRAGMA foreign_keys = ON")
             
-            print("✅ Database schema initialized")
+            // Set a reasonable timeout for busy connections
+            try db.execute(sql: "PRAGMA busy_timeout = 5000")
+        }
+        
+        // Create tables in a separate transaction
+        try dbQueue.write { db in
+            // Create the journal entries table
+            try JournalEntry.createTable(db)
+            
+            print("Database schema initialized")
         }
     }
     
@@ -139,7 +146,7 @@ final class DatabaseManager: Sendable {
             try JournalEntry.filter(JournalEntry.Columns.id == id).deleteAll(db)
         }
         
-        print("🗑️ Journal entry \(deleted > 0 ? "deleted" : "not found"): \(id)")
+        print("Journal entry \(deleted > 0 ? "deleted" : "not found"): \(id)")
         return deleted > 0
     }
     
@@ -210,7 +217,7 @@ extension DatabaseManager {
         let newKey = SymmetricKey(size: .bits256)
         try storeKeyInKeychain(newKey.withUnsafeBytes { Data($0) })
         
-        print("🔐 New encryption key created and stored in Keychain")
+        print("New encryption key created and stored in Keychain")
         return newKey
     }
     
@@ -277,7 +284,7 @@ extension DatabaseManager {
         // Create directory if it doesn't exist
         if !fileManager.fileExists(atPath: appDirectory.path) {
             try fileManager.createDirectory(at: appDirectory, withIntermediateDirectories: true)
-            print("📁 Created Application Support directory: \(appDirectory.path)")
+            print("Created Application Support directory: \(appDirectory.path)")
         }
         
         return appDirectory
