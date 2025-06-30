@@ -20,8 +20,11 @@ struct ChatView: View {
     @State private var showingMemoryInfo: Bool = false
     @State private var chatOffset: CGFloat = 500
     @State private var backdropOpacity: Double = 0
+    @State private var hasShownWelcome: Bool = false
+    @State private var isFirstTimeUser: Bool = true
     
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(OnboardingState.self) private var onboardingState
     @FocusState private var isInputFocused: Bool
     
     // MARK: - Body
@@ -51,24 +54,25 @@ struct ChatView: View {
         }
         .onAppear {
             if isPresented {
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                withAnimation(DesignSystem.Animation.cozySettle) {
                     chatOffset = 0
                     backdropOpacity = 1
                 }
                 
                 // Add welcome message
                 addWelcomeMessage()
+                // Haptic feedback on chat open
             }
         }
         .onChange(of: isPresented) { _, newValue in
             if newValue {
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                withAnimation(DesignSystem.Animation.cozySettle) {
                     chatOffset = 0
                     backdropOpacity = 1
                 }
                 isInputFocused = true
             } else {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                withAnimation(DesignSystem.Animation.standard) {
                     chatOffset = 500
                     backdropOpacity = 0
                 }
@@ -114,28 +118,103 @@ struct ChatView: View {
     
     @ViewBuilder
     private var messagesScrollView: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(spacing: 16) {
-                    ForEach(messages) { message in
-                        MessageBubble(message: message)
-                            .id(message.id)
-                    }
+        if messages.isEmpty && !hasShownWelcome {
+            // Empty state
+            VStack(spacing: 24) {
+                Spacer()
+                
+                // Illustration
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 0.36, green: 0.61, blue: 0.84).opacity(0.1),
+                                    Color(red: 0.48, green: 0.70, blue: 0.90).opacity(0.05)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 120, height: 120)
                     
-                    if isTyping {
-                        TypingIndicator()
-                            .id("typing")
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 48, weight: .light))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 0.36, green: 0.61, blue: 0.84),
+                                    Color(red: 0.48, green: 0.70, blue: 0.90)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                }
+                
+                VStack(spacing: 12) {
+                    Text("Start a conversation")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(.primary)
+                    
+                    Text("I'm here to help you reflect on your thoughts,\nexplore your feelings, and remember what matters.")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(4)
+                }
+                
+                VStack(spacing: 12) {
+                    Text("Try asking me:")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        SuggestionChip(text: "How was my week?", icon: "calendar")
+                        SuggestionChip(text: "What patterns do you see in my writing?", icon: "chart.line.uptrend.xyaxis")
+                        SuggestionChip(text: "Help me reflect on today", icon: "sun.max")
                     }
                 }
-                .padding(20)
-                .padding(.bottom, 60)
+                
+                Spacer()
             }
-            .onChange(of: messages.count) { _, _ in
-                withAnimation(.easeOut(duration: 0.3)) {
-                    if let lastMessage = messages.last {
-                        proxy.scrollTo(lastMessage.id, anchor: .bottom)
-                    } else if isTyping {
-                        proxy.scrollTo("typing", anchor: .bottom)
+            .padding(40)
+            .transition(.asymmetric(
+                insertion: .opacity.combined(with: .scale(scale: 0.95)),
+                removal: .opacity
+            ))
+        } else {
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        ForEach(Array(messages.enumerated()), id: \.element.id) { index, message in
+                            MessageBubble(message: message)
+                                .id(message.id)
+                                .transition(.asymmetric(
+                                    insertion: .scale(scale: 0.9).combined(with: .opacity).combined(with: .offset(x: message.role == .user ? 20 : -20)),
+                                    removal: .opacity
+                                ))
+                        }
+                        
+                        if isTyping {
+                            TypingIndicator()
+                                .id("typing")
+                                .transition(.asymmetric(
+                                    insertion: .scale(scale: 0.8).combined(with: .opacity),
+                                    removal: .opacity
+                                ))
+                        }
+                    }
+                    .padding(20)
+                    .padding(.bottom, 60)
+                }
+                .onChange(of: messages.count) { _, _ in
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        if let lastMessage = messages.last {
+                            proxy.scrollTo(lastMessage.id, anchor: .bottom)
+                        } else if isTyping {
+                            proxy.scrollTo("typing", anchor: .bottom)
+                        }
                     }
                 }
             }
@@ -207,6 +286,7 @@ struct ChatView: View {
                     )
             }
             .buttonStyle(PlainButtonStyle())
+            .tooltip("Close chat (Esc)", edge: .bottom)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
@@ -273,12 +353,17 @@ struct ChatView: View {
     }
     
     private func addWelcomeMessage() {
+        guard !hasShownWelcome else { return }
+        hasShownWelcome = true
+        
         let welcome = ChatMessage(
             role: .assistant,
             content: "Hello! I'm here whenever you want to talk about your thoughts, reflect on your entries, or just have a friendly conversation. What's on your mind?",
             timestamp: Date()
         )
         messages.append(welcome)
+        
+        // Coach marks are handled by the view modifier
     }
     
     private func sendMessage() {
@@ -446,27 +531,47 @@ struct MessageBubble: View {
 // MARK: - Typing Indicator
 
 struct TypingIndicator: View {
-    @State private var animationOffset: CGFloat = 0
+    @State private var animationOffsets: [CGFloat] = [0, 0, 0]
+    @State private var bubbleScale: CGFloat = 0
     
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
-            // Gemi avatar
+            // Gemi avatar with pulse
             Circle()
-                .fill(Color.secondary.opacity(0.1))
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.36, green: 0.61, blue: 0.84).opacity(0.2),
+                            Color(red: 0.48, green: 0.70, blue: 0.90).opacity(0.2)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
                 .frame(width: 28, height: 28)
+                .overlay(
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.secondary.opacity(0.6))
+                )
+                // Pulse animation
             
             HStack(spacing: 4) {
                 ForEach(0..<3) { index in
                     Circle()
-                        .fill(Color.secondary.opacity(0.6))
-                        .frame(width: 8, height: 8)
-                        .offset(y: animationOffset)
-                        .animation(
-                            Animation.easeInOut(duration: 0.5)
-                                .repeatForever()
-                                .delay(Double(index) * 0.15),
-                            value: animationOffset
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 0.36, green: 0.61, blue: 0.84).opacity(0.8),
+                                    Color(red: 0.48, green: 0.70, blue: 0.90).opacity(0.6)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
                         )
+                        .frame(width: 8, height: 8)
+                        .offset(y: animationOffsets[index])
+                        .scaleEffect(1 + animationOffsets[index] * -0.1)
                 }
             }
             .padding(.horizontal, 20)
@@ -475,11 +580,25 @@ struct TypingIndicator: View {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(Color.primary.opacity(0.06))
             )
+            .scaleEffect(bubbleScale)
+            .opacity(bubbleScale)
             
             Spacer()
         }
         .onAppear {
-            animationOffset = -5
+            withAnimation(DesignSystem.Animation.playfulBounce) {
+                bubbleScale = 1
+            }
+            
+            for index in 0..<3 {
+                withAnimation(
+                    Animation.easeInOut(duration: 0.6)
+                        .repeatForever(autoreverses: true)
+                        .delay(Double(index) * 0.15)
+                ) {
+                    animationOffsets[index] = -6
+                }
+            }
         }
     }
 }
@@ -574,6 +693,7 @@ struct ChatInputView: View {
                         )
                 }
                 .buttonStyle(PlainButtonStyle())
+                .tooltip("Voice input", edge: .top)
             }
             .padding(.horizontal, 4)
             .padding(.vertical, 4)
@@ -700,6 +820,60 @@ struct ResizableTextEditor: NSViewRepresentable {
             guard let textView = notification.object as? NSTextView else { return }
             parent.text = textView.string
             parent.updateHeight(textView)
+        }
+    }
+}
+
+// MARK: - Suggestion Chip
+
+struct SuggestionChip: View {
+    let text: String
+    let icon: String
+    @State private var isHovering = false
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.36, green: 0.61, blue: 0.84),
+                            Color(red: 0.48, green: 0.70, blue: 0.90)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            
+            Text(text)
+                .font(.system(size: 14))
+                .foregroundStyle(.primary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.primary.opacity(isHovering ? 0.08 : 0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 0.36, green: 0.61, blue: 0.84).opacity(isHovering ? 0.3 : 0.1),
+                                    Color(red: 0.48, green: 0.70, blue: 0.90).opacity(isHovering ? 0.3 : 0.1)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+        )
+        .scaleEffect(isHovering ? 1.02 : 1.0)
+        .animation(.spring(response: 0.2), value: isHovering)
+        .onHover { hovering in
+            isHovering = hovering
         }
     }
 }

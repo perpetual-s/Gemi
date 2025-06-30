@@ -14,6 +14,7 @@ struct MainWindowView: View {
     // MARK: - Dependencies
     
     @Environment(JournalStore.self) private var journalStore
+    @Environment(OnboardingState.self) private var onboardingState
     
     // MARK: - State
     
@@ -21,6 +22,7 @@ struct MainWindowView: View {
     @State private var showingNewEntry = false
     @State private var showingChat = false
     @State private var sidebarSelection: SidebarItem = .timeline
+    @State private var hasShownOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
     
     // MARK: - Body
     
@@ -52,6 +54,17 @@ struct MainWindowView: View {
             Task {
                 await journalStore.refreshEntries()
             }
+            
+            // Show onboarding if first launch
+            if !hasShownOnboarding {
+                onboardingState.shouldShowOnboarding = true
+            } else {
+                // Show coach marks for returning users
+                showCoachMarksIfNeeded()
+            }
+        }
+        .sheet(isPresented: $onboardingState.shouldShowOnboarding) {
+            OnboardingView()
         }
     }
     
@@ -109,6 +122,11 @@ struct MainWindowView: View {
                     showingNewEntry = true
                 }
                 .keyboardShortcut("n", modifiers: .command)
+                .coachMark(
+                    .composeButton,
+                    title: "Start Your First Entry",
+                    message: "Click here to write your first journal entry. Gemi will help you reflect on your thoughts."
+                )
                 
                 EncouragingActionButton(
                     icon: "message.circle",
@@ -991,6 +1009,13 @@ enum SidebarItem: String, CaseIterable {
         case .memories: return "Manage what Gemi remembers about your life"
         case .insights: return "Analyze your journaling patterns and growth"
         }
+    }
+    
+    // MARK: - Methods
+    
+    private func showCoachMarksIfNeeded() {
+        // Coach marks are handled by the OnboardingState
+        // They will show automatically based on user progress
     }
 }
 

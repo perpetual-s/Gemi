@@ -334,18 +334,18 @@ struct HapticFeedback {
     }
     
     static func selection() {
-        impact(.selection)
+        impact(.generic)
     }
     
     static func success() {
-        impact(.confirmation)
+        impact(.levelChange)
     }
     
     static func warning() {
-        impact(.warning)
+        impact(.alignment)
     }
     
     static func error() {
-        impact(.critical)
+        impact(.generic)
     }
 }

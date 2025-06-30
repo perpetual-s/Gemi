@@ -534,6 +534,7 @@ struct NavigationButton: View {
     
     @State private var isHovered = false
     @State private var isPressed = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
         Button(action: action) {
@@ -593,6 +594,7 @@ struct QuickActionButton: View {
     
     @State private var isHovered = false
     @State private var isPulsing = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
         Button(action: action) {

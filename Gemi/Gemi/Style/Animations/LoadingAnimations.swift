@@ -169,7 +169,7 @@ struct WritingIndicator: View {
                 .opacity(opacity)
             
             Text("Writing...")
-                .font(DesignSystem.Fonts.small)
+                .font(DesignSystem.Typography.footnote)
                 .foregroundColor(DesignSystem.Colors.textSecondary)
                 .opacity(opacity)
         }
