@@ -132,15 +132,23 @@ struct LoginView: View {
                         .animation(.easeOut(duration: 0.8).delay(0.7), value: animateContent)
                 }
                 
-                // Motivational elements
-                VStack(spacing: 14) {
-                    motivationalPoint(text: "Your thoughts are waiting")
-                    motivationalPoint(text: "AI companion ready to listen")
-                    motivationalPoint(text: "Complete privacy guaranteed")
+                // Description
+                VStack(spacing: 10) {
+                    Text("Your private AI diary companion")
+                        .font(.system(size: 16, weight: .medium, design: .default))
+                        .foregroundStyle(DesignSystem.Colors.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .opacity(animateContent ? 1 : 0)
+                        .animation(.easeOut(duration: 0.8).delay(0.9), value: animateContent)
+                    
+                    Text("Powered by local Gemma 3n • Zero cloud dependency")
+                        .font(.system(size: 14, weight: .regular, design: .default))
+                        .foregroundStyle(DesignSystem.Colors.textTertiary)
+                        .multilineTextAlignment(.center)
+                        .opacity(animateContent ? 1 : 0)
+                        .animation(.easeOut(duration: 0.8).delay(1.1), value: animateContent)
                 }
-                .opacity(animateContent ? 1 : 0)
-                .offset(y: animateContent ? 0 : 20)
-                .animation(.easeOut(duration: 0.8).delay(0.9), value: animateContent)
+                .frame(maxWidth: 260)
             }
             
             Spacer()
@@ -439,27 +447,51 @@ struct LoginView: View {
                 Spacer()
             }
             
-            // Show alternative method if biometric fails
-            if error == .biometricLockout || error == .biometricNotAvailable {
-                Button(action: {
-                    switchToPasswordAuth()
-                }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "key.horizontal")
-                            .font(.system(size: 14, weight: .medium))
-                        
-                        Text("Use Password Instead")
-                            .font(.system(size: 14, weight: .medium, design: .default))
+            // Show alternative methods or reset option
+            VStack(spacing: 8) {
+                if error == .biometricLockout || error == .biometricNotAvailable {
+                    Button(action: {
+                        switchToPasswordAuth()
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "key.horizontal")
+                                .font(.system(size: 14, weight: .medium))
+                            
+                            Text("Use Password Instead")
+                                .font(.system(size: 14, weight: .medium, design: .default))
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(DesignSystem.Colors.primary.opacity(0.1))
+                        )
+                        .foregroundStyle(DesignSystem.Colors.primary)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(DesignSystem.Colors.primary.opacity(0.1))
-                    )
-                    .foregroundStyle(DesignSystem.Colors.primary)
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
+                
+                if error == .keychainError {
+                    Button(action: {
+                        resetAuthentication()
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 14, weight: .medium))
+                            
+                            Text("Reset Authentication")
+                                .font(.system(size: 14, weight: .medium, design: .default))
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(DesignSystem.Colors.warning.opacity(0.1))
+                        )
+                        .foregroundStyle(DesignSystem.Colors.warning)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
         }
         .padding(20)
@@ -470,19 +502,6 @@ struct LoginView: View {
         )
     }
     
-    private func motivationalPoint(text: String) -> some View {
-        HStack(spacing: 10) {
-            Circle()
-                .fill(DesignSystem.Colors.primary.opacity(0.6))
-                .frame(width: 6, height: 6)
-            
-            Text(text)
-                .font(.system(size: 15, weight: .regular, design: .default))
-                .foregroundStyle(DesignSystem.Colors.textSecondary)
-            
-            Spacer()
-        }
-    }
     
     // MARK: - Actions
     
@@ -528,6 +547,12 @@ struct LoginView: View {
                 authManager.authenticationError = .passwordRequired
             }
         }
+    }
+    
+    private func resetAuthentication() {
+        // Reset authentication setup and clear errors
+        authManager.resetAuthenticationSetup()
+        // This will cause the view to switch back to WelcomeView due to isFirstTimeSetup becoming true
     }
 }
 

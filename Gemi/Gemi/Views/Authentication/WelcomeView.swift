@@ -100,15 +100,25 @@ struct WelcomeView: View {
                         .animation(.easeOut(duration: 1.0).delay(1.2), value: animateContent)
                 }
                 
-                // Privacy highlights
-                VStack(spacing: 16) {
-                    privacyHighlight(icon: "lock.shield.fill", text: "100% Private & Local")
-                    privacyHighlight(icon: "cpu.fill", text: "Powered by Gemma 3n AI")
-                    privacyHighlight(icon: "heart.fill", text: "Your Thoughts, Your Device")
+                // Description
+                VStack(spacing: 12) {
+                    Text("Gemi is an offline-first, multilingual \"magic diary\" for macOS that runs a local Gemma 3n model via Ollama.")
+                        .font(.system(size: 16, weight: .regular, design: .default))
+                        .foregroundStyle(DesignSystem.Colors.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(nil)
+                        .opacity(animateContent ? 1 : 0)
+                        .animation(.easeOut(duration: 0.8).delay(1.4), value: animateContent)
+                    
+                    Text("Journal, chat, and store memories entirely on-device with encrypted storage, total privacy, and zero cloud dependency.")
+                        .font(.system(size: 15, weight: .regular, design: .default))
+                        .foregroundStyle(DesignSystem.Colors.textTertiary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(nil)
+                        .opacity(animateContent ? 1 : 0)
+                        .animation(.easeOut(duration: 0.8).delay(1.6), value: animateContent)
                 }
-                .opacity(animateContent ? 1 : 0)
-                .offset(y: animateContent ? 0 : 30)
-                .animation(.easeOut(duration: 1.0).delay(1.4), value: animateContent)
+                .frame(maxWidth: 280)
             }
             
             Spacer()
@@ -331,20 +341,6 @@ struct WelcomeView: View {
     
     // MARK: - Helper Views
     
-    private func privacyHighlight(icon: String, text: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(DesignSystem.Colors.success)
-                .frame(width: 20)
-            
-            Text(text)
-                .font(.system(size: 16, weight: .medium, design: .default))
-                .foregroundStyle(DesignSystem.Colors.textSecondary)
-            
-            Spacer()
-        }
-    }
     
     private func modernPrivacyFeature(icon: String, title: String, description: String) -> some View {
         HStack(alignment: .top, spacing: 16) {

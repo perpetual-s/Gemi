@@ -49,7 +49,7 @@ enum AuthenticationError: LocalizedError {
         case .passwordIncorrect:
             return "The password you entered is incorrect"
         case .keychainError:
-            return "Unable to access secure storage. Please try again"
+            return "Unable to access secure storage. Your authentication setup may need to be reset."
         case .userCancelled:
             return "Authentication was cancelled"
         case .unknownError:
@@ -118,6 +118,12 @@ final class AuthenticationManager {
     init() {
         // Check if we have a valid session from previous app launch
         checkExistingSession()
+        
+        // Debug: Print current state
+        print("AuthenticationManager initialized:")
+        print("- isFirstTimeSetup: \(isFirstTimeSetup)")
+        print("- preferredAuthenticationMethod: \(preferredAuthenticationMethod)")
+        print("- biometric availability: \(checkBiometricAvailability())")
     }
     
     // MARK: - Public Authentication Methods
@@ -235,21 +241,32 @@ final class AuthenticationManager {
             isAuthenticating = false
         }
         
-        // Verify password against stored hash
-        guard let storedHash = try? keychain.retrieveData(for: KeychainKeys.passwordHash) else {
+        // Check if we have completed setup and have a password hash stored
+        guard !isFirstTimeSetup else {
+            print("Authentication error: Setup not completed")
             authenticationError = .keychainError
             return false
         }
         
-        let inputHash = hashPassword(password)
-        
-        guard inputHash == storedHash else {
-            authenticationError = .passwordIncorrect
+        // Verify password against stored hash
+        do {
+            let storedHash = try keychain.retrieveData(for: KeychainKeys.passwordHash)
+            let inputHash = hashPassword(password)
+            
+            guard inputHash == storedHash else {
+                print("Authentication error: Password mismatch")
+                authenticationError = .passwordIncorrect
+                return false
+            }
+            
+            completeAuthentication()
+            return true
+            
+        } catch {
+            print("Authentication error: Keychain retrieval failed - \(error)")
+            authenticationError = .keychainError
             return false
         }
-        
-        completeAuthentication()
-        return true
     }
     
     /// Set up authentication for the first time
@@ -271,7 +288,9 @@ final class AuthenticationManager {
             
             do {
                 try keychain.storeData(passwordHash, for: KeychainKeys.passwordHash)
+                print("Successfully stored password hash during setup")
             } catch {
+                print("Failed to store password hash during setup: \(error)")
                 authenticationError = .keychainError
                 return false
             }
@@ -291,6 +310,23 @@ final class AuthenticationManager {
         isAuthenticated = false
         sessionStartTime = nil
         authenticationError = nil
+    }
+    
+    /// Reset authentication setup (for troubleshooting)
+    func resetAuthenticationSetup() {
+        UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.hasCompletedSetup)
+        UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.preferredAuthMethod)
+        UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.lastAuthenticationTime)
+        
+        // Try to delete stored password hash
+        try? keychain.deleteData(for: KeychainKeys.passwordHash)
+        
+        // Reset state
+        isAuthenticated = false
+        sessionStartTime = nil
+        authenticationError = nil
+        
+        print("Authentication setup has been reset")
     }
     
     /// Check if the current session is still valid
@@ -343,13 +379,19 @@ private class KeychainManager {
         ]
         
         // Delete any existing item first
-        SecItemDelete(query as CFDictionary)
+        let deleteStatus = SecItemDelete(query as CFDictionary)
+        if deleteStatus != errSecSuccess && deleteStatus != errSecItemNotFound {
+            print("Keychain delete warning: \(deleteStatus)")
+        }
         
         let status = SecItemAdd(query as CFDictionary, nil)
         
         guard status == errSecSuccess else {
+            print("Keychain store error: \(status)")
             throw AuthenticationError.keychainError
         }
+        
+        print("Successfully stored data in keychain for key: \(key)")
     }
     
     func retrieveData(for key: String) throws -> Data {
@@ -363,10 +405,21 @@ private class KeychainManager {
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
         
-        guard status == errSecSuccess, let data = result as? Data else {
+        guard status == errSecSuccess else {
+            if status == errSecItemNotFound {
+                print("Keychain error: Item not found for key: \(key)")
+            } else {
+                print("Keychain retrieve error: \(status) for key: \(key)")
+            }
             throw AuthenticationError.keychainError
         }
         
+        guard let data = result as? Data else {
+            print("Keychain error: Retrieved data is not valid for key: \(key)")
+            throw AuthenticationError.keychainError
+        }
+        
+        print("Successfully retrieved data from keychain for key: \(key)")
         return data
     }
     
