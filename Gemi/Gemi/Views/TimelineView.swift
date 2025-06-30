@@ -11,6 +11,10 @@ import SwiftUI
 /// - Privacy-focused design with local-only data display
 struct TimelineView: View {
     
+    // MARK: - Accessibility
+    
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    
     // MARK: - Dependencies
     
     /// The journal store containing all entries (injected via @Environment)
@@ -110,7 +114,10 @@ struct TimelineView: View {
             Button("Delete", role: .destructive) {
                 if let entry = entryToDelete {
                     Task {
-                        try? await journalStore.deleteEntry(entry)
+                        withAnimation(DesignSystem.Animation.standard) {
+                            try? await journalStore.deleteEntry(entry)
+                        }
+                        // Haptic feedback on success
                     }
                 }
             }
@@ -129,15 +136,22 @@ struct TimelineView: View {
                 ForEach(groupedEntries.keys.sorted(by: >), id: \.self) { date in
                     Section {
                         VStack(spacing: 16) {
-                            ForEach(groupedEntries[date]!) { entry in
+                            ForEach(Array(groupedEntries[date]!.enumerated()), id: \.element.id) { index, entry in
                                 TimelineCardView(
                                     entry: entry,
                                     isSelected: selectedEntry?.id == entry.id
                                 ) {
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    withAnimation(DesignSystem.Animation.encouragingSpring) {
                                         selectedEntry = entry
                                     }
+                                    // Haptic feedback on selection
                                 }
+                                .id(entry.id)
+                                .transition(reduceMotion ? .opacity : .asymmetric(
+                                    insertion: .opacity.combined(with: .scale(scale: 0.9)).combined(with: .offset(y: 20)),
+                                    removal: .opacity.combined(with: .scale(scale: 0.8)).combined(with: .offset(x: 200))
+                                ))
+                                .scaleIn(delay: reduceMotion ? 0 : Double(index) * 0.05, from: reduceMotion ? 1 : 0.85)
                                 .contextMenu {
                                     Button {
                                         // TODO: Edit functionality
@@ -150,6 +164,7 @@ struct TimelineView: View {
                                     Button(role: .destructive) {
                                         entryToDelete = entry
                                         showingDeleteAlert = true
+                                        // Haptic feedback for delete warning
                                     } label: {
                                         Label("Delete Entry", systemImage: "trash")
                                     }
@@ -205,14 +220,29 @@ struct TimelineView: View {
     
     @ViewBuilder
     private var loadingView: some View {
-        VStack(spacing: DesignSystem.Spacing.base) {
-            ProgressView()
-                .scaleEffect(1.2)
-                .tint(DesignSystem.Colors.primary)
-            
-            Text("Loading your journal entries...")
-                .font(DesignSystem.Typography.headline)
-                .foregroundStyle(DesignSystem.Colors.textSecondary)
+        ScrollView {
+            VStack(spacing: 24) {
+                // Title skeleton
+                HStack {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: 120, height: 24)
+                        .overlay(shimmeringOverlay)
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+                
+                // Card skeletons
+                VStack(spacing: 16) {
+                    ForEach(0..<3, id: \.self) { index in
+                        LoadingCardPlaceholder()
+                            .transition(.opacity)
+                            .animation(.easeOut(duration: 0.3).delay(Double(index) * 0.1), value: journalStore.isLoading)
+                    }
+                }
+                .padding(.horizontal, 24)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(DesignSystem.Colors.backgroundPrimary)
@@ -260,126 +290,30 @@ struct TimelineView: View {
     
     @ViewBuilder
     private var inspiringJournalIllustration: some View {
-        ZStack {
-            // Soft warm glow background
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            DesignSystem.Colors.primary.opacity(0.15),
-                            DesignSystem.Colors.primary.opacity(0.05),
-                            Color.clear
-                        ],
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: 120
-                    )
-                )
-                .frame(width: 240, height: 240)
-                .scaleEffect(breathingAnimation ? 1.1 : 1.0)
-                .animation(DesignSystem.Animation.breathing, value: breathingAnimation)
-            
-            // Beautiful journal pages stack
-            VStack(spacing: -8) {
-                // Page 3 (background)
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(red: 0.99, green: 0.97, blue: 0.94))
-                    .frame(width: 100, height: 120)
-                    .shadow(color: DesignSystem.Colors.shadowLight, radius: 8, x: -2, y: 4)
-                    .rotation3DEffect(.degrees(5), axis: (x: 0, y: 1, z: 0))
-                    .offset(x: -20, y: 10)
-                
-                // Page 2 (middle)
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(red: 0.995, green: 0.98, blue: 0.96))
-                    .frame(width: 110, height: 130)
-                    .shadow(color: DesignSystem.Colors.shadowMedium, radius: 12, x: 0, y: 6)
-                    .rotation3DEffect(.degrees(-2), axis: (x: 0, y: 1, z: 0))
-                    .offset(x: 5, y: 0)
-                
-                // Page 1 (front) - the inviting blank page
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color(red: 1.0, green: 0.99, blue: 0.97),
-                                    Color(red: 0.99, green: 0.98, blue: 0.95)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 120, height: 140)
-                    
-                    // Subtle lined paper effect
-                    VStack(spacing: 8) {
-                        ForEach(0..<6, id: \.self) { _ in
-                            Rectangle()
-                                .fill(DesignSystem.Colors.primary.opacity(0.1))
-                                .frame(height: 1)
-                                .padding(.horizontal, 16)
-                        }
-                    }
-                    .offset(y: 10)
-                    
-                    // Gentle cursor blink to show it's ready
-                    Rectangle()
-                        .fill(DesignSystem.Colors.primary)
-                        .frame(width: 2, height: 20)
-                        .offset(x: -35, y: -30)
-                        .opacity(cursorBlink ? 1.0 : 0.3)
-                        .animation(DesignSystem.Animation.heartbeat, value: cursorBlink)
+        // Use the beautiful reusable journal illustration
+        JournalIllustration(size: 160)
+            .onAppear {
+                withAnimation {
+                    breathingAnimation = true
+                    cursorBlink = true
+                    pencilFloat = true
+                    pageHover = false
                 }
-                .shadow(color: DesignSystem.Colors.shadowHeavy, radius: 16, x: 2, y: 8)
-                .scaleEffect(pageHover ? 1.05 : 1.0)
-                .animation(DesignSystem.Animation.encouragingSpring, value: pageHover)
-                .offset(x: 10, y: -10)
             }
-            .offset(y: -20)
-            
-            // Floating pencil with warm glow
-            Image(systemName: "pencil")
-                .font(.system(size: 28, weight: .light))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.8, green: 0.6, blue: 0.3), // Warm wood
-                            Color(red: 0.9, green: 0.7, blue: 0.4)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .shadow(color: DesignSystem.Colors.shadowMedium, radius: 8, x: 2, y: 4)
-                .rotation3DEffect(.degrees(45), axis: (x: 0, y: 0, z: 1))
-                .offset(x: 80, y: -40)
-                .scaleEffect(pencilFloat ? 1.1 : 1.0)
-                .animation(DesignSystem.Animation.gentleFloat.repeatForever(autoreverses: true), value: pencilFloat)
-        }
-        .onAppear {
-            withAnimation {
-                breathingAnimation = true
-                cursorBlink = true
-                pencilFloat = true
-                pageHover = false
-            }
-        }
     }
     
     @ViewBuilder
     private var inspiringWelcomeContent: some View {
         VStack(spacing: DesignSystem.Spacing.large) {
             // Warm, personal headline
-            VStack(spacing: DesignSystem.Spacing.small) {
-                Text("Your story begins here")
-                    .font(DesignSystem.Typography.display)
-                    .elegantSerifStyle()
+            VStack(spacing: DesignSystem.Spacing.medium) {
+                Text(getInspirationalGreeting())
+                    .font(.system(size: 42, weight: .bold, design: .serif))
                     .foregroundStyle(
                         LinearGradient(
                             colors: [
-                                Color(red: 0.35, green: 0.25, blue: 0.15), // Rich coffee brown
-                                Color(red: 0.5, green: 0.35, blue: 0.2)
+                                Color(red: 0.2, green: 0.2, blue: 0.3),
+                                Color(red: 0.3, green: 0.3, blue: 0.4)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -387,28 +321,28 @@ struct TimelineView: View {
                     )
                     .multilineTextAlignment(.center)
                 
-                Text("Every great journey starts with a single word")
-                    .font(DesignSystem.Typography.title3)
-                    .handwrittenStyle()
-                    .foregroundStyle(DesignSystem.Colors.primary.opacity(0.8))
+                Text(getInspirationalSubtitle())
+                    .font(DesignSystem.Typography.title2)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
                     .multilineTextAlignment(.center)
             }
             
             // Warm, encouraging description
             VStack(spacing: DesignSystem.Spacing.medium) {
-                Text("Welcome to your private sanctuary—a place where thoughts become treasures and moments turn into memories.")
+                Text("Your thoughts deserve a beautiful, private home where they can flourish. Gemi is here to help you capture life's moments, understand your patterns, and grow through reflection.")
                     .font(DesignSystem.Typography.body)
-                    .relaxedReadingStyle()
                     .foregroundStyle(DesignSystem.Colors.textSecondary)
                     .multilineTextAlignment(.center)
-                    .frame(maxWidth: 400)
+                    .lineSpacing(6)
+                    .frame(maxWidth: 500)
                 
-                Text("Like morning coffee with an understanding friend, Gemi is here to listen, remember, and help you explore the beautiful complexity of your inner world.")
-                    .font(DesignSystem.Typography.callout)
-                    .diaryTypography()
-                    .foregroundStyle(DesignSystem.Colors.textTertiary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 450)
+                // Feature pills
+                HStack(spacing: 16) {
+                    FeaturePill(icon: "lock.shield.fill", text: "100% Private")
+                    FeaturePill(icon: "sparkles", text: "AI-Powered")
+                    FeaturePill(icon: "heart.fill", text: "Always Here")
+                }
+                .padding(.top, 8)
             }
         }
     }
@@ -418,10 +352,9 @@ struct TimelineView: View {
         VStack(spacing: DesignSystem.Spacing.large) {
             // Primary inspiration
             VStack(spacing: DesignSystem.Spacing.medium) {
-                Text("What would you like to share today?")
+                Text("How would you like to begin?")
                     .font(DesignSystem.Typography.headline)
-                    .handwrittenStyle()
-                    .foregroundStyle(DesignSystem.Colors.textPrimary)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
                 
                 // Warm, inviting action buttons
                 VStack(spacing: DesignSystem.Spacing.base) {
@@ -435,11 +368,10 @@ struct TimelineView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Write your first entry")
                                     .font(DesignSystem.Typography.headline)
-                                    .handwrittenStyle()
                                 
-                                Text("Pour your thoughts onto paper")
+                                Text("Start with what's on your mind")
                                     .font(DesignSystem.Typography.caption1)
-                                    .opacity(0.8)
+                                    .foregroundStyle(.white.opacity(0.9))
                             }
                             
                             Spacer()
@@ -461,13 +393,12 @@ struct TimelineView: View {
                                 .font(.system(size: 18))
                             
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Chat with Gemi")
+                                Text("Talk with Gemi")
                                     .font(DesignSystem.Typography.headline)
-                                    .handwrittenStyle()
                                 
-                                Text("Start a warm conversation")
+                                Text("Have a meaningful conversation")
                                     .font(DesignSystem.Typography.caption1)
-                                    .opacity(0.8)
+                                    .foregroundStyle(DesignSystem.Colors.textSecondary)
                             }
                             
                             Spacer()
@@ -485,20 +416,9 @@ struct TimelineView: View {
             
             // Gentle inspiration quotes
             VStack(spacing: DesignSystem.Spacing.small) {
-                Text("💭")
-                    .font(.system(size: 24))
-                
-                Text("\"The beautiful thing about writing is that you don't have to get it right the first time, unlike, say, a brain surgeon.\"")
-                    .font(DesignSystem.Typography.caption1)
-                    .diaryTypography()
-                    .italic()
-                    .foregroundStyle(DesignSystem.Colors.textTertiary.opacity(0.8))
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 300)
-                
-                Text("— Robert Cormier")
-                    .font(DesignSystem.Typography.caption2)
-                    .foregroundStyle(DesignSystem.Colors.textTertiary.opacity(0.6))
+                // Rotating daily prompts
+                DailyPromptView()
+                    .padding(.horizontal, 40)
             }
         }
     }
@@ -508,6 +428,34 @@ struct TimelineView: View {
     @State private var cursorBlink = false
     @State private var pencilFloat = false
     @State private var pageHover = false
+    
+    // MARK: - Loading Animation
+    @State private var shimmerPhase: CGFloat = -1
+    
+    private var shimmeringOverlay: some View {
+        GeometryReader { geometry in
+            LinearGradient(
+                colors: [
+                    Color.white.opacity(0),
+                    Color.white.opacity(0.3),
+                    Color.white.opacity(0)
+                ],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+            .frame(width: geometry.size.width)
+            .offset(x: shimmerPhase * geometry.size.width * 2)
+            .mask(Rectangle())
+            .animation(
+                .linear(duration: 1.5)
+                .repeatForever(autoreverses: false),
+                value: shimmerPhase
+            )
+            .onAppear {
+                shimmerPhase = 1
+            }
+        }
+    }
     
     // MARK: - Error Overlay
     
@@ -568,6 +516,165 @@ struct TimelineView: View {
                         showingChat = false
                     }
                 }
+            }
+        }
+    }
+}
+
+// MARK: - Helper Methods
+
+private extension TimelineView {
+    func getInspirationalGreeting() -> String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 5..<12:
+            return "Good morning, writer"
+        case 12..<17:
+            return "Good afternoon, storyteller"
+        case 17..<22:
+            return "Good evening, dreamer"
+        default:
+            return "Hello, night owl"
+        }
+    }
+    
+    func getInspirationalSubtitle() -> String {
+        let subtitles = [
+            "Your story is waiting to be told",
+            "Every word you write matters",
+            "Today's thoughts, tomorrow's wisdom",
+            "Your journal, your sanctuary",
+            "Where memories become treasures"
+        ]
+        return subtitles.randomElement() ?? subtitles[0]
+    }
+}
+
+// MARK: - Supporting Views
+
+struct FeaturePill: View {
+    let icon: String
+    let text: String
+    
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .semibold))
+            Text(text)
+                .font(DesignSystem.Typography.caption1)
+        }
+        .foregroundStyle(DesignSystem.Colors.textSecondary)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(
+            Capsule()
+                .fill(Color.gray.opacity(0.1))
+        )
+    }
+}
+
+struct DailyPromptView: View {
+    @State private var currentPromptIndex = 0
+    
+    let prompts = [
+        "💭 What made you smile today?",
+        "🌟 What are you grateful for right now?",
+        "🎯 What's one thing you accomplished today?",
+        "💡 What inspired you recently?",
+        "🌱 How have you grown this week?",
+        "☕ What moment do you want to remember?",
+        "✨ What's on your mind right now?"
+    ]
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Need inspiration?")
+                .font(DesignSystem.Typography.caption1)
+                .foregroundStyle(DesignSystem.Colors.textTertiary)
+            
+            Text(prompts[currentPromptIndex])
+                .font(DesignSystem.Typography.body)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
+                .multilineTextAlignment(.center)
+                .id(currentPromptIndex)
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .offset(y: 10)),
+                    removal: .opacity.combined(with: .offset(y: -10))
+                ))
+            
+            Button {
+                withAnimation(DesignSystem.Animation.standard) {
+                    currentPromptIndex = (currentPromptIndex + 1) % prompts.count
+                }
+            } label: {
+                Text("Another prompt")
+                    .font(DesignSystem.Typography.caption1)
+                    .foregroundStyle(DesignSystem.Colors.primary)
+                    .underline()
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.gray.opacity(0.05))
+        )
+    }
+}
+
+// MARK: - Loading Card Placeholder
+
+struct LoadingCardPlaceholder: View {
+    @State private var isAnimating = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Date skeleton
+            RoundedRectangle(cornerRadius: 4)
+                .fill(Color.gray.opacity(0.15))
+                .frame(width: 120, height: 14)
+            
+            // Title skeleton
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color.gray.opacity(0.15))
+                .frame(height: 20)
+            
+            // Content skeleton
+            VStack(alignment: .leading, spacing: 8) {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.gray.opacity(0.1))
+                    .frame(height: 16)
+                
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.gray.opacity(0.1))
+                    .frame(width: 200, height: 16)
+            }
+            
+            // Tags skeleton
+            HStack(spacing: 8) {
+                ForEach(0..<3, id: \.self) { _ in
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.gray.opacity(0.1))
+                        .frame(width: 60, height: 24)
+                }
+            }
+        }
+        .padding(20)
+        .background(DesignSystem.Colors.backgroundPrimary)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(
+            color: DesignSystem.Colors.shadowLight,
+            radius: 8,
+            y: 4
+        )
+        .scaleEffect(isAnimating ? 1 : 0.98)
+        .opacity(isAnimating ? 1 : 0.8)
+        .onAppear {
+            withAnimation(
+                DesignSystem.Animation.breathing
+                    .repeatForever(autoreverses: true)
+            ) {
+                isAnimating = true
             }
         }
     }

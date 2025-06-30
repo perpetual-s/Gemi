@@ -10,6 +10,10 @@ import SwiftUI
 /// ContentView presents Gemi's stunning floating interface with a modern macOS design
 struct ContentView: View {
     
+    // MARK: - Accessibility
+    
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    
     // MARK: - Dependencies
     
     @Environment(JournalStore.self) private var journalStore
@@ -28,10 +32,12 @@ struct ContentView: View {
             // Translucent sidebar with vibrancy
             translucntSidebar
                 .frame(width: DesignSystem.Spacing.sidebarWidth)
+                .slideIn(from: .leading, delay: 0)
             
             // Main content area with floating panel
             mainContentArea
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .fadeIn(delay: 0.1)
         }
         .frame(minWidth: 1200, minHeight: 800)
         .background(canvasBackground)
@@ -43,6 +49,7 @@ struct ContentView: View {
             if !showingChat {
                 ChatFloatingActionButton {
                     showingChat = true
+                    // Haptic feedback on button press
                 }
                 .padding(32)
                 .transition(.asymmetric(
@@ -170,7 +177,13 @@ struct ContentView: View {
                     color: Color(red: 0.36, green: 0.61, blue: 0.84)
                 ) {
                     showingNewEntry = true
+                    // Haptic feedback on button press
                 }
+                .coachMark(
+                    .firstEntry,
+                    title: "Start Writing",
+                    message: "Click here to create your first journal entry. Everything you write is encrypted and stays on your device."
+                )
                 
                 QuickActionButton(
                     icon: "message.fill",
@@ -178,7 +191,13 @@ struct ContentView: View {
                     color: Color(red: 0.48, green: 0.70, blue: 0.90)
                 ) {
                     showingChat = true
+                    // Haptic feedback on button press
                 }
+                .coachMark(
+                    .aiChat,
+                    title: "Talk with Gemi",
+                    message: "Have a conversation with your AI companion. Gemi remembers your past entries and helps you reflect."
+                )
             }
         }
     }
@@ -189,9 +208,10 @@ struct ContentView: View {
             item: item,
             isSelected: sidebarSelection == item
         ) {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            withAnimation(DesignSystem.Animation.encouragingSpring) {
                 sidebarSelection = item
             }
+            HapticFeedback.selection()
         }
     }
     
@@ -288,16 +308,19 @@ struct ContentView: View {
                         endPoint: .bottomTrailing
                     )
                 )
+                .animation(.easeInOut(duration: 0.2), value: sidebarSelection)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(sidebarSelection.title)
                     .font(.system(size: 28, weight: .semibold, design: .serif))
                     .foregroundStyle(.primary)
+                    .animation(.easeInOut(duration: 0.2), value: sidebarSelection)
                 
                 if let subtitle = sidebarSelection.subtitle {
                     Text(subtitle)
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(.secondary)
+                        .animation(.easeInOut(duration: 0.2), value: sidebarSelection)
                 }
             }
             
@@ -329,17 +352,36 @@ struct ContentView: View {
     
     @ViewBuilder
     private var panelContent: some View {
-        switch sidebarSelection {
-        case .timeline:
-            TimelineView(selectedEntry: $selectedEntry)
-                .padding(32)
-        case .chat:
-            emptyChatView
-        case .memories:
-            memoriesView
-        case .insights:
-            insightsView
+        ZStack {
+            switch sidebarSelection {
+            case .timeline:
+                TimelineView(selectedEntry: $selectedEntry)
+                    .padding(32)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .offset(x: 30)),
+                        removal: .opacity.combined(with: .offset(x: -30))
+                    ))
+            case .chat:
+                emptyChatView
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .offset(x: 30)),
+                        removal: .opacity.combined(with: .offset(x: -30))
+                    ))
+            case .memories:
+                memoriesView
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .offset(x: 30)),
+                        removal: .opacity.combined(with: .offset(x: -30))
+                    ))
+            case .insights:
+                insightsView
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .offset(x: 30)),
+                        removal: .opacity.combined(with: .offset(x: -30))
+                    ))
+            }
         }
+        .animation(reduceMotion ? .linear(duration: 0.1) : DesignSystem.Animation.standard, value: sidebarSelection)
     }
     
     // MARK: - Content Views
@@ -491,6 +533,7 @@ struct NavigationButton: View {
     let action: () -> Void
     
     @State private var isHovered = false
+    @State private var isPressed = false
     
     var body: some View {
         Button(action: action) {
@@ -530,13 +573,15 @@ struct NavigationButton: View {
                         )
                     )
             )
-            .scaleEffect(isHovered ? 1.02 : 1.0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovered)
+            .scaleEffect(isPressed ? 0.98 : (isHovered ? 1.02 : 1.0))
+            .animation(reduceMotion ? .linear(duration: 0.1) : DesignSystem.Animation.quick, value: isPressed)
+            .animation(reduceMotion ? .linear(duration: 0.1) : DesignSystem.Animation.encouragingSpring, value: isHovered)
         }
         .buttonStyle(PlainButtonStyle())
         .onHover { hovering in
             isHovered = hovering
         }
+        .pressable(scale: 0.98)
     }
 }
 
@@ -547,6 +592,7 @@ struct QuickActionButton: View {
     let action: () -> Void
     
     @State private var isHovered = false
+    @State private var isPulsing = false
     
     var body: some View {
         Button(action: action) {
@@ -584,11 +630,28 @@ struct QuickActionButton: View {
                 x: 0,
                 y: 4
             )
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovered)
+            .animation(reduceMotion ? .linear(duration: 0.1) : DesignSystem.Animation.playfulBounce, value: isHovered)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(color.opacity(isPulsing ? 0 : 0.3), lineWidth: 1.5)
+                    .scaleEffect(isPulsing ? 1.1 : 1)
+                    .opacity(isPulsing ? 0 : 1)
+                    .animation(
+                        isPulsing ? DesignSystem.Animation.standard : nil,
+                        value: isPulsing
+                    )
+            )
         }
         .buttonStyle(PlainButtonStyle())
+        .pressable(scale: 0.95)
         .onHover { hovering in
             isHovered = hovering
+            if hovering {
+                isPulsing = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    isPulsing = false
+                }
+            }
         }
     }
 }
