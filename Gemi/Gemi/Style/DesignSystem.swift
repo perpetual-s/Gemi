@@ -11,49 +11,62 @@ import SwiftUI
 /// This follows the specifications outlined in the PRD for calm, focused, and elegantly functional design.
 enum DesignSystem {
     
-    // MARK: - Typography Scale
+    // MARK: - Personal Diary Typography - Warm & Handwritten Feel
     
     enum Typography {
-        /// Large display text for major headings (40pt)
-        static let display = Font.custom("SF Pro Display", size: 40, relativeTo: .largeTitle)
-            .weight(.bold)
+        /// Large display text for app title and major moments (40pt) - Elegant script feeling
+        static let display = Font.system(size: 40, weight: .light, design: .serif)
+            .leading(.tight)
         
-        /// Primary headings (28pt)
-        static let title1 = Font.custom("SF Pro Display", size: 28, relativeTo: .title)
-            .weight(.bold)
+        /// Primary headings for entry titles (28pt) - Personal handwriting style
+        static let title1 = Font.system(size: 28, weight: .medium, design: .serif)
         
-        /// Secondary headings (22pt)
-        static let title2 = Font.custom("SF Pro Display", size: 22, relativeTo: .title2)
-            .weight(.semibold)
+        /// Secondary headings for sections (22pt) - Relaxed journal headers
+        static let title2 = Font.system(size: 22, weight: .regular, design: .serif)
         
-        /// Section headings (20pt)
-        static let title3 = Font.custom("SF Pro Text", size: 20, relativeTo: .title3)
-            .weight(.semibold)
+        /// Section headings for organization (20pt) - Gentle emphasis
+        static let title3 = Font.system(size: 20, weight: .medium, design: .default)
         
-        /// Emphasized body text (17pt)
-        static let headline = Font.custom("SF Pro Text", size: 17, relativeTo: .headline)
-            .weight(.semibold)
+        /// Emphasized body text for highlights (17pt) - Friendly weight
+        static let headline = Font.system(size: 17, weight: .medium, design: .default)
         
-        /// Primary body text (17pt)
-        static let body = Font.custom("SF Pro Text", size: 17, relativeTo: .body)
+        /// Primary body text for diary entries (17pt) - Comfortable reading
+        static let body = Font.system(size: 17, weight: .regular, design: .default)
         
-        /// Secondary body text (15pt)
-        static let callout = Font.custom("SF Pro Text", size: 15, relativeTo: .callout)
+        /// Secondary body text for descriptions (15pt) - Softer presence
+        static let callout = Font.system(size: 15, weight: .regular, design: .default)
         
-        /// Tertiary text (13pt)
-        static let subheadline = Font.custom("SF Pro Text", size: 13, relativeTo: .subheadline)
+        /// Tertiary text for metadata (13pt) - Gentle information
+        static let subheadline = Font.system(size: 13, weight: .regular, design: .default)
         
-        /// Small text (12pt)
-        static let footnote = Font.custom("SF Pro Text", size: 12, relativeTo: .footnote)
+        /// Small text for timestamps (12pt) - Unobtrusive details
+        static let footnote = Font.system(size: 12, weight: .light, design: .default)
         
-        /// Captions and labels (11pt)
-        static let caption1 = Font.custom("SF Pro Text", size: 11, relativeTo: .caption)
+        /// Captions and subtle labels (11pt) - Whisper-soft
+        static let caption1 = Font.system(size: 11, weight: .light, design: .default)
         
-        /// Smallest text (10pt)
-        static let caption2 = Font.custom("SF Pro Text", size: 10, relativeTo: .caption2)
+        /// Smallest text for fine details (10pt) - Barely-there guidance
+        static let caption2 = Font.system(size: 10, weight: .ultraLight, design: .default)
         
-        /// Monospaced for technical elements
-        static let mono = Font.custom("SF Mono", size: 13, relativeTo: .body)
+        /// Monospaced for technical elements - warmer mono
+        static let mono = Font.system(size: 13, weight: .regular, design: .monospaced)
+        
+        // MARK: - Specialized Diary Typography
+        
+        /// For the main diary editor - feels like personal handwriting
+        static let diaryBody = Font.system(size: 18, weight: .regular, design: .default)
+        
+        /// For diary entry dates - elegant and personal
+        static let diaryDate = Font.system(size: 14, weight: .light, design: .serif)
+        
+        /// For entry previews in timeline - inviting glimpse
+        static let diaryPreview = Font.system(size: 15, weight: .light, design: .default)
+        
+        /// For AI chat responses - friendly conversation
+        static let chatResponse = Font.system(size: 16, weight: .regular, design: .default)
+        
+        /// For prompts and inspiration - gentle guidance
+        static let prompt = Font.system(size: 16, weight: .light, design: .serif)
     }
     
     /// Alias for Typography to maintain compatibility
@@ -62,13 +75,37 @@ enum DesignSystem {
     // MARK: - Sophisticated Color Palette
     
     enum Colors {
-        // MARK: Brand Colors
+        // MARK: Brand Colors - Cozy Coffee Shop Aesthetic
         
-        /// Primary brand color - sophisticated blue
-        static let primary = Color.accentColor
+        /// Primary brand color - warm pastel blue inspired by Google DeepMind
+        static let primary: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "PrimaryWarmBlue") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.68, green: 0.81, blue: 0.94, alpha: 1.0) // Warm light blue for dark mode
+                } else {
+                    return NSColor(red: 0.49, green: 0.73, blue: 0.89, alpha: 1.0) // Warm pastel blue for light mode
+                }
+            })
+            #else
+            return Color(red: 0.49, green: 0.73, blue: 0.89)
+            #endif
+        }()
         
-        /// Secondary brand accent
-        static let secondary = Color.blue.opacity(0.8)
+        /// Secondary brand accent - warmer companion to primary
+        static let secondary: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "SecondaryWarmBlue") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.58, green: 0.71, blue: 0.84, alpha: 1.0) // Muted warm blue for dark mode
+                } else {
+                    return NSColor(red: 0.59, green: 0.78, blue: 0.91, alpha: 0.8) // Lighter warm blue for light mode
+                }
+            })
+            #else
+            return Color(red: 0.59, green: 0.78, blue: 0.91)
+            #endif
+        }()
         
         /// Brand color alias
         static let brand = primary
@@ -76,139 +113,372 @@ enum DesignSystem {
         /// Background color alias
         static let background = backgroundPrimary
         
-        /// Success states - calming green
-        static let success = Color.green
+        /// Success states - warm sage green
+        static let success: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "SuccessWarmGreen") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.67, green: 0.82, blue: 0.73, alpha: 1.0) // Warm sage for dark mode
+                } else {
+                    return NSColor(red: 0.52, green: 0.74, blue: 0.58, alpha: 1.0) // Warm sage for light mode
+                }
+            })
+            #else
+            return Color(red: 0.52, green: 0.74, blue: 0.58)
+            #endif
+        }()
         
-        /// Warning states - warm orange
-        static let warning = Color.orange
+        /// Warning states - warm amber
+        static let warning: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "WarningWarmAmber") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.94, green: 0.82, blue: 0.61, alpha: 1.0) // Warm amber for dark mode
+                } else {
+                    return NSColor(red: 0.89, green: 0.71, blue: 0.42, alpha: 1.0) // Warm amber for light mode
+                }
+            })
+            #else
+            return Color(red: 0.89, green: 0.71, blue: 0.42)
+            #endif
+        }()
         
-        /// Error states - gentle red
-        static let error = Color.red
+        /// Error states - warm terracotta
+        static let error: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "ErrorWarmTerracotta") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.89, green: 0.65, blue: 0.61, alpha: 1.0) // Warm terracotta for dark mode
+                } else {
+                    return NSColor(red: 0.82, green: 0.52, blue: 0.47, alpha: 1.0) // Warm terracotta for light mode
+                }
+            })
+            #else
+            return Color(red: 0.82, green: 0.52, blue: 0.47)
+            #endif
+        }()
         
-        // MARK: Text Colors
+        // MARK: Text Colors - Warm and Inviting
         
-        /// Primary text - high contrast
-        static let textPrimary = Color.primary
+        /// Primary text - warm charcoal with brown undertones
+        static let textPrimary: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "TextPrimaryWarm") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.92, green: 0.89, blue: 0.85, alpha: 1.0) // Warm cream for dark mode
+                } else {
+                    return NSColor(red: 0.25, green: 0.22, blue: 0.20, alpha: 1.0) // Warm charcoal for light mode
+                }
+            })
+            #else
+            return Color(red: 0.25, green: 0.22, blue: 0.20)
+            #endif
+        }()
         
-        /// Secondary text - medium contrast
-        static let textSecondary = Color.secondary
+        /// Secondary text - warm taupe
+        static let textSecondary: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "TextSecondaryWarm") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.78, green: 0.74, blue: 0.68, alpha: 1.0) // Warm beige for dark mode
+                } else {
+                    return NSColor(red: 0.45, green: 0.42, blue: 0.38, alpha: 1.0) // Warm taupe for light mode
+                }
+            })
+            #else
+            return Color(red: 0.45, green: 0.42, blue: 0.38)
+            #endif
+        }()
         
-        /// Tertiary text - low contrast
-        static let textTertiary = Color(NSColor.tertiaryLabelColor)
+        /// Tertiary text - soft warm gray
+        static let textTertiary: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "TextTertiaryWarm") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.64, green: 0.61, blue: 0.56, alpha: 1.0) // Muted warm gray for dark mode
+                } else {
+                    return NSColor(red: 0.62, green: 0.58, blue: 0.54, alpha: 1.0) // Soft warm gray for light mode
+                }
+            })
+            #else
+            return Color(red: 0.62, green: 0.58, blue: 0.54)
+            #endif
+        }()
         
-        /// Placeholder text
-        static let textPlaceholder = Color(NSColor.placeholderTextColor)
+        /// Placeholder text - gentle warm gray
+        static let textPlaceholder: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "TextPlaceholderWarm") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.52, green: 0.49, blue: 0.44, alpha: 1.0) // Muted warm brown for dark mode
+                } else {
+                    return NSColor(red: 0.72, green: 0.68, blue: 0.64, alpha: 1.0) // Gentle warm gray for light mode
+                }
+            })
+            #else
+            return Color(red: 0.72, green: 0.68, blue: 0.64)
+            #endif
+        }()
         
-        // MARK: Background Colors
+        // MARK: Background Colors - Warm Paper & Cozy Evening
         
-        /// Primary background
-        static let backgroundPrimary = Color(NSColor.windowBackgroundColor)
+        /// Primary background - warm paper in light, cozy evening in dark
+        static let backgroundPrimary: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "BackgroundPrimaryWarm") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.16, green: 0.15, blue: 0.14, alpha: 1.0) // Deep warm charcoal for dark mode
+                } else {
+                    return NSColor(red: 0.98, green: 0.96, blue: 0.93, alpha: 1.0) // Warm cream paper for light mode
+                }
+            })
+            #else
+            return Color(red: 0.98, green: 0.96, blue: 0.93)
+            #endif
+        }()
         
-        /// Secondary background - cards and panels
-        static let backgroundSecondary = Color(NSColor.controlBackgroundColor)
+        /// Secondary background - warm cards and panels
+        static let backgroundSecondary: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "BackgroundSecondaryWarm") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.20, green: 0.19, blue: 0.18, alpha: 1.0) // Warmer elevated surface for dark mode
+                } else {
+                    return NSColor(red: 0.99, green: 0.98, blue: 0.96, alpha: 1.0) // Slightly elevated warm white for light mode
+                }
+            })
+            #else
+            return Color(red: 0.99, green: 0.98, blue: 0.96)
+            #endif
+        }()
         
-        /// Tertiary background - subtle elevation
-        static let backgroundTertiary = Color(NSColor.tertiarySystemFill)
+        /// Tertiary background - subtle warm elevation
+        static let backgroundTertiary: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "BackgroundTertiaryWarm") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.24, green: 0.23, blue: 0.21, alpha: 1.0) // Highest elevation warm surface for dark mode
+                } else {
+                    return NSColor(red: 0.96, green: 0.94, blue: 0.91, alpha: 1.0) // Subtle warm beige for light mode
+                }
+            })
+            #else
+            return Color(red: 0.96, green: 0.94, blue: 0.91)
+            #endif
+        }()
         
-        /// Window background
-        static let backgroundWindow = Color(NSColor.windowBackgroundColor)
+        /// Window background - same as primary for consistency
+        static let backgroundWindow = backgroundPrimary
         
-        // MARK: Floating Panel Colors
+        // MARK: Floating Panel Colors - Coffee Shop Warmth
         
         /// Main panel background with subtle warmth
-        static let panelBackground = Color(NSColor.controlBackgroundColor)
+        static let panelBackground = backgroundSecondary
         
         /// Floating panel background with elevated appearance
-        static let floatingPanelBackground = Color(NSColor.windowBackgroundColor)
+        static let floatingPanelBackground = backgroundSecondary
         
-        /// Canvas background behind floating panels - adaptive for light/dark mode
+        /// Canvas background behind floating panels - warm and inviting
         static let canvasBackground: Color = {
             #if os(macOS)
-            return Color(NSColor(name: "CanvasBackground") { appearance in
+            return Color(NSColor(name: "CanvasBackgroundWarm") { appearance in
                 if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
-                    return NSColor(red: 0.12, green: 0.12, blue: 0.13, alpha: 1.0) // Dark mode
+                    return NSColor(red: 0.13, green: 0.12, blue: 0.11, alpha: 1.0) // Deep warm coffee for dark mode
                 } else {
-                    return NSColor(red: 0.97, green: 0.97, blue: 0.98, alpha: 1.0) // Light mode
+                    return NSColor(red: 0.96, green: 0.94, blue: 0.90, alpha: 1.0) // Warm latte for light mode
                 }
             })
             #else
-            return Color(red: 0.97, green: 0.97, blue: 0.98)
+            return Color(red: 0.96, green: 0.94, blue: 0.90)
             #endif
         }()
         
-        /// Sidebar background with depth - adaptive for light/dark mode
+        /// Sidebar background with warm depth
         static let sidebarBackground: Color = {
             #if os(macOS)
-            return Color(NSColor(name: "SidebarBackground") { appearance in
+            return Color(NSColor(name: "SidebarBackgroundWarm") { appearance in
                 if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
-                    return NSColor(red: 0.15, green: 0.15, blue: 0.16, alpha: 1.0) // Dark mode
+                    return NSColor(red: 0.18, green: 0.17, blue: 0.15, alpha: 1.0) // Warm cocoa for dark mode
                 } else {
-                    return NSColor(red: 0.95, green: 0.95, blue: 0.96, alpha: 1.0) // Light mode
+                    return NSColor(red: 0.94, green: 0.92, blue: 0.88, alpha: 1.0) // Warm oat milk for light mode
                 }
             })
             #else
-            return Color(red: 0.95, green: 0.95, blue: 0.96)
+            return Color(red: 0.94, green: 0.92, blue: 0.88)
             #endif
         }()
         
-        // MARK: Interface Colors
+        // MARK: Interface Colors - Warm and Inviting
         
-        /// Dividers and borders
-        static let divider = Color(NSColor.separatorColor)
+        /// Dividers and borders - warm subtle lines
+        static let divider: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "DividerWarm") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.32, green: 0.30, blue: 0.27, alpha: 1.0) // Warm brown divider for dark mode
+                } else {
+                    return NSColor(red: 0.85, green: 0.82, blue: 0.78, alpha: 1.0) // Warm beige divider for light mode
+                }
+            })
+            #else
+            return Color(red: 0.85, green: 0.82, blue: 0.78)
+            #endif
+        }()
         
-        /// Interactive elements
-        static let interactive = Color.accentColor
+        /// Interactive elements - warm blue accent
+        static let interactive = primary
         
-        /// Hover states
-        static let hover = Color(NSColor.controlAccentColor).opacity(0.1)
+        /// Hover states - gentle warm glow
+        static let hover: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "HoverWarm") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.68, green: 0.81, blue: 0.94, alpha: 0.15) // Warm blue glow for dark mode
+                } else {
+                    return NSColor(red: 0.49, green: 0.73, blue: 0.89, alpha: 0.12) // Gentle warm blue for light mode
+                }
+            })
+            #else
+            return Color(red: 0.49, green: 0.73, blue: 0.89).opacity(0.12)
+            #endif
+        }()
         
-        /// Selection states
-        static let selection = Color(NSColor.selectedContentBackgroundColor)
+        /// Selection states - warm highlight
+        static let selection: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "SelectionWarm") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.58, green: 0.71, blue: 0.84, alpha: 0.25) // Warm blue selection for dark mode
+                } else {
+                    return NSColor(red: 0.49, green: 0.73, blue: 0.89, alpha: 0.18) // Warm blue selection for light mode
+                }
+            })
+            #else
+            return Color(red: 0.49, green: 0.73, blue: 0.89).opacity(0.18)
+            #endif
+        }()
         
-        // MARK: Shadow Colors - adaptive for light/dark mode
+        // MARK: Sculptural Shadow Colors - Overly-Done Beautiful Depth
         
-        /// Light shadow for floating elements
+        /// Whisper shadow - subtle warm foundation
+        static let shadowWhisper: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "ShadowWhisperWarm") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.12, green: 0.08, blue: 0.05, alpha: 0.25) // Warm charcoal whisper for dark mode
+                } else {
+                    return NSColor(red: 0.52, green: 0.43, blue: 0.35, alpha: 0.06) // Warm coffee whisper for light mode
+                }
+            })
+            #else
+            return Color(red: 0.52, green: 0.43, blue: 0.35).opacity(0.06)
+            #endif
+        }()
+        
+        /// Light shadow - defined warm presence
         static let shadowLight: Color = {
             #if os(macOS)
-            return Color(NSColor(name: "ShadowLight") { appearance in
+            return Color(NSColor(name: "ShadowLightWarm") { appearance in
                 if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
-                    return NSColor.black.withAlphaComponent(0.25) // Stronger in dark mode
+                    return NSColor(red: 0.08, green: 0.05, blue: 0.03, alpha: 0.45) // Warm espresso for dark mode
                 } else {
-                    return NSColor.black.withAlphaComponent(0.06) // Light mode
+                    return NSColor(red: 0.45, green: 0.37, blue: 0.28, alpha: 0.12) // Warm mocha for light mode
                 }
             })
             #else
-            return Color.black.opacity(0.06)
+            return Color(red: 0.45, green: 0.37, blue: 0.28).opacity(0.12)
             #endif
         }()
         
-        /// Medium shadow for elevated elements
+        /// Medium shadow - structured warm depth
         static let shadowMedium: Color = {
             #if os(macOS)
-            return Color(NSColor(name: "ShadowMedium") { appearance in
+            return Color(NSColor(name: "ShadowMediumWarm") { appearance in
                 if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
-                    return NSColor.black.withAlphaComponent(0.35) // Stronger in dark mode
+                    return NSColor(red: 0.05, green: 0.03, blue: 0.02, alpha: 0.65) // Deep warm cocoa for dark mode
                 } else {
-                    return NSColor.black.withAlphaComponent(0.12) // Light mode
+                    return NSColor(red: 0.38, green: 0.29, blue: 0.22, alpha: 0.18) // Rich warm chocolate for light mode
                 }
             })
             #else
-            return Color.black.opacity(0.12)
+            return Color(red: 0.38, green: 0.29, blue: 0.22).opacity(0.18)
             #endif
         }()
         
-        /// Heavy shadow for modal overlays
+        /// Heavy shadow - dramatic warm foundation
         static let shadowHeavy: Color = {
             #if os(macOS)
-            return Color(NSColor(name: "ShadowHeavy") { appearance in
+            return Color(NSColor(name: "ShadowHeavyWarm") { appearance in
                 if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
-                    return NSColor.black.withAlphaComponent(0.50) // Stronger in dark mode
+                    return NSColor(red: 0.03, green: 0.02, blue: 0.01, alpha: 0.80) // Dramatic warm shadow for dark mode
                 } else {
-                    return NSColor.black.withAlphaComponent(0.20) // Light mode
+                    return NSColor(red: 0.32, green: 0.24, blue: 0.18, alpha: 0.28) // Bold warm umber for light mode
                 }
             })
             #else
-            return Color.black.opacity(0.20)
+            return Color(red: 0.32, green: 0.24, blue: 0.18).opacity(0.28)
+            #endif
+        }()
+        
+        /// Epic shadow - maximum dramatic depth
+        static let shadowEpic: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "ShadowEpicWarm") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.02, green: 0.01, blue: 0.00, alpha: 0.90) // Epic warm darkness for dark mode
+                } else {
+                    return NSColor(red: 0.28, green: 0.20, blue: 0.14, alpha: 0.35) // Epic warm sepia for light mode
+                }
+            })
+            #else
+            return Color(red: 0.28, green: 0.20, blue: 0.14).opacity(0.35)
+            #endif
+        }()
+        
+        // MARK: Interactive Shadow Colors - Beautiful State Changes
+        
+        /// Hover shadow - warm glow enhancement
+        static let shadowHover: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "ShadowHoverWarm") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.68, green: 0.81, blue: 0.94, alpha: 0.25) // Warm blue glow for dark mode
+                } else {
+                    return NSColor(red: 0.49, green: 0.73, blue: 0.89, alpha: 0.15) // Gentle warm blue glow for light mode
+                }
+            })
+            #else
+            return Color(red: 0.49, green: 0.73, blue: 0.89).opacity(0.15)
+            #endif
+        }()
+        
+        /// Focus shadow - attention-drawing warmth
+        static let shadowFocus: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "ShadowFocusWarm") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.68, green: 0.81, blue: 0.94, alpha: 0.40) // Strong warm blue for dark mode
+                } else {
+                    return NSColor(red: 0.49, green: 0.73, blue: 0.89, alpha: 0.25) // Defined warm blue for light mode
+                }
+            })
+            #else
+            return Color(red: 0.49, green: 0.73, blue: 0.89).opacity(0.25)
+            #endif
+        }()
+        
+        /// Selected shadow - chosen element warmth
+        static let shadowSelected: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "ShadowSelectedWarm") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.58, green: 0.71, blue: 0.84, alpha: 0.35) // Rich warm selection for dark mode
+                } else {
+                    return NSColor(red: 0.49, green: 0.73, blue: 0.89, alpha: 0.22) // Warm selection glow for light mode
+                }
+            })
+            #else
+            return Color(red: 0.49, green: 0.73, blue: 0.89).opacity(0.22)
             #endif
         }()
         
@@ -218,56 +488,82 @@ enum DesignSystem {
         static let systemSecondaryBackground = Color(NSColor.controlBackgroundColor)
         static let systemTertiaryBackground = Color(NSColor.tertiarySystemFill)
         static let systemAccent = Color.accentColor
+        
+        // MARK: Compatibility Aliases
+        
+        /// Alias for divider to maintain compatibility
+        static let separator = divider
     }
     
-    // MARK: - Spacing System
+    // MARK: - Generous Coffee Shop Spacing System
     
     enum Spacing {
-        /// Micro spacing (2pt) - very tight elements
-        static let micro: CGFloat = 2
+        /// Micro spacing (4pt) - subtle element separation
+        static let micro: CGFloat = 4
         
-        /// Tiny spacing (4pt) - tight elements
-        static let tiny: CGFloat = 4
+        /// Tiny spacing (8pt) - close related elements
+        static let tiny: CGFloat = 8
         
-        /// Small spacing (8pt) - close related elements
-        static let small: CGFloat = 8
+        /// Small spacing (16pt) - comfortable element spacing
+        static let small: CGFloat = 16
         
-        /// Medium spacing (12pt) - related elements
-        static let medium: CGFloat = 12
+        /// Medium spacing (24pt) - related sections
+        static let medium: CGFloat = 24
         
-        /// Base spacing (16pt) - standard margin
-        static let base: CGFloat = 16
+        /// Base spacing (32pt) - standard generous margin
+        static let base: CGFloat = 32
         
-        /// Large spacing (24pt) - section spacing
-        static let large: CGFloat = 24
+        /// Large spacing (48pt) - major section breathing room
+        static let large: CGFloat = 48
         
-        /// Extra large spacing (32pt) - major sections
-        static let extraLarge: CGFloat = 32
+        /// Extra large spacing (64pt) - panel separation
+        static let extraLarge: CGFloat = 64
         
-        /// Huge spacing (48pt) - page level spacing
-        static let huge: CGFloat = 48
+        /// Huge spacing (80pt) - major layout spacing
+        static let huge: CGFloat = 80
         
-        // MARK: Layout Constants
+        /// Expansive spacing (120pt) - maximum breathing room
+        static let expansive: CGFloat = 120
         
-        /// Sidebar width (240pt) - as specified in PRD
-        static let sidebarWidth: CGFloat = 240
+        // MARK: Coffee Shop Layout Constants
         
-        /// Timeline width (320pt) - optimal for entry cards
-        static let timelineWidth: CGFloat = 320
+        /// Sidebar width (280pt) - more substantial presence
+        static let sidebarWidth: CGFloat = 280
         
-        /// Minimum timeline width (300pt)
-        static let timelineMinWidth: CGFloat = 300
+        /// Timeline width (380pt) - generous reading space
+        static let timelineWidth: CGFloat = 380
         
-        /// Maximum timeline width (400pt)
-        static let timelineMaxWidth: CGFloat = 400
+        /// Minimum timeline width (320pt) - never cramped
+        static let timelineMinWidth: CGFloat = 320
         
-        // MARK: Semantic Spacing
+        /// Maximum timeline width (480pt) - luxurious reading
+        static let timelineMaxWidth: CGFloat = 480
         
-        /// Standard margin spacing (16pt)
+        /// Panel padding (40pt) - spacious interior
+        static let panelPadding: CGFloat = 40
+        
+        /// Content padding (28pt) - comfortable text spacing
+        static let contentPadding: CGFloat = 28
+        
+        /// Touch target minimum (48pt) - substantial interaction areas
+        static let touchTargetMin: CGFloat = 48
+        
+        // MARK: Semantic Spacing - Claude-style Generosity
+        
+        /// Standard margin spacing (32pt) - generous breathing room
         static let margin: CGFloat = base
         
-        /// Internal padding for components (12pt)
+        /// Internal padding for components (24pt) - comfortable interior
         static let internalPadding: CGFloat = medium
+        
+        /// Card spacing (20pt) - distinct but connected
+        static let cardSpacing: CGFloat = 20
+        
+        /// Section spacing (56pt) - clear visual separation
+        static let sectionSpacing: CGFloat = 56
+        
+        /// Panel gap (36pt) - independent floating panels
+        static let panelGap: CGFloat = 36
     }
     
     // MARK: - Component Specifications
@@ -290,78 +586,143 @@ enum DesignSystem {
         /// Corner radius alias
         static let cornerRadius: CGFloat = radiusMedium
         
-        // MARK: Shadows
+        // MARK: Sculptural Shadow Definitions - Overly-Done Beautiful Depth
         
-        /// Subtle shadow for cards
-        static let shadowCard = (color: Color.black.opacity(0.08), radius: CGFloat(8), x: CGFloat(0), y: CGFloat(2))
+        /// Journal entry shadow - like beautiful handwritten pages
+        static var shadowJournalEntry: [(color: Color, radius: CGFloat, x: CGFloat, y: CGFloat)] {
+            return [
+                // Foundation shadow - warm paper depth
+                (color: Colors.shadowWhisper, radius: CGFloat(2), x: CGFloat(0), y: CGFloat(1)),
+                // Structure shadow - defined page lift
+                (color: Colors.shadowLight, radius: CGFloat(8), x: CGFloat(0), y: CGFloat(3)),
+                // Drama shadow - substantial presence
+                (color: Colors.shadowMedium, radius: CGFloat(16), x: CGFloat(0), y: CGFloat(6)),
+                // Epic foundation - inspiring depth
+                (color: Colors.shadowHeavy, radius: CGFloat(24), x: CGFloat(0), y: CGFloat(8))
+            ]
+        }
         
-        /// Elevated shadow for modals
-        static let shadowElevated = (color: Color.black.opacity(0.12), radius: CGFloat(16), x: CGFloat(0), y: CGFloat(4))
+        /// Floating panel shadow - dramatic sculptural presence
+        static var shadowFloatingPanel: [(color: Color, radius: CGFloat, x: CGFloat, y: CGFloat)] {
+            return [
+                // Close contact shadow
+                (color: Colors.shadowWhisper, radius: CGFloat(1), x: CGFloat(0), y: CGFloat(0)),
+                // Defined lift shadow
+                (color: Colors.shadowLight, radius: CGFloat(12), x: CGFloat(0), y: CGFloat(4)),
+                // Structural depth shadow
+                (color: Colors.shadowMedium, radius: CGFloat(28), x: CGFloat(0), y: CGFloat(8)),
+                // Dramatic foundation shadow
+                (color: Colors.shadowHeavy, radius: CGFloat(48), x: CGFloat(0), y: CGFloat(16)),
+                // Epic ambient shadow
+                (color: Colors.shadowEpic, radius: CGFloat(72), x: CGFloat(0), y: CGFloat(24))
+            ]
+        }
         
-        /// Deep shadow for overlays
-        static let shadowDeep = (color: Color.black.opacity(0.16), radius: CGFloat(24), x: CGFloat(0), y: CGFloat(8))
+        /// Epic main panel shadow - maximum inspiring depth
+        static var shadowMainPanel: [(color: Color, radius: CGFloat, x: CGFloat, y: CGFloat)] {
+            return [
+                // Surface contact
+                (color: Colors.shadowWhisper, radius: CGFloat(2), x: CGFloat(0), y: CGFloat(1)),
+                // Close definition
+                (color: Colors.shadowLight, radius: CGFloat(16), x: CGFloat(0), y: CGFloat(6)),
+                // Mid-range structure
+                (color: Colors.shadowMedium, radius: CGFloat(36), x: CGFloat(0), y: CGFloat(12)),
+                // Deep foundation
+                (color: Colors.shadowHeavy, radius: CGFloat(64), x: CGFloat(0), y: CGFloat(20)),
+                // Epic atmospheric depth
+                (color: Colors.shadowEpic, radius: CGFloat(96), x: CGFloat(0), y: CGFloat(32))
+            ]
+        }
         
-        /// Floating panel shadow - soft and natural, adaptive for dark mode
+        /// Interactive shadows for different states
+        static var shadowButton: [(color: Color, radius: CGFloat, x: CGFloat, y: CGFloat)] {
+            return [
+                (color: Colors.shadowWhisper, radius: CGFloat(1), x: CGFloat(0), y: CGFloat(1)),
+                (color: Colors.shadowLight, radius: CGFloat(4), x: CGFloat(0), y: CGFloat(2)),
+                (color: Colors.shadowMedium, radius: CGFloat(8), x: CGFloat(0), y: CGFloat(3))
+            ]
+        }
+        
+        static var shadowButtonHover: [(color: Color, radius: CGFloat, x: CGFloat, y: CGFloat)] {
+            return [
+                (color: Colors.shadowWhisper, radius: CGFloat(2), x: CGFloat(0), y: CGFloat(2)),
+                (color: Colors.shadowLight, radius: CGFloat(8), x: CGFloat(0), y: CGFloat(4)),
+                (color: Colors.shadowMedium, radius: CGFloat(16), x: CGFloat(0), y: CGFloat(6)),
+                (color: Colors.shadowHover, radius: CGFloat(12), x: CGFloat(0), y: CGFloat(0))
+            ]
+        }
+        
+        static var shadowButtonPressed: [(color: Color, radius: CGFloat, x: CGFloat, y: CGFloat)] {
+            return [
+                (color: Colors.shadowLight, radius: CGFloat(2), x: CGFloat(0), y: CGFloat(1)),
+                (color: Colors.shadowMedium, radius: CGFloat(4), x: CGFloat(0), y: CGFloat(1))
+            ]
+        }
+        
+        /// Selection state shadows
+        static var shadowSelected: [(color: Color, radius: CGFloat, x: CGFloat, y: CGFloat)] {
+            return [
+                (color: Colors.shadowWhisper, radius: CGFloat(2), x: CGFloat(0), y: CGFloat(1)),
+                (color: Colors.shadowLight, radius: CGFloat(12), x: CGFloat(0), y: CGFloat(4)),
+                (color: Colors.shadowMedium, radius: CGFloat(24), x: CGFloat(0), y: CGFloat(8)),
+                (color: Colors.shadowSelected, radius: CGFloat(16), x: CGFloat(0), y: CGFloat(0))
+            ]
+        }
+        
+        static var shadowFocused: [(color: Color, radius: CGFloat, x: CGFloat, y: CGFloat)] {
+            return [
+                (color: Colors.shadowWhisper, radius: CGFloat(2), x: CGFloat(0), y: CGFloat(1)),
+                (color: Colors.shadowLight, radius: CGFloat(12), x: CGFloat(0), y: CGFloat(4)),
+                (color: Colors.shadowMedium, radius: CGFloat(24), x: CGFloat(0), y: CGFloat(8)),
+                (color: Colors.shadowFocus, radius: CGFloat(20), x: CGFloat(0), y: CGFloat(0))
+            ]
+        }
+        
+        /// Legacy single shadow definitions for compatibility
+        static let shadowCard = (color: Colors.shadowLight, radius: CGFloat(12), x: CGFloat(0), y: CGFloat(4))
+        static let shadowElevated = (color: Colors.shadowMedium, radius: CGFloat(24), x: CGFloat(0), y: CGFloat(8))
+        static let shadowDeep = (color: Colors.shadowHeavy, radius: CGFloat(48), x: CGFloat(0), y: CGFloat(16))
+        
+        /// Floating panel shadow - warm and inviting for writing inspiration
         static var shadowFloating: (color: Color, radius: CGFloat, x: CGFloat, y: CGFloat) {
-            #if os(macOS)
-            let shadowColor = Color(NSColor(name: "ShadowFloating") { appearance in
-                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
-                    return NSColor.black.withAlphaComponent(0.35) // Stronger in dark mode
-                } else {
-                    return NSColor.black.withAlphaComponent(0.08) // Light mode
-                }
-            })
-            #else
-            let shadowColor = Color.black.opacity(0.08)
-            #endif
-            return (color: shadowColor, radius: CGFloat(20), x: CGFloat(0), y: CGFloat(6))
+            return (color: Colors.shadowMedium, radius: CGFloat(32), x: CGFloat(0), y: CGFloat(12))
         }
         
-        /// Heavy floating shadow for main content panels, adaptive for dark mode
+        /// Heavy floating shadow for main content panels - defined warm depth
         static var shadowFloatingHeavy: (color: Color, radius: CGFloat, x: CGFloat, y: CGFloat) {
-            #if os(macOS)
-            let shadowColor = Color(NSColor(name: "ShadowFloatingHeavy") { appearance in
-                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
-                    return NSColor.black.withAlphaComponent(0.45) // Stronger in dark mode
-                } else {
-                    return NSColor.black.withAlphaComponent(0.15) // Light mode
-                }
-            })
-            #else
-            let shadowColor = Color.black.opacity(0.15)
-            #endif
-            return (color: shadowColor, radius: CGFloat(32), x: CGFloat(0), y: CGFloat(12))
+            return (color: Colors.shadowHeavy, radius: CGFloat(64), x: CGFloat(0), y: CGFloat(20))
         }
         
-        /// Inner shadow for depth effect, adaptive for dark mode
+        /// Inner shadow for depth effect - subtle warm inset
         static var shadowInner: (color: Color, radius: CGFloat, x: CGFloat, y: CGFloat) {
-            #if os(macOS)
-            let shadowColor = Color(NSColor(name: "ShadowInner") { appearance in
-                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
-                    return NSColor.black.withAlphaComponent(0.15) // Stronger in dark mode
-                } else {
-                    return NSColor.black.withAlphaComponent(0.03) // Light mode
-                }
-            })
-            #else
-            let shadowColor = Color.black.opacity(0.03)
-            #endif
-            return (color: shadowColor, radius: CGFloat(4), x: CGFloat(0), y: CGFloat(-1))
+            return (color: Colors.shadowWhisper, radius: CGFloat(6), x: CGFloat(0), y: CGFloat(-2))
         }
         
-        // MARK: Sizing
+        // MARK: Substantial Sizing - Coffee Shop Comfort
         
-        /// Standard button height
-        static let buttonHeight: CGFloat = 36
+        /// Standard button height - more substantial
+        static let buttonHeight: CGFloat = 48
         
-        /// Large button height
-        static let buttonHeightLarge: CGFloat = 44
+        /// Large button height - generous and inviting
+        static let buttonHeightLarge: CGFloat = 56
         
-        /// Toolbar height
-        static let toolbarHeight: CGFloat = 52
+        /// Toolbar height - spacious and comfortable
+        static let toolbarHeight: CGFloat = 72
         
-        /// Minimum touch target
-        static let touchTarget: CGFloat = 44
+        /// Minimum touch target - generous interaction area
+        static let touchTarget: CGFloat = 48
+        
+        /// Icon sizes - more prominent and friendly
+        static let iconSmall: CGFloat = 20
+        static let iconMedium: CGFloat = 24
+        static let iconLarge: CGFloat = 32
+        static let iconHuge: CGFloat = 48
+        
+        /// Panel header height - substantial presence
+        static let panelHeaderHeight: CGFloat = 88
+        
+        /// Sidebar item height - comfortable selection
+        static let sidebarItemHeight: CGFloat = 52
     }
     
     // MARK: - Animation Specifications
@@ -386,9 +747,10 @@ enum DesignSystem {
 
 // MARK: - Button Styles
 
-/// Primary button style with Gemi's signature look
+/// Primary button style with sculptural interactive shadows
 struct GemiPrimaryButtonStyle: ButtonStyle {
     let isLoading: Bool
+    @State private var isHovered = false
     
     init(isLoading: Bool = false) {
         self.isLoading = isLoading
@@ -397,136 +759,248 @@ struct GemiPrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(DesignSystem.Typography.headline)
+            .handwrittenStyle()
             .foregroundStyle(.white)
             .frame(height: DesignSystem.Components.buttonHeight)
             .frame(maxWidth: .infinity)
             .background(
-                RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
-                    .fill(DesignSystem.Colors.primary)
-                    .opacity(configuration.isPressed ? 0.8 : 1.0)
+                ZStack {
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
+                        .fill(DesignSystem.Colors.primary)
+                        .opacity(configuration.isPressed ? 0.9 : 1.0)
+                    
+                    // Inner warm glow
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.2),
+                                    Color.clear
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                }
             )
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
             .opacity(isLoading ? 0.6 : 1.0)
-            .animation(DesignSystem.Animation.quick, value: configuration.isPressed)
+            .interactiveButtonShadow(isPressed: configuration.isPressed, isHovered: isHovered)
+            .onHover { hovering in
+                withAnimation(DesignSystem.Animation.quick) {
+                    isHovered = hovering
+                }
+            }
+            .animation(DesignSystem.Animation.spring, value: configuration.isPressed)
             .disabled(isLoading)
     }
 }
 
-/// Secondary button style
+/// Secondary button style with warm sculptural depth
 struct GemiSecondaryButtonStyle: ButtonStyle {
+    @State private var isHovered = false
+    
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(DesignSystem.Typography.headline)
+            .handwrittenStyle()
             .foregroundStyle(DesignSystem.Colors.primary)
             .frame(height: DesignSystem.Components.buttonHeight)
             .frame(maxWidth: .infinity)
             .background(
-                RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
-                    .stroke(DesignSystem.Colors.primary, lineWidth: 1.5)
-                    .background(
+                ZStack {
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
+                        .fill(DesignSystem.Colors.backgroundSecondary)
+                        .opacity(configuration.isPressed ? 0.8 : 1.0)
+                    
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
+                        .stroke(DesignSystem.Colors.primary, lineWidth: 2)
+                    
+                    // Inner warm glow on press
+                    if configuration.isPressed {
                         RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
-                            .fill(configuration.isPressed ? DesignSystem.Colors.primary.opacity(0.1) : Color.clear)
-                    )
+                            .fill(DesignSystem.Colors.primary.opacity(0.08))
+                    }
+                }
             )
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
-            .animation(DesignSystem.Animation.quick, value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .interactiveButtonShadow(isPressed: configuration.isPressed, isHovered: isHovered)
+            .onHover { hovering in
+                withAnimation(DesignSystem.Animation.quick) {
+                    isHovered = hovering
+                }
+            }
+            .animation(DesignSystem.Animation.spring, value: configuration.isPressed)
     }
 }
 
-/// Subtle button style for less prominent actions
+/// Subtle button style with gentle sculptural presence
 struct GemiSubtleButtonStyle: ButtonStyle {
+    @State private var isHovered = false
+    
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(DesignSystem.Typography.callout)
+            .diaryTypography()
             .foregroundStyle(DesignSystem.Colors.textSecondary)
             .padding(.horizontal, DesignSystem.Spacing.medium)
             .padding(.vertical, DesignSystem.Spacing.small)
             .background(
-                RoundedRectangle(cornerRadius: DesignSystem.Components.radiusSmall)
-                    .fill(configuration.isPressed ? DesignSystem.Colors.hover : DesignSystem.Colors.backgroundSecondary)
+                ZStack {
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusSmall)
+                        .fill(DesignSystem.Colors.backgroundSecondary)
+                    
+                    if configuration.isPressed || isHovered {
+                        RoundedRectangle(cornerRadius: DesignSystem.Components.radiusSmall)
+                            .fill(DesignSystem.Colors.hover)
+                    }
+                    
+                    // Subtle border for definition
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusSmall)
+                        .stroke(DesignSystem.Colors.divider.opacity(0.3), lineWidth: 0.5)
+                }
             )
-            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
-            .animation(DesignSystem.Animation.quick, value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed ? 0.94 : 1.0)
+            .interactiveButtonShadow(isPressed: configuration.isPressed, isHovered: isHovered)
+            .onHover { hovering in
+                withAnimation(DesignSystem.Animation.quick) {
+                    isHovered = hovering
+                }
+            }
+            .animation(DesignSystem.Animation.spring, value: configuration.isPressed)
     }
 }
 
 // MARK: - Card Styles
 
-/// Standard card background modifier
+/// Beautiful card with journal-like depth
 struct GemiCardStyle: ViewModifier {
     let showShadow: Bool
+    let isJournalEntry: Bool
     
-    init(showShadow: Bool = true) {
+    init(showShadow: Bool = true, isJournalEntry: Bool = false) {
         self.showShadow = showShadow
-    }
-    
-    func body(content: Content) -> some View {
-        content
-            .background(
-                RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
-                    .fill(DesignSystem.Colors.backgroundSecondary)
-                    .shadow(
-                        color: showShadow ? DesignSystem.Colors.divider.opacity(0.3) : .clear,
-                        radius: showShadow ? DesignSystem.Components.shadowCard.radius : 0,
-                        x: showShadow ? DesignSystem.Components.shadowCard.x : 0,
-                        y: showShadow ? DesignSystem.Components.shadowCard.y : 0
-                    )
-            )
-    }
-}
-
-/// Elevated card for modals and overlays
-struct GemiElevatedCardStyle: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .background(
-                RoundedRectangle(cornerRadius: DesignSystem.Components.radiusLarge)
-                    .fill(DesignSystem.Colors.backgroundPrimary)
-                    .shadow(
-                        color: DesignSystem.Components.shadowElevated.color,
-                        radius: DesignSystem.Components.shadowElevated.radius,
-                        x: DesignSystem.Components.shadowElevated.x,
-                        y: DesignSystem.Components.shadowElevated.y
-                    )
-            )
-    }
-}
-
-// MARK: - Floating Panel Styles
-
-/// Main floating panel style with sophisticated depth and shadows
-struct GemiFloatingPanelStyle: ViewModifier {
-    let cornerRadius: CGFloat
-    let shadowIntensity: CGFloat
-    
-    init(cornerRadius: CGFloat = 20, shadowIntensity: CGFloat = 1.0) {
-        self.cornerRadius = cornerRadius
-        self.shadowIntensity = shadowIntensity
+        self.isJournalEntry = isJournalEntry
     }
     
     func body(content: Content) -> some View {
         content
             .background(
                 ZStack {
-                    // Main panel background
+                    // Card background with warm paper feel
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
+                        .fill(DesignSystem.Colors.backgroundSecondary)
+                    
+                    // Subtle warm border
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
+                        .stroke(DesignSystem.Colors.divider.opacity(0.2), lineWidth: 0.5)
+                    
+                    // Inner warm glow for depth
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    DesignSystem.Colors.primary.opacity(0.03),
+                                    Color.clear
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                }
+            )
+            .modifier(
+                showShadow ? (isJournalEntry ? 
+                    MultiLayerShadowStyle(shadows: DesignSystem.Components.shadowJournalEntry) :
+                    MultiLayerShadowStyle(shadows: DesignSystem.Components.shadowButton)
+                ) : MultiLayerShadowStyle(shadows: [])
+            )
+    }
+}
+
+/// Epic elevated card for modals and important overlays
+struct GemiElevatedCardStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .background(
+                ZStack {
+                    // Elevated background with dramatic presence
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusLarge)
+                        .fill(DesignSystem.Colors.backgroundPrimary)
+                    
+                    // Defined warm border
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusLarge)
+                        .stroke(DesignSystem.Colors.divider.opacity(0.3), lineWidth: 1)
+                    
+                    // Dramatic inner glow
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusLarge)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    DesignSystem.Colors.primary.opacity(0.08),
+                                    Color.clear
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 3
+                        )
+                }
+            )
+            .modifier(
+                MultiLayerShadowStyle(shadows: DesignSystem.Components.shadowMainPanel)
+            )
+    }
+}
+
+// MARK: - Floating Panel Styles
+
+/// Main floating panel style with sculptural overly-done depth
+struct GemiFloatingPanelStyle: ViewModifier {
+    let cornerRadius: CGFloat
+    let shadowIntensity: CGFloat
+    let isMainPanel: Bool
+    
+    init(cornerRadius: CGFloat = 20, shadowIntensity: CGFloat = 1.0, isMainPanel: Bool = false) {
+        self.cornerRadius = cornerRadius
+        self.shadowIntensity = shadowIntensity
+        self.isMainPanel = isMainPanel
+    }
+    
+    func body(content: Content) -> some View {
+        content
+            .background(
+                ZStack {
+                    // Main panel background with warm depth
                     RoundedRectangle(cornerRadius: cornerRadius)
                         .fill(DesignSystem.Colors.floatingPanelBackground)
                     
                     // Subtle inner shadow for depth
                     RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(DesignSystem.Colors.divider.opacity(0.1), lineWidth: 0.5)
+                        .stroke(DesignSystem.Colors.divider.opacity(0.15), lineWidth: 1)
+                    
+                    // Inner glow for warmth
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    DesignSystem.Colors.primary.opacity(0.05),
+                                    Color.clear
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 2
+                        )
                 }
-                .shadow(
-                    color: DesignSystem.Components.shadowFloating.color.opacity(shadowIntensity),
-                    radius: DesignSystem.Components.shadowFloating.radius,
-                    x: DesignSystem.Components.shadowFloating.x,
-                    y: DesignSystem.Components.shadowFloating.y
-                )
-                .shadow(
-                    color: DesignSystem.Components.shadowFloatingHeavy.color.opacity(shadowIntensity * 0.3),
-                    radius: DesignSystem.Components.shadowFloatingHeavy.radius,
-                    x: DesignSystem.Components.shadowFloatingHeavy.x,
-                    y: DesignSystem.Components.shadowFloatingHeavy.y
+            )
+            .modifier(
+                MultiLayerShadowStyle(
+                    shadows: isMainPanel ? 
+                        DesignSystem.Components.shadowMainPanel :
+                        DesignSystem.Components.shadowFloatingPanel
                 )
             )
     }
@@ -566,6 +1040,130 @@ struct GemiCanvasStyle: ViewModifier {
     }
 }
 
+// MARK: - Typography Modifiers for Personal Feel
+
+/// Adds diary-style letter spacing and personal touches
+struct DiaryTypographyStyle: ViewModifier {
+    let letterSpacing: CGFloat
+    let lineSpacing: CGFloat
+    
+    init(letterSpacing: CGFloat = 0.3, lineSpacing: CGFloat = 2) {
+        self.letterSpacing = letterSpacing
+        self.lineSpacing = lineSpacing
+    }
+    
+    func body(content: Content) -> some View {
+        content
+            .tracking(letterSpacing)
+            .lineSpacing(lineSpacing)
+    }
+}
+
+/// Adds handwritten feel with gentle letter spacing
+struct HandwrittenStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .tracking(0.5)
+            .lineSpacing(3)
+    }
+}
+
+/// Adds elegant serif styling for special moments
+struct ElegantSerifStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .tracking(0.8)
+            .lineSpacing(4)
+    }
+}
+
+/// Adds relaxed reading style for diary entries
+struct RelaxedReadingStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .tracking(0.2)
+            .lineSpacing(6)
+    }
+}
+
+// MARK: - Sculptural Shadow Modifiers - Overly-Done Beautiful Depth
+
+/// Applies multi-layered shadows to create sculptural depth
+struct MultiLayerShadowStyle: ViewModifier {
+    let shadows: [(color: Color, radius: CGFloat, x: CGFloat, y: CGFloat)]
+    
+    func body(content: Content) -> some View {
+        shadows.reversed().reduce(AnyView(content)) { view, shadow in
+            AnyView(
+                view.shadow(
+                    color: shadow.color,
+                    radius: shadow.radius,
+                    x: shadow.x,
+                    y: shadow.y
+                )
+            )
+        }
+    }
+}
+
+/// Epic main panel shadow - maximum inspiring depth for primary content
+struct EpicMainPanelShadowStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .modifier(MultiLayerShadowStyle(shadows: DesignSystem.Components.shadowMainPanel))
+    }
+}
+
+/// Floating panel shadow - dramatic sculptural presence
+struct FloatingPanelShadowStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .modifier(MultiLayerShadowStyle(shadows: DesignSystem.Components.shadowFloatingPanel))
+    }
+}
+
+/// Journal entry shadow - beautiful handwritten pages
+struct JournalEntryShadowStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .modifier(MultiLayerShadowStyle(shadows: DesignSystem.Components.shadowJournalEntry))
+    }
+}
+
+/// Interactive button shadows with state management
+struct InteractiveButtonShadowStyle: ViewModifier {
+    let isPressed: Bool
+    let isHovered: Bool
+    
+    func body(content: Content) -> some View {
+        content
+            .modifier(
+                MultiLayerShadowStyle(
+                    shadows: isPressed ? DesignSystem.Components.shadowButtonPressed :
+                            isHovered ? DesignSystem.Components.shadowButtonHover :
+                            DesignSystem.Components.shadowButton
+                )
+            )
+    }
+}
+
+/// Selection state shadows
+struct SelectionShadowStyle: ViewModifier {
+    let isSelected: Bool
+    let isFocused: Bool
+    
+    func body(content: Content) -> some View {
+        content
+            .modifier(
+                MultiLayerShadowStyle(
+                    shadows: isSelected ? DesignSystem.Components.shadowSelected :
+                            isFocused ? DesignSystem.Components.shadowFocused :
+                            DesignSystem.Components.shadowJournalEntry
+                )
+            )
+    }
+}
+
 // MARK: - View Extensions
 
 extension View {
@@ -584,12 +1182,12 @@ extension View {
         self.buttonStyle(GemiSubtleButtonStyle())
     }
     
-    /// Applies Gemi's card style
-    func gemiCard(showShadow: Bool = true) -> some View {
-        self.modifier(GemiCardStyle(showShadow: showShadow))
+    /// Applies Gemi's card style with beautiful depth
+    func gemiCard(showShadow: Bool = true, isJournalEntry: Bool = false) -> some View {
+        self.modifier(GemiCardStyle(showShadow: showShadow, isJournalEntry: isJournalEntry))
     }
     
-    /// Applies Gemi's elevated card style
+    /// Applies Gemi's epic elevated card style
     func gemiElevatedCard() -> some View {
         self.modifier(GemiElevatedCardStyle())
     }
@@ -604,9 +1202,9 @@ extension View {
         self.padding(.bottom, DesignSystem.Spacing.large)
     }
     
-    /// Applies floating panel style with sophisticated shadows
-    func gemiFloatingPanel(cornerRadius: CGFloat = 20, shadowIntensity: CGFloat = 1.0) -> some View {
-        self.modifier(GemiFloatingPanelStyle(cornerRadius: cornerRadius, shadowIntensity: shadowIntensity))
+    /// Applies floating panel style with sculptural shadows
+    func gemiFloatingPanel(cornerRadius: CGFloat = 20, shadowIntensity: CGFloat = 1.0, isMainPanel: Bool = false) -> some View {
+        self.modifier(GemiFloatingPanelStyle(cornerRadius: cornerRadius, shadowIntensity: shadowIntensity, isMainPanel: isMainPanel))
     }
     
     /// Applies sidebar panel style
@@ -617,5 +1215,59 @@ extension View {
     /// Applies canvas background style
     func gemiCanvas() -> some View {
         self.modifier(GemiCanvasStyle())
+    }
+    
+    // MARK: - Personal Typography Extensions
+    
+    /// Applies diary-style typography with personal feel
+    func diaryTypography(letterSpacing: CGFloat = 0.3, lineSpacing: CGFloat = 2) -> some View {
+        self.modifier(DiaryTypographyStyle(letterSpacing: letterSpacing, lineSpacing: lineSpacing))
+    }
+    
+    /// Applies handwritten feel with gentle letter spacing
+    func handwrittenStyle() -> some View {
+        self.modifier(HandwrittenStyle())
+    }
+    
+    /// Applies elegant serif styling for special moments
+    func elegantSerifStyle() -> some View {
+        self.modifier(ElegantSerifStyle())
+    }
+    
+    /// Applies relaxed reading style for diary entries
+    func relaxedReadingStyle() -> some View {
+        self.modifier(RelaxedReadingStyle())
+    }
+    
+    // MARK: - Sculptural Shadow Extensions - Beautiful Depth
+    
+    /// Applies epic main panel shadow for maximum inspiring depth
+    func epicMainPanelShadow() -> some View {
+        self.modifier(EpicMainPanelShadowStyle())
+    }
+    
+    /// Applies floating panel shadow for dramatic sculptural presence
+    func floatingPanelShadow() -> some View {
+        self.modifier(FloatingPanelShadowStyle())
+    }
+    
+    /// Applies journal entry shadow like beautiful handwritten pages
+    func journalEntryShadow() -> some View {
+        self.modifier(JournalEntryShadowStyle())
+    }
+    
+    /// Applies interactive button shadows with state management
+    func interactiveButtonShadow(isPressed: Bool = false, isHovered: Bool = false) -> some View {
+        self.modifier(InteractiveButtonShadowStyle(isPressed: isPressed, isHovered: isHovered))
+    }
+    
+    /// Applies selection state shadows
+    func selectionShadow(isSelected: Bool = false, isFocused: Bool = false) -> some View {
+        self.modifier(SelectionShadowStyle(isSelected: isSelected, isFocused: isFocused))
+    }
+    
+    /// Applies custom multi-layer shadows
+    func multiLayerShadow(_ shadows: [(color: Color, radius: CGFloat, x: CGFloat, y: CGFloat)]) -> some View {
+        self.modifier(MultiLayerShadowStyle(shadows: shadows))
     }
 }

@@ -7,8 +7,8 @@
 
 import SwiftUI
 
-/// MainWindowView presents Gemi's sophisticated floating panel interface
-/// with a 35/65 split layout featuring elegant depth and modern design
+/// MainWindowView presents Gemi's spacious coffee shop-inspired interface
+/// with generous breathing room and Claude-style elegant organization
 struct MainWindowView: View {
     
     // MARK: - Dependencies
@@ -26,15 +26,16 @@ struct MainWindowView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            HStack(spacing: 0) {
-                // Left Sidebar (25% - more compact)
+            HStack(spacing: DesignSystem.Spacing.panelGap) {
+                // Left Sidebar (30% - substantial and breathing)
                 modernSidebar
-                    .frame(width: geometry.size.width * 0.25)
+                    .frame(width: geometry.size.width * 0.28)
                 
-                // Right Content Area (75% - more space for content)
+                // Right Content Area (70% - spacious content focus)
                 floatingContentArea
-                    .frame(width: geometry.size.width * 0.75)
+                    .frame(width: geometry.size.width * 0.72 - DesignSystem.Spacing.panelGap)
             }
+            .padding(DesignSystem.Spacing.base)
         }
         .gemiCanvas()
         .sheet(isPresented: $showingNewEntry) {
@@ -50,60 +51,65 @@ struct MainWindowView: View {
         }
     }
     
-    // MARK: - Modern Sidebar
+    // MARK: - Spacious Coffee Shop Sidebar
     
     @ViewBuilder
     private var modernSidebar: some View {
-        VStack(spacing: 0) {
-            // Header
+        VStack(spacing: DesignSystem.Spacing.sectionSpacing) {
+            // Header with breathing room
             sidebarHeader
             
-            // Navigation
+            // Navigation with generous spacing
             sidebarNavigation
             
-            Spacer()
+            Spacer(minLength: DesignSystem.Spacing.large)
             
-            // Footer
+            // Footer with clear separation
             sidebarFooter
         }
-        .padding(DesignSystem.Spacing.base)
+        .padding(DesignSystem.Spacing.panelPadding)
         .gemiSidebarPanel()
-        .padding(.trailing, DesignSystem.Spacing.medium)
     }
     
     @ViewBuilder
     private var sidebarHeader: some View {
-        VStack(spacing: DesignSystem.Spacing.small) {
-            // App Icon and Title - more compact
-            HStack(spacing: DesignSystem.Spacing.tiny) {
+        VStack(spacing: DesignSystem.Spacing.medium) {
+            // App Icon and Title - substantial and welcoming
+            HStack(spacing: DesignSystem.Spacing.small) {
                 Image(systemName: "sparkles.rectangle.stack")
-                    .font(.title3)
+                    .font(.system(size: DesignSystem.Components.iconLarge))
                     .foregroundStyle(DesignSystem.Colors.primary)
                 
-                VStack(alignment: .leading, spacing: 1) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.micro) {
                     Text("Gemi")
-                        .font(DesignSystem.Typography.headline)
-                        .fontWeight(.bold)
+                        .font(DesignSystem.Typography.title2)
+                        .elegantSerifStyle()
                         .foregroundStyle(DesignSystem.Colors.textPrimary)
                     
                     Text("AI Journal")
-                        .font(DesignSystem.Typography.caption2)
+                        .font(DesignSystem.Typography.footnote)
                         .foregroundStyle(DesignSystem.Colors.textTertiary)
+                        .diaryTypography()
                 }
                 
                 Spacer()
             }
             
-            // Quick Actions - more compact
-            HStack(spacing: DesignSystem.Spacing.tiny) {
+            // Quick Actions - substantial touch targets
+            HStack(spacing: DesignSystem.Spacing.small) {
                 Button {
                     showingNewEntry = true
                 } label: {
                     Image(systemName: "square.and.pencil")
-                        .font(.callout)
+                        .font(.system(size: DesignSystem.Components.iconMedium))
+                        .frame(width: DesignSystem.Components.touchTarget, height: DesignSystem.Components.touchTarget)
                 }
                 .buttonStyle(.borderless)
                 .foregroundStyle(DesignSystem.Colors.textSecondary)
+                .background(
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusSmall)
+                        .fill(DesignSystem.Colors.hover.opacity(0.5))
+                )
                 .help("Create new journal entry")
                 .keyboardShortcut("n", modifiers: .command)
                 
@@ -111,10 +117,15 @@ struct MainWindowView: View {
                     showingChat = true
                 } label: {
                     Image(systemName: "message.circle")
-                        .font(.callout)
+                        .font(.system(size: DesignSystem.Components.iconMedium))
+                        .frame(width: DesignSystem.Components.touchTarget, height: DesignSystem.Components.touchTarget)
                 }
                 .buttonStyle(.borderless)
                 .foregroundStyle(DesignSystem.Colors.textSecondary)
+                .background(
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusSmall)
+                        .fill(DesignSystem.Colors.hover.opacity(0.5))
+                )
                 .help("Start conversation with Gemi")
                 .keyboardShortcut("t", modifiers: .command)
                 
@@ -126,20 +137,24 @@ struct MainWindowView: View {
                     }
                 } label: {
                     Image(systemName: "arrow.clockwise")
-                        .font(.callout)
+                        .font(.system(size: DesignSystem.Components.iconMedium))
+                        .frame(width: DesignSystem.Components.touchTarget, height: DesignSystem.Components.touchTarget)
                 }
                 .buttonStyle(.borderless)
                 .foregroundStyle(DesignSystem.Colors.textSecondary)
+                .background(
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusSmall)
+                        .fill(DesignSystem.Colors.hover.opacity(0.5))
+                )
                 .help("Refresh entries")
                 .disabled(journalStore.isLoading)
             }
         }
-        .padding(.bottom, DesignSystem.Spacing.medium)
     }
     
     @ViewBuilder
     private var sidebarNavigation: some View {
-        VStack(spacing: DesignSystem.Spacing.tiny) {
+        VStack(spacing: DesignSystem.Spacing.cardSpacing) {
             ForEach(SidebarItem.allCases, id: \.self) { item in
                 sidebarNavigationItem(item)
             }
@@ -149,34 +164,51 @@ struct MainWindowView: View {
     @ViewBuilder
     private func sidebarNavigationItem(_ item: SidebarItem) -> some View {
         Button {
-            withAnimation(DesignSystem.Animation.quick) {
+            withAnimation(DesignSystem.Animation.spring) {
                 sidebarSelection = item
             }
         } label: {
             HStack(spacing: DesignSystem.Spacing.small) {
                 Image(systemName: item.icon)
-                    .font(.callout)
+                    .font(.system(size: DesignSystem.Components.iconMedium))
                     .foregroundStyle(sidebarSelection == item ? DesignSystem.Colors.primary : DesignSystem.Colors.textSecondary)
-                    .frame(width: 16)
+                    .frame(width: DesignSystem.Components.iconLarge, alignment: .center)
                 
-                Text(item.title)
-                    .font(DesignSystem.Typography.callout)
-                    .fontWeight(sidebarSelection == item ? .semibold : .medium)
-                    .foregroundStyle(sidebarSelection == item ? DesignSystem.Colors.textPrimary : DesignSystem.Colors.textSecondary)
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.micro) {
+                    Text(item.title)
+                        .font(DesignSystem.Typography.headline)
+                        .fontWeight(sidebarSelection == item ? .semibold : .medium)
+                        .foregroundStyle(sidebarSelection == item ? DesignSystem.Colors.textPrimary : DesignSystem.Colors.textSecondary)
+                        .handwrittenStyle()
+                    
+                    if let subtitle = item.subtitle {
+                        Text(subtitle)
+                            .font(DesignSystem.Typography.caption1)
+                            .foregroundStyle(DesignSystem.Colors.textTertiary)
+                            .diaryTypography()
+                    }
+                }
                 
                 Spacer()
                 
                 if sidebarSelection == item {
                     Circle()
                         .fill(DesignSystem.Colors.primary)
-                        .frame(width: 4, height: 4)
+                        .frame(width: 8, height: 8)
                 }
             }
-            .padding(.horizontal, DesignSystem.Spacing.small)
-            .padding(.vertical, DesignSystem.Spacing.tiny)
+            .padding(.horizontal, DesignSystem.Spacing.medium)
+            .padding(.vertical, DesignSystem.Spacing.small)
+            .frame(minHeight: DesignSystem.Components.sidebarItemHeight)
             .background(
-                RoundedRectangle(cornerRadius: DesignSystem.Components.radiusSmall)
-                    .fill(sidebarSelection == item ? DesignSystem.Colors.primary.opacity(0.1) : Color.clear)
+                RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
+                    .fill(sidebarSelection == item ? DesignSystem.Colors.selection : Color.clear)
+                    .shadow(
+                        color: sidebarSelection == item ? DesignSystem.Colors.shadowLight : Color.clear,
+                        radius: sidebarSelection == item ? 4 : 0,
+                        x: 0,
+                        y: sidebarSelection == item ? 2 : 0
+                    )
             )
         }
         .buttonStyle(.plain)
@@ -184,13 +216,23 @@ struct MainWindowView: View {
     
     @ViewBuilder
     private var sidebarFooter: some View {
-        VStack(spacing: DesignSystem.Spacing.small) {
-            Divider()
+        VStack(spacing: DesignSystem.Spacing.medium) {
+            Rectangle()
+                .fill(DesignSystem.Colors.divider.opacity(0.6))
+                .frame(height: 1)
             
-            HStack {
-                Text("\(journalStore.entries.count) entries")
-                    .font(DesignSystem.Typography.caption1)
-                    .foregroundStyle(DesignSystem.Colors.textTertiary)
+            HStack(spacing: DesignSystem.Spacing.medium) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.micro) {
+                    Text("\(journalStore.entries.count)")
+                        .font(DesignSystem.Typography.headline)
+                        .foregroundStyle(DesignSystem.Colors.textPrimary)
+                        .handwrittenStyle()
+                    
+                    Text("entries")
+                        .font(DesignSystem.Typography.caption1)
+                        .foregroundStyle(DesignSystem.Colors.textTertiary)
+                        .diaryTypography()
+                }
                 
                 Spacer()
                 
@@ -198,72 +240,78 @@ struct MainWindowView: View {
                     // Settings action
                 } label: {
                     Image(systemName: "gearshape")
-                        .font(.caption)
-                        .foregroundStyle(DesignSystem.Colors.textTertiary)
+                        .font(.system(size: DesignSystem.Components.iconMedium))
+                        .frame(width: DesignSystem.Components.touchTarget, height: DesignSystem.Components.touchTarget)
+                        .background(
+                            RoundedRectangle(cornerRadius: DesignSystem.Components.radiusSmall)
+                                .fill(DesignSystem.Colors.hover.opacity(0.5))
+                        )
                 }
                 .buttonStyle(.plain)
+                .foregroundStyle(DesignSystem.Colors.textTertiary)
                 .help("Settings")
             }
         }
-        .padding(.top, DesignSystem.Spacing.small)
     }
     
-    // MARK: - Floating Content Area
+    // MARK: - Spacious Floating Content Area
     
     @ViewBuilder
     private var floatingContentArea: some View {
         ZStack {
-            // Background canvas
+            // Background canvas with gentle gradient
             Color.clear
             
-            // Main floating panel
+            // Main floating panel with generous breathing room on ALL sides
             mainFloatingPanel
-                .padding(DesignSystem.Spacing.large)
+                .padding(.all, DesignSystem.Spacing.base)
         }
     }
     
     @ViewBuilder
     private var mainFloatingPanel: some View {
         VStack(spacing: 0) {
-            // Panel header
+            // Panel header with substantial presence
             panelHeader
             
-            // Panel content
+            // Panel content with spacious interior
             panelContent
         }
-        .gemiFloatingPanel(cornerRadius: 24, shadowIntensity: 1.2)
-        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .gemiFloatingPanel(cornerRadius: 28, shadowIntensity: 1.4)
+        .clipShape(RoundedRectangle(cornerRadius: 28))
     }
     
     @ViewBuilder
     private var panelHeader: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: DesignSystem.Spacing.large) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.small) {
                 Text(sidebarSelection.title)
-                    .font(DesignSystem.Typography.title2)
-                    .fontWeight(.bold)
+                    .font(DesignSystem.Typography.title1)
+                    .elegantSerifStyle()
                     .foregroundStyle(DesignSystem.Colors.textPrimary)
                 
                 if let description = sidebarSelection.description {
                     Text(description)
-                        .font(DesignSystem.Typography.callout)
+                        .font(DesignSystem.Typography.body)
                         .foregroundStyle(DesignSystem.Colors.textSecondary)
+                        .diaryTypography()
                 }
             }
             
             Spacer()
             
-            // Panel actions
+            // Panel actions with substantial presence
             panelHeaderActions
         }
-        .padding(.horizontal, DesignSystem.Spacing.large)
-        .padding(.vertical, DesignSystem.Spacing.base)
+        .padding(.horizontal, DesignSystem.Spacing.panelPadding)
+        .padding(.vertical, DesignSystem.Spacing.contentPadding)
+        .frame(minHeight: DesignSystem.Components.panelHeaderHeight)
         .background(
             Rectangle()
-                .fill(.regularMaterial.opacity(0.7))
+                .fill(.regularMaterial.opacity(0.8))
                 .overlay(alignment: .bottom) {
                     Rectangle()
-                        .fill(DesignSystem.Colors.divider.opacity(0.3))
+                        .fill(DesignSystem.Colors.divider.opacity(0.4))
                         .frame(height: 1)
                 }
         )
@@ -279,20 +327,32 @@ struct MainWindowView: View {
                     Divider()
                     Button("Export All") { }
                 } label: {
-                    Label("Options", systemImage: "ellipsis.circle")
-                        .labelStyle(.iconOnly)
+                    Image(systemName: "ellipsis.circle")
+                        .font(.system(size: DesignSystem.Components.iconMedium))
+                        .frame(width: DesignSystem.Components.touchTarget, height: DesignSystem.Components.touchTarget)
                 }
-                .gemiSubtleButton()
+                .buttonStyle(.borderless)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
+                .background(
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusSmall)
+                        .fill(DesignSystem.Colors.hover.opacity(0.5))
+                )
             }
             
             if sidebarSelection == .chat {
                 Button {
                     // Clear chat
                 } label: {
-                    Label("Clear Chat", systemImage: "trash")
-                        .labelStyle(.iconOnly)
+                    Image(systemName: "trash")
+                        .font(.system(size: DesignSystem.Components.iconMedium))
+                        .frame(width: DesignSystem.Components.touchTarget, height: DesignSystem.Components.touchTarget)
                 }
-                .gemiSubtleButton()
+                .buttonStyle(.borderless)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
+                .background(
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusSmall)
+                        .fill(DesignSystem.Colors.hover.opacity(0.5))
+                )
             }
         }
     }
@@ -303,90 +363,99 @@ struct MainWindowView: View {
             switch sidebarSelection {
             case .timeline:
                 TimelineView(selectedEntry: $selectedEntry)
-                    .background(Color.clear)
+                    .padding(DesignSystem.Spacing.contentPadding)
                 
             case .chat:
                 chatPlaceholder
-                    .background(Color.clear)
                 
             case .memories:
                 memoriesPlaceholder
-                    .background(Color.clear)
                 
             case .insights:
                 insightsPlaceholder
-                    .background(Color.clear)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
-    // MARK: - Placeholder Views
+    // MARK: - Spacious Coffee Shop Placeholder Views
     
     @ViewBuilder
     private var chatPlaceholder: some View {
-        VStack(spacing: DesignSystem.Spacing.large) {
+        VStack(spacing: DesignSystem.Spacing.huge) {
             Image(systemName: "message.circle.fill")
-                .font(.system(size: 48))
+                .font(.system(size: DesignSystem.Components.iconHuge * 2))
                 .foregroundStyle(DesignSystem.Colors.primary)
+                .shadow(color: DesignSystem.Colors.shadowLight, radius: 8, x: 0, y: 4)
             
-            Text("Talk to Gemi")
-                .font(DesignSystem.Typography.title2)
-                .fontWeight(.semibold)
-                .foregroundStyle(DesignSystem.Colors.textPrimary)
-            
-            Text("Start a conversation with your AI journal companion")
-                .font(DesignSystem.Typography.body)
-                .foregroundStyle(DesignSystem.Colors.textSecondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+            VStack(spacing: DesignSystem.Spacing.medium) {
+                Text("Talk to Gemi")
+                    .font(DesignSystem.Typography.display)
+                    .elegantSerifStyle()
+                    .foregroundStyle(DesignSystem.Colors.textPrimary)
+                
+                Text("Start a conversation with your AI journal companion.\nGemi remembers your past entries and can help you reflect,\nexplore your thoughts, or simply provide a friendly ear.")
+                    .font(DesignSystem.Typography.body)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .relaxedReadingStyle()
+                    .frame(maxWidth: 480)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
+        .padding(DesignSystem.Spacing.panelPadding)
     }
     
     @ViewBuilder
     private var memoriesPlaceholder: some View {
-        VStack(spacing: DesignSystem.Spacing.large) {
+        VStack(spacing: DesignSystem.Spacing.huge) {
             Image(systemName: "brain.head.profile")
-                .font(.system(size: 48))
+                .font(.system(size: DesignSystem.Components.iconHuge * 2))
                 .foregroundStyle(DesignSystem.Colors.secondary)
+                .shadow(color: DesignSystem.Colors.shadowLight, radius: 8, x: 0, y: 4)
             
-            Text("Memories")
-                .font(DesignSystem.Typography.title2)
-                .fontWeight(.semibold)
-                .foregroundStyle(DesignSystem.Colors.textPrimary)
-            
-            Text("Manage what Gemi remembers about you")
-                .font(DesignSystem.Typography.body)
-                .foregroundStyle(DesignSystem.Colors.textSecondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+            VStack(spacing: DesignSystem.Spacing.medium) {
+                Text("Memories")
+                    .font(DesignSystem.Typography.display)
+                    .elegantSerifStyle()
+                    .foregroundStyle(DesignSystem.Colors.textPrimary)
+                
+                Text("Manage what Gemi remembers about you.\nReview, edit, or delete the memories that Gemi has formed\nfrom your journal entries and conversations.")
+                    .font(DesignSystem.Typography.body)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .relaxedReadingStyle()
+                    .frame(maxWidth: 480)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
+        .padding(DesignSystem.Spacing.panelPadding)
     }
     
     @ViewBuilder
     private var insightsPlaceholder: some View {
-        VStack(spacing: DesignSystem.Spacing.large) {
+        VStack(spacing: DesignSystem.Spacing.huge) {
             Image(systemName: "chart.line.uptrend.xyaxis")
-                .font(.system(size: 48))
+                .font(.system(size: DesignSystem.Components.iconHuge * 2))
                 .foregroundStyle(DesignSystem.Colors.success)
+                .shadow(color: DesignSystem.Colors.shadowLight, radius: 8, x: 0, y: 4)
             
-            Text("Insights")
-                .font(DesignSystem.Typography.title2)
-                .fontWeight(.semibold)
-                .foregroundStyle(DesignSystem.Colors.textPrimary)
-            
-            Text("Discover patterns in your journaling journey")
-                .font(DesignSystem.Typography.body)
-                .foregroundStyle(DesignSystem.Colors.textSecondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+            VStack(spacing: DesignSystem.Spacing.medium) {
+                Text("Insights")
+                    .font(DesignSystem.Typography.display)
+                    .elegantSerifStyle()
+                    .foregroundStyle(DesignSystem.Colors.textPrimary)
+                
+                Text("Discover patterns in your journaling journey.\nExplore trends in your mood, writing frequency,\nand personal growth over time.")
+                    .font(DesignSystem.Typography.body)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .relaxedReadingStyle()
+                    .frame(maxWidth: 480)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
+        .padding(DesignSystem.Spacing.panelPadding)
     }
 }
 
