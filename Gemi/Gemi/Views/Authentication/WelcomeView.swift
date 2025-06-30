@@ -31,7 +31,7 @@ struct WelcomeView: View {
         }
         .background(DesignSystem.Colors.systemBackground)
         .onAppear {
-            withAnimation(.easeInOut(duration: 1.2).delay(0.3)) {
+            withAnimation(DesignSystem.Animation.warmWelcome.delay(0.3)) {
                 animateContent = true
             }
         }
@@ -61,7 +61,7 @@ struct WelcomeView: View {
                         .frame(width: 160, height: 160)
                         .scaleEffect(animateContent ? 1.0 : 0.3)
                         .opacity(animateContent ? 1 : 0)
-                        .animation(.easeOut(duration: 1.5).delay(0.5), value: animateContent)
+                        .animation(DesignSystem.Animation.breathing.delay(0.5), value: animateContent)
                     
                     Image(systemName: "book.closed.fill")
                         .font(.system(size: 72, weight: .ultraLight))
@@ -75,7 +75,7 @@ struct WelcomeView: View {
                         .symbolEffect(.bounce.up, options: .repeat(1), value: animateContent)
                         .scaleEffect(animateContent ? 1.0 : 0.3)
                         .opacity(animateContent ? 1 : 0)
-                        .animation(.spring(response: 1.2, dampingFraction: 0.6).delay(0.8), value: animateContent)
+                        .animation(DesignSystem.Animation.playfulBounce.delay(0.8), value: animateContent)
                 }
                 
                 VStack(spacing: 16) {
@@ -90,14 +90,14 @@ struct WelcomeView: View {
                         )
                         .opacity(animateContent ? 1 : 0)
                         .offset(x: animateContent ? 0 : -50)
-                        .animation(.easeOut(duration: 1.0).delay(1.0), value: animateContent)
+                        .animation(DesignSystem.Animation.smooth.delay(1.0), value: animateContent)
                     
                     Text("Your Private AI Diary")
                         .font(.system(size: 20, weight: .light, design: .default))
                         .foregroundStyle(DesignSystem.Colors.textSecondary)
                         .opacity(animateContent ? 1 : 0)
                         .offset(x: animateContent ? 0 : -30)
-                        .animation(.easeOut(duration: 1.0).delay(1.2), value: animateContent)
+                        .animation(DesignSystem.Animation.encouragingSpring.delay(1.2), value: animateContent)
                 }
                 
                 // Description
@@ -297,7 +297,7 @@ struct WelcomeView: View {
     private var setupButtonSection: some View {
         VStack(spacing: 20) {
             Button(action: {
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                withAnimation(DesignSystem.Animation.supportiveEmphasis) {
                     showSetup = true
                 }
             }) {
@@ -327,7 +327,7 @@ struct WelcomeView: View {
             .buttonStyle(.plain)
             .scaleEffect(animateContent ? 1 : 0.8)
             .opacity(animateContent ? 1 : 0)
-            .animation(.spring(response: 0.8, dampingFraction: 0.6).delay(3.0), value: animateContent)
+            .animation(DesignSystem.Animation.encouragingSpring.delay(3.0), value: animateContent)
             
             Text("Set up Face ID, Touch ID, or a secure password")
                 .font(.system(size: 14, weight: .regular, design: .default))

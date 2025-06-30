@@ -136,18 +136,20 @@ struct TimelineView: View {
                         .tag(entry)
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
-                        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                        .listRowInsets(EdgeInsets(top: 12, leading: 20, bottom: 12, trailing: 20))
                     }
                 } header: {
                     HStack {
                         Text(date, style: .date)
-                            .font(DesignSystem.Typography.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(DesignSystem.Colors.textPrimary)
+                            .font(DesignSystem.Typography.title3)
+                            .elegantSerifStyle()
+                            .foregroundStyle(Color(red: 0.529, green: 0.451, blue: 0.373)) // Warm brown for section headers
+                            .tracking(1.5)
                         Spacer()
                     }
-                    .padding(.horizontal, DesignSystem.Spacing.medium)
-                    .padding(.top, DesignSystem.Spacing.small)
+                    .padding(.horizontal, DesignSystem.Spacing.medium + 4)
+                    .padding(.top, DesignSystem.Spacing.large)
+                    .padding(.bottom, DesignSystem.Spacing.small)
                 }
             }
         }
@@ -180,51 +182,292 @@ struct TimelineView: View {
     
     @ViewBuilder
     private var emptyStateView: some View {
-        VStack(spacing: DesignSystem.Spacing.extraLarge) {
-            // Icon
-            Image(systemName: "book.pages")
-                .font(.system(size: 64))
-                .foregroundStyle(DesignSystem.Colors.textTertiary)
-            
-            // Title and description
-            VStack(spacing: DesignSystem.Spacing.small) {
-                Text("Welcome to Gemi")
-                    .font(DesignSystem.Typography.title2)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(DesignSystem.Colors.textPrimary)
+        ScrollView {
+            VStack(spacing: 0) {
+                Spacer(minLength: DesignSystem.Spacing.huge)
                 
-                Text("Your private AI journal companion")
-                    .font(DesignSystem.Typography.headline)
-                    .foregroundStyle(DesignSystem.Colors.textSecondary)
+                // Warm, inspiring illustration area
+                inspiringJournalIllustration
                 
-                Text("Start by creating your first journal entry, or chat with Gemi about your thoughts and feelings.")
-                    .font(DesignSystem.Typography.body)
-                    .foregroundStyle(DesignSystem.Colors.textTertiary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
+                Spacer(minLength: DesignSystem.Spacing.large)
+                
+                // Warm, personal welcome message
+                inspiringWelcomeContent
+                
+                Spacer(minLength: DesignSystem.Spacing.extraLarge)
+                
+                // Encouraging action section
+                inspiringActionSection
+                
+                Spacer(minLength: DesignSystem.Spacing.huge)
             }
-            
-            // Action buttons
-            HStack(spacing: DesignSystem.Spacing.base) {
-                Button {
-                    showingNewEntry = true
-                } label: {
-                    Label("Write First Entry", systemImage: "square.and.pencil")
-                }
-                .gemiPrimaryButton()
-                
-                Button {
-                    showingChat = true
-                } label: {
-                    Label("Talk to Gemi", systemImage: "message.circle")
-                }
-                .gemiSecondaryButton()
-            }
+            .padding(.horizontal, DesignSystem.Spacing.large)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(DesignSystem.Colors.backgroundPrimary)
-        .padding()
+        .background(
+            // Warm coffee shop background
+            LinearGradient(
+                colors: [
+                    DesignSystem.Colors.backgroundPrimary,
+                    Color(red: 0.98, green: 0.96, blue: 0.92), // Slightly warmer cream
+                    DesignSystem.Colors.backgroundPrimary
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
     }
+    
+    @ViewBuilder
+    private var inspiringJournalIllustration: some View {
+        ZStack {
+            // Soft warm glow background
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            DesignSystem.Colors.primary.opacity(0.15),
+                            DesignSystem.Colors.primary.opacity(0.05),
+                            Color.clear
+                        ],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 120
+                    )
+                )
+                .frame(width: 240, height: 240)
+                .scaleEffect(breathingAnimation ? 1.1 : 1.0)
+                .animation(DesignSystem.Animation.breathing, value: breathingAnimation)
+            
+            // Beautiful journal pages stack
+            VStack(spacing: -8) {
+                // Page 3 (background)
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(red: 0.99, green: 0.97, blue: 0.94))
+                    .frame(width: 100, height: 120)
+                    .shadow(color: DesignSystem.Colors.shadowLight, radius: 8, x: -2, y: 4)
+                    .rotation3DEffect(.degrees(5), axis: (x: 0, y: 1, z: 0))
+                    .offset(x: -20, y: 10)
+                
+                // Page 2 (middle)
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(red: 0.995, green: 0.98, blue: 0.96))
+                    .frame(width: 110, height: 130)
+                    .shadow(color: DesignSystem.Colors.shadowMedium, radius: 12, x: 0, y: 6)
+                    .rotation3DEffect(.degrees(-2), axis: (x: 0, y: 1, z: 0))
+                    .offset(x: 5, y: 0)
+                
+                // Page 1 (front) - the inviting blank page
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 1.0, green: 0.99, blue: 0.97),
+                                    Color(red: 0.99, green: 0.98, blue: 0.95)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 120, height: 140)
+                    
+                    // Subtle lined paper effect
+                    VStack(spacing: 8) {
+                        ForEach(0..<6, id: \.self) { _ in
+                            Rectangle()
+                                .fill(DesignSystem.Colors.primary.opacity(0.1))
+                                .frame(height: 1)
+                                .padding(.horizontal, 16)
+                        }
+                    }
+                    .offset(y: 10)
+                    
+                    // Gentle cursor blink to show it's ready
+                    Rectangle()
+                        .fill(DesignSystem.Colors.primary)
+                        .frame(width: 2, height: 20)
+                        .offset(x: -35, y: -30)
+                        .opacity(cursorBlink ? 1.0 : 0.3)
+                        .animation(DesignSystem.Animation.heartbeat, value: cursorBlink)
+                }
+                .shadow(color: DesignSystem.Colors.shadowHeavy, radius: 16, x: 2, y: 8)
+                .scaleEffect(pageHover ? 1.05 : 1.0)
+                .animation(DesignSystem.Animation.encouragingSpring, value: pageHover)
+                .offset(x: 10, y: -10)
+            }
+            .offset(y: -20)
+            
+            // Floating pencil with warm glow
+            Image(systemName: "pencil")
+                .font(.system(size: 28, weight: .light))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.8, green: 0.6, blue: 0.3), // Warm wood
+                            Color(red: 0.9, green: 0.7, blue: 0.4)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .shadow(color: DesignSystem.Colors.shadowMedium, radius: 8, x: 2, y: 4)
+                .rotation3DEffect(.degrees(45), axis: (x: 0, y: 0, z: 1))
+                .offset(x: 80, y: -40)
+                .scaleEffect(pencilFloat ? 1.1 : 1.0)
+                .animation(DesignSystem.Animation.gentleFloat.repeatForever(autoreverses: true), value: pencilFloat)
+        }
+        .onAppear {
+            withAnimation {
+                breathingAnimation = true
+                cursorBlink = true
+                pencilFloat = true
+                pageHover = false
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var inspiringWelcomeContent: some View {
+        VStack(spacing: DesignSystem.Spacing.large) {
+            // Warm, personal headline
+            VStack(spacing: DesignSystem.Spacing.small) {
+                Text("Your story begins here")
+                    .font(DesignSystem.Typography.display)
+                    .elegantSerifStyle()
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.35, green: 0.25, blue: 0.15), // Rich coffee brown
+                                Color(red: 0.5, green: 0.35, blue: 0.2)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .multilineTextAlignment(.center)
+                
+                Text("Every great journey starts with a single word")
+                    .font(DesignSystem.Typography.title3)
+                    .handwrittenStyle()
+                    .foregroundStyle(DesignSystem.Colors.primary.opacity(0.8))
+                    .multilineTextAlignment(.center)
+            }
+            
+            // Warm, encouraging description
+            VStack(spacing: DesignSystem.Spacing.medium) {
+                Text("Welcome to your private sanctuary—a place where thoughts become treasures and moments turn into memories.")
+                    .font(DesignSystem.Typography.body)
+                    .relaxedReadingStyle()
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 400)
+                
+                Text("Like morning coffee with an understanding friend, Gemi is here to listen, remember, and help you explore the beautiful complexity of your inner world.")
+                    .font(DesignSystem.Typography.callout)
+                    .diaryTypography()
+                    .foregroundStyle(DesignSystem.Colors.textTertiary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 450)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var inspiringActionSection: some View {
+        VStack(spacing: DesignSystem.Spacing.large) {
+            // Primary inspiration
+            VStack(spacing: DesignSystem.Spacing.medium) {
+                Text("What would you like to share today?")
+                    .font(DesignSystem.Typography.headline)
+                    .handwrittenStyle()
+                    .foregroundStyle(DesignSystem.Colors.textPrimary)
+                
+                // Warm, inviting action buttons
+                VStack(spacing: DesignSystem.Spacing.base) {
+                    Button {
+                        showingNewEntry = true
+                    } label: {
+                        HStack(spacing: DesignSystem.Spacing.small) {
+                            Image(systemName: "heart.text.square")
+                                .font(.system(size: 20))
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Write your first entry")
+                                    .font(DesignSystem.Typography.headline)
+                                    .handwrittenStyle()
+                                
+                                Text("Pour your thoughts onto paper")
+                                    .font(DesignSystem.Typography.caption1)
+                                    .opacity(0.8)
+                            }
+                            
+                            Spacer()
+                            
+                            Image(systemName: "arrow.right")
+                                .font(.system(size: 16, weight: .medium))
+                        }
+                        .padding(.horizontal, DesignSystem.Spacing.large)
+                        .padding(.vertical, DesignSystem.Spacing.medium + 4)
+                    }
+                    .gemiPrimaryButton()
+                    .frame(maxWidth: 320)
+                    
+                    Button {
+                        showingChat = true
+                    } label: {
+                        HStack(spacing: DesignSystem.Spacing.small) {
+                            Image(systemName: "bubble.left.and.bubble.right.fill")
+                                .font(.system(size: 18))
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Chat with Gemi")
+                                    .font(DesignSystem.Typography.headline)
+                                    .handwrittenStyle()
+                                
+                                Text("Start a warm conversation")
+                                    .font(DesignSystem.Typography.caption1)
+                                    .opacity(0.8)
+                            }
+                            
+                            Spacer()
+                            
+                            Image(systemName: "arrow.right")
+                                .font(.system(size: 16, weight: .medium))
+                        }
+                        .padding(.horizontal, DesignSystem.Spacing.large)
+                        .padding(.vertical, DesignSystem.Spacing.medium + 4)
+                    }
+                    .gemiSecondaryButton()
+                    .frame(maxWidth: 320)
+                }
+            }
+            
+            // Gentle inspiration quotes
+            VStack(spacing: DesignSystem.Spacing.small) {
+                Text("💭")
+                    .font(.system(size: 24))
+                
+                Text("\"The beautiful thing about writing is that you don't have to get it right the first time, unlike, say, a brain surgeon.\"")
+                    .font(DesignSystem.Typography.caption1)
+                    .diaryTypography()
+                    .italic()
+                    .foregroundStyle(DesignSystem.Colors.textTertiary.opacity(0.8))
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 300)
+                
+                Text("— Robert Cormier")
+                    .font(DesignSystem.Typography.caption2)
+                    .foregroundStyle(DesignSystem.Colors.textTertiary.opacity(0.6))
+            }
+        }
+    }
+    
+    // MARK: - Animation State for Empty State
+    @State private var breathingAnimation = false
+    @State private var cursorBlink = false
+    @State private var pencilFloat = false
+    @State private var pageHover = false
     
     // MARK: - Error Overlay
     
@@ -292,94 +535,220 @@ struct TimelineView: View {
 
 // MARK: - Timeline Entry Row
 
-/// Modern timeline entry row with consistent sizing and elegant design
+/// Beautiful journal page entry with paper-like texture and warm, substantial presence
 private struct TimelineEntryRow: View {
     let entry: JournalEntry
     let onDelete: () -> Void
     
     // MARK: - Constants
     
-    private let contentPreviewLength = 120
-    private let rowHeight: CGFloat = 72 // Fixed height for consistency
+    private let contentPreviewLength = 150
+    private let rowHeight: CGFloat = 140 // More substantial height for journal pages
+    
+    @State private var isHovered = false
     
     var body: some View {
-        HStack(spacing: DesignSystem.Spacing.medium) {
-            // Date indicator - compact and modern
-            VStack(spacing: 2) {
+        VStack(alignment: .leading, spacing: 0) {
+            // Date header with elegant journal styling
+            HStack {
                 Text(entry.date, style: .date)
-                    .font(DesignSystem.Typography.caption1)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(DesignSystem.Colors.textSecondary)
+                    .font(DesignSystem.Typography.diaryDate)
+                    .elegantSerifStyle()
+                    .foregroundStyle(journalDateColor)
+                    .tracking(1.2)
+                
+                Spacer()
                 
                 Text(entry.date, style: .time)
-                    .font(DesignSystem.Typography.caption2)
-                    .foregroundStyle(DesignSystem.Colors.textTertiary)
-            }
-            .frame(width: 60, alignment: .leading)
-            
-            // Main content area
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.tiny) {
-                // Title from first line
-                Text(entryTitle)
-                    .font(DesignSystem.Typography.callout)
-                    .fontWeight(.medium)
-                    .foregroundStyle(DesignSystem.Colors.textPrimary)
-                    .lineLimit(1)
+                    .font(DesignSystem.Typography.footnote)
+                    .diaryTypography()
+                    .foregroundStyle(DesignSystem.Colors.textTertiary.opacity(0.8))
                 
-                // Content preview
-                Text(contentPreview)
-                    .font(DesignSystem.Typography.caption1)
-                    .foregroundStyle(DesignSystem.Colors.textSecondary)
+                // Actions menu - more subtle and integrated
+                Menu {
+                    Button {
+                        // TODO: Add edit functionality in future phase
+                    } label: {
+                        Label("Edit Entry", systemImage: "pencil")
+                    }
+                    .disabled(true)
+                    
+                    Divider()
+                    
+                    Button(role: .destructive) {
+                        onDelete()
+                    } label: {
+                        Label("Delete Entry", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.caption)
+                        .foregroundStyle(DesignSystem.Colors.textTertiary.opacity(0.6))
+                        .frame(width: 24, height: 24)
+                }
+                .menuStyle(.borderlessButton)
+                .opacity(isHovered ? 1.0 : 0.2)
+                .scaleEffect(isHovered ? 1.1 : 0.9)
+                .animation(DesignSystem.Animation.supportiveEmphasis, value: isHovered)
+                .help("Entry options")
+            }
+            .padding(.horizontal, DesignSystem.Spacing.medium + 4)
+            .padding(.top, DesignSystem.Spacing.small + 2)
+            .padding(.bottom, DesignSystem.Spacing.tiny)
+            
+            // Main journal content with handwritten feel
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.small) {
+                // Entry title with personal handwritten style
+                Text(entryTitle)
+                    .font(DesignSystem.Typography.title3)
+                    .handwrittenStyle()
+                    .foregroundStyle(journalTitleColor)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                 
-                // Metadata row
-                HStack(spacing: DesignSystem.Spacing.small) {
+                // Content preview with relaxed reading style
+                Text(contentPreview)
+                    .font(DesignSystem.Typography.diaryPreview)
+                    .relaxedReadingStyle()
+                    .foregroundStyle(journalContentColor)
+                    .lineLimit(3)
+                    .multilineTextAlignment(.leading)
+                
+                // Footer with word count and subtle details
+                HStack {
                     Text("\(wordCount) words")
                         .font(DesignSystem.Typography.caption2)
-                        .foregroundStyle(DesignSystem.Colors.textTertiary)
+                        .diaryTypography()
+                        .foregroundStyle(DesignSystem.Colors.textTertiary.opacity(0.7))
                     
                     Spacer()
                     
-                    // Actions button
-                    Menu {
-                        Button {
-                            // TODO: Add edit functionality in future phase
-                        } label: {
-                            Label("Edit", systemImage: "pencil")
-                        }
-                        .disabled(true)
-                        
-                        Divider()
-                        
-                        Button(role: .destructive) {
-                            onDelete()
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.caption)
-                            .foregroundStyle(DesignSystem.Colors.textTertiary)
-                    }
-                    .menuStyle(.borderlessButton)
-                    .help("Entry options")
+                    // Subtle paper texture indicator
+                    Image(systemName: "doc.text")
+                        .font(.system(size: 10))
+                        .foregroundStyle(DesignSystem.Colors.textTertiary.opacity(0.4))
                 }
+                .padding(.top, DesignSystem.Spacing.tiny)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, DesignSystem.Spacing.medium + 4)
+            .padding(.bottom, DesignSystem.Spacing.medium)
         }
-        .frame(height: rowHeight, alignment: .top)
-        .padding(.horizontal, DesignSystem.Spacing.medium)
-        .padding(.vertical, DesignSystem.Spacing.small)
+        .frame(minHeight: rowHeight, alignment: .top)
         .background(
-            RoundedRectangle(cornerRadius: DesignSystem.Components.radiusSmall)
-                .fill(DesignSystem.Colors.backgroundSecondary.opacity(0.5))
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusSmall)
-                        .stroke(DesignSystem.Colors.divider.opacity(0.2), lineWidth: 0.5)
-                )
+            journalPageBackground
         )
+        .overlay(
+            journalPageBorder
+        )
+        .journalEntryShadow()
+        .scaleEffect(isHovered ? 1.03 : 1.0)
+        .rotation3DEffect(
+            .degrees(isHovered ? 2 : 0),
+            axis: (x: 0.1, y: 0.1, z: 0),
+            perspective: 0.8
+        )
+        .brightness(isHovered ? 0.05 : 0)
+        .animation(DesignSystem.Animation.encouragingSpring, value: isHovered)
+        .onHover { hovering in
+            withAnimation(DesignSystem.Animation.warmWelcome) {
+                isHovered = hovering
+            }
+        }
         .contentShape(Rectangle())
+    }
+    
+    // MARK: - Journal Page Styling
+    
+    private var journalPageBackground: some View {
+        ZStack {
+            // Base paper background with warm cream color
+            RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium + 2)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            paperBaseColor,
+                            paperBaseColor.opacity(0.98)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            
+            // Subtle paper texture overlay
+            RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium + 2)
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            Color.clear,
+                            paperTextureColor.opacity(0.015)
+                        ],
+                        center: .topLeading,
+                        startRadius: 0,
+                        endRadius: 200
+                    )
+                )
+            
+            // Warm inner glow for depth
+            RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium + 2)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            paperGlowColor.opacity(0.3),
+                            Color.clear,
+                            paperGlowColor.opacity(0.1)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.5
+                )
+        }
+    }
+    
+    private var journalPageBorder: some View {
+        RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium + 2)
+            .stroke(
+                LinearGradient(
+                    colors: [
+                        paperBorderColor.opacity(0.6),
+                        paperBorderColor.opacity(0.3),
+                        paperBorderColor.opacity(0.8)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: 2
+            )
+    }
+    
+    // MARK: - Journal Color Palette
+    
+    private var paperBaseColor: Color {
+        Color(red: 0.992, green: 0.976, blue: 0.952) // Warm cream paper
+    }
+    
+    private var paperTextureColor: Color {
+        Color(red: 0.845, green: 0.765, blue: 0.686) // Subtle warm brown texture
+    }
+    
+    private var paperGlowColor: Color {
+        Color(red: 0.961, green: 0.890, blue: 0.773) // Warm golden glow
+    }
+    
+    private var paperBorderColor: Color {
+        Color(red: 0.871, green: 0.812, blue: 0.749) // Warm beige border
+    }
+    
+    private var journalDateColor: Color {
+        Color(red: 0.647, green: 0.565, blue: 0.478) // Warm brown for dates
+    }
+    
+    private var journalTitleColor: Color {
+        Color(red: 0.294, green: 0.251, blue: 0.212) // Rich warm charcoal
+    }
+    
+    private var journalContentColor: Color {
+        Color(red: 0.412, green: 0.365, blue: 0.322) // Soft warm gray-brown
     }
     
     // MARK: - Computed Properties

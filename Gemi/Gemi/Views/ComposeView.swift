@@ -64,6 +64,14 @@ struct ComposeView: View {
     
     @State private var isFocusMode = false
     
+    // MARK: - Encouraging Animation State
+    
+    /// Writing encouragement state
+    @State private var isWriting = false
+    @State private var wordCountPulse = false
+    @State private var editorGlow = false
+    @State private var welcomePulse = 1.0
+    
     // MARK: - Constants
     
     private let placeholderText = "What's on your mind today?\n\nShare your thoughts, feelings, or experiences. This is your private space to reflect and express yourself freely."
@@ -139,24 +147,76 @@ struct ComposeView: View {
     @ViewBuilder
     private var textEditorSection: some View {
         ZStack(alignment: .topLeading) {
-            // Text editor with clean background
+            // Encouraging writing environment background
+            RoundedRectangle(cornerRadius: DesignSystem.Components.radiusLarge)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            DesignSystem.Colors.backgroundPrimary,
+                            DesignSystem.Colors.backgroundPrimary.opacity(0.98)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusLarge)
+                        .stroke(
+                            DesignSystem.Colors.primary.opacity(
+                                isTextEditorFocused ? 0.3 : 
+                                editorGlow ? 0.2 : 0.1
+                            ),
+                            lineWidth: 2
+                        )
+                )
+                .animation(DesignSystem.Animation.encouragingSpring, value: isTextEditorFocused)
+                .animation(DesignSystem.Animation.breathing, value: editorGlow)
+            
+            // Text editor with encouraging typography
             TextEditor(text: $content)
                 .focused($isTextEditorFocused)
-                .font(DesignSystem.Typography.body)
-                .lineSpacing(6)
-                .scrollContentBackground(.hidden) // Hide default background
-                .padding(DesignSystem.Spacing.large)
+                .font(DesignSystem.Typography.diaryBody)
+                .relaxedReadingStyle()
+                .scrollContentBackground(.hidden)
+                .padding(DesignSystem.Spacing.large + 8)
+                .onChange(of: content) { oldValue, newValue in
+                    handleContentChange(oldValue: oldValue, newValue: newValue)
+                }
+                .onTapGesture {
+                    withAnimation(DesignSystem.Animation.warmWelcome) {
+                        isTextEditorFocused = true
+                        editorGlow = true
+                    }
+                }
             
-            // Placeholder text (shown when content is empty)
+            // Warm, encouraging placeholder
             if content.isEmpty {
-                Text(placeholderText)
-                    .font(DesignSystem.Typography.body)
-                    .foregroundStyle(DesignSystem.Colors.textPlaceholder)
-                    .padding(DesignSystem.Spacing.large + 4) // Account for TextEditor padding
-                    .allowsHitTesting(false) // Allow clicks to pass through to TextEditor
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
+                    Text("What's on your mind today?")
+                        .font(DesignSystem.Typography.title3)
+                        .elegantSerifStyle()
+                        .foregroundStyle(DesignSystem.Colors.primary.opacity(0.7))
+                        .scaleEffect(welcomePulse)
+                    
+                    Text("Share your thoughts, feelings, or experiences.\nThis is your private space to reflect and express yourself freely.")
+                        .font(DesignSystem.Typography.body)
+                        .diaryTypography()
+                        .foregroundStyle(DesignSystem.Colors.textPlaceholder)
+                        .multilineTextAlignment(.leading)
+                }
+                .padding(DesignSystem.Spacing.large + 8)
+                .allowsHitTesting(false)
+                .opacity(isTextEditorFocused ? 0.6 : 1.0)
+                .animation(DesignSystem.Animation.smooth, value: isTextEditorFocused)
+                .onAppear {
+                    withAnimation(DesignSystem.Animation.breathing) {
+                        welcomePulse = 1.05
+                    }
+                }
             }
         }
-        .background(Color.clear) // Use transparent background for floating panel integration
+        .padding(DesignSystem.Spacing.medium)
+        .background(Color.clear)
     }
     
     // MARK: - Bottom Toolbar
@@ -197,25 +257,51 @@ struct ComposeView: View {
             
             // Entry info and actions (right side)
             HStack(spacing: DesignSystem.Spacing.base) {
-                // Recording indicator
+                // Encouraging recording indicator
                 if speechService.isRecording {
-                    HStack(spacing: DesignSystem.Spacing.tiny) {
-                        Circle()
-                            .fill(DesignSystem.Colors.error)
-                            .frame(width: 8, height: 8)
-                            .scaleEffect(speechService.isRecording ? 1.2 : 1.0)
-                            .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: speechService.isRecording)
+                    HStack(spacing: DesignSystem.Spacing.small) {
+                        ZStack {
+                            // Outer pulse ring
+                            Circle()
+                                .stroke(DesignSystem.Colors.primary.opacity(0.3), lineWidth: 3)
+                                .frame(width: 20, height: 20)
+                                .scaleEffect(speechService.isRecording ? 1.5 : 1.0)
+                                .opacity(speechService.isRecording ? 0.0 : 1.0)
+                                .animation(DesignSystem.Animation.breathing, value: speechService.isRecording)
+                            
+                            // Inner recording dot
+                            Circle()
+                                .fill(DesignSystem.Colors.primary)
+                                .frame(width: 8, height: 8)
+                                .scaleEffect(speechService.isRecording ? 1.3 : 1.0)
+                                .animation(DesignSystem.Animation.heartbeat, value: speechService.isRecording)
+                        }
                         
-                        Text("Recording...")
+                        Text("Listening to your voice...")
                             .font(DesignSystem.Typography.caption1)
-                            .foregroundStyle(DesignSystem.Colors.error)
+                            .diaryTypography()
+                            .foregroundStyle(DesignSystem.Colors.primary)
                     }
+                    .transition(.scale.combined(with: .opacity))
                 }
                 
-                // Word count
-                Text(entryWordCount)
-                    .font(DesignSystem.Typography.caption1)
-                    .foregroundStyle(DesignSystem.Colors.textTertiary)
+                // Encouraging word count
+                HStack(spacing: DesignSystem.Spacing.tiny) {
+                    Text(entryWordCount)
+                        .font(DesignSystem.Typography.caption1)
+                        .handwrittenStyle()
+                        .foregroundStyle(wordCountColor)
+                        .scaleEffect(wordCountPulse ? 1.2 : 1.0)
+                        .animation(DesignSystem.Animation.supportiveEmphasis, value: wordCountPulse)
+                    
+                    if wordCount > 0 {
+                        Image(systemName: "heart.fill")
+                            .font(.system(size: 8))
+                            .foregroundStyle(DesignSystem.Colors.primary.opacity(0.6))
+                            .scaleEffect(wordCountPulse ? 1.3 : 1.0)
+                            .animation(DesignSystem.Animation.playfulBounce, value: wordCountPulse)
+                    }
+                }
                 
                 // Save button
                 Button {
@@ -278,12 +364,13 @@ struct ComposeView: View {
         
         ToolbarItem(placement: .primaryAction) {
             Button(action: {
-                withAnimation {
+                withAnimation(DesignSystem.Animation.cozySettle) {
                     isFocusMode.toggle()
                 }
             }) {
                 Label("Focus Mode", systemImage: isFocusMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
             }
+            .help(isFocusMode ? "Exit focus mode" : "Enter focus mode for distraction-free writing")
         }
     }
     
@@ -291,13 +378,32 @@ struct ComposeView: View {
     
     /// Returns the current word count of the entry
     private var entryWordCount: String {
-        let wordCount = content
+        return "\(wordCount) \(wordCount == 1 ? "word" : "words")"
+    }
+    
+    /// Returns the numerical word count
+    private var wordCount: Int {
+        content
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .components(separatedBy: .whitespacesAndNewlines)
             .filter { !$0.isEmpty }
             .count
-        
-        return "\(wordCount) \(wordCount == 1 ? "word" : "words")"
+    }
+    
+    /// Returns encouraging color for word count based on progress
+    private var wordCountColor: Color {
+        switch wordCount {
+        case 0:
+            return DesignSystem.Colors.textTertiary
+        case 1...10:
+            return DesignSystem.Colors.primary.opacity(0.7)
+        case 11...50:
+            return DesignSystem.Colors.primary
+        case 51...100:
+            return DesignSystem.Colors.success.opacity(0.8)
+        default:
+            return DesignSystem.Colors.success
+        }
     }
     
     /// Returns true if the entry can be saved
@@ -311,6 +417,55 @@ struct ComposeView: View {
             return "mic.fill"
         } else {
             return "mic.circle.fill"
+        }
+    }
+    
+    // MARK: - Encouraging Interaction Handlers
+    
+    /// Handles content changes with encouraging feedback
+    @MainActor
+    private func handleContentChange(oldValue: String, newValue: String) {
+        let oldWordCount = oldValue
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .count
+        
+        let newWordCount = wordCount
+        
+        // Trigger encouraging animations on word milestones
+        if newWordCount > oldWordCount {
+            withAnimation(DesignSystem.Animation.supportiveEmphasis) {
+                wordCountPulse = true
+            }
+            
+            // Reset pulse after brief moment
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                withAnimation(DesignSystem.Animation.writingFlow) {
+                    wordCountPulse = false
+                }
+            }
+            
+            // Special encouragement at milestones
+            if newWordCount == 10 || newWordCount == 25 || newWordCount == 50 || newWordCount == 100 {
+                withAnimation(DesignSystem.Animation.playfulBounce) {
+                    // Could add special celebration here
+                }
+            }
+        }
+        
+        // Update writing state
+        isWriting = !newValue.isEmpty
+        
+        // Maintain editor glow while actively writing
+        if !newValue.isEmpty && !editorGlow {
+            withAnimation(DesignSystem.Animation.encouragingSpring) {
+                editorGlow = true
+            }
+        } else if newValue.isEmpty && editorGlow {
+            withAnimation(DesignSystem.Animation.cozySettle) {
+                editorGlow = false
+            }
         }
     }
     

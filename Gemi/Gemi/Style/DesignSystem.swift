@@ -725,32 +725,86 @@ enum DesignSystem {
         static let sidebarItemHeight: CGFloat = 52
     }
     
-    // MARK: - Animation Specifications
+    // MARK: - Encouraging Coffee Shop Animation Specifications
     
     enum Animation {
-        /// Quick interactions (0.15s)
-        static let quick = SwiftUI.Animation.easeInOut(duration: 0.15)
+        /// Instant response for immediate feedback - encouraging responsiveness
+        static let instant = SwiftUI.Animation.easeOut(duration: 0.1)
         
-        /// Standard animations (0.25s)
-        static let standard = SwiftUI.Animation.easeInOut(duration: 0.25)
+        /// Quick interactions with gentle ease - warm acknowledgment
+        static let quick = SwiftUI.Animation.easeOut(duration: 0.18)
         
-        /// Smooth transitions (0.35s)
-        static let smooth = SwiftUI.Animation.easeInOut(duration: 0.35)
+        /// Standard animations with welcoming curves - supportive transitions
+        static let standard = SwiftUI.Animation.timingCurve(0.25, 0.46, 0.45, 0.94, duration: 0.3)
         
-        /// Spring animation for interactive elements
-        static let spring = SwiftUI.Animation.spring(response: 0.6, dampingFraction: 0.8)
+        /// Smooth transitions with encouraging flow - maintaining cozy mood
+        static let smooth = SwiftUI.Animation.timingCurve(0.23, 1, 0.32, 1, duration: 0.45)
         
-        /// Gentle spring for subtle movements
-        static let gentleSpring = SwiftUI.Animation.spring(response: 0.4, dampingFraction: 0.9)
+        /// Playful bounce for delightful interactions - encouraging writing
+        static let playfulBounce = SwiftUI.Animation.interpolatingSpring(
+            mass: 0.8,
+            stiffness: 180,
+            damping: 12,
+            initialVelocity: 0
+        )
+        
+        /// Gentle encouraging spring - like a supportive friend
+        static let encouragingSpring = SwiftUI.Animation.interpolatingSpring(
+            mass: 1.0,
+            stiffness: 120,
+            damping: 15,
+            initialVelocity: 0
+        )
+        
+        /// Warm welcome spring - for onboarding and first interactions
+        static let warmWelcome = SwiftUI.Animation.interpolatingSpring(
+            mass: 1.2,
+            stiffness: 100,
+            damping: 18,
+            initialVelocity: 2
+        )
+        
+        /// Cozy settle animation - for panels and major transitions
+        static let cozySettle = SwiftUI.Animation.interpolatingSpring(
+            mass: 1.5,
+            stiffness: 140,
+            damping: 22,
+            initialVelocity: 0
+        )
+        
+        /// Gentle float for hover effects - inviting interaction
+        static let gentleFloat = SwiftUI.Animation.timingCurve(0.25, 0.46, 0.45, 0.94, duration: 0.25)
+        
+        /// Supportive emphasis - for important moments
+        static let supportiveEmphasis = SwiftUI.Animation.interpolatingSpring(
+            mass: 0.6,
+            stiffness: 200,
+            damping: 10,
+            initialVelocity: 1
+        )
+        
+        /// Writing flow animation - optimized for text input
+        static let writingFlow = SwiftUI.Animation.timingCurve(0.4, 0, 0.2, 1, duration: 0.2)
+        
+        /// Heartbeat pulse for subtle life
+        static let heartbeat = SwiftUI.Animation.easeInOut(duration: 1.2).repeatForever(autoreverses: true)
+        
+        /// Gentle breathing for ambient elements
+        static let breathing = SwiftUI.Animation.easeInOut(duration: 2.5).repeatForever(autoreverses: true)
+        
+        // MARK: - Legacy Aliases for Compatibility
+        static let spring = encouragingSpring
+        static let gentleSpring = cozySettle
     }
 }
 
 // MARK: - Button Styles
 
-/// Primary button style with sculptural interactive shadows
+/// Primary button style with encouraging, warm interactions
 struct GemiPrimaryButtonStyle: ButtonStyle {
     let isLoading: Bool
     @State private var isHovered = false
+    @State private var pulsePhase = 0.0
     
     init(isLoading: Bool = false) {
         self.isLoading = isLoading
@@ -765,41 +819,71 @@ struct GemiPrimaryButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity)
             .background(
                 ZStack {
+                    // Main button background with encouraging glow
                     RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
-                        .fill(DesignSystem.Colors.primary)
-                        .opacity(configuration.isPressed ? 0.9 : 1.0)
-                    
-                    // Inner warm glow
-                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
-                        .stroke(
+                        .fill(
                             LinearGradient(
                                 colors: [
-                                    Color.white.opacity(0.2),
-                                    Color.clear
+                                    DesignSystem.Colors.primary,
+                                    DesignSystem.Colors.primary.opacity(0.85)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
+                            )
                         )
+                        .brightness(configuration.isPressed ? -0.1 : 0)
+                    
+                    // Warm encouraging glow on hover
+                    if isHovered {
+                        RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
+                            .fill(
+                                RadialGradient(
+                                    colors: [
+                                        Color.white.opacity(0.3),
+                                        Color.clear
+                                    ],
+                                    center: .topLeading,
+                                    startRadius: 0,
+                                    endRadius: 80
+                                )
+                            )
+                            .scaleEffect(1.2)
+                    }
+                    
+                    // Subtle heartbeat pulse for important actions
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
+                        .stroke(
+                            Color.white.opacity(0.4 + 0.2 * sin(pulsePhase)),
+                            lineWidth: 1.5
+                        )
+                        .onAppear {
+                            withAnimation(DesignSystem.Animation.breathing) {
+                                pulsePhase = 2 * .pi
+                            }
+                        }
                 }
             )
-            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .scaleEffect(
+                configuration.isPressed ? 0.94 : 
+                isHovered ? 1.05 : 1.0
+            )
             .opacity(isLoading ? 0.6 : 1.0)
             .interactiveButtonShadow(isPressed: configuration.isPressed, isHovered: isHovered)
             .onHover { hovering in
-                withAnimation(DesignSystem.Animation.quick) {
+                withAnimation(DesignSystem.Animation.gentleFloat) {
                     isHovered = hovering
                 }
             }
-            .animation(DesignSystem.Animation.spring, value: configuration.isPressed)
+            .animation(DesignSystem.Animation.playfulBounce, value: configuration.isPressed)
+            .animation(DesignSystem.Animation.encouragingSpring, value: isHovered)
             .disabled(isLoading)
     }
 }
 
-/// Secondary button style with warm sculptural depth
+/// Secondary button style with inviting, warm interactions
 struct GemiSecondaryButtonStyle: ButtonStyle {
     @State private var isHovered = false
+    @State private var glowIntensity = 0.0
     
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -810,65 +894,136 @@ struct GemiSecondaryButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity)
             .background(
                 ZStack {
+                    // Base background with encouraging warmth
                     RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
                         .fill(DesignSystem.Colors.backgroundSecondary)
-                        .opacity(configuration.isPressed ? 0.8 : 1.0)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
+                                .fill(
+                                    DesignSystem.Colors.primary.opacity(
+                                        configuration.isPressed ? 0.15 : 
+                                        isHovered ? 0.08 : 0.02
+                                    )
+                                )
+                        )
                     
+                    // Inviting border with gentle glow
                     RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
-                        .stroke(DesignSystem.Colors.primary, lineWidth: 2)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    DesignSystem.Colors.primary.opacity(0.8 + glowIntensity * 0.4),
+                                    DesignSystem.Colors.primary.opacity(0.6 + glowIntensity * 0.3)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: isHovered ? 2.5 : 2
+                        )
                     
-                    // Inner warm glow on press
-                    if configuration.isPressed {
+                    // Encouraging shimmer on hover
+                    if isHovered {
                         RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
-                            .fill(DesignSystem.Colors.primary.opacity(0.08))
+                            .stroke(
+                                AngularGradient(
+                                    colors: [
+                                        Color.clear,
+                                        DesignSystem.Colors.primary.opacity(0.6),
+                                        Color.clear
+                                    ],
+                                    center: .center,
+                                    angle: .degrees(glowIntensity * 360)
+                                ),
+                                lineWidth: 1
+                            )
                     }
                 }
             )
-            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .scaleEffect(
+                configuration.isPressed ? 0.95 : 
+                isHovered ? 1.02 : 1.0
+            )
             .interactiveButtonShadow(isPressed: configuration.isPressed, isHovered: isHovered)
             .onHover { hovering in
-                withAnimation(DesignSystem.Animation.quick) {
+                withAnimation(DesignSystem.Animation.gentleFloat) {
                     isHovered = hovering
                 }
+                if hovering {
+                    withAnimation(DesignSystem.Animation.breathing) {
+                        glowIntensity = 1.0
+                    }
+                } else {
+                    withAnimation(DesignSystem.Animation.standard) {
+                        glowIntensity = 0.0
+                    }
+                }
             }
-            .animation(DesignSystem.Animation.spring, value: configuration.isPressed)
+            .animation(DesignSystem.Animation.playfulBounce, value: configuration.isPressed)
+            .animation(DesignSystem.Animation.encouragingSpring, value: isHovered)
     }
 }
 
-/// Subtle button style with gentle sculptural presence
+/// Subtle button style with gentle, encouraging presence
 struct GemiSubtleButtonStyle: ButtonStyle {
     @State private var isHovered = false
+    @State private var subtleGlow = false
     
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(DesignSystem.Typography.callout)
             .diaryTypography()
-            .foregroundStyle(DesignSystem.Colors.textSecondary)
+            .foregroundStyle(
+                isHovered ? DesignSystem.Colors.textPrimary : DesignSystem.Colors.textSecondary
+            )
             .padding(.horizontal, DesignSystem.Spacing.medium)
             .padding(.vertical, DesignSystem.Spacing.small)
             .background(
                 ZStack {
+                    // Base background with subtle warmth
                     RoundedRectangle(cornerRadius: DesignSystem.Components.radiusSmall)
                         .fill(DesignSystem.Colors.backgroundSecondary)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DesignSystem.Components.radiusSmall)
+                                .fill(
+                                    DesignSystem.Colors.hover.opacity(
+                                        configuration.isPressed ? 0.8 : 
+                                        isHovered ? 0.4 : 0.0
+                                    )
+                                )
+                        )
                     
-                    if configuration.isPressed || isHovered {
-                        RoundedRectangle(cornerRadius: DesignSystem.Components.radiusSmall)
-                            .fill(DesignSystem.Colors.hover)
-                    }
-                    
-                    // Subtle border for definition
+                    // Encouraging glow on interaction
                     RoundedRectangle(cornerRadius: DesignSystem.Components.radiusSmall)
-                        .stroke(DesignSystem.Colors.divider.opacity(0.3), lineWidth: 0.5)
+                        .stroke(
+                            DesignSystem.Colors.primary.opacity(
+                                subtleGlow ? 0.3 : 0.0
+                            ),
+                            lineWidth: 1
+                        )
+                    
+                    // Subtle definition border
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusSmall)
+                        .stroke(
+                            DesignSystem.Colors.divider.opacity(
+                                isHovered ? 0.6 : 0.3
+                            ), 
+                            lineWidth: 0.5
+                        )
                 }
             )
-            .scaleEffect(configuration.isPressed ? 0.94 : 1.0)
+            .scaleEffect(
+                configuration.isPressed ? 0.96 : 
+                isHovered ? 1.01 : 1.0
+            )
             .interactiveButtonShadow(isPressed: configuration.isPressed, isHovered: isHovered)
             .onHover { hovering in
-                withAnimation(DesignSystem.Animation.quick) {
+                withAnimation(DesignSystem.Animation.gentleFloat) {
                     isHovered = hovering
+                    subtleGlow = hovering
                 }
             }
-            .animation(DesignSystem.Animation.spring, value: configuration.isPressed)
+            .animation(DesignSystem.Animation.supportiveEmphasis, value: configuration.isPressed)
+            .animation(DesignSystem.Animation.writingFlow, value: isHovered)
     }
 }
 
