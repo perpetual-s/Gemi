@@ -373,7 +373,11 @@ private struct TimelineEntryRow: View {
         .padding(.vertical, DesignSystem.Spacing.small)
         .background(
             RoundedRectangle(cornerRadius: DesignSystem.Components.radiusSmall)
-                .fill(DesignSystem.Colors.backgroundSecondary.opacity(0.3))
+                .fill(DesignSystem.Colors.backgroundSecondary.opacity(0.5))
+                .overlay(
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusSmall)
+                        .stroke(DesignSystem.Colors.divider.opacity(0.2), lineWidth: 0.5)
+                )
         )
         .contentShape(Rectangle())
     }

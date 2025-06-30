@@ -260,10 +260,10 @@ struct MainWindowView: View {
         .padding(.vertical, DesignSystem.Spacing.base)
         .background(
             Rectangle()
-                .fill(DesignSystem.Colors.backgroundSecondary.opacity(0.3))
+                .fill(.regularMaterial.opacity(0.7))
                 .overlay(alignment: .bottom) {
                     Rectangle()
-                        .fill(DesignSystem.Colors.divider.opacity(0.2))
+                        .fill(DesignSystem.Colors.divider.opacity(0.3))
                         .frame(height: 1)
                 }
         )

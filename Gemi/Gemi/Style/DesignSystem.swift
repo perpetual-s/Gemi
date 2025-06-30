@@ -121,11 +121,35 @@ enum DesignSystem {
         /// Floating panel background with elevated appearance
         static let floatingPanelBackground = Color(NSColor.windowBackgroundColor)
         
-        /// Canvas background behind floating panels
-        static let canvasBackground = Color(red: 0.97, green: 0.97, blue: 0.98)
+        /// Canvas background behind floating panels - adaptive for light/dark mode
+        static let canvasBackground: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "CanvasBackground") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.12, green: 0.12, blue: 0.13, alpha: 1.0) // Dark mode
+                } else {
+                    return NSColor(red: 0.97, green: 0.97, blue: 0.98, alpha: 1.0) // Light mode
+                }
+            })
+            #else
+            return Color(red: 0.97, green: 0.97, blue: 0.98)
+            #endif
+        }()
         
-        /// Sidebar background with depth
-        static let sidebarBackground = Color(red: 0.95, green: 0.95, blue: 0.96)
+        /// Sidebar background with depth - adaptive for light/dark mode
+        static let sidebarBackground: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "SidebarBackground") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor(red: 0.15, green: 0.15, blue: 0.16, alpha: 1.0) // Dark mode
+                } else {
+                    return NSColor(red: 0.95, green: 0.95, blue: 0.96, alpha: 1.0) // Light mode
+                }
+            })
+            #else
+            return Color(red: 0.95, green: 0.95, blue: 0.96)
+            #endif
+        }()
         
         // MARK: Interface Colors
         
@@ -141,16 +165,52 @@ enum DesignSystem {
         /// Selection states
         static let selection = Color(NSColor.selectedContentBackgroundColor)
         
-        // MARK: Shadow Colors
+        // MARK: Shadow Colors - adaptive for light/dark mode
         
         /// Light shadow for floating elements
-        static let shadowLight = Color.black.opacity(0.06)
+        static let shadowLight: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "ShadowLight") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor.black.withAlphaComponent(0.25) // Stronger in dark mode
+                } else {
+                    return NSColor.black.withAlphaComponent(0.06) // Light mode
+                }
+            })
+            #else
+            return Color.black.opacity(0.06)
+            #endif
+        }()
         
         /// Medium shadow for elevated elements
-        static let shadowMedium = Color.black.opacity(0.12)
+        static let shadowMedium: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "ShadowMedium") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor.black.withAlphaComponent(0.35) // Stronger in dark mode
+                } else {
+                    return NSColor.black.withAlphaComponent(0.12) // Light mode
+                }
+            })
+            #else
+            return Color.black.opacity(0.12)
+            #endif
+        }()
         
         /// Heavy shadow for modal overlays
-        static let shadowHeavy = Color.black.opacity(0.20)
+        static let shadowHeavy: Color = {
+            #if os(macOS)
+            return Color(NSColor(name: "ShadowHeavy") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor.black.withAlphaComponent(0.50) // Stronger in dark mode
+                } else {
+                    return NSColor.black.withAlphaComponent(0.20) // Light mode
+                }
+            })
+            #else
+            return Color.black.opacity(0.20)
+            #endif
+        }()
         
         // MARK: Semantic Colors (fallback to system)
         
@@ -241,14 +301,53 @@ enum DesignSystem {
         /// Deep shadow for overlays
         static let shadowDeep = (color: Color.black.opacity(0.16), radius: CGFloat(24), x: CGFloat(0), y: CGFloat(8))
         
-        /// Floating panel shadow - soft and natural
-        static let shadowFloating = (color: Color.black.opacity(0.08), radius: CGFloat(20), x: CGFloat(0), y: CGFloat(6))
+        /// Floating panel shadow - soft and natural, adaptive for dark mode
+        static var shadowFloating: (color: Color, radius: CGFloat, x: CGFloat, y: CGFloat) {
+            #if os(macOS)
+            let shadowColor = Color(NSColor(name: "ShadowFloating") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor.black.withAlphaComponent(0.35) // Stronger in dark mode
+                } else {
+                    return NSColor.black.withAlphaComponent(0.08) // Light mode
+                }
+            })
+            #else
+            let shadowColor = Color.black.opacity(0.08)
+            #endif
+            return (color: shadowColor, radius: CGFloat(20), x: CGFloat(0), y: CGFloat(6))
+        }
         
-        /// Heavy floating shadow for main content panels
-        static let shadowFloatingHeavy = (color: Color.black.opacity(0.15), radius: CGFloat(32), x: CGFloat(0), y: CGFloat(12))
+        /// Heavy floating shadow for main content panels, adaptive for dark mode
+        static var shadowFloatingHeavy: (color: Color, radius: CGFloat, x: CGFloat, y: CGFloat) {
+            #if os(macOS)
+            let shadowColor = Color(NSColor(name: "ShadowFloatingHeavy") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor.black.withAlphaComponent(0.45) // Stronger in dark mode
+                } else {
+                    return NSColor.black.withAlphaComponent(0.15) // Light mode
+                }
+            })
+            #else
+            let shadowColor = Color.black.opacity(0.15)
+            #endif
+            return (color: shadowColor, radius: CGFloat(32), x: CGFloat(0), y: CGFloat(12))
+        }
         
-        /// Inner shadow for depth effect
-        static let shadowInner = (color: Color.black.opacity(0.03), radius: CGFloat(4), x: CGFloat(0), y: CGFloat(-1))
+        /// Inner shadow for depth effect, adaptive for dark mode
+        static var shadowInner: (color: Color, radius: CGFloat, x: CGFloat, y: CGFloat) {
+            #if os(macOS)
+            let shadowColor = Color(NSColor(name: "ShadowInner") { appearance in
+                if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+                    return NSColor.black.withAlphaComponent(0.15) // Stronger in dark mode
+                } else {
+                    return NSColor.black.withAlphaComponent(0.03) // Light mode
+                }
+            })
+            #else
+            let shadowColor = Color.black.opacity(0.03)
+            #endif
+            return (color: shadowColor, radius: CGFloat(4), x: CGFloat(0), y: CGFloat(-1))
+        }
         
         // MARK: Sizing
         
