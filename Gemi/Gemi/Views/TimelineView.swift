@@ -126,7 +126,7 @@ struct TimelineView: View {
     private var timelineList: some View {
         List(selection: $selectedEntry) {
             ForEach(groupedEntries.keys.sorted(by: >), id: \.self) { date in
-                Section(header: Text(date, style: .date)) {
+                Section {
                     ForEach(groupedEntries[date]!) { entry in
                         TimelineEntryRow(entry: entry) {
                             // Delete action
@@ -134,11 +134,26 @@ struct TimelineView: View {
                             showingDeleteAlert = true
                         }
                         .tag(entry)
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                     }
+                } header: {
+                    HStack {
+                        Text(date, style: .date)
+                            .font(DesignSystem.Typography.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(DesignSystem.Colors.textPrimary)
+                        Spacer()
+                    }
+                    .padding(.horizontal, DesignSystem.Spacing.medium)
+                    .padding(.top, DesignSystem.Spacing.small)
                 }
             }
         }
-        .listStyle(.inset(alternatesRowBackgrounds: true))
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(Color.clear)
         .refreshable {
             await journalStore.refreshEntries()
         }
@@ -277,84 +292,124 @@ struct TimelineView: View {
 
 // MARK: - Timeline Entry Row
 
-/// Individual row component for displaying a journal entry in the timeline
+/// Modern timeline entry row with consistent sizing and elegant design
 private struct TimelineEntryRow: View {
     let entry: JournalEntry
     let onDelete: () -> Void
     
     // MARK: - Constants
     
-    private let maxContentLines = 3
-    private let contentPreviewLength = 150
+    private let contentPreviewLength = 120
+    private let rowHeight: CGFloat = 72 // Fixed height for consistency
     
     var body: some View {
-        HStack(alignment: .top, spacing: DesignSystem.Spacing.medium) {
-            // Date indicator
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.tiny) {
+        HStack(spacing: DesignSystem.Spacing.medium) {
+            // Date indicator - compact and modern
+            VStack(spacing: 2) {
                 Text(entry.date, style: .date)
                     .font(DesignSystem.Typography.caption1)
-                    .fontWeight(.medium)
+                    .fontWeight(.semibold)
                     .foregroundStyle(DesignSystem.Colors.textSecondary)
                 
                 Text(entry.date, style: .time)
                     .font(DesignSystem.Typography.caption2)
                     .foregroundStyle(DesignSystem.Colors.textTertiary)
             }
-            .frame(width: 80, alignment: .leading)
+            .frame(width: 60, alignment: .leading)
             
-            // Content preview
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.small) {
-                Text(contentPreview)
-                    .font(DesignSystem.Typography.body)
-                    .lineLimit(maxContentLines)
-                    .multilineTextAlignment(.leading)
+            // Main content area
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.tiny) {
+                // Title from first line
+                Text(entryTitle)
+                    .font(DesignSystem.Typography.callout)
+                    .fontWeight(.medium)
                     .foregroundStyle(DesignSystem.Colors.textPrimary)
+                    .lineLimit(1)
                 
-                // Word count indicator
-                Text("\(wordCount) words")
-                    .font(DesignSystem.Typography.caption2)
-                    .foregroundStyle(DesignSystem.Colors.textTertiary)
-            }
-            
-            Spacer()
-            
-            // Actions menu
-            Menu {
-                Button {
-                    // TODO: Add edit functionality in future phase
-                } label: {
-                    Label("Edit", systemImage: "pencil")
-                }
-                .disabled(true) // Disabled until edit functionality is implemented
-                
-                Divider()
-                
-                Button(role: .destructive) {
-                    onDelete()
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-            } label: {
-                Image(systemName: "ellipsis.circle")
+                // Content preview
+                Text(contentPreview)
+                    .font(DesignSystem.Typography.caption1)
                     .foregroundStyle(DesignSystem.Colors.textSecondary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                
+                // Metadata row
+                HStack(spacing: DesignSystem.Spacing.small) {
+                    Text("\(wordCount) words")
+                        .font(DesignSystem.Typography.caption2)
+                        .foregroundStyle(DesignSystem.Colors.textTertiary)
+                    
+                    Spacer()
+                    
+                    // Actions button
+                    Menu {
+                        Button {
+                            // TODO: Add edit functionality in future phase
+                        } label: {
+                            Label("Edit", systemImage: "pencil")
+                        }
+                        .disabled(true)
+                        
+                        Divider()
+                        
+                        Button(role: .destructive) {
+                            onDelete()
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.caption)
+                            .foregroundStyle(DesignSystem.Colors.textTertiary)
+                    }
+                    .menuStyle(.borderlessButton)
+                    .help("Entry options")
+                }
             }
-            .menuStyle(.borderlessButton)
-            .help("Entry options")
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .frame(height: rowHeight, alignment: .top)
+        .padding(.horizontal, DesignSystem.Spacing.medium)
         .padding(.vertical, DesignSystem.Spacing.small)
+        .background(
+            RoundedRectangle(cornerRadius: DesignSystem.Components.radiusSmall)
+                .fill(DesignSystem.Colors.backgroundSecondary.opacity(0.3))
+        )
         .contentShape(Rectangle())
     }
     
     // MARK: - Computed Properties
     
+    private var entryTitle: String {
+        let trimmed = entry.content.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if trimmed.isEmpty {
+            return "Untitled Entry"
+        }
+        
+        // Get first line or first 40 characters for title
+        let firstLine = trimmed.components(separatedBy: .newlines).first ?? ""
+        let title = String(firstLine.prefix(40))
+        
+        return title.isEmpty ? "Untitled Entry" : (title.count < firstLine.count ? title + "..." : title)
+    }
+    
     private var contentPreview: String {
         let trimmed = entry.content.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        if trimmed.count <= contentPreviewLength {
-            return trimmed
+        if trimmed.isEmpty {
+            return "No content"
         }
         
-        let preview = String(trimmed.prefix(contentPreviewLength))
+        // Skip the first line (used as title) and get preview from remaining content
+        let lines = trimmed.components(separatedBy: .newlines)
+        let contentLines = lines.count > 1 ? Array(lines.dropFirst()).joined(separator: " ") : trimmed
+        
+        if contentLines.count <= contentPreviewLength {
+            return contentLines
+        }
+        
+        let preview = String(contentLines.prefix(contentPreviewLength))
         // Try to break at a word boundary
         if let lastSpace = preview.lastIndex(of: " ") {
             return String(preview[..<lastSpace]) + "..."

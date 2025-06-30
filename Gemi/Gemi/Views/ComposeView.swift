@@ -139,39 +139,33 @@ struct ComposeView: View {
     @ViewBuilder
     private var textEditorSection: some View {
         ZStack(alignment: .topLeading) {
-            // Background
-            RoundedRectangle(cornerRadius: 12)
-                .fill(.background)
-                .stroke(.separator, lineWidth: 1)
-            
-            // Text editor
+            // Text editor with clean background
             TextEditor(text: $content)
                 .focused($isTextEditorFocused)
-                .font(.body)
-                .lineSpacing(4)
+                .font(DesignSystem.Typography.body)
+                .lineSpacing(6)
                 .scrollContentBackground(.hidden) // Hide default background
-                .padding(16)
+                .padding(DesignSystem.Spacing.large)
             
             // Placeholder text (shown when content is empty)
             if content.isEmpty {
                 Text(placeholderText)
-                    .font(.body)
-                    .foregroundStyle(.tertiary)
-                    .padding(20) // Slightly more padding to align with TextEditor
+                    .font(DesignSystem.Typography.body)
+                    .foregroundStyle(DesignSystem.Colors.textPlaceholder)
+                    .padding(DesignSystem.Spacing.large + 4) // Account for TextEditor padding
                     .allowsHitTesting(false) // Allow clicks to pass through to TextEditor
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 10)
+        .background(Color.clear) // Use transparent background for floating panel integration
     }
     
     // MARK: - Bottom Toolbar
     
     @ViewBuilder
     private var bottomToolbar: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: DesignSystem.Spacing.base) {
             // Multimodal input buttons (left side)
-            HStack(spacing: 12) {
+            HStack(spacing: DesignSystem.Spacing.medium) {
                 // Microphone button for speech-to-text
                 Button {
                     Task {
@@ -180,9 +174,9 @@ struct ComposeView: View {
                 } label: {
                     Label("Dictate", systemImage: microphoneButtonIcon)
                         .labelStyle(.iconOnly)
-                        .foregroundStyle(speechService.isRecording ? .red : .primary)
+                        .foregroundStyle(speechService.isRecording ? DesignSystem.Colors.error : DesignSystem.Colors.textSecondary)
                 }
-                .buttonStyle(.borderless)
+                .gemiSubtleButton()
                 .help(speechService.isRecording ? "Stop dictation" : "Start voice dictation")
                 .disabled(isSaving)
                 
@@ -192,8 +186,9 @@ struct ComposeView: View {
                 } label: {
                     Label("Add Image", systemImage: "photo.circle.fill")
                         .labelStyle(.iconOnly)
+                        .foregroundStyle(DesignSystem.Colors.textSecondary)
                 }
-                .buttonStyle(.borderless)
+                .gemiSubtleButton()
                 .help("Attach image")
                 .disabled(isSaving)
             }
@@ -201,26 +196,26 @@ struct ComposeView: View {
             Spacer()
             
             // Entry info and actions (right side)
-            HStack(spacing: 16) {
+            HStack(spacing: DesignSystem.Spacing.base) {
                 // Recording indicator
                 if speechService.isRecording {
-                    HStack(spacing: 4) {
+                    HStack(spacing: DesignSystem.Spacing.tiny) {
                         Circle()
-                            .fill(.red)
+                            .fill(DesignSystem.Colors.error)
                             .frame(width: 8, height: 8)
                             .scaleEffect(speechService.isRecording ? 1.2 : 1.0)
                             .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: speechService.isRecording)
                         
                         Text("Recording...")
-                            .font(.caption)
-                            .foregroundStyle(.red)
+                            .font(DesignSystem.Typography.caption1)
+                            .foregroundStyle(DesignSystem.Colors.error)
                     }
                 }
                 
                 // Word count
                 Text(entryWordCount)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(DesignSystem.Typography.caption1)
+                    .foregroundStyle(DesignSystem.Colors.textTertiary)
                 
                 // Save button
                 Button {
@@ -229,7 +224,7 @@ struct ComposeView: View {
                     }
                 } label: {
                     if isSaving {
-                        HStack(spacing: 6) {
+                        HStack(spacing: DesignSystem.Spacing.small) {
                             ProgressView()
                                 .scaleEffect(0.8)
                             Text("Saving...")
@@ -239,17 +234,23 @@ struct ComposeView: View {
                             .labelStyle(.titleAndIcon)
                     }
                 }
-                .buttonStyle(.borderedProminent)
+                .gemiPrimaryButton(isLoading: isSaving)
                 .disabled(isSaving || !canSave)
                 .keyboardShortcut("s", modifiers: .command)
+                .frame(maxWidth: 140)
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .background(.regularMaterial)
-        .overlay(alignment: .top) {
-            Divider()
-        }
+        .padding(.horizontal, DesignSystem.Spacing.large)
+        .padding(.vertical, DesignSystem.Spacing.base)
+        .background(
+            Rectangle()
+                .fill(DesignSystem.Colors.backgroundSecondary.opacity(0.8))
+                .overlay(alignment: .top) {
+                    Rectangle()
+                        .fill(DesignSystem.Colors.divider.opacity(0.3))
+                        .frame(height: 1)
+                }
+        )
     }
     
     // MARK: - Toolbar Content

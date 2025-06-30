@@ -113,6 +113,20 @@ enum DesignSystem {
         /// Window background
         static let backgroundWindow = Color(NSColor.windowBackgroundColor)
         
+        // MARK: Floating Panel Colors
+        
+        /// Main panel background with subtle warmth
+        static let panelBackground = Color(NSColor.controlBackgroundColor)
+        
+        /// Floating panel background with elevated appearance
+        static let floatingPanelBackground = Color(NSColor.windowBackgroundColor)
+        
+        /// Canvas background behind floating panels
+        static let canvasBackground = Color(red: 0.97, green: 0.97, blue: 0.98)
+        
+        /// Sidebar background with depth
+        static let sidebarBackground = Color(red: 0.95, green: 0.95, blue: 0.96)
+        
         // MARK: Interface Colors
         
         /// Dividers and borders
@@ -126,6 +140,17 @@ enum DesignSystem {
         
         /// Selection states
         static let selection = Color(NSColor.selectedContentBackgroundColor)
+        
+        // MARK: Shadow Colors
+        
+        /// Light shadow for floating elements
+        static let shadowLight = Color.black.opacity(0.06)
+        
+        /// Medium shadow for elevated elements
+        static let shadowMedium = Color.black.opacity(0.12)
+        
+        /// Heavy shadow for modal overlays
+        static let shadowHeavy = Color.black.opacity(0.20)
         
         // MARK: Semantic Colors (fallback to system)
         
@@ -215,6 +240,15 @@ enum DesignSystem {
         
         /// Deep shadow for overlays
         static let shadowDeep = (color: Color.black.opacity(0.16), radius: CGFloat(24), x: CGFloat(0), y: CGFloat(8))
+        
+        /// Floating panel shadow - soft and natural
+        static let shadowFloating = (color: Color.black.opacity(0.08), radius: CGFloat(20), x: CGFloat(0), y: CGFloat(6))
+        
+        /// Heavy floating shadow for main content panels
+        static let shadowFloatingHeavy = (color: Color.black.opacity(0.15), radius: CGFloat(32), x: CGFloat(0), y: CGFloat(12))
+        
+        /// Inner shadow for depth effect
+        static let shadowInner = (color: Color.black.opacity(0.03), radius: CGFloat(4), x: CGFloat(0), y: CGFloat(-1))
         
         // MARK: Sizing
         
@@ -359,6 +393,80 @@ struct GemiElevatedCardStyle: ViewModifier {
     }
 }
 
+// MARK: - Floating Panel Styles
+
+/// Main floating panel style with sophisticated depth and shadows
+struct GemiFloatingPanelStyle: ViewModifier {
+    let cornerRadius: CGFloat
+    let shadowIntensity: CGFloat
+    
+    init(cornerRadius: CGFloat = 20, shadowIntensity: CGFloat = 1.0) {
+        self.cornerRadius = cornerRadius
+        self.shadowIntensity = shadowIntensity
+    }
+    
+    func body(content: Content) -> some View {
+        content
+            .background(
+                ZStack {
+                    // Main panel background
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .fill(DesignSystem.Colors.floatingPanelBackground)
+                    
+                    // Subtle inner shadow for depth
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .stroke(DesignSystem.Colors.divider.opacity(0.1), lineWidth: 0.5)
+                }
+                .shadow(
+                    color: DesignSystem.Components.shadowFloating.color.opacity(shadowIntensity),
+                    radius: DesignSystem.Components.shadowFloating.radius,
+                    x: DesignSystem.Components.shadowFloating.x,
+                    y: DesignSystem.Components.shadowFloating.y
+                )
+                .shadow(
+                    color: DesignSystem.Components.shadowFloatingHeavy.color.opacity(shadowIntensity * 0.3),
+                    radius: DesignSystem.Components.shadowFloatingHeavy.radius,
+                    x: DesignSystem.Components.shadowFloatingHeavy.x,
+                    y: DesignSystem.Components.shadowFloatingHeavy.y
+                )
+            )
+    }
+}
+
+/// Sidebar panel style with subtle depth
+struct GemiSidebarPanelStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(DesignSystem.Colors.sidebarBackground)
+                    .shadow(
+                        color: DesignSystem.Components.shadowCard.color,
+                        radius: DesignSystem.Components.shadowCard.radius,
+                        x: DesignSystem.Components.shadowCard.x,
+                        y: DesignSystem.Components.shadowCard.y
+                    )
+            )
+    }
+}
+
+/// Canvas background for the main workspace
+struct GemiCanvasStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .background(
+                LinearGradient(
+                    colors: [
+                        DesignSystem.Colors.canvasBackground,
+                        DesignSystem.Colors.canvasBackground.opacity(0.95)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+    }
+}
+
 // MARK: - View Extensions
 
 extension View {
@@ -395,5 +503,20 @@ extension View {
     /// Applies standard section spacing
     func gemiSectionSpacing() -> some View {
         self.padding(.bottom, DesignSystem.Spacing.large)
+    }
+    
+    /// Applies floating panel style with sophisticated shadows
+    func gemiFloatingPanel(cornerRadius: CGFloat = 20, shadowIntensity: CGFloat = 1.0) -> some View {
+        self.modifier(GemiFloatingPanelStyle(cornerRadius: cornerRadius, shadowIntensity: shadowIntensity))
+    }
+    
+    /// Applies sidebar panel style
+    func gemiSidebarPanel() -> some View {
+        self.modifier(GemiSidebarPanelStyle())
+    }
+    
+    /// Applies canvas background style
+    func gemiCanvas() -> some View {
+        self.modifier(GemiCanvasStyle())
     }
 }
