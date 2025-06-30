@@ -55,16 +55,8 @@ struct MainWindowView: View {
             Task {
                 await journalStore.refreshEntries()
             }
-            
-            // Show onboarding if first launch
-            if !hasShownOnboarding {
-                onboardingState.shouldShowOnboarding = true
-            } else {
-                // Show coach marks for returning users
-                showCoachMarksIfNeeded()
-            }
         }
-        .sheet(isPresented: $onboardingState.shouldShowOnboarding) {
+        .sheet(isPresented: .constant(!onboardingState.hasCompletedOnboarding)) {
             OnboardingView()
         }
         .sheet(isPresented: $showingSettings) {
@@ -128,7 +120,7 @@ struct MainWindowView: View {
                 }
                 .keyboardShortcut("n", modifiers: .command)
                 .coachMark(
-                    .composeButton,
+                    .firstEntry,
                     title: "Start Your First Entry",
                     message: "Click here to write your first journal entry. Gemi will help you reflect on your thoughts."
                 )

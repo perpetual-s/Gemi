@@ -30,7 +30,7 @@ final class OnboardingState {
     // Privacy settings chosen during onboarding
     var enableBiometrics: Bool = false
     var enableAutoSave: Bool = true
-    var selectedTheme: AppTheme = .light
+    var selectedTheme: AppTheme = .system
     
     // MARK: - Initialization
     
@@ -67,7 +67,7 @@ final class OnboardingState {
         completeOnboarding()
     }
     
-    private func completeOnboarding() {
+    func completeOnboarding() {
         withAnimation(DesignSystem.Animation.smooth) {
             hasCompletedOnboarding = true
         }
@@ -164,18 +164,3 @@ enum CoachMarkType: String, Codable {
     case themes = "themes"
 }
 
-// MARK: - App Theme
-
-enum AppTheme: String, CaseIterable {
-    case light = "Light"
-    case dark = "Dark"
-    case auto = "Auto"
-    
-    var icon: String {
-        switch self {
-        case .light: return "sun.max.fill"
-        case .dark: return "moon.fill"
-        case .auto: return "circle.lefthalf.filled"
-        }
-    }
-}

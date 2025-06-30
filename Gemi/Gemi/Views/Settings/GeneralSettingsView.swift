@@ -8,10 +8,12 @@
 import SwiftUI
 
 struct GeneralSettingsView: View {
-    @Environment(SettingsStore.self) private var settings
+    @Environment(SettingsStore.self) private var settingsStore
     @State private var tempAutoSaveInterval = 3.0
     
     var body: some View {
+        @Bindable var settings = settingsStore
+        
         VStack(alignment: .leading, spacing: 24) {
             // Startup behavior
             SettingsGroup(title: "Startup") {

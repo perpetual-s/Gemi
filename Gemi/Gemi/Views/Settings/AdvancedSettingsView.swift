@@ -8,11 +8,13 @@
 import SwiftUI
 
 struct AdvancedSettingsView: View {
-    @Environment(SettingsStore.self) private var settings
+    @Environment(SettingsStore.self) private var settingsStore
     @State private var showingResetConfirmation = false
     @State private var showingDiagnostics = false
     
     var body: some View {
+        @Bindable var settings = settingsStore
+        
         VStack(alignment: .leading, spacing: 24) {
             // Developer options
             SettingsGroup(title: "Developer Options") {

@@ -8,11 +8,13 @@
 import SwiftUI
 
 struct AISettingsView: View {
-    @Environment(SettingsStore.self) private var settings
+    @Environment(SettingsStore.self) private var settingsStore
     @State private var tempContextWindow = 4096.0
     @State private var tempMemoryLimit = 50.0
     
     var body: some View {
+        @Bindable var settings = settingsStore
+        
         VStack(alignment: .leading, spacing: 24) {
             // AI Model selection
             SettingsGroup(title: "AI Model") {

@@ -8,11 +8,13 @@
 import SwiftUI
 
 struct BackupSettingsView: View {
-    @Environment(SettingsStore.self) private var settings
+    @Environment(SettingsStore.self) private var settingsStore
     @State private var lastBackupDate = Date().addingTimeInterval(-86400) // Yesterday
     @State private var showingExportOptions = false
     
     var body: some View {
+        @Bindable var settings = settingsStore
+        
         VStack(alignment: .leading, spacing: 24) {
             // Auto backup
             SettingsGroup(title: "Automatic Backup") {

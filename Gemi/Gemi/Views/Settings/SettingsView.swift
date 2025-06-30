@@ -396,7 +396,7 @@ class SettingsStore {
     
     // Appearance
     var theme: AppTheme = .system
-    var accentColor: AccentColor = .blue
+    var accentColor: AppAccentColor = .blue
     var fontSize: FontSize = .medium
     var showLineNumbers: Bool = false
     
@@ -433,39 +433,6 @@ class SettingsStore {
     }
 }
 
-// MARK: - Settings Types
-
-enum StartupBehavior: String, CaseIterable {
-    case showTimeline = "Show Timeline"
-    case createNewEntry = "Create New Entry"
-    case resumeLastEntry = "Resume Last Entry"
-}
-
-enum AppTheme: String, CaseIterable {
-    case system = "System"
-    case light = "Light"
-    case dark = "Dark"
-}
-
-enum AccentColor: String, CaseIterable {
-    case blue = "Blue"
-    case purple = "Purple"
-    case green = "Green"
-    case orange = "Orange"
-}
-
-enum FontSize: String, CaseIterable {
-    case small = "Small"
-    case medium = "Medium"
-    case large = "Large"
-}
-
-enum BackupFrequency: String, CaseIterable {
-    case hourly = "Hourly"
-    case daily = "Daily"
-    case weekly = "Weekly"
-    case monthly = "Monthly"
-}
 
 // MARK: - Preview
 

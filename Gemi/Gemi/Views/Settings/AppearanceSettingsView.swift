@@ -8,10 +8,12 @@
 import SwiftUI
 
 struct AppearanceSettingsView: View {
-    @Environment(SettingsStore.self) private var settings
+    @Environment(SettingsStore.self) private var settingsStore
     @State private var previewText = "The quick brown fox jumps over the lazy dog"
     
     var body: some View {
+        @Bindable var settings = settingsStore
+        
         VStack(alignment: .leading, spacing: 24) {
             // Theme selection
             SettingsGroup(title: "Theme") {
@@ -39,7 +41,7 @@ struct AppearanceSettingsView: View {
             SettingsGroup(title: "Accent Color") {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 8) {
-                        ForEach(AccentColor.allCases, id: \.self) { color in
+                        ForEach(AppAccentColor.allCases, id: \.self) { color in
                             ColorButton(
                                 accentColor: color,
                                 isSelected: settings.accentColor == color
@@ -215,7 +217,7 @@ struct ThemeCard: View {
 // MARK: - Color Button
 
 struct ColorButton: View {
-    let accentColor: AccentColor
+    let accentColor: AppAccentColor
     let isSelected: Bool
     let action: () -> Void
     

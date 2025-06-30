@@ -8,10 +8,12 @@
 import SwiftUI
 
 struct PrivacySettingsView: View {
-    @Environment(SettingsStore.self) private var settings
+    @Environment(SettingsStore.self) private var settingsStore
     @State private var showingDataLocation = false
     
     var body: some View {
+        @Bindable var settings = settingsStore
+        
         VStack(alignment: .leading, spacing: 24) {
             // Privacy promise banner
             PrivacyBanner()

@@ -64,39 +64,39 @@ struct TimelineView: View {
                 }
             }
             .navigationTitle("Gemi")
-            .toolbar(content: {
-                ToolbarItemGroup(placement: .primaryAction) {
-                    // Talk to Gemi button
-                    Button {
-                        showingChat = true
-                    } label: {
-                        Label("Talk to Gemi", systemImage: "message.circle")
-                    }
-                    .help("Start a conversation with your AI journal companion")
-                    
-                    // New Entry button
-                    Button {
-                        showingNewEntry = true
-                    } label: {
-                        Label("New Entry", systemImage: "square.and.pencil")
-                    }
-                    .help("Create a new journal entry")
-                    .keyboardShortcut("n", modifiers: .command)
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
+                // Talk to Gemi button
+                Button {
+                    showingChat = true
+                } label: {
+                    Label("Talk to Gemi", systemImage: "message.circle")
                 }
+                .help("Start a conversation with your AI journal companion")
                 
-                ToolbarItemGroup(placement: .secondaryAction) {
-                    // Refresh button
-                    Button {
-                        Task {
-                            await journalStore.refreshEntries()
-                        }
-                    } label: {
-                        Label("Refresh", systemImage: "arrow.clockwise")
-                    }
-                    .help("Refresh journal entries")
-                    .disabled(journalStore.isLoading)
+                // New Entry button
+                Button {
+                    showingNewEntry = true
+                } label: {
+                    Label("New Entry", systemImage: "square.and.pencil")
                 }
-            })
+                .help("Create a new journal entry")
+                .keyboardShortcut("n", modifiers: .command)
+            }
+            
+            ToolbarItemGroup(placement: .secondaryAction) {
+                // Refresh button
+                Button {
+                    Task {
+                        await journalStore.refreshEntries()
+                    }
+                } label: {
+                    Label("Refresh", systemImage: "arrow.clockwise")
+                }
+                .help("Refresh journal entries")
+                .disabled(journalStore.isLoading)
+            }
         }
         .onAppear {
             Task {
@@ -114,9 +114,7 @@ struct TimelineView: View {
             Button("Delete", role: .destructive) {
                 if let entry = entryToDelete {
                     Task {
-                        withAnimation(DesignSystem.Animation.standard) {
-                            try? await journalStore.deleteEntry(entry)
-                        }
+                        try? await journalStore.deleteEntry(entry)
                         // Haptic feedback on success
                     }
                 }
