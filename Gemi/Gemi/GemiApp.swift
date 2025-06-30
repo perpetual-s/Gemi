@@ -47,7 +47,7 @@ struct GemiApp: App {
                 }
         }
         .windowStyle(.automatic)
-        .windowResizability(.contentSize)
+        .windowResizability(.contentMinSize)
         .defaultSize(width: 1200, height: 800)
         .windowToolbarStyle(.unified)
         .commands {
@@ -70,7 +70,7 @@ struct AuthenticationFlowView: View {
                 LoginView()
             }
         }
-        .frame(minWidth: 600, minHeight: 500)
+        .frame(minWidth: 1000, minHeight: 600)
         .background(DesignSystem.Colors.systemBackground)
     }
 }

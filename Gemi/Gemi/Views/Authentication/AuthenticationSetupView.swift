@@ -415,5 +415,5 @@ struct AuthenticationSetupView: View {
 #Preview {
     AuthenticationSetupView()
         .environment(AuthenticationManager())
-        .frame(width: 600, height: 700)
+        .frame(width: 800, height: 700)
 } 
