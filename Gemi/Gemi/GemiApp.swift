@@ -24,21 +24,30 @@ struct GemiApp: App {
         }
     }()
     
+    /// Onboarding state
+    @State private var onboardingState = OnboardingState()
+    
     // MARK: - Body
     
     var body: some Scene {
         WindowGroup {
             ZStack {
-                if authenticationManager.isAuthenticated {
+                if !onboardingState.hasCompletedOnboarding {
+                    // Onboarding flow for first-time users
+                    OnboardingView()
+                        .environment(onboardingState)
+                } else if authenticationManager.isAuthenticated {
                     // Main application interface
                     ContentView()
                         .environment(authenticationManager)
                         .environment(journalStore)
+                        .environment(onboardingState)
                         .preferredColorScheme(nil) // Respect system appearance
                 } else {
                     // Authentication flow
                     AuthenticationFlowView()
                         .environment(authenticationManager)
+                        .environment(onboardingState)
                 }
             }
             .task {
