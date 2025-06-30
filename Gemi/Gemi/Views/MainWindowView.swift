@@ -26,14 +26,18 @@ struct MainWindowView: View {
     
     var body: some View {
         GeometryReader { geometry in
+            let availableWidth = geometry.size.width - (DesignSystem.Spacing.base * 2) // Account for container padding
+            let sidebarWidth = availableWidth * 0.3
+            let contentWidth = availableWidth * 0.7 - DesignSystem.Spacing.panelGap
+            
             HStack(spacing: DesignSystem.Spacing.panelGap) {
                 // Left Sidebar (30% - substantial and breathing)
                 modernSidebar
-                    .frame(width: geometry.size.width * 0.28)
+                    .frame(width: sidebarWidth)
                 
-                // Right Content Area (70% - spacious content focus)
+                // Right Content Area (70% - spacious content focus with proper breathing room)
                 floatingContentArea
-                    .frame(width: geometry.size.width * 0.72 - DesignSystem.Spacing.panelGap)
+                    .frame(width: contentWidth)
             }
             .padding(DesignSystem.Spacing.base)
         }
