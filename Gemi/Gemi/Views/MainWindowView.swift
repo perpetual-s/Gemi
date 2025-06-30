@@ -21,6 +21,7 @@ struct MainWindowView: View {
     @State private var selectedEntry: JournalEntry?
     @State private var showingNewEntry = false
     @State private var showingChat = false
+    @State private var showingSettings = false
     @State private var sidebarSelection: SidebarItem = .timeline
     @State private var hasShownOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
     
@@ -65,6 +66,10 @@ struct MainWindowView: View {
         }
         .sheet(isPresented: $onboardingState.shouldShowOnboarding) {
             OnboardingView()
+        }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView(isPresented: $showingSettings)
+                .interactiveDismissDisabled()
         }
     }
     
@@ -266,7 +271,7 @@ struct MainWindowView: View {
                 Spacer()
                 
                 Button {
-                    // Settings action
+                    showingSettings = true
                 } label: {
                     Image(systemName: "gearshape")
                         .font(.system(size: DesignSystem.Components.iconMedium))

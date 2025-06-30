@@ -27,6 +27,9 @@ struct GemiApp: App {
     /// Onboarding state
     @State private var onboardingState = OnboardingState()
     
+    /// Settings store
+    @State private var settingsStore = SettingsStore()
+    
     // MARK: - Body
     
     var body: some Scene {
@@ -42,6 +45,7 @@ struct GemiApp: App {
                         .environment(authenticationManager)
                         .environment(journalStore)
                         .environment(onboardingState)
+                        .environment(settingsStore)
                         .preferredColorScheme(nil) // Respect system appearance
                 } else {
                     // Authentication flow
@@ -91,18 +95,7 @@ struct AuthenticationFlowView: View {
 
 // MARK: - Placeholder Views
 
-struct SettingsView: View {
-    var body: some View {
-        VStack {
-            Text("Settings")
-                .font(DesignSystem.Typography.title2)
-            Text("Coming soon...")
-                .font(DesignSystem.Typography.body)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .navigationTitle("Settings")
-    }
-}
+// Settings view is now defined in Views/Settings/SettingsView.swift
 
 // MARK: - Menu Commands
 
