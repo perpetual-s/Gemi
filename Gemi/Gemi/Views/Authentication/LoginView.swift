@@ -173,7 +173,7 @@ struct LoginView: View {
         )
         .overlay(alignment: .trailing) {
             Rectangle()
-                .fill(DesignSystem.Colors.separator.opacity(0.5))
+                .fill(DesignSystem.Colors.divider.opacity(0.5))
                 .frame(width: 1)
         }
     }
@@ -368,7 +368,7 @@ struct LoginView: View {
                         .background(
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(DesignSystem.Colors.backgroundSecondary)
-                                .stroke(DesignSystem.Colors.separator.opacity(0.5), lineWidth: 1)
+                                .stroke(DesignSystem.Colors.divider.opacity(0.5), lineWidth: 1)
                         )
                         .frame(height: 48)
                         .onSubmit {
