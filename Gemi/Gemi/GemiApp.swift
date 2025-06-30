@@ -31,7 +31,7 @@ struct GemiApp: App {
             ZStack {
                 if authenticationManager.isAuthenticated {
                     // Main application interface
-                    MainWindowView()
+                    ContentView()
                         .environment(authenticationManager)
                         .environment(journalStore)
                         .preferredColorScheme(nil) // Respect system appearance

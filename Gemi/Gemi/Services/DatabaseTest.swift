@@ -68,7 +68,7 @@ class DatabaseTest {
         A Gemi User
         """
         
-        let entry = JournalEntry(content: testContent)
+        let entry = JournalEntry(title: "Test Entry", content: testContent)
         print("Created test entry with ID: \(entry.id)")
         print("Date: \(entry.date)")
         print("Content length: \(entry.content.count) characters")
@@ -108,10 +108,10 @@ class DatabaseTest {
         print("---------------------------")
         
         let entries = [
-            JournalEntry(content: "Entry 1: Monday morning thoughts about privacy and technology."),
-            JournalEntry(content: "Entry 2: Afternoon reflection on the importance of local-first software."),
-            JournalEntry(content: "Entry 3: Evening notes about Swift 6 concurrency patterns."),
-            JournalEntry(content: "Entry 4: Late night ideas for improving the Gemi user experience.")
+            JournalEntry(title: "Monday Morning", content: "Entry 1: Monday morning thoughts about privacy and technology."),
+            JournalEntry(title: "Afternoon Reflection", content: "Entry 2: Afternoon reflection on the importance of local-first software."),
+            JournalEntry(title: "Evening Notes", content: "Entry 3: Evening notes about Swift 6 concurrency patterns."),
+            JournalEntry(title: "Late Night Ideas", content: "Entry 4: Late night ideas for improving the Gemi user experience.")
         ]
         
         print("Adding \(entries.count) test entries...")
@@ -157,7 +157,7 @@ class DatabaseTest {
         If this appears in plain text in the database file, encryption is not working!
         """
         
-        let sensitiveEntry = JournalEntry(content: sensitiveContent)
+        let sensitiveEntry = JournalEntry(title: "Sensitive Test", content: sensitiveContent)
         print("Creating entry with sensitive content...")
         print("Original content contains: \"Social Security Number\"")
         
@@ -189,7 +189,7 @@ class DatabaseTest {
         print("Initial entry count: \(initialCount)")
         
         // Create a temporary entry for deletion testing
-        let tempEntry = JournalEntry(content: "This entry will be deleted as part of testing.")
+        let tempEntry = JournalEntry(title: "Temp Entry", content: "This entry will be deleted as part of testing.")
         try await databaseManager.addEntry(tempEntry)
         
         let countAfterAdd = try await databaseManager.getEntryCount()

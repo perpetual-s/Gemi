@@ -77,18 +77,18 @@ enum DesignSystem {
     enum Colors {
         // MARK: Brand Colors - Cozy Coffee Shop Aesthetic
         
-        /// Primary brand color - warm pastel blue inspired by Google DeepMind
+        /// Primary brand color - Google DeepMind inspired pastel blue (#5B9BD5)
         static let primary: Color = {
             #if os(macOS)
-            return Color(NSColor(name: "PrimaryWarmBlue") { appearance in
+            return Color(NSColor(name: "PrimaryPastelBlue") { appearance in
                 if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
-                    return NSColor(red: 0.68, green: 0.81, blue: 0.94, alpha: 1.0) // Warm light blue for dark mode
+                    return NSColor(red: 0.48, green: 0.70, blue: 0.90, alpha: 1.0) // Lighter pastel blue for dark mode
                 } else {
-                    return NSColor(red: 0.49, green: 0.73, blue: 0.89, alpha: 1.0) // Warm pastel blue for light mode
+                    return NSColor(red: 0.36, green: 0.61, blue: 0.84, alpha: 1.0) // Google DeepMind pastel blue for light mode
                 }
             })
             #else
-            return Color(red: 0.49, green: 0.73, blue: 0.89)
+            return Color(red: 0.36, green: 0.61, blue: 0.84)
             #endif
         }()
         
@@ -160,18 +160,18 @@ enum DesignSystem {
         
         // MARK: Text Colors - Warm and Inviting
         
-        /// Primary text - warm charcoal with brown undertones
+        /// Primary text - rich but soft black (#2C2C2C)
         static let textPrimary: Color = {
             #if os(macOS)
-            return Color(NSColor(name: "TextPrimaryWarm") { appearance in
+            return Color(NSColor(name: "TextPrimaryRich") { appearance in
                 if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
                     return NSColor(red: 0.92, green: 0.89, blue: 0.85, alpha: 1.0) // Warm cream for dark mode
                 } else {
-                    return NSColor(red: 0.25, green: 0.22, blue: 0.20, alpha: 1.0) // Warm charcoal for light mode
+                    return NSColor(red: 0.17, green: 0.17, blue: 0.17, alpha: 1.0) // Rich but soft black for light mode
                 }
             })
             #else
-            return Color(red: 0.25, green: 0.22, blue: 0.20)
+            return Color(red: 0.17, green: 0.17, blue: 0.17)
             #endif
         }()
         
@@ -222,18 +222,18 @@ enum DesignSystem {
         
         // MARK: Background Colors - Warm Paper & Cozy Evening
         
-        /// Primary background - warm paper in light, cozy evening in dark
+        /// Primary background - warm off-white (#FAFAF8)
         static let backgroundPrimary: Color = {
             #if os(macOS)
             return Color(NSColor(name: "BackgroundPrimaryWarm") { appearance in
                 if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
                     return NSColor(red: 0.16, green: 0.15, blue: 0.14, alpha: 1.0) // Deep warm charcoal for dark mode
                 } else {
-                    return NSColor(red: 0.98, green: 0.96, blue: 0.93, alpha: 1.0) // Warm cream paper for light mode
+                    return NSColor(red: 0.98, green: 0.98, blue: 0.97, alpha: 1.0) // Warm off-white for light mode
                 }
             })
             #else
-            return Color(red: 0.98, green: 0.96, blue: 0.93)
+            return Color(red: 0.98, green: 0.98, blue: 0.97)
             #endif
         }()
         
@@ -527,8 +527,8 @@ enum DesignSystem {
         
         // MARK: Coffee Shop Layout Constants
         
-        /// Sidebar width (280pt) - more substantial presence
-        static let sidebarWidth: CGFloat = 280
+        /// Sidebar width (240pt) - translucent with vibrancy
+        static let sidebarWidth: CGFloat = 240
         
         /// Timeline width (380pt) - generous reading space
         static let timelineWidth: CGFloat = 380
@@ -539,8 +539,11 @@ enum DesignSystem {
         /// Maximum timeline width (480pt) - luxurious reading
         static let timelineMaxWidth: CGFloat = 480
         
-        /// Panel padding (40pt) - spacious interior
+        /// Panel padding (40pt) - generous floating panel padding
         static let panelPadding: CGFloat = 40
+        
+        /// Window edge margin (40pt) - floating distance from edges
+        static let windowEdgeMargin: CGFloat = 40
         
         /// Content padding (28pt) - comfortable text spacing
         static let contentPadding: CGFloat = 28
@@ -579,6 +582,9 @@ enum DesignSystem {
         
         /// Large radius for major containers
         static let radiusLarge: CGFloat = 16
+        
+        /// Extra large radius for floating panels
+        static let radiusFloating: CGFloat = 20
         
         /// Base corner radius alias
         static let radiusBase: CGFloat = radiusMedium

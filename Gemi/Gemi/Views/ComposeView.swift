@@ -636,7 +636,7 @@ struct ComposeView: View {
         }
     }()
     
-    return ComposeView(entry: .constant(JournalEntry(content: "")))
+    return ComposeView(entry: .constant(nil))
         .environment(store)
         .frame(width: 700, height: 500)
 }
@@ -650,7 +650,7 @@ struct ComposeView: View {
         }
     }()
     
-    return ComposeView(entry: .constant(JournalEntry(content: "This is a test entry.")))
+    return ComposeView(entry: .constant(JournalEntry(title: "Test Entry", content: "This is a test entry.")))
         .environment(store)
         .frame(width: 700, height: 500)
 } 

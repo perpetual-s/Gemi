@@ -78,14 +78,17 @@ final class DatabaseManager: Sendable {
     /// - Parameter entry: The journal entry to save
     /// - Throws: DatabaseError or EncryptionError
     func addEntry(_ entry: JournalEntry) async throws {
-        // Encrypt the content before storing
+        // Encrypt the content and title before storing
         let encryptedContent = try await encryptContent(entry.content)
+        let encryptedTitle = try await encryptContent(entry.title)
         
         // Create encrypted entry for storage
         let encryptedEntry = JournalEntry(
             id: entry.id,
             date: entry.date,
-            content: encryptedContent
+            title: encryptedTitle,
+            content: encryptedContent,
+            mood: entry.mood
         )
         
         try await dbQueue.write { db in
@@ -99,14 +102,17 @@ final class DatabaseManager: Sendable {
     /// - Parameter entry: The journal entry to update
     /// - Throws: DatabaseError or EncryptionError
     func updateEntry(_ entry: JournalEntry) async throws {
-        // Encrypt the content before storing
+        // Encrypt the content and title before storing
         let encryptedContent = try await encryptContent(entry.content)
+        let encryptedTitle = try await encryptContent(entry.title)
         
         // Create encrypted entry for storage
         let encryptedEntry = JournalEntry(
             id: entry.id,
             date: entry.date,
-            content: encryptedContent
+            title: encryptedTitle,
+            content: encryptedContent,
+            mood: entry.mood
         )
         
         try await dbQueue.write { db in
@@ -128,10 +134,13 @@ final class DatabaseManager: Sendable {
         var decryptedEntries: [JournalEntry] = []
         for encryptedEntry in encryptedEntries {
             let decryptedContent = try await decryptContent(encryptedEntry.content)
+            let decryptedTitle = try await decryptContent(encryptedEntry.title)
             let decryptedEntry = JournalEntry(
                 id: encryptedEntry.id,
                 date: encryptedEntry.date,
-                content: decryptedContent
+                title: decryptedTitle,
+                content: decryptedContent,
+                mood: encryptedEntry.mood
             )
             decryptedEntries.append(decryptedEntry)
         }
@@ -151,10 +160,13 @@ final class DatabaseManager: Sendable {
         }
         
         let decryptedContent = try await decryptContent(encryptedEntry.content)
+        let decryptedTitle = try await decryptContent(encryptedEntry.title)
         return JournalEntry(
             id: encryptedEntry.id,
             date: encryptedEntry.date,
-            content: decryptedContent
+            title: decryptedTitle,
+            content: decryptedContent,
+            mood: encryptedEntry.mood
         )
     }
     

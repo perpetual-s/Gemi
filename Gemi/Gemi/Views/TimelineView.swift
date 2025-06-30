@@ -124,40 +124,80 @@ struct TimelineView: View {
     
     @ViewBuilder
     private var timelineList: some View {
-        List(selection: $selectedEntry) {
-            ForEach(groupedEntries.keys.sorted(by: >), id: \.self) { date in
-                Section {
-                    ForEach(groupedEntries[date]!) { entry in
-                        TimelineEntryRow(entry: entry) {
-                            // Delete action
-                            entryToDelete = entry
-                            showingDeleteAlert = true
+        ScrollView {
+            LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
+                ForEach(groupedEntries.keys.sorted(by: >), id: \.self) { date in
+                    Section {
+                        VStack(spacing: 16) {
+                            ForEach(groupedEntries[date]!) { entry in
+                                TimelineCardView(
+                                    entry: entry,
+                                    isSelected: selectedEntry?.id == entry.id
+                                ) {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                        selectedEntry = entry
+                                    }
+                                }
+                                .contextMenu {
+                                    Button {
+                                        // TODO: Edit functionality
+                                    } label: {
+                                        Label("Edit Entry", systemImage: "pencil")
+                                    }
+                                    
+                                    Divider()
+                                    
+                                    Button(role: .destructive) {
+                                        entryToDelete = entry
+                                        showingDeleteAlert = true
+                                    } label: {
+                                        Label("Delete Entry", systemImage: "trash")
+                                    }
+                                }
+                            }
                         }
-                        .tag(entry)
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
-                        .listRowInsets(EdgeInsets(top: 12, leading: 20, bottom: 12, trailing: 20))
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 8)
+                    } header: {
+                        HStack {
+                            Text(formatDateHeader(date))
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                                .textCase(.uppercase)
+                                .tracking(1.2)
+                            
+                            Spacer()
+                            
+                            Text("\(groupedEntries[date]!.count) entries")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(.tertiary)
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 12)
+                        .background(
+                            Rectangle()
+                                .fill(.ultraThinMaterial)
+                                .ignoresSafeArea(edges: .horizontal)
+                        )
                     }
-                } header: {
-                    HStack {
-                        Text(date, style: .date)
-                            .font(DesignSystem.Typography.title3)
-                            .elegantSerifStyle()
-                            .foregroundStyle(Color(red: 0.529, green: 0.451, blue: 0.373)) // Warm brown for section headers
-                            .tracking(1.5)
-                        Spacer()
-                    }
-                    .padding(.horizontal, DesignSystem.Spacing.medium + 4)
-                    .padding(.top, DesignSystem.Spacing.large)
-                    .padding(.bottom, DesignSystem.Spacing.small)
                 }
             }
+            .padding(.vertical, 20)
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .background(Color.clear)
+        .scrollIndicators(.hidden)
         .refreshable {
             await journalStore.refreshEntries()
+        }
+    }
+    
+    private func formatDateHeader(_ date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            return "Today"
+        } else if calendar.isDateInYesterday(date) {
+            return "Yesterday"
+        } else {
+            return date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
         }
     }
     
@@ -533,272 +573,6 @@ struct TimelineView: View {
     }
 }
 
-// MARK: - Timeline Entry Row
-
-/// Beautiful journal page entry with paper-like texture and warm, substantial presence
-private struct TimelineEntryRow: View {
-    let entry: JournalEntry
-    let onDelete: () -> Void
-    
-    // MARK: - Constants
-    
-    private let contentPreviewLength = 150
-    private let rowHeight: CGFloat = 140 // More substantial height for journal pages
-    
-    @State private var isHovered = false
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Date header with elegant journal styling
-            HStack {
-                Text(entry.date, style: .date)
-                    .font(DesignSystem.Typography.diaryDate)
-                    .elegantSerifStyle()
-                    .foregroundStyle(journalDateColor)
-                    .tracking(1.2)
-                
-                Spacer()
-                
-                Text(entry.date, style: .time)
-                    .font(DesignSystem.Typography.footnote)
-                    .diaryTypography()
-                    .foregroundStyle(DesignSystem.Colors.textTertiary.opacity(0.8))
-                
-                // Actions menu - more subtle and integrated
-                Menu {
-                    Button {
-                        // TODO: Add edit functionality in future phase
-                    } label: {
-                        Label("Edit Entry", systemImage: "pencil")
-                    }
-                    .disabled(true)
-                    
-                    Divider()
-                    
-                    Button(role: .destructive) {
-                        onDelete()
-                    } label: {
-                        Label("Delete Entry", systemImage: "trash")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.caption)
-                        .foregroundStyle(DesignSystem.Colors.textTertiary.opacity(0.6))
-                        .frame(width: 24, height: 24)
-                }
-                .menuStyle(.borderlessButton)
-                .opacity(isHovered ? 1.0 : 0.2)
-                .scaleEffect(isHovered ? 1.1 : 0.9)
-                .animation(DesignSystem.Animation.supportiveEmphasis, value: isHovered)
-                .help("Entry options")
-            }
-            .padding(.horizontal, DesignSystem.Spacing.medium + 4)
-            .padding(.top, DesignSystem.Spacing.small + 2)
-            .padding(.bottom, DesignSystem.Spacing.tiny)
-            
-            // Main journal content with handwritten feel
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.small) {
-                // Entry title with personal handwritten style
-                Text(entryTitle)
-                    .font(DesignSystem.Typography.title3)
-                    .handwrittenStyle()
-                    .foregroundStyle(journalTitleColor)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                
-                // Content preview with relaxed reading style
-                Text(contentPreview)
-                    .font(DesignSystem.Typography.diaryPreview)
-                    .relaxedReadingStyle()
-                    .foregroundStyle(journalContentColor)
-                    .lineLimit(3)
-                    .multilineTextAlignment(.leading)
-                
-                // Footer with word count and subtle details
-                HStack {
-                    Text("\(wordCount) words")
-                        .font(DesignSystem.Typography.caption2)
-                        .diaryTypography()
-                        .foregroundStyle(DesignSystem.Colors.textTertiary.opacity(0.7))
-                    
-                    Spacer()
-                    
-                    // Subtle paper texture indicator
-                    Image(systemName: "doc.text")
-                        .font(.system(size: 10))
-                        .foregroundStyle(DesignSystem.Colors.textTertiary.opacity(0.4))
-                }
-                .padding(.top, DesignSystem.Spacing.tiny)
-            }
-            .padding(.horizontal, DesignSystem.Spacing.medium + 4)
-            .padding(.bottom, DesignSystem.Spacing.medium)
-        }
-        .frame(minHeight: rowHeight, alignment: .top)
-        .background(
-            journalPageBackground
-        )
-        .overlay(
-            journalPageBorder
-        )
-        .journalEntryShadow()
-        .scaleEffect(isHovered ? 1.03 : 1.0)
-        .rotation3DEffect(
-            .degrees(isHovered ? 2 : 0),
-            axis: (x: 0.1, y: 0.1, z: 0),
-            perspective: 0.8
-        )
-        .brightness(isHovered ? 0.05 : 0)
-        .animation(DesignSystem.Animation.encouragingSpring, value: isHovered)
-        .onHover { hovering in
-            withAnimation(DesignSystem.Animation.warmWelcome) {
-                isHovered = hovering
-            }
-        }
-        .contentShape(Rectangle())
-    }
-    
-    // MARK: - Journal Page Styling
-    
-    private var journalPageBackground: some View {
-        ZStack {
-            // Base paper background with warm cream color
-            RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium + 2)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            paperBaseColor,
-                            paperBaseColor.opacity(0.98)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-            
-            // Subtle paper texture overlay
-            RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium + 2)
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            Color.clear,
-                            paperTextureColor.opacity(0.015)
-                        ],
-                        center: .topLeading,
-                        startRadius: 0,
-                        endRadius: 200
-                    )
-                )
-            
-            // Warm inner glow for depth
-            RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium + 2)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            paperGlowColor.opacity(0.3),
-                            Color.clear,
-                            paperGlowColor.opacity(0.1)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1.5
-                )
-        }
-    }
-    
-    private var journalPageBorder: some View {
-        RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium + 2)
-            .stroke(
-                LinearGradient(
-                    colors: [
-                        paperBorderColor.opacity(0.6),
-                        paperBorderColor.opacity(0.3),
-                        paperBorderColor.opacity(0.8)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ),
-                lineWidth: 2
-            )
-    }
-    
-    // MARK: - Journal Color Palette
-    
-    private var paperBaseColor: Color {
-        Color(red: 0.992, green: 0.976, blue: 0.952) // Warm cream paper
-    }
-    
-    private var paperTextureColor: Color {
-        Color(red: 0.845, green: 0.765, blue: 0.686) // Subtle warm brown texture
-    }
-    
-    private var paperGlowColor: Color {
-        Color(red: 0.961, green: 0.890, blue: 0.773) // Warm golden glow
-    }
-    
-    private var paperBorderColor: Color {
-        Color(red: 0.871, green: 0.812, blue: 0.749) // Warm beige border
-    }
-    
-    private var journalDateColor: Color {
-        Color(red: 0.647, green: 0.565, blue: 0.478) // Warm brown for dates
-    }
-    
-    private var journalTitleColor: Color {
-        Color(red: 0.294, green: 0.251, blue: 0.212) // Rich warm charcoal
-    }
-    
-    private var journalContentColor: Color {
-        Color(red: 0.412, green: 0.365, blue: 0.322) // Soft warm gray-brown
-    }
-    
-    // MARK: - Computed Properties
-    
-    private var entryTitle: String {
-        let trimmed = entry.content.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        if trimmed.isEmpty {
-            return "Untitled Entry"
-        }
-        
-        // Get first line or first 40 characters for title
-        let firstLine = trimmed.components(separatedBy: .newlines).first ?? ""
-        let title = String(firstLine.prefix(40))
-        
-        return title.isEmpty ? "Untitled Entry" : (title.count < firstLine.count ? title + "..." : title)
-    }
-    
-    private var contentPreview: String {
-        let trimmed = entry.content.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        if trimmed.isEmpty {
-            return "No content"
-        }
-        
-        // Skip the first line (used as title) and get preview from remaining content
-        let lines = trimmed.components(separatedBy: .newlines)
-        let contentLines = lines.count > 1 ? Array(lines.dropFirst()).joined(separator: " ") : trimmed
-        
-        if contentLines.count <= contentPreviewLength {
-            return contentLines
-        }
-        
-        let preview = String(contentLines.prefix(contentPreviewLength))
-        // Try to break at a word boundary
-        if let lastSpace = preview.lastIndex(of: " ") {
-            return String(preview[..<lastSpace]) + "..."
-        }
-        
-        return preview + "..."
-    }
-    
-    private var wordCount: Int {
-        entry.content
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .components(separatedBy: .whitespacesAndNewlines)
-            .filter { !$0.isEmpty }
-            .count
-    }
-}
 
 // MARK: - Previews
 
