@@ -80,6 +80,15 @@ struct ChatView: View {
     
     @ViewBuilder
     private var chatPanel: some View {
+        chatPanelContent
+            .frame(width: 420)
+            .frame(maxHeight: .infinity)
+            .background(chatPanelBackground)
+            .overlay(chatPanelBorder)
+    }
+    
+    @ViewBuilder
+    private var chatPanelContent: some View {
         VStack(spacing: 0) {
             // Header
             chatHeader
@@ -91,28 +100,7 @@ struct ChatView: View {
             memoryIndicator
             
             // Messages
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(spacing: 16) {
-                        ForEach(messages) { message in
-                            MessageBubble(message: message)
-                                .id(message.id)
-                        }
-                        
-                        if isTyping {
-                            TypingIndicator()
-                                .id("typing")
-                        }
-                    }
-                    .padding(20)
-                    .padding(.bottom, 60)
-                }
-                .onChange(of: messages.count) { _, _ in
-                    withAnimation(.easeOut(duration: 0.3)) {
-                        proxy.scrollTo(messages.last?.id ?? "typing", anchor: .bottom)
-                    }
-                }
-            }
+            messagesScrollView
             
             // Input area
             ChatInputView(
@@ -122,18 +110,50 @@ struct ChatView: View {
             )
             .focused($isInputFocused)
         }
-        .frame(width: 420)
-        .frame(maxHeight: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.regularMaterial)
-                .shadow(color: .black.opacity(0.1), radius: 20, x: -5, y: 0)
-                .shadow(color: .black.opacity(0.06), radius: 40, x: -10, y: 0)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5)
-        )
+    }
+    
+    @ViewBuilder
+    private var messagesScrollView: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 16) {
+                    ForEach(messages) { message in
+                        MessageBubble(message: message)
+                            .id(message.id)
+                    }
+                    
+                    if isTyping {
+                        TypingIndicator()
+                            .id("typing")
+                    }
+                }
+                .padding(20)
+                .padding(.bottom, 60)
+            }
+            .onChange(of: messages.count) { _, _ in
+                withAnimation(.easeOut(duration: 0.3)) {
+                    if let lastMessage = messages.last {
+                        proxy.scrollTo(lastMessage.id, anchor: .bottom)
+                    } else if isTyping {
+                        proxy.scrollTo("typing", anchor: .bottom)
+                    }
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var chatPanelBackground: some View {
+        RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .fill(.regularMaterial)
+            .shadow(color: .black.opacity(0.1), radius: 20, x: -5, y: 0)
+            .shadow(color: .black.opacity(0.06), radius: 40, x: -10, y: 0)
+    }
+    
+    @ViewBuilder
+    private var chatPanelBorder: some View {
+        RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5)
     }
     
     // MARK: - Header
@@ -661,7 +681,9 @@ struct ResizableTextEditor: NSViewRepresentable {
     }
     
     private func updateHeight(_ textView: NSTextView) {
-        let newHeight = textView.sizeThatFits(CGSize(width: textView.frame.width, height: .infinity)).height
+        textView.textContainer?.containerSize = CGSize(width: textView.frame.width, height: .greatestFiniteMagnitude)
+        textView.sizeToFit()
+        let newHeight = textView.frame.height
         DispatchQueue.main.async {
             height = max(40, min(newHeight + 16, 120))
         }
@@ -746,7 +768,7 @@ struct ChatFloatingActionButton: View {
 // MARK: - Preview
 
 #Preview("Chat View") {
-    @State var isPresented = true
+    @Previewable @State var isPresented = true
     
     return ZStack {
         // Background content

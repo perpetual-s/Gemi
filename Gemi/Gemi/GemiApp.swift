@@ -82,19 +82,6 @@ struct AuthenticationFlowView: View {
 
 // MARK: - Placeholder Views
 
-struct ChatView: View {
-    var body: some View {
-        VStack {
-            Text("Chat with Gemi")
-                .font(DesignSystem.Typography.title2)
-            Text("Coming soon...")
-                .font(DesignSystem.Typography.body)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .navigationTitle("Talk to Gemi")
-    }
-}
-
 struct SettingsView: View {
     var body: some View {
         VStack {

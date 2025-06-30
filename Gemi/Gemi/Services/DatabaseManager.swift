@@ -63,13 +63,40 @@ final class DatabaseManager: Sendable {
             try db.execute(sql: "PRAGMA busy_timeout = 5000")
         }
         
-        // Create tables in a separate transaction
+        // Create tables and handle migrations in a separate transaction
         try dbQueue.write { db in
-            // Create the journal entries table
-            try JournalEntry.createTable(db)
+            // Check if the entries table exists
+            let tableExists = try db.tableExists("entries")
+            
+            if tableExists {
+                // Table exists, check if we need to migrate
+                try migrateDatabase(db)
+            } else {
+                // Create the journal entries table fresh
+                try JournalEntry.createTable(db)
+            }
             
             print("Database schema initialized")
         }
+    }
+    
+    /// Migrates the database schema to add missing columns
+    /// - Parameter db: Database connection
+    /// - Throws: Database errors during migration
+    private func migrateDatabase(_ db: Database) throws {
+        // Check if title column exists
+        let columns = try db.columns(in: "entries")
+        let columnNames = columns.map { $0.name }
+        
+        if !columnNames.contains("title") {
+            print("Migrating database: Adding 'title' column")
+            try db.alter(table: "entries") { table in
+                table.add(column: "title", .text).defaults(to: "")
+            }
+            print("Database migration completed: 'title' column added")
+        }
+        
+        // Add any future migrations here
     }
     
     // MARK: - Journal Entry Operations
