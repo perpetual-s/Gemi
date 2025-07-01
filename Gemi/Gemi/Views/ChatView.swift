@@ -30,7 +30,7 @@ struct ChatView: View {
     // MARK: - Body
     
     var body: some View {
-        ZStack(alignment: .trailing) {
+        ZStack {
             // Backdrop blur
             if isPresented {
                 Color.black
@@ -42,14 +42,20 @@ struct ChatView: View {
                     .transition(.opacity)
             }
             
-            // Chat panel
-            if isPresented {
-                chatPanel
-                    .offset(x: chatOffset)
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                        removal: .move(edge: .trailing).combined(with: .opacity)
-                    ))
+            // Chat panel - properly floating with padding
+            HStack {
+                Spacer()
+                
+                if isPresented {
+                    chatPanel
+                        .padding(.trailing, 24)
+                        .padding(.vertical, 24)
+                        .offset(x: chatOffset)
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .trailing).combined(with: .opacity)
+                        ))
+                }
             }
         }
         .onAppear {
@@ -286,7 +292,7 @@ struct ChatView: View {
                     )
             }
             .buttonStyle(PlainButtonStyle())
-            .tooltip("Close chat (Esc)", edge: .bottom)
+            .help("Close chat (Esc)")
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
@@ -693,7 +699,7 @@ struct ChatInputView: View {
                         )
                 }
                 .buttonStyle(PlainButtonStyle())
-                .tooltip("Voice input", edge: .top)
+                .help("Voice input")
             }
             .padding(.horizontal, 4)
             .padding(.vertical, 4)

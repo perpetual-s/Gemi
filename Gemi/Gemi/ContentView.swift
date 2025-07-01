@@ -43,6 +43,15 @@ struct ContentView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(canvasBackground)
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                HStack(spacing: 0) {
+                    // Empty space for visual balance
+                    Color.clear.frame(width: 280)
+                }
+            }
+        }
+        .toolbarBackground(.hidden, for: .windowToolbar)
         .sheet(isPresented: $showingNewEntry) {
             ComposeView(entry: .constant(nil))
         }
@@ -76,15 +85,22 @@ struct ContentView: View {
     @ViewBuilder
     private var canvasBackground: some View {
         ZStack {
-            // Base gradient
-            LinearGradient(
-                colors: [
-                    Color(red: 0.96, green: 0.95, blue: 0.94),
-                    Color(red: 0.98, green: 0.97, blue: 0.96)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            // Two-tone background matching sidebar and content
+            HStack(spacing: 0) {
+                // Left side - matching sidebar color
+                Color(red: 0.94, green: 0.93, blue: 0.92)
+                    .frame(width: 280)
+                
+                // Right side - lighter content area
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.98, green: 0.97, blue: 0.96),
+                        Color(red: 0.96, green: 0.95, blue: 0.94)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
             
             // Subtle noise texture overlay
             Rectangle()
