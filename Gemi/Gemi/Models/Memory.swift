@@ -151,7 +151,8 @@ extension Memory {
         try db.create(index: "memories_on_memoryType", on: databaseTableName, columns: ["memoryType"], options: .ifNotExists)
         
         // Create FTS table for content search
-        if !try db.tableExists("memories_fts") {
+        let ftsTableExists = try db.tableExists("memories_fts")
+        if !ftsTableExists {
             try db.create(virtualTable: "memories_fts", using: FTS5()) { t in
                 t.content = "memories"
                 t.column("content")

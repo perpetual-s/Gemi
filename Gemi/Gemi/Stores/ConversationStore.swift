@@ -342,7 +342,8 @@ extension DatabaseManager {
             }
             
             // Create FTS for message search
-            if !try db.tableExists("conversationMessages_fts") {
+            let ftsTableExists = try db.tableExists("conversationMessages_fts")
+            if !ftsTableExists {
                 try db.create(virtualTable: "conversationMessages_fts", using: FTS5()) { t in
                     t.synchronize(withTable: "conversationMessages")
                     t.column("content")
