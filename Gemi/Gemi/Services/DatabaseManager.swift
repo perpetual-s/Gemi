@@ -76,6 +76,9 @@ final class DatabaseManager: Sendable {
                 try JournalEntry.createTable(db)
             }
             
+            // Create memories table
+            try Memory.createTable(in: db)
+            
             print("Database schema initialized")
         }
     }
@@ -328,6 +331,11 @@ extension DatabaseManager {
 // MARK: - Utility Methods
 
 extension DatabaseManager {
+    
+    /// Provides access to the database for actors like MemoryStore
+    var database: DatabaseQueue {
+        dbQueue
+    }
     
     /// Gets the Application Support directory for storing the database
     /// - Returns: URL to the app's Application Support directory
