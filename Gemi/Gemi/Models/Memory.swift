@@ -12,8 +12,6 @@ import GRDB
 struct Memory: Identifiable, Codable, FetchableRecord, PersistableRecord {
     // MARK: - Properties
     
-    static let databaseTableName = "memories"
-    
     /// Unique identifier for the memory
     let id: UUID
     
@@ -95,6 +93,7 @@ enum MemoryType: String, Codable, CaseIterable {
     case journalFact = "journal_fact"      // Extracted from journal
     case userProvided = "user_provided"    // Explicitly told by user
     case reflection = "reflection"         // AI's reflection/summary
+    case conversationFact = "conversation_fact" // Facts extracted from conversations
     
     var displayName: String {
         switch self {
@@ -106,6 +105,8 @@ enum MemoryType: String, Codable, CaseIterable {
             return "You told me"
         case .reflection:
             return "Reflection"
+        case .conversationFact:
+            return "Conversation Fact"
         }
     }
     
@@ -119,6 +120,8 @@ enum MemoryType: String, Codable, CaseIterable {
             return "person.bubble"
         case .reflection:
             return "sparkles"
+        case .conversationFact:
+            return "lightbulb"
         }
     }
 }
@@ -149,8 +152,8 @@ extension Memory {
         
         // Create FTS table for content search
         try db.create(virtualTable: "memories_fts", using: FTS5()) { t in
-            t.content(Memory.databaseTableName)
-            t.column(Memory.Columns.content)
+            t.content("memories")
+            t.column("content")
             t.tokenizer = .porter()
         }
     }

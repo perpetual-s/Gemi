@@ -113,6 +113,10 @@ enum OllamaError: LocalizedError {
 @Observable
 final class OllamaService {
     
+    // MARK: - Singleton
+    
+    static let shared = OllamaService()
+    
     // MARK: - Published Properties
     
     /// Whether Ollama is currently processing a request

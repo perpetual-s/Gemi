@@ -15,10 +15,26 @@ import Security
 @Observable
 final class DatabaseManager: Sendable {
     
+    // MARK: - Singleton
+    
+    static let shared: DatabaseManager = {
+        do {
+            return try DatabaseManager()
+        } catch {
+            fatalError("Failed to initialize DatabaseManager: \(error)")
+        }
+    }()
+    
     // MARK: - Properties
     
     /// The GRDB database queue for thread-safe operations
     private let dbQueue: DatabaseQueue
+    
+    /// Database writer for write operations
+    var dbWriter: DatabaseWriter { dbQueue }
+    
+    /// Database reader for read operations
+    var dbReader: DatabaseReader { dbQueue }
     
     /// Keychain service identifier for storing encryption keys
     private static let keychainService = "dev.perpetual-s.Gemi"
@@ -356,6 +372,121 @@ extension DatabaseManager {
         }
         
         return appDirectory
+    }
+}
+
+// MARK: - Memory Management Extensions
+
+extension DatabaseManager {
+    
+    /// Save a memory to the database
+    func saveMemory(_ memory: Memory) async throws {
+        try await dbWriter.write { db in
+            try memory.save(db)
+        }
+    }
+    
+    /// Get total memory count
+    func getMemoryCount() async throws -> Int {
+        try await dbReader.read { db in
+            try Memory.fetchCount(db)
+        }
+    }
+    
+    /// Search memories by query
+    func searchMemories(query: String, limit: Int) async throws -> [Memory] {
+        try await dbReader.read { db in
+            let pattern = FTS5Pattern(matchingAllTokensIn: query)
+            return try Memory
+                .matching(pattern)
+                .order(Column("importance").desc)
+                .limit(limit)
+                .fetchAll(db)
+        }
+    }
+    
+    /// Update memory access time
+    func updateMemoryAccessTime(_ id: UUID) async throws {
+        try await dbWriter.write { db in
+            try db.execute(
+                sql: "UPDATE memories SET lastAccessedAt = ? WHERE id = ?",
+                arguments: [Date(), id]
+            )
+        }
+    }
+    
+    /// Delete memories for a specific entry
+    func deleteMemoriesForEntry(_ entryId: UUID) async throws {
+        try await dbWriter.write { db in
+            try Memory
+                .filter(Column("sourceEntryId") == entryId)
+                .deleteAll(db)
+        }
+    }
+    
+    /// Delete orphaned memories
+    func deleteOrphanedMemories() async throws -> Int {
+        try await dbWriter.write { db in
+            // Find memories with sourceEntryId that don't have corresponding entries
+            let orphanedMemories = try Memory
+                .filter(sql: """
+                    sourceEntryId IS NOT NULL AND 
+                    sourceEntryId NOT IN (SELECT id FROM entries)
+                """)
+                .fetchAll(db)
+            
+            // Delete them
+            for memory in orphanedMemories {
+                try memory.delete(db)
+            }
+            
+            return orphanedMemories.count
+        }
+    }
+    
+    /// Get entry count
+    func getEntryCount() async throws -> Int {
+        try await dbReader.read { db in
+            try JournalEntry.fetchCount(db)
+        }
+    }
+    
+    /// Get entries with embeddings count
+    func getEntriesWithEmbeddingsCount() async throws -> Int {
+        try await dbReader.read { db in
+            let entriesWithEmbeddings = try JournalEntry
+                .filter(sql: "id IN (SELECT DISTINCT sourceEntryId FROM memories WHERE sourceEntryId IS NOT NULL)")
+                .fetchCount(db)
+            return entriesWithEmbeddings
+        }
+    }
+    
+    /// Fetch entries without embeddings
+    func fetchEntriesWithoutEmbeddings() async throws -> [JournalEntry] {
+        try await dbReader.read { db in
+            try JournalEntry
+                .filter(sql: "id NOT IN (SELECT DISTINCT sourceEntryId FROM memories WHERE sourceEntryId IS NOT NULL)")
+                .fetchAll(db)
+        }
+    }
+    
+    /// Search memories by similarity (placeholder - needs vector search implementation)
+    func searchMemoriesBySimilarity(embedding: [Float], limit: Int) async throws -> [Memory] {
+        // For now, return recent memories as a placeholder
+        // In a real implementation, this would use vector similarity search
+        try await dbReader.read { db in
+            try Memory
+                .order(Column("lastAccessedAt").desc)
+                .limit(limit)
+                .fetchAll(db)
+        }
+    }
+    
+    /// Fetch entry by ID
+    func fetchEntry(by id: UUID) async throws -> JournalEntry? {
+        try await dbReader.read { db in
+            try JournalEntry.fetchOne(db, key: id)
+        }
     }
 }
 

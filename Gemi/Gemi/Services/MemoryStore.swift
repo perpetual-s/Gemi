@@ -12,6 +12,13 @@ import os.log
 /// Thread-safe actor for managing memories with vector search capabilities
 actor MemoryStore {
     
+    // MARK: - Singleton
+    
+    static let shared = MemoryStore(
+        databaseManager: DatabaseManager.shared,
+        ollamaService: OllamaService.shared
+    )
+    
     // MARK: - Properties
     
     private let databaseManager: DatabaseManager
