@@ -14,15 +14,11 @@ actor MemoryStore {
     
     // MARK: - Singleton
     
-    static let shared = MemoryStore(
-        databaseManager: DatabaseManager.shared,
-        ollamaService: OllamaService.shared
-    )
+    static let shared = MemoryStore()
     
     // MARK: - Properties
     
-    private let databaseManager: DatabaseManager
-    nonisolated private let ollamaService: OllamaService
+    private let databaseManager = DatabaseManager.shared
     private let logger = Logger(subsystem: "com.gemi.app", category: "MemoryStore")
     
     /// Cache for frequently accessed memories
@@ -33,13 +29,6 @@ actor MemoryStore {
     
     /// Minimum importance threshold for keeping memories
     private let minImportanceThreshold: Float = 0.1
-    
-    // MARK: - Initialization
-    
-    init(databaseManager: DatabaseManager, ollamaService: OllamaService) {
-        self.databaseManager = databaseManager
-        self.ollamaService = ollamaService
-    }
     
     // MARK: - Public Methods
     
@@ -319,10 +308,12 @@ actor MemoryStore {
         }
     }
     
+    @MainActor
     private func generateEmbedding(for text: String) async throws -> [Double] {
-        return try await ollamaService.generateEmbedding(for: text)
+        return try await OllamaService.shared.generateEmbedding(for: text)
     }
     
+    @MainActor
     private func extractMemoryContent(from userMessage: String, response aiResponse: String) async -> String {
         // Use AI to extract key information
         let prompt = """
@@ -339,7 +330,7 @@ actor MemoryStore {
         var extractedContent = ""
         
         do {
-            for try await chunk in await ollamaService.chatCompletion(prompt: prompt) {
+            for try await chunk in OllamaService.shared.chatCompletion(prompt: prompt) {
                 extractedContent += chunk
             }
         } catch {
@@ -350,6 +341,7 @@ actor MemoryStore {
         return extractedContent.trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
+    @MainActor
     private func extractFactsFromEntry(_ entry: JournalEntry) async -> [(content: String, importance: Float, tags: [String])] {
         let prompt = """
         Extract important facts from this journal entry. Return each fact on a new line.
@@ -367,7 +359,7 @@ actor MemoryStore {
         var response = ""
         
         do {
-            for try await chunk in await ollamaService.chatCompletion(prompt: prompt) {
+            for try await chunk in OllamaService.shared.chatCompletion(prompt: prompt) {
                 response += chunk
             }
             

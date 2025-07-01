@@ -9,6 +9,7 @@ import Foundation
 import os.log
 
 @Observable
+@MainActor
 final class ContextRetriever {
     private let logger = Logger(subsystem: "com.chaehoshin.Gemi", category: "ContextRetriever")
     private let embeddingService = EmbeddingService()
@@ -20,7 +21,7 @@ final class ContextRetriever {
     private let recencyBoost = 0.2 // How much to boost recent entries
     
     struct RetrievalResult {
-        let entries: [RelevantEntry]
+        var entries: [RelevantEntry]
         let totalRelevanceScore: Float
     }
     
@@ -140,7 +141,7 @@ final class ContextRetriever {
         
         let accessBoost = daysSinceAccess < 7 ? 0.1 : 0.0
         
-        return min(temporalScore + accessBoost, 1.0)
+        return min(temporalScore + Float(accessBoost), 1.0)
     }
     
     private func combineScores(relevance: Float, temporal: Float) -> Float {
@@ -162,7 +163,7 @@ final class ContextRetriever {
         dateFormatter.dateStyle = .medium
         dateFormatter.timeStyle = .none
         
-        for (index, entry) in results.entries.enumerated() {
+        for (_, entry) in results.entries.enumerated() {
             var entryContext = ""
             
             // Format entry header
@@ -249,7 +250,7 @@ final class ContextRetriever {
             
             // Tag filter
             if let tags = tags, !tags.isEmpty {
-                let entryTags = entry.sourceEntry?.tags ?? entry.memory.tags
+                let entryTags = entry.memory.tags
                 let hasMatchingTag = tags.contains { tag in
                     entryTags.contains(tag)
                 }

@@ -16,7 +16,7 @@ final class GemiAICoordinator {
     
     // MARK: - Singleton
     
-    nonisolated(unsafe) static let shared = GemiAICoordinator()
+    static let shared = GemiAICoordinator()
     
     // MARK: - Published Properties
     
@@ -93,7 +93,7 @@ final class GemiAICoordinator {
         await loadCaches()
         
         aiStatus = modelReady ? .ready : .degraded("Custom model unavailable")
-        logger.info("AI system initialization complete: \(aiStatus)")
+        logger.info("AI system initialization complete: \(String(describing: self.aiStatus))")
     }
     
     /// Process a chat message with full context
@@ -324,12 +324,10 @@ final class GemiAICoordinator {
     
     private func startHealthMonitoring() {
         modelHealthCheckTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { _ in
-            Task {
+            Task { @MainActor in
                 let healthy = await self.modelHealthCheck()
                 if !healthy && self.aiStatus == .ready {
-                    await MainActor.run {
-                        self.aiStatus = .degraded("Model health check failed")
-                    }
+                    self.aiStatus = .degraded("Model health check failed")
                 }
             }
         }
@@ -363,7 +361,9 @@ final class GemiAICoordinator {
     
     func updateSettings(_ newSettings: AISettings) {
         settings = newSettings
-        backgroundTaskCoordinator?.updateSettings(newSettings)
+        Task {
+            await backgroundTaskCoordinator?.updateSettings(newSettings)
+        }
         
         // Save to UserDefaults
         if let encoded = try? JSONEncoder().encode(settings) {
@@ -443,7 +443,7 @@ struct ModelComparison {
     let reason: String
 }
 
-struct AISettings: Codable {
+struct AISettings: Codable, Equatable {
     var automaticMemoryExtraction = true
     var maxContextTokens = 8192
     var conversationHistoryLimit = 20
@@ -630,9 +630,9 @@ actor BackgroundTaskCoordinator {
 actor PerformanceMonitor {
     private var responseTimes: [TimeInterval] = []
     private var maxSamples = 100
-    private let updateHandler: (PerformanceMetrics) -> Void
+    private let updateHandler: @Sendable (PerformanceMetrics) -> Void
     
-    init(updateHandler: @escaping (PerformanceMetrics) -> Void) {
+    init(updateHandler: @escaping @Sendable (PerformanceMetrics) -> Void) {
         self.updateHandler = updateHandler
         
         // Monitor memory usage

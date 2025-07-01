@@ -263,6 +263,7 @@ struct EnhancedChatView: View {
 // MARK: - Enhanced Chat View Model
 
 @Observable
+@MainActor
 final class EnhancedChatViewModel {
     
     // MARK: - Properties
@@ -376,8 +377,7 @@ final class EnhancedChatViewModel {
                     messages.append(EnhancedChatMessage(
                         content: "I'm sorry, I encountered an error: \(error.localizedDescription)",
                         isUser: false,
-                        contextSources: [],
-                        isError: true
+                        contextSources: []
                     ))
                 }
             }
@@ -706,12 +706,12 @@ struct EnhancedMessageBubble: View {
                     .background(
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
                             .fill(message.isUser ? 
-                                LinearGradient(
+                                AnyShapeStyle(LinearGradient(
                                     colors: [DesignSystem.Colors.primary, DesignSystem.Colors.primary.opacity(0.9)],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
-                                ) : 
-                                Color.primary.opacity(0.06)
+                                )) : 
+                                AnyShapeStyle(Color.primary.opacity(0.06))
                             )
                     )
                     .contextMenu {
@@ -762,7 +762,9 @@ struct StreamingMessageBubble: View {
         }
         .onAppear {
             Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
-                cursorVisible.toggle()
+                DispatchQueue.main.async {
+                    cursorVisible.toggle()
+                }
             }
         }
     }

@@ -8,7 +8,8 @@
 import Foundation
 import os.log
 
-actor EmbeddingService {
+@MainActor
+final class EmbeddingService {
     private let logger = Logger(subsystem: "com.chaehoshin.Gemi", category: "EmbeddingService")
     private let ollamaService = OllamaService.shared
     private let databaseManager = DatabaseManager.shared
@@ -93,7 +94,7 @@ actor EmbeddingService {
             importance: 0.5,
             tags: [],
             isPinned: false,
-            memoryType: .journalEntry
+            memoryType: .journalFact
         )
         
         do {

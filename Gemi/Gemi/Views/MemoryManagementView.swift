@@ -418,7 +418,7 @@ struct MemoryRow: View {
                         Spacer()
                         
                         // Importance indicator
-                        ImportanceIndicator(importance: memory.decayedImportance)
+                        MemoryImportanceIndicator(importance: memory.decayedImportance)
                     }
                 }
                 
@@ -453,7 +453,7 @@ struct MemoryRow: View {
                     )
             )
             .shadow(
-                color: DesignSystem.Colors.shadowLight.color,
+                color: DesignSystem.Colors.shadowLight,
                 radius: isHovered ? 8 : 4,
                 y: isHovered ? 4 : 2
             )
@@ -526,7 +526,7 @@ struct StatItem: View {
 
 // MARK: - Importance Indicator
 
-struct ImportanceIndicator: View {
+struct MemoryImportanceIndicator: View {
     let importance: Float
     
     private var color: Color {

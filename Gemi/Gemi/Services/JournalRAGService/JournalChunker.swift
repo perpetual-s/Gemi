@@ -53,7 +53,7 @@ struct JournalChunker {
         let metadata = EntryMetadata(
             date: entry.createdAt,
             mood: entry.mood,
-            tags: entry.tags,
+            tags: [],
             wordCount: entry.content.split(separator: " ").count
         )
         
@@ -110,7 +110,7 @@ struct JournalChunker {
         var chunkStartOffset = startOffset
         var sentenceOffsetInParagraph = 0
         
-        for (index, sentence) in sentences.enumerated() {
+        for (_, sentence) in sentences.enumerated() {
             let potentialChunk = currentChunk.isEmpty ? sentence : currentChunk + " " + sentence
             
             if potentialChunk.count <= maxChunkSize {
@@ -156,7 +156,7 @@ struct JournalChunker {
         var currentOffset = 0
         var chunkStartOffset = 0
         
-        for (index, sentence) in sentences.enumerated() {
+        for (_, sentence) in sentences.enumerated() {
             let potentialChunk = currentChunk.isEmpty ? sentence : currentChunk + " " + sentence
             
             if potentialChunk.count <= maxChunkSize {
@@ -204,13 +204,29 @@ struct JournalChunker {
     // MARK: - Helper Functions
     
     private func splitIntoSentences(_ text: String) -> [String] {
-        // Simple sentence splitting - can be improved with NLP
+        // Simple sentence splitting using regex
         let pattern = #"[.!?]+[\s]+"#
-        let sentences = text.components(separatedBy: try! NSRegularExpression(pattern: pattern))
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
+        let regex = try! NSRegularExpression(pattern: pattern)
+        let range = NSRange(text.startIndex..., in: text)
         
-        return sentences.isEmpty ? [text] : sentences
+        var sentences: [String] = []
+        var lastIndex = text.startIndex
+        
+        regex.enumerateMatches(in: text, range: range) { match, _, _ in
+            guard let match = match else { return }
+            let matchRange = Range(match.range, in: text)!
+            let sentence = String(text[lastIndex..<matchRange.lowerBound])
+            sentences.append(sentence.trimmingCharacters(in: .whitespacesAndNewlines))
+            lastIndex = matchRange.upperBound
+        }
+        
+        // Add the last sentence
+        if lastIndex < text.endIndex {
+            let lastSentence = String(text[lastIndex...])
+            sentences.append(lastSentence.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        
+        return sentences.filter { !$0.isEmpty }
     }
     
     private func extractOverlap(from text: String) -> String {

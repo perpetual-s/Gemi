@@ -9,6 +9,7 @@ import Foundation
 import os.log
 
 @Observable
+@MainActor
 final class GemiModelManager {
     private let logger = Logger(subsystem: "com.chaehoshin.Gemi", category: "GemiModelManager")
     private let fileManager = FileManager.default
@@ -47,7 +48,7 @@ final class GemiModelManager {
     }
     
     func retrieveBaseModelfile() async throws -> String {
-        logger.info("Retrieving base modelfile for \(baseModel)")
+        logger.info("Retrieving base modelfile for \(self.baseModel)")
         
         do {
             let output = try await runCommand("ollama", arguments: ["show", baseModel, "--modelfile"])

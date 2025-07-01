@@ -111,11 +111,12 @@ enum OllamaError: LocalizedError, Equatable {
 
 /// Swift 6 Observable service for managing Ollama AI interactions
 @Observable
+@MainActor
 final class OllamaService {
     
     // MARK: - Singleton
     
-    nonisolated(unsafe) static let shared = OllamaService()
+    static let shared = OllamaService()
     
     // MARK: - Published Properties
     

@@ -60,6 +60,7 @@ struct Conversation: Identifiable, Codable, FetchableRecord, PersistableRecord {
 
 /// Manages conversation history and retrieval
 @Observable
+@MainActor
 final class ConversationStore {
     static let shared = ConversationStore()
     
@@ -342,7 +343,7 @@ extension DatabaseManager {
             
             // Create FTS for message search
             try db.create(virtualTable: "conversationMessages_fts", using: FTS5()) { t in
-                t.content("conversationMessages")
+                t.synchronize(withTable: "conversationMessages")
                 t.column("content")
                 t.tokenizer = .porter()
             }

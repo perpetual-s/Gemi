@@ -9,6 +9,7 @@ import Foundation
 import os.log
 
 @Observable
+@MainActor
 final class JournalRAGService {
     static let shared = JournalRAGService()
     
@@ -173,7 +174,7 @@ final class JournalRAGService {
             let ollamaService = OllamaService.shared
             let models = try await ollamaService.listModels()
             
-            guard models.contains(where: { $0.name.contains("nomic-embed-text") }) else {
+            guard models.contains(where: { $0.contains("nomic-embed-text") }) else {
                 return (false, "Embedding model not found. Please install nomic-embed-text.")
             }
             
@@ -213,54 +214,3 @@ final class JournalRAGService {
     }
 }
 
-// MARK: - Extensions for DatabaseManager
-
-extension DatabaseManager {
-    func fetchEntriesWithoutEmbeddings() async throws -> [JournalEntry] {
-        // This would need to be implemented in DatabaseManager
-        // For now, returning empty array as placeholder
-        []
-    }
-    
-    func saveMemory(_ memory: Memory) async throws {
-        // Implementation needed in DatabaseManager
-    }
-    
-    func searchMemoriesBySimilarity(embedding: [Float], limit: Int) async throws -> [Memory] {
-        // Implementation needed in DatabaseManager
-        []
-    }
-    
-    func fetchEntry(by id: UUID) async throws -> JournalEntry? {
-        // Implementation needed in DatabaseManager
-        nil
-    }
-    
-    func updateMemoryAccessTime(_ id: UUID) async throws {
-        // Implementation needed in DatabaseManager
-    }
-    
-    func deleteMemoriesForEntry(_ entryId: UUID) async throws {
-        // Implementation needed in DatabaseManager
-    }
-    
-    func deleteOrphanedMemories() async throws -> Int {
-        // Implementation needed in DatabaseManager
-        0
-    }
-    
-    func getMemoryCount() async throws -> Int {
-        // Implementation needed in DatabaseManager
-        0
-    }
-    
-    func getEntryCount() async throws -> Int {
-        // Implementation needed in DatabaseManager
-        0
-    }
-    
-    func getEntriesWithEmbeddingsCount() async throws -> Int {
-        // Implementation needed in DatabaseManager
-        0
-    }
-}

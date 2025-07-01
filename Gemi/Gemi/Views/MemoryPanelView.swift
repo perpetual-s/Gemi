@@ -43,7 +43,6 @@ struct MemoryPanelView: View {
                 .frame(maxHeight: .infinity)
             }
             .navigationTitle("Gemi's Memory")
-            .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 toolbarContent
             }
@@ -820,7 +819,6 @@ struct MemoryExportView: View {
             }
             .padding(24)
             .navigationTitle("Export Memories")
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -970,7 +968,7 @@ class MemoryPanelViewModel: ObservableObject {
         do {
             try await databaseManager.dbWriter.write { db in
                 try Memory
-                    .filter(memoryIds.contains(Column("id")))
+                    .filter(memoryIds.contains(Memory.Columns.id))
                     .deleteAll(db)
             }
             
