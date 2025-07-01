@@ -12,6 +12,8 @@ import GRDB
 struct Memory: Identifiable, Codable, FetchableRecord, PersistableRecord {
     // MARK: - Properties
     
+    static let databaseTableName = "memories"
+    
     /// Unique identifier for the memory
     let id: UUID
     

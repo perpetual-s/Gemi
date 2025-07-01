@@ -175,7 +175,7 @@ struct AppIconGenerator {
         let sizes = [16, 32, 64, 128, 256, 512, 1024]
         
         for size in sizes {
-            let icon = AppIconDesign(size: CGFloat(size))
+            let _ = AppIconDesign(size: CGFloat(size))
             // In a real implementation, this would export to PNG files
             // For now, this is a placeholder for the icon generation logic
             print("Generated icon at size: \(size)x\(size)")
