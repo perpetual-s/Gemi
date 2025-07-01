@@ -400,7 +400,7 @@ struct AuthenticationFlowTester: View {
             let initialAuthState = authManager.isAuthenticated
             
             // Perform database operation
-            _ = try await journalStore.loadEntries()
+            _ = await journalStore.loadEntries()
             databaseOperationSuccess = true
             
             // Check if auth state changed (would indicate prompt)
@@ -428,7 +428,7 @@ struct AuthenticationFlowTester: View {
             _ = await authManager.setupAuthentication(method: .biometric)
         }
         
-        let initialSessionTime = Date()
+        _ = Date()
         let sessionValid = authManager.isSessionValid()
         
         // Wait a short period and verify session still valid

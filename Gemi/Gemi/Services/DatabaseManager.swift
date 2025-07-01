@@ -407,7 +407,7 @@ extension DatabaseManager {
     
     /// Update memory access time
     func updateMemoryAccessTime(_ id: UUID) async throws {
-        _ = try await dbWriter.write { db in
+        try await dbWriter.write { db in
             try db.execute(
                 sql: "UPDATE memories SET lastAccessedAt = ? WHERE id = ?",
                 arguments: [Date(), id]

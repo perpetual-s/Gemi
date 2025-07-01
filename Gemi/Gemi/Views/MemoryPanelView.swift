@@ -954,7 +954,7 @@ class MemoryPanelViewModel: ObservableObject {
     
     func deleteMemory(_ memory: Memory) async {
         do {
-            try await databaseManager.dbWriter.write { db in
+            _ = try await databaseManager.dbWriter.write { db in
                 try memory.delete(db)
             }
             
@@ -966,7 +966,7 @@ class MemoryPanelViewModel: ObservableObject {
     
     func deleteMemories(_ memoryIds: [UUID]) async {
         do {
-            try await databaseManager.dbWriter.write { db in
+            _ = try await databaseManager.dbWriter.write { db in
                 try Memory
                     .filter(memoryIds.contains(Memory.Columns.id))
                     .deleteAll(db)
@@ -980,7 +980,7 @@ class MemoryPanelViewModel: ObservableObject {
     
     func clearAllMemories() async {
         do {
-            try await databaseManager.dbWriter.write { db in
+            _ = try await databaseManager.dbWriter.write { db in
                 try Memory.deleteAll(db)
             }
             

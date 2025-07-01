@@ -157,7 +157,7 @@ final class GemiModelManager {
         logger.info("Deleting custom Gemi model")
         
         do {
-            let output = try await runCommand("ollama", arguments: ["rm", modelName])
+            _ = try await runCommand("ollama", arguments: ["rm", modelName])
             modelStatus = .notCreated
             logger.info("Successfully deleted Gemi custom model")
         } catch {

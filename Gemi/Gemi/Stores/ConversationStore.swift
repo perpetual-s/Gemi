@@ -342,10 +342,12 @@ extension DatabaseManager {
             }
             
             // Create FTS for message search
-            try db.create(virtualTable: "conversationMessages_fts", options: .ifNotExists, using: FTS5()) { t in
-                t.synchronize(withTable: "conversationMessages")
-                t.column("content")
-                t.tokenizer = .porter()
+            if !try db.tableExists("conversationMessages_fts") {
+                try db.create(virtualTable: "conversationMessages_fts", using: FTS5()) { t in
+                    t.synchronize(withTable: "conversationMessages")
+                    t.column("content")
+                    t.tokenizer = .porter()
+                }
             }
         }
     }

@@ -151,10 +151,12 @@ extension Memory {
         try db.create(index: "memories_on_memoryType", on: databaseTableName, columns: ["memoryType"], options: .ifNotExists)
         
         // Create FTS table for content search
-        try db.create(virtualTable: "memories_fts", options: .ifNotExists, using: FTS5()) { t in
-            t.content = "memories"
-            t.column("content")
-            t.tokenizer = .porter()
+        if !try db.tableExists("memories_fts") {
+            try db.create(virtualTable: "memories_fts", using: FTS5()) { t in
+                t.content = "memories"
+                t.column("content")
+                t.tokenizer = .porter()
+            }
         }
     }
 }
