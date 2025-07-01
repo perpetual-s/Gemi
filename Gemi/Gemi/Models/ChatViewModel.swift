@@ -101,7 +101,9 @@ final class ChatViewModel {
         messages.append(ChatMessage(content: "", isUser: false))
         
         // Get relevant memories if available
-        let memories = await fetchRelevantMemories(for: userMessage)
+        let memories = await Task {
+            await fetchRelevantMemories(for: userMessage)
+        }.value
         let prompt = ollamaService.createPromptWithMemory(userMessage: userMessage, memories: memories)
         
         // Create streaming task
@@ -179,7 +181,6 @@ final class ChatViewModel {
     
     // MARK: - Private Methods
     
-    @MainActor
     private func fetchRelevantMemories(for query: String) async -> [String] {
         guard let memoryService = memoryService else { return [] }
         
@@ -237,7 +238,7 @@ final class ConcreteMemoryService: MemoryService {
 // MARK: - Memory Service Protocol
 
 /// Protocol for memory service integration
-protocol MemoryService {
+protocol MemoryService: Sendable {
     func retrieveRelevantMemories(for query: String, limit: Int) async throws -> [Memory]
     func storeConversationMemory(userMessage: String, aiResponse: String) async
 }

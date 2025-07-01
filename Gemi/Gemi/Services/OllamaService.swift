@@ -74,7 +74,7 @@ struct OllamaPullResponse: Codable {
 }
 
 /// Errors specific to Ollama operations
-enum OllamaError: LocalizedError {
+enum OllamaError: LocalizedError, Equatable {
     case modelNotInstalled
     case connectionFailed
     case invalidResponse
@@ -115,7 +115,7 @@ final class OllamaService {
     
     // MARK: - Singleton
     
-    static let shared = OllamaService()
+    nonisolated(unsafe) static let shared = OllamaService()
     
     // MARK: - Published Properties
     

@@ -22,7 +22,7 @@ actor MemoryStore {
     // MARK: - Properties
     
     private let databaseManager: DatabaseManager
-    private let ollamaService: OllamaService
+    nonisolated private let ollamaService: OllamaService
     private let logger = Logger(subsystem: "com.gemi.app", category: "MemoryStore")
     
     /// Cache for frequently accessed memories
@@ -168,7 +168,7 @@ actor MemoryStore {
     func deleteMemory(id: UUID) async throws {
         logger.info("Deleting memory: \(id)")
         
-        try await databaseManager.database.write { db in
+        _ = try await databaseManager.database.write { db in
             try Memory.deleteOne(db, key: id)
         }
         
@@ -180,7 +180,7 @@ actor MemoryStore {
     func clearAllMemories(ofType type: MemoryType? = nil) async throws {
         logger.info("Clearing memories of type: \(type?.rawValue ?? "all")")
         
-        try await databaseManager.database.write { db in
+        _ = try await databaseManager.database.write { db in
             if let type = type {
                 try Memory
                     .filter(Memory.Columns.memoryType == type.rawValue)
@@ -217,14 +217,18 @@ actor MemoryStore {
     func updateMemoryImportance(id: UUID, importance: Float) async throws {
         logger.info("Updating memory importance")
         
-        try await databaseManager.database.write { db in
+        let updatedMemory = try await databaseManager.database.write { db -> Memory? in
             if var memory = try Memory.fetchOne(db, key: id) {
                 memory.importance = importance
                 try memory.save(db)
-                
-                // Update cache
-                memoryCache[id] = memory
+                return memory
             }
+            return nil
+        }
+        
+        // Update cache
+        if let memory = updatedMemory {
+            memoryCache[id] = memory
         }
     }
     
@@ -232,14 +236,18 @@ actor MemoryStore {
     func toggleMemoryPin(id: UUID) async throws {
         logger.info("Toggling memory pin")
         
-        try await databaseManager.database.write { db in
+        let updatedMemory = try await databaseManager.database.write { db -> Memory? in
             if var memory = try Memory.fetchOne(db, key: id) {
                 memory.isPinned.toggle()
                 try memory.save(db)
-                
-                // Update cache
-                memoryCache[id] = memory
+                return memory
             }
+            return nil
+        }
+        
+        // Update cache
+        if let memory = updatedMemory {
+            memoryCache[id] = memory
         }
     }
     
@@ -278,7 +286,7 @@ actor MemoryStore {
     // MARK: - Private Methods
     
     private func saveMemory(_ memory: Memory) async throws {
-        try await databaseManager.database.write { db in
+        _ = try await databaseManager.database.write { db in
             try memory.save(db)
         }
         
@@ -289,14 +297,18 @@ actor MemoryStore {
     }
     
     private func updateLastAccessed(_ id: UUID) async throws {
-        try await databaseManager.database.write { db in
+        let updatedMemory = try await databaseManager.database.write { db -> Memory? in
             if var memory = try Memory.fetchOne(db, key: id) {
                 memory.lastAccessedAt = Date()
                 try memory.save(db)
-                
-                // Update cache
-                memoryCache[id] = memory
+                return memory
             }
+            return nil
+        }
+        
+        // Update cache
+        if let memory = updatedMemory {
+            memoryCache[id] = memory
         }
     }
     
@@ -320,7 +332,7 @@ actor MemoryStore {
         var extractedContent = ""
         
         do {
-            for try await chunk in ollamaService.chatCompletion(prompt: prompt) {
+            for try await chunk in await ollamaService.chatCompletion(prompt: prompt) {
                 extractedContent += chunk
             }
         } catch {
@@ -348,7 +360,7 @@ actor MemoryStore {
         var response = ""
         
         do {
-            for try await chunk in ollamaService.chatCompletion(prompt: prompt) {
+            for try await chunk in await ollamaService.chatCompletion(prompt: prompt) {
                 response += chunk
             }
             
@@ -425,9 +437,9 @@ actor MemoryStore {
             try Memory.fetchCount(db)
         }
         
-        guard count > maxMemoryCount else { return }
+        guard count > self.maxMemoryCount else { return }
         
-        logger.info("Pruning memories: \(count) > \(maxMemoryCount)")
+        logger.info("Pruning memories: \(count) > \(self.maxMemoryCount)")
         
         // Get memories to prune (oldest, least important, not pinned)
         let memoriesToDelete = try await databaseManager.database.read { db in
@@ -437,16 +449,20 @@ actor MemoryStore {
                     Memory.Columns.importance,
                     Memory.Columns.lastAccessedAt
                 )
-                .limit(count - maxMemoryCount)
+                .limit(count - self.maxMemoryCount)
                 .fetchAll(db)
         }
         
         // Delete them
-        try await databaseManager.database.write { db in
+        _ = try await databaseManager.database.write { db in
             for memory in memoriesToDelete {
                 try memory.delete(db)
-                memoryCache.removeValue(forKey: memory.id)
             }
+        }
+        
+        // Remove from cache
+        for memory in memoriesToDelete {
+            memoryCache.removeValue(forKey: memory.id)
         }
         
         logger.info("Pruned \(memoriesToDelete.count) memories")
