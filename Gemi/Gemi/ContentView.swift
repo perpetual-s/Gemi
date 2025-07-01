@@ -35,15 +35,13 @@ struct ContentView: View {
         HStack(spacing: 0) {
             // Translucent sidebar with vibrancy
             translucntSidebar
-                .frame(width: DesignSystem.Spacing.sidebarWidth)
-                .slideIn(from: .leading, delay: 0)
+                .frame(width: 280)
             
             // Main content area with floating panel
             mainContentArea
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .fadeIn(delay: 0.1)
         }
-        .frame(minWidth: 1200, minHeight: 800)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(canvasBackground)
         .sheet(isPresented: $showingNewEntry) {
             ComposeView(entry: .constant(nil))
@@ -184,12 +182,6 @@ struct ContentView: View {
                     // Haptic feedback on button press
                 }
                 .keyboardShortcut("n", modifiers: .command)
-                .accessibleButton(label: AccessibilityLabels.newEntryButton)
-                .coachMark(
-                    .firstEntry,
-                    title: "Start Writing",
-                    message: "Click here to create your first journal entry. Everything you write is encrypted and stays on your device."
-                )
                 
                 QuickActionButton(
                     icon: "message.fill",
@@ -200,12 +192,6 @@ struct ContentView: View {
                     // Haptic feedback on button press
                 }
                 .keyboardShortcut("t", modifiers: .command)
-                .accessibleButton(label: AccessibilityLabels.chatTitle)
-                .coachMark(
-                    .aiChat,
-                    title: "Talk with Gemi",
-                    message: "Have a conversation with your AI companion. Gemi remembers your past entries and helps you reflect."
-                )
             }
         }
     }
@@ -365,8 +351,6 @@ struct ContentView: View {
             case .timeline:
                 TimelineView(selectedEntry: $selectedEntry)
                     .padding(32)
-                    .highPerformanceScroll()
-                    .optimizedAnimation()
                     .transition(.asymmetric(
                         insertion: .opacity.combined(with: .offset(x: 30)),
                         removal: .opacity.combined(with: .offset(x: -30))
@@ -592,7 +576,6 @@ struct NavigationButton: View {
         .onHover { hovering in
             isHovered = hovering
         }
-        .pressable(scale: 0.98)
     }
 }
 
@@ -655,7 +638,6 @@ struct QuickActionButton: View {
             )
         }
         .buttonStyle(PlainButtonStyle())
-        .pressable(scale: 0.95)
         .onHover { hovering in
             isHovered = hovering
             if hovering {

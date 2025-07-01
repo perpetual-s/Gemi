@@ -57,14 +57,16 @@ struct LoginView: View {
     // MARK: - Body
     
     var body: some View {
-        HStack(spacing: 0) {
-            // Left panel - Branding and motivation
-            leftBrandingPanel
+        ZStack {
+            // Warm coffee shop background
+            backgroundGradient
             
-            // Right panel - Authentication
-            rightAuthPanel
+            // Main authentication card
+            authenticationCard
+                .scaleEffect(animateContent ? 1 : 0.95)
+                .opacity(animateContent ? 1 : 0)
+                .animation(.spring(response: 0.8, dampingFraction: 0.75), value: animateContent)
         }
-        .background(DesignSystem.Colors.systemBackground)
         .onAppear {
             setupView()
         }
@@ -81,155 +83,111 @@ struct LoginView: View {
     
     // MARK: - View Components
     
-    private var leftBrandingPanel: some View {
-        VStack(spacing: 0) {
-            Spacer()
-            
-            VStack(spacing: 32) {
-                // Elegant icon with subtle animation
-                ZStack {
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [DesignSystem.Colors.primary.opacity(0.2), Color.clear],
-                                center: .center,
-                                startRadius: 0,
-                                endRadius: 70
-                            )
-                        )
-                        .frame(width: 140, height: 140)
-                        .scaleEffect(pulseIcon ? 1.1 : 1.0)
-                        .opacity(animateContent ? 1 : 0)
-                        .animation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true), value: pulseIcon)
-                    
-                    Image(systemName: "book.closed.fill")
-                        .font(.system(size: 60, weight: .ultraLight))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [DesignSystem.Colors.primary, DesignSystem.Colors.primary.opacity(0.7)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .scaleEffect(animateContent ? 1.0 : 0.5)
-                        .opacity(animateContent ? 1 : 0)
-                        .animation(.spring(response: 1.0, dampingFraction: 0.7).delay(0.3), value: animateContent)
-                }
-                
-                VStack(spacing: 16) {
-                    Text("Welcome Back")
-                        .font(.system(size: 42, weight: .ultraLight, design: .default))
-                        .foregroundStyle(DesignSystem.Colors.textPrimary)
-                        .opacity(animateContent ? 1 : 0)
-                        .offset(y: animateContent ? 0 : -30)
-                        .animation(.easeOut(duration: 0.8).delay(0.5), value: animateContent)
-                    
-                    Text("Ready to continue your journey?")
-                        .font(.system(size: 18, weight: .light, design: .default))
-                        .foregroundStyle(DesignSystem.Colors.textSecondary)
-                        .opacity(animateContent ? 1 : 0)
-                        .offset(y: animateContent ? 0 : -20)
-                        .animation(.easeOut(duration: 0.8).delay(0.7), value: animateContent)
-                }
-                
-                // Description
-                VStack(spacing: 10) {
-                    Text("Your private AI diary companion")
-                        .font(.system(size: 16, weight: .medium, design: .default))
-                        .foregroundStyle(DesignSystem.Colors.textSecondary)
-                        .multilineTextAlignment(.center)
-                        .opacity(animateContent ? 1 : 0)
-                        .animation(.easeOut(duration: 0.8).delay(0.9), value: animateContent)
-                    
-                    Text("Powered by local Gemma 3n • Zero cloud dependency")
-                        .font(.system(size: 14, weight: .regular, design: .default))
-                        .foregroundStyle(DesignSystem.Colors.textTertiary)
-                        .multilineTextAlignment(.center)
-                        .opacity(animateContent ? 1 : 0)
-                        .animation(.easeOut(duration: 0.8).delay(1.1), value: animateContent)
-                }
-                .frame(maxWidth: 260)
-            }
-            
-            Spacer()
-            
-            // Footer branding
-            VStack(spacing: 8) {
-                Text("Gemi • Private AI Diary")
-                    .font(.system(size: 14, weight: .medium, design: .default))
-                    .foregroundStyle(DesignSystem.Colors.textSecondary)
-                
-                Text("All processing happens on this Mac")
-                    .font(.system(size: 12, weight: .regular, design: .default))
-                    .foregroundStyle(DesignSystem.Colors.textTertiary)
-            }
-            .opacity(animateContent ? 1 : 0)
-            .animation(.easeOut(duration: 0.8).delay(1.1), value: animateContent)
-            .padding(.bottom, 32)
-        }
-        .frame(maxWidth: .infinity)
-        .background(
-            LinearGradient(
-                colors: [
-                    DesignSystem.Colors.primary.opacity(0.03),
-                    DesignSystem.Colors.primary.opacity(0.08),
-                    DesignSystem.Colors.primary.opacity(0.03)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+    private var backgroundGradient: some View {
+        LinearGradient(
+            colors: [
+                Color(red: 0.98, green: 0.97, blue: 0.96),
+                Color(red: 0.96, green: 0.95, blue: 0.94),
+                Color(red: 0.98, green: 0.97, blue: 0.96)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
         )
-        .overlay(alignment: .trailing) {
-            Rectangle()
-                .fill(DesignSystem.Colors.divider.opacity(0.5))
-                .frame(width: 1)
-        }
+        .ignoresSafeArea()
     }
     
-    private var rightAuthPanel: some View {
-        VStack(spacing: 0) {
-            Spacer()
+    private var authenticationCard: some View {
+        VStack(spacing: 48) {
+            // App icon and title
+            appHeader
             
-            VStack(spacing: 48) {
-                // Authentication header
-                authenticationHeader
-                
-                // Authentication method
-                authenticationSection
-                
-                // Error display
-                if let error = authManager.authenticationError {
-                    errorSection(error)
-                        .transition(.asymmetric(
-                            insertion: .scale(scale: 0.9).combined(with: .opacity),
-                            removal: .scale(scale: 1.1).combined(with: .opacity)
-                        ))
-                }
+            // Authentication section
+            authenticationSection
+            
+            // Error display
+            if let error = authManager.authenticationError {
+                errorSection(error)
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.9).combined(with: .opacity),
+                        removal: .scale(scale: 1.1).combined(with: .opacity)
+                    ))
             }
-            .frame(maxWidth: 400)
-            .padding(.horizontal, 48)
             
-            Spacer()
+            // Footer
+            footerText
         }
-        .frame(maxWidth: .infinity)
+        .padding(60)
+        .frame(width: 500)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(.white)
+                .shadow(
+                    color: Color(red: 0.38, green: 0.29, blue: 0.22).opacity(0.15),
+                    radius: 30,
+                    x: 0,
+                    y: 15
+                )
+        )
     }
     
-    private var authenticationHeader: some View {
-        VStack(spacing: 16) {
-            Text("Secure Access")
-                .font(.system(size: 32, weight: .light, design: .default))
-                .foregroundStyle(DesignSystem.Colors.textPrimary)
-                .opacity(animateContent ? 1 : 0)
-                .offset(y: animateContent ? 0 : -20)
-                .animation(.easeOut(duration: 0.8).delay(1.3), value: animateContent)
+    private var appHeader: some View {
+        VStack(spacing: 24) {
+            // App icon with warm glow
+            ZStack {
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color(red: 0.36, green: 0.61, blue: 0.84).opacity(0.15),
+                                Color.clear
+                            ],
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: 80
+                        )
+                    )
+                    .frame(width: 160, height: 160)
+                    .scaleEffect(pulseIcon ? 1.1 : 1.0)
+                    .animation(
+                        .easeInOut(duration: 3.0).repeatForever(autoreverses: true),
+                        value: pulseIcon
+                    )
+                
+                Image(systemName: "book.closed.fill")
+                    .font(.system(size: 56, weight: .light))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.36, green: 0.61, blue: 0.84),
+                                Color(red: 0.42, green: 0.67, blue: 0.88)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            }
             
-            Text("Authenticate to access your private diary")
-                .font(.system(size: 16, weight: .regular, design: .default))
-                .foregroundStyle(DesignSystem.Colors.textSecondary)
-                .multilineTextAlignment(.center)
-                .opacity(animateContent ? 1 : 0)
-                .offset(y: animateContent ? 0 : -15)
-                .animation(.easeOut(duration: 0.8).delay(1.5), value: animateContent)
+            VStack(spacing: 12) {
+                Text("Welcome Back")
+                    .font(.system(size: 36, weight: .light, design: .serif))
+                    .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.3))
+                
+                Text("Ready to continue your journey?")
+                    .font(.system(size: 17, weight: .regular))
+                    .foregroundStyle(Color(red: 0.45, green: 0.42, blue: 0.38))
+            }
+        }
+    }
+    
+    private var footerText: some View {
+        VStack(spacing: 8) {
+            Text("Your private AI diary companion")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(Color(red: 0.45, green: 0.42, blue: 0.38))
+            
+            Text("Powered by local Gemma 3n • Zero cloud dependency")
+                .font(.system(size: 12))
+                .foregroundStyle(Color(red: 0.62, green: 0.58, blue: 0.54))
         }
     }
     
@@ -246,187 +204,136 @@ struct LoginView: View {
     }
     
     private var biometricAuthSection: some View {
-        VStack(spacing: 32) {
-            // Biometric icon with modern styling
+        VStack(spacing: 24) {
+            // Biometric icon with warm styling
             ZStack {
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                DesignSystem.Colors.primary.opacity(0.1),
-                                DesignSystem.Colors.primary.opacity(0.05)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 120, height: 120)
+                    .fill(Color(red: 0.36, green: 0.61, blue: 0.84).opacity(0.1))
+                    .frame(width: 80, height: 80)
                 
                 Image(systemName: biometricIcon)
-                    .font(.system(size: 48, weight: .light))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [DesignSystem.Colors.primary, DesignSystem.Colors.primary.opacity(0.7)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .font(.system(size: 36, weight: .light))
+                    .foregroundStyle(Color(red: 0.36, green: 0.61, blue: 0.84))
             }
-            .scaleEffect(animateContent ? 1.0 : 0.8)
-            .opacity(animateContent ? 1 : 0)
-            .animation(.spring(response: 0.8, dampingFraction: 0.7).delay(1.7), value: animateContent)
             
-            VStack(spacing: 24) {
-                Text("Touch \(biometricType) Sensor")
-                    .font(.system(size: 20, weight: .medium, design: .default))
-                    .foregroundStyle(DesignSystem.Colors.textPrimary)
-                    .opacity(animateContent ? 1 : 0)
-                    .animation(.easeOut(duration: 0.8).delay(1.9), value: animateContent)
-                
-                if authManager.isAuthenticating {
-                    VStack(spacing: 12) {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: DesignSystem.Colors.primary))
-                            .scaleEffect(1.2)
-                        
-                        Text("Authenticating...")
-                            .font(.system(size: 16, weight: .regular, design: .default))
-                            .foregroundStyle(DesignSystem.Colors.textSecondary)
-                    }
-                } else {
-                    Button(action: {
-                        authenticateWithBiometric()
-                    }) {
-                        HStack(spacing: 10) {
-                            Image(systemName: biometricIcon)
-                                .font(.system(size: 16, weight: .medium))
-                            
-                            Text("Authenticate")
-                                .font(.system(size: 16, weight: .semibold, design: .default))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(
-                            LinearGradient(
-                                colors: [
-                                    DesignSystem.Colors.primary,
-                                    DesignSystem.Colors.primary.opacity(0.8)
-                                ],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .shadow(color: DesignSystem.Colors.primary.opacity(0.25), radius: 6, x: 0, y: 3)
-                    }
-                    .buttonStyle(.plain)
-                    .opacity(animateContent ? 1 : 0)
-                    .scaleEffect(animateContent ? 1.0 : 0.9)
-                    .animation(.spring(response: 0.8, dampingFraction: 0.7).delay(2.1), value: animateContent)
+            Text("Use \(biometricType)")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.3))
+            
+            if authManager.isAuthenticating {
+                HStack(spacing: 12) {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: Color(red: 0.36, green: 0.61, blue: 0.84)))
+                        .scaleEffect(0.8)
+                    
+                    Text("Authenticating...")
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color(red: 0.45, green: 0.42, blue: 0.38))
                 }
+                .padding(.vertical, 12)
+            } else {
+                Button(action: authenticateWithBiometric) {
+                    Text("Authenticate with \(biometricType)")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            Color(red: 0.36, green: 0.61, blue: 0.84),
+                                            Color(red: 0.42, green: 0.67, blue: 0.88)
+                                        ],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                        )
+                        .shadow(
+                            color: Color(red: 0.36, green: 0.61, blue: 0.84).opacity(0.3),
+                            radius: 8,
+                            x: 0,
+                            y: 4
+                        )
+                }
+                .buttonStyle(.plain)
             }
         }
     }
     
     private var passwordAuthSection: some View {
-        VStack(spacing: 32) {
-            // Password icon with modern styling
+        VStack(spacing: 24) {
+            // Password icon with warm styling
             ZStack {
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                DesignSystem.Colors.primary.opacity(0.1),
-                                DesignSystem.Colors.primary.opacity(0.05)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 120, height: 120)
+                    .fill(Color(red: 0.36, green: 0.61, blue: 0.84).opacity(0.1))
+                    .frame(width: 80, height: 80)
                 
                 Image(systemName: "key.horizontal.fill")
-                    .font(.system(size: 48, weight: .light))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [DesignSystem.Colors.primary, DesignSystem.Colors.primary.opacity(0.7)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .font(.system(size: 36, weight: .light))
+                    .foregroundStyle(Color(red: 0.36, green: 0.61, blue: 0.84))
             }
-            .scaleEffect(animateContent ? 1.0 : 0.8)
-            .opacity(animateContent ? 1 : 0)
-            .animation(.spring(response: 0.8, dampingFraction: 0.7).delay(1.7), value: animateContent)
             
-            VStack(spacing: 24) {
-                Text("Enter Your Password")
-                    .font(.system(size: 20, weight: .medium, design: .default))
-                    .foregroundStyle(DesignSystem.Colors.textPrimary)
-                    .opacity(animateContent ? 1 : 0)
-                    .animation(.easeOut(duration: 0.8).delay(1.9), value: animateContent)
-                
-                VStack(spacing: 20) {
-                    SecureField("Password", text: $password, prompt: Text("Enter your secure password").foregroundColor(DesignSystem.Colors.textTertiary))
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 16, weight: .regular, design: .default))
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(DesignSystem.Colors.backgroundSecondary)
-                                .stroke(DesignSystem.Colors.divider.opacity(0.5), lineWidth: 1)
-                        )
-                        .frame(height: 48)
-                        .onSubmit {
-                            authenticateWithPassword()
-                        }
-                        .opacity(animateContent ? 1 : 0)
-                        .animation(.easeOut(duration: 0.8).delay(2.1), value: animateContent)
-                    
-                    if authManager.isAuthenticating {
-                        VStack(spacing: 12) {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: DesignSystem.Colors.primary))
-                                .scaleEffect(1.2)
-                            
-                            Text("Authenticating...")
-                                .font(.system(size: 16, weight: .regular, design: .default))
-                                .foregroundStyle(DesignSystem.Colors.textSecondary)
-                        }
-                    } else {
-                        Button(action: {
-                            authenticateWithPassword()
-                        }) {
-                            HStack(spacing: 10) {
-                                Image(systemName: "arrow.right.circle.fill")
-                                    .font(.system(size: 16, weight: .medium))
-                                
-                                Text("Sign In")
-                                    .font(.system(size: 16, weight: .semibold, design: .default))
-                            }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .background(
-                                LinearGradient(
-                                    colors: password.isEmpty ? 
-                                        [DesignSystem.Colors.textSecondary.opacity(0.3), DesignSystem.Colors.textSecondary.opacity(0.2)] :
-                                        [DesignSystem.Colors.primary, DesignSystem.Colors.primary.opacity(0.8)],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
+            Text("Enter Your Password")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.3))
+            
+            VStack(spacing: 16) {
+                SecureField("Enter your secure password", text: $password)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 16))
+                    .padding(14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color(red: 0.98, green: 0.97, blue: 0.96))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color(red: 0.9, green: 0.88, blue: 0.86), lineWidth: 1)
                             )
-                            .foregroundStyle(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .shadow(color: password.isEmpty ? Color.clear : DesignSystem.Colors.primary.opacity(0.25), radius: 6, x: 0, y: 3)
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(password.isEmpty)
-                        .opacity(animateContent ? 1 : 0)
-                        .scaleEffect(animateContent ? 1.0 : 0.9)
-                        .animation(.spring(response: 0.8, dampingFraction: 0.7).delay(2.3), value: animateContent)
+                    )
+                    .onSubmit(authenticateWithPassword)
+                
+                if authManager.isAuthenticating {
+                    HStack(spacing: 12) {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: Color(red: 0.36, green: 0.61, blue: 0.84)))
+                            .scaleEffect(0.8)
+                        
+                        Text("Authenticating...")
+                            .font(.system(size: 15))
+                            .foregroundStyle(Color(red: 0.45, green: 0.42, blue: 0.38))
                     }
+                    .padding(.vertical, 12)
+                } else {
+                    Button(action: authenticateWithPassword) {
+                        Text("Sign In")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: password.isEmpty ?
+                                                [Color(red: 0.8, green: 0.78, blue: 0.76), Color(red: 0.8, green: 0.78, blue: 0.76)] :
+                                                [Color(red: 0.36, green: 0.61, blue: 0.84), Color(red: 0.42, green: 0.67, blue: 0.88)],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                            )
+                            .shadow(
+                                color: password.isEmpty ? Color.clear : Color(red: 0.36, green: 0.61, blue: 0.84).opacity(0.3),
+                                radius: 8,
+                                x: 0,
+                                y: 4
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(password.isEmpty)
                 }
             }
         }
@@ -436,69 +343,44 @@ struct LoginView: View {
         VStack(spacing: 16) {
             HStack(spacing: 12) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(DesignSystem.Colors.warning)
+                    .font(.system(size: 16))
+                    .foregroundStyle(Color(red: 0.95, green: 0.61, blue: 0.28))
                 
                 Text(error.localizedDescription)
-                    .font(.system(size: 15, weight: .regular, design: .default))
-                    .foregroundStyle(DesignSystem.Colors.textPrimary)
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color(red: 0.45, green: 0.42, blue: 0.38))
                     .multilineTextAlignment(.leading)
                 
                 Spacer()
             }
             
             // Show alternative methods or reset option
-            VStack(spacing: 8) {
-                if error == .biometricLockout || error == .biometricNotAvailable {
-                    Button(action: {
-                        switchToPasswordAuth()
-                    }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "key.horizontal")
-                                .font(.system(size: 14, weight: .medium))
-                            
-                            Text("Use Password Instead")
-                                .font(.system(size: 14, weight: .medium, design: .default))
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(DesignSystem.Colors.primary.opacity(0.1))
-                        )
-                        .foregroundStyle(DesignSystem.Colors.primary)
-                    }
-                    .buttonStyle(.plain)
+            if error == .biometricLockout || error == .biometricNotAvailable {
+                Button(action: switchToPasswordAuth) {
+                    Text("Use Password Instead")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color(red: 0.36, green: 0.61, blue: 0.84))
                 }
-                
-                if error == .keychainError {
-                    Button(action: {
-                        resetAuthentication()
-                    }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 14, weight: .medium))
-                            
-                            Text("Reset Authentication")
-                                .font(.system(size: 14, weight: .medium, design: .default))
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(DesignSystem.Colors.warning.opacity(0.1))
-                        )
-                        .foregroundStyle(DesignSystem.Colors.warning)
-                    }
-                    .buttonStyle(.plain)
+                .buttonStyle(.plain)
+            }
+            
+            if error == .keychainError {
+                Button(action: resetAuthentication) {
+                    Text("Reset Authentication")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color(red: 0.95, green: 0.61, blue: 0.28))
                 }
+                .buttonStyle(.plain)
             }
         }
-        .padding(20)
+        .padding(16)
         .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(DesignSystem.Colors.warning.opacity(0.08))
-                .stroke(DesignSystem.Colors.warning.opacity(0.2), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(red: 0.95, green: 0.61, blue: 0.28).opacity(0.1))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color(red: 0.95, green: 0.61, blue: 0.28).opacity(0.3), lineWidth: 1)
+                )
         )
     }
     
