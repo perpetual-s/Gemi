@@ -10,7 +10,7 @@ import os.log
 
 /// Comprehensive AI system settings managed by GemiAICoordinator
 struct AICoordinatorSettingsView: View {
-    @StateObject private var coordinator = GemiAICoordinator.shared
+    @State private var coordinator = GemiAICoordinator.shared
     @State private var settings = AISettings()
     @State private var showingModelUpdate = false
     @State private var showingModelReset = false
@@ -660,7 +660,7 @@ struct QueueStatusView: View {
 }
 
 struct DebugInfoView: View {
-    @ObservedObject var coordinator: GemiAICoordinator
+    let coordinator: GemiAICoordinator
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {

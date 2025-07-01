@@ -11,11 +11,12 @@ import os.log
 
 /// Central coordinator for all AI services in Gemi
 @Observable
+@MainActor
 final class GemiAICoordinator {
     
     // MARK: - Singleton
     
-    static let shared = GemiAICoordinator()
+    nonisolated(unsafe) static let shared = GemiAICoordinator()
     
     // MARK: - Published Properties
     
@@ -57,7 +58,7 @@ final class GemiAICoordinator {
     // MARK: - Initialization
     
     private init() {
-        initializationTask = Task {
+        initializationTask = Task { @MainActor in
             await initialize()
         }
     }
@@ -65,7 +66,6 @@ final class GemiAICoordinator {
     // MARK: - Public Methods
     
     /// Initialize the AI system
-    @MainActor
     func initialize() async {
         logger.info("Initializing Gemi AI system...")
         aiStatus = .initializing
@@ -147,7 +147,7 @@ final class GemiAICoordinator {
     // MARK: - Model Lifecycle Management
     
     /// Compare model versions and check for updates
-    func compareModelVersions() async -> ModelComparison {
+    nonisolated func compareModelVersions() async -> ModelComparison {
         logger.info("Comparing model versions")
         
         do {
@@ -157,7 +157,7 @@ final class GemiAICoordinator {
             let baseModel = models.first { $0.contains("gemma") && !$0.contains("gemi-custom") }
             let customModel = models.first { $0.contains("gemi-custom") }
             
-            guard let base = baseModel else {
+            guard baseModel != nil else {
                 return ModelComparison(needsUpdate: false, reason: "Base model not found")
             }
             
@@ -175,7 +175,6 @@ final class GemiAICoordinator {
     }
     
     /// Update the custom model
-    @MainActor
     func updateCustomModel() async throws {
         logger.info("Updating custom model")
         
@@ -208,7 +207,6 @@ final class GemiAICoordinator {
     }
     
     /// Rollback to base model
-    @MainActor
     func rollbackModel() async {
         logger.info("Rolling back to base model")
         
@@ -343,7 +341,6 @@ final class GemiAICoordinator {
         }
     }
     
-    @MainActor
     private func updatePerformanceMetrics(_ metrics: PerformanceMetrics) {
         averageResponseTime = metrics.averageResponseTime
         memoryUsageMB = metrics.memoryUsageMB

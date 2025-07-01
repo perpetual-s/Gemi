@@ -43,6 +43,13 @@ actor MemoryStore {
     
     // MARK: - Public Methods
     
+    /// Add a memory directly
+    func addMemory(_ memory: Memory) async throws {
+        logger.info("Adding memory: \(memory.id)")
+        try await saveMemory(memory)
+        try await pruneMemoriesIfNeeded()
+    }
+    
     /// Add a new memory from a conversation
     func addMemoryFromConversation(userMessage: String, aiResponse: String) async throws {
         logger.info("Adding memory from conversation")
