@@ -485,4 +485,89 @@ extension OllamaService {
         }
         return ""
     }
+    
+    /// Generate a chat completion and return full response
+    func generateChat(prompt: String, model: String? = nil) async throws -> String {
+        logger.info("Generating chat response")
+        
+        guard await checkOllamaStatus() else {
+            throw OllamaError.serverNotRunning
+        }
+        
+        let url = URL(string: "\(baseURL)/api/generate")!
+        let chatRequest = OllamaChatRequest(
+            model: model ?? modelName,
+            prompt: prompt,
+            stream: false,
+            options: defaultOptions,
+            context: nil
+        )
+        
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.httpBody = try JSONEncoder().encode(chatRequest)
+        
+        let (data, response) = try await session.data(for: urlRequest)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw OllamaError.invalidResponse
+        }
+        
+        let chatResponse = try JSONDecoder().decode(OllamaChatResponse.self, from: data)
+        return chatResponse.response
+    }
+    
+    /// Generate a chat completion with streaming (new method for EnhancedChatView)
+    func generateChatStream(prompt: String, model: String? = nil) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            Task {
+                await self.performChatCompletion(
+                    prompt: prompt,
+                    context: nil,
+                    continuation: continuation
+                )
+            }
+        }
+    }
+    
+    /// Generate embedding (overload for Float return type)
+    func generateEmbedding(prompt: String, model: String) async throws -> OllamaEmbeddingResponse {
+        logger.info("Generating embedding for text")
+        
+        guard await checkOllamaStatus() else {
+            throw OllamaError.serverNotRunning
+        }
+        
+        let url = URL(string: "\(baseURL)/api/embeddings")!
+        let request = OllamaEmbeddingRequest(model: model, prompt: prompt)
+        
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.httpBody = try JSONEncoder().encode(request)
+        
+        let (data, response) = try await session.data(for: urlRequest)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw OllamaError.embeddingGenerationFailed
+        }
+        
+        return try JSONDecoder().decode(OllamaEmbeddingResponse.self, from: data)
+    }
+    
+    /// List available models
+    func listModels() async throws -> [String] {
+        guard await checkOllamaStatus() else {
+            throw OllamaError.serverNotRunning
+        }
+        
+        let url = URL(string: "\(baseURL)/api/tags")!
+        let (data, _) = try await session.data(from: url)
+        let modelList = try JSONDecoder().decode(OllamaModelList.self, from: data)
+        
+        return modelList.models.map { $0.name }
+    }
 }

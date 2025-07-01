@@ -27,9 +27,8 @@ actor EmbeddingService {
                 model: embeddingModel
             )
             
-            guard let embedding = response.embedding else {
-                throw EmbeddingError.noEmbeddingReturned
-            }
+            // Convert Double array to Float array
+            let embedding = response.embedding.map { Float($0) }
             
             logger.info("Successfully generated embedding with \(embedding.count) dimensions")
             return embedding
