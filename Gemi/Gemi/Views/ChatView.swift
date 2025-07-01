@@ -13,19 +13,26 @@ struct ChatView: View {
     // MARK: - Properties
     
     @Binding var isPresented: Bool
-    @State private var messages: [ChatMessage] = []
-    @State private var isTyping: Bool = false
-    @State private var memoryCount: Int = 12
-    @State private var inputText: String = ""
     @State private var showingMemoryInfo: Bool = false
     @State private var chatOffset: CGFloat = 500
     @State private var backdropOpacity: Double = 0
-    @State private var hasShownWelcome: Bool = false
-    @State private var isFirstTimeUser: Bool = true
     
     @Environment(\.colorScheme) private var colorScheme
     @Environment(OnboardingState.self) private var onboardingState
     @FocusState private var isInputFocused: Bool
+    
+    // AI Service integration
+    @State private var chatViewModel: ChatViewModel
+    @State private var ollamaService: OllamaService
+    
+    // MARK: - Initialization
+    
+    init(isPresented: Binding<Bool>, ollamaService: OllamaService? = nil) {
+        self._isPresented = isPresented
+        let service = ollamaService ?? OllamaService()
+        self._ollamaService = State(initialValue: service)
+        self._chatViewModel = State(initialValue: ChatViewModel(ollamaService: service))
+    }
     
     // MARK: - Body
     
@@ -65,8 +72,6 @@ struct ChatView: View {
                     backdropOpacity = 1
                 }
                 
-                // Add welcome message
-                addWelcomeMessage()
                 // Haptic feedback on chat open
             }
         }
@@ -77,11 +82,13 @@ struct ChatView: View {
                     backdropOpacity = 1
                 }
                 isInputFocused = true
+                chatViewModel.isChatVisible = true
             } else {
                 withAnimation(DesignSystem.Animation.standard) {
                     chatOffset = 500
                     backdropOpacity = 0
                 }
+                chatViewModel.isChatVisible = false
             }
         }
     }
@@ -114,7 +121,7 @@ struct ChatView: View {
             
             // Input area
             ChatInputView(
-                text: $inputText,
+                text: $chatViewModel.currentInput,
                 onSend: sendMessage,
                 onVoice: startVoiceInput
             )
@@ -124,7 +131,7 @@ struct ChatView: View {
     
     @ViewBuilder
     private var messagesScrollView: some View {
-        if messages.isEmpty && !hasShownWelcome {
+        if chatViewModel.messages.isEmpty {
             // Empty state
             VStack(spacing: 24) {
                 Spacer()
@@ -176,9 +183,19 @@ struct ChatView: View {
                         .foregroundStyle(.secondary)
                     
                     VStack(alignment: .leading, spacing: 8) {
-                        SuggestionChip(text: "How was my week?", icon: "calendar")
-                        SuggestionChip(text: "What patterns do you see in my writing?", icon: "chart.line.uptrend.xyaxis")
-                        SuggestionChip(text: "Help me reflect on today", icon: "sun.max")
+                        ForEach(chatViewModel.suggestedPrompts.prefix(3), id: \.self) { prompt in
+                            Button(action: {
+                                chatViewModel.useSuggestedPrompt(prompt)
+                            }) {
+                                SuggestionChip(
+                                    text: prompt,
+                                    icon: prompt.contains("today") ? "sun.max" : 
+                                          prompt.contains("week") ? "calendar" : 
+                                          "sparkles"
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
                     }
                 }
                 
@@ -193,16 +210,19 @@ struct ChatView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 16) {
-                        ForEach(Array(messages.enumerated()), id: \.element.id) { index, message in
-                            MessageBubble(message: message)
-                                .id(message.id)
-                                .transition(.asymmetric(
-                                    insertion: .scale(scale: 0.9).combined(with: .opacity).combined(with: .offset(x: message.role == .user ? 20 : -20)),
-                                    removal: .opacity
-                                ))
+                        ForEach(chatViewModel.messages) { message in
+                            ChatMessageBubble(
+                                message: message,
+                                isLastMessage: chatViewModel.isLastMessage(message)
+                            )
+                            .id(message.id)
+                            .transition(.asymmetric(
+                                insertion: .scale(scale: 0.9).combined(with: .opacity).combined(with: .offset(x: message.isUser ? 20 : -20)),
+                                removal: .opacity
+                            ))
                         }
                         
-                        if isTyping {
+                        if chatViewModel.isGenerating && !chatViewModel.streamingResponse.isEmpty {
                             TypingIndicator()
                                 .id("typing")
                                 .transition(.asymmetric(
@@ -214,11 +234,11 @@ struct ChatView: View {
                     .padding(20)
                     .padding(.bottom, 60)
                 }
-                .onChange(of: messages.count) { _, _ in
+                .onChange(of: chatViewModel.messages.count) { _, _ in
                     withAnimation(.easeOut(duration: 0.3)) {
-                        if let lastMessage = messages.last {
+                        if let lastMessage = chatViewModel.messages.last {
                             proxy.scrollTo(lastMessage.id, anchor: .bottom)
-                        } else if isTyping {
+                        } else if chatViewModel.isGenerating {
                             proxy.scrollTo("typing", anchor: .bottom)
                         }
                     }
@@ -311,7 +331,7 @@ struct ChatView: View {
                 Image(systemName: "brain.head.profile")
                     .font(.system(size: 12, weight: .medium))
                 
-                Text("Gemi is aware of \(memoryCount) memories")
+                Text("Gemi is aware of \(12) memories")
                     .font(.system(size: 13, weight: .medium))
                 
                 Image(systemName: showingMemoryInfo ? "chevron.up" : "chevron.down")
@@ -358,89 +378,27 @@ struct ChatView: View {
         }
     }
     
-    private func addWelcomeMessage() {
-        guard !hasShownWelcome else { return }
-        hasShownWelcome = true
-        
-        let welcome = ChatMessage(
-            role: .assistant,
-            content: "Hello! I'm here whenever you want to talk about your thoughts, reflect on your entries, or just have a friendly conversation. What's on your mind?",
-            timestamp: Date()
-        )
-        messages.append(welcome)
-        
-        // Coach marks are handled by the view modifier
-    }
-    
     private func sendMessage() {
-        guard !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        
-        // Add user message
-        let userMessage = ChatMessage(
-            role: .user,
-            content: inputText,
-            timestamp: Date()
-        )
-        messages.append(userMessage)
-        
-        // Clear input
-        let messageToSend = inputText
-        inputText = ""
-        
-        // Show typing indicator
-        withAnimation(.easeIn(duration: 0.2)) {
-            isTyping = true
-        }
-        
-        // Simulate AI response
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            withAnimation(.easeOut(duration: 0.2)) {
-                isTyping = false
-                
-                let response = ChatMessage(
-                    role: .assistant,
-                    content: generateResponse(for: messageToSend),
-                    timestamp: Date()
-                )
-                messages.append(response)
-            }
+        Task {
+            await chatViewModel.sendMessage()
         }
     }
     
     private func startVoiceInput() {
-        // Voice input implementation
-    }
-    
-    private func generateResponse(for message: String) -> String {
-        // This would connect to the actual AI service
-        return "I understand you're thinking about \"\(message)\". That's a really interesting perspective. Would you like to explore this further in your journal?"
+        // Voice input implementation - will be integrated with SpeechRecognitionService
     }
 }
 
-// MARK: - Chat Message Model
+// MARK: - Chat Message Bubble
 
-struct ChatMessage: Identifiable {
-    let id = UUID()
-    let role: ChatRole
-    let content: String
-    let timestamp: Date
-    var referencedEntry: JournalEntry?
-}
-
-enum ChatRole {
-    case user
-    case assistant
-}
-
-// MARK: - Message Bubble
-
-struct MessageBubble: View {
+struct ChatMessageBubble: View {
     let message: ChatMessage
+    let isLastMessage: Bool
     @State private var showTimestamp: Bool = false
     
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
-            if message.role == .assistant {
+            if !message.isUser {
                 // Gemi avatar
                 Circle()
                     .fill(
@@ -463,26 +421,29 @@ struct MessageBubble: View {
                 Spacer()
             }
             
-            VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 4) {
+            VStack(alignment: message.isUser ? .trailing : .leading, spacing: 4) {
                 // Message content
                 Text(message.content)
                     .font(.system(size: 15))
-                    .foregroundStyle(message.role == .user ? .white : .primary)
+                    .foregroundStyle(message.isUser ? .white : (message.isError ? DesignSystem.Colors.error : .primary))
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
                     .background(
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(message.role == .user ? 
+                            .fill(message.isUser ? 
                                 LinearGradient(
                                     colors: [
-                                        Color(red: 0.36, green: 0.61, blue: 0.84),
-                                        Color(red: 0.42, green: 0.67, blue: 0.88)
+                                        DesignSystem.Colors.primary,
+                                        DesignSystem.Colors.primary.opacity(0.9)
                                     ],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 ) :
                                 LinearGradient(
-                                    colors: [
+                                    colors: message.isError ? [
+                                        DesignSystem.Colors.error.opacity(0.1),
+                                        DesignSystem.Colors.error.opacity(0.05)
+                                    ] : [
                                         Color.primary.opacity(0.06),
                                         Color.primary.opacity(0.04)
                                     ],
@@ -504,20 +465,15 @@ struct MessageBubble: View {
                         ))
                 }
                 
-                // Referenced entry preview
-                if let entry = message.referencedEntry {
-                    EntryPreview(entry: entry)
-                        .padding(.top, 4)
-                }
             }
-            .frame(maxWidth: 280, alignment: message.role == .user ? .trailing : .leading)
+            .frame(maxWidth: 280, alignment: message.isUser ? .trailing : .leading)
             .onHover { hovering in
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                     showTimestamp = hovering
                 }
             }
             
-            if message.role == .user {
+            if message.isUser {
                 // User avatar placeholder
                 Circle()
                     .fill(Color.secondary.opacity(0.2))
@@ -628,41 +584,6 @@ struct MemoryItem: View {
     }
 }
 
-// MARK: - Entry Preview
-
-struct EntryPreview: View {
-    let entry: JournalEntry
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 4) {
-                Image(systemName: "book.pages.fill")
-                    .font(.system(size: 11))
-                
-                Text("From your journal")
-                    .font(.system(size: 11, weight: .medium))
-                
-                Text("·")
-                
-                Text(entry.date, style: .date)
-                    .font(.system(size: 11))
-            }
-            .foregroundStyle(.secondary)
-            
-            Text(entry.content)
-                .font(.system(size: 13))
-                .foregroundStyle(.primary)
-                .lineLimit(3)
-                .multilineTextAlignment(.leading)
-                .padding(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color.primary.opacity(0.04))
-                )
-        }
-    }
-}
 
 // MARK: - Chat Input View
 
