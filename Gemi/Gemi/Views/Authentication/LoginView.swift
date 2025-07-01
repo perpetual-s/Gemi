@@ -86,9 +86,9 @@ struct LoginView: View {
     private var backgroundGradient: some View {
         LinearGradient(
             colors: [
-                Color(red: 0.98, green: 0.97, blue: 0.96),
-                Color(red: 0.96, green: 0.95, blue: 0.94),
-                Color(red: 0.98, green: 0.97, blue: 0.96)
+                DesignSystem.Colors.canvasBackground,
+                DesignSystem.Colors.backgroundPrimary,
+                DesignSystem.Colors.canvasBackground
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -120,9 +120,9 @@ struct LoginView: View {
         .frame(width: 500)
         .background(
             RoundedRectangle(cornerRadius: 24)
-                .fill(.white)
+                .fill(DesignSystem.Colors.backgroundSecondary)
                 .shadow(
-                    color: Color(red: 0.38, green: 0.29, blue: 0.22).opacity(0.15),
+                    color: DesignSystem.Colors.shadowMedium,
                     radius: 30,
                     x: 0,
                     y: 15
@@ -170,11 +170,11 @@ struct LoginView: View {
             VStack(spacing: 12) {
                 Text("Welcome Back")
                     .font(.system(size: 36, weight: .light, design: .serif))
-                    .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.3))
+                    .foregroundStyle(DesignSystem.Colors.textPrimary)
                 
                 Text("Ready to continue your journey?")
                     .font(.system(size: 17, weight: .regular))
-                    .foregroundStyle(Color(red: 0.45, green: 0.42, blue: 0.38))
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
             }
         }
     }
@@ -183,11 +183,11 @@ struct LoginView: View {
         VStack(spacing: 8) {
             Text("Your private AI diary companion")
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(Color(red: 0.45, green: 0.42, blue: 0.38))
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
             
             Text("Powered by local Gemma 3n • Zero cloud dependency")
                 .font(.system(size: 12))
-                .foregroundStyle(Color(red: 0.62, green: 0.58, blue: 0.54))
+                .foregroundStyle(DesignSystem.Colors.textTertiary)
         }
     }
     
@@ -208,27 +208,27 @@ struct LoginView: View {
             // Biometric icon with warm styling
             ZStack {
                 Circle()
-                    .fill(Color(red: 0.36, green: 0.61, blue: 0.84).opacity(0.1))
+                    .fill(DesignSystem.Colors.primary.opacity(0.1))
                     .frame(width: 80, height: 80)
                 
                 Image(systemName: biometricIcon)
                     .font(.system(size: 36, weight: .light))
-                    .foregroundStyle(Color(red: 0.36, green: 0.61, blue: 0.84))
+                    .foregroundStyle(DesignSystem.Colors.primary)
             }
             
             Text("Use \(biometricType)")
                 .font(.system(size: 18, weight: .medium))
-                .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.3))
+                .foregroundStyle(DesignSystem.Colors.textPrimary)
             
             if authManager.isAuthenticating {
                 HStack(spacing: 12) {
                     ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: Color(red: 0.36, green: 0.61, blue: 0.84)))
+                        .progressViewStyle(CircularProgressViewStyle(tint: DesignSystem.Colors.primary))
                         .scaleEffect(0.8)
                     
                     Text("Authenticating...")
                         .font(.system(size: 15))
-                        .foregroundStyle(Color(red: 0.45, green: 0.42, blue: 0.38))
+                        .foregroundStyle(DesignSystem.Colors.textSecondary)
                 }
                 .padding(.vertical, 12)
             } else {
@@ -243,8 +243,8 @@ struct LoginView: View {
                                 .fill(
                                     LinearGradient(
                                         colors: [
-                                            Color(red: 0.36, green: 0.61, blue: 0.84),
-                                            Color(red: 0.42, green: 0.67, blue: 0.88)
+                                            DesignSystem.Colors.primary,
+                                            DesignSystem.Colors.primary.opacity(0.85)
                                         ],
                                         startPoint: .leading,
                                         endPoint: .trailing
@@ -252,7 +252,7 @@ struct LoginView: View {
                                 )
                         )
                         .shadow(
-                            color: Color(red: 0.36, green: 0.61, blue: 0.84).opacity(0.3),
+                            color: DesignSystem.Colors.primary.opacity(0.3),
                             radius: 8,
                             x: 0,
                             y: 4
@@ -268,17 +268,17 @@ struct LoginView: View {
             // Password icon with warm styling
             ZStack {
                 Circle()
-                    .fill(Color(red: 0.36, green: 0.61, blue: 0.84).opacity(0.1))
+                    .fill(DesignSystem.Colors.primary.opacity(0.1))
                     .frame(width: 80, height: 80)
                 
                 Image(systemName: "key.horizontal.fill")
                     .font(.system(size: 36, weight: .light))
-                    .foregroundStyle(Color(red: 0.36, green: 0.61, blue: 0.84))
+                    .foregroundStyle(DesignSystem.Colors.primary)
             }
             
             Text("Enter Your Password")
                 .font(.system(size: 18, weight: .medium))
-                .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.3))
+                .foregroundStyle(DesignSystem.Colors.textPrimary)
             
             VStack(spacing: 16) {
                 SecureField("Enter your secure password", text: $password)
@@ -287,10 +287,10 @@ struct LoginView: View {
                     .padding(14)
                     .background(
                         RoundedRectangle(cornerRadius: 10)
-                            .fill(Color(red: 0.98, green: 0.97, blue: 0.96))
+                            .fill(DesignSystem.Colors.backgroundTertiary)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 10)
-                                    .stroke(Color(red: 0.9, green: 0.88, blue: 0.86), lineWidth: 1)
+                                    .stroke(DesignSystem.Colors.divider, lineWidth: 1)
                             )
                     )
                     .onSubmit(authenticateWithPassword)
@@ -298,12 +298,12 @@ struct LoginView: View {
                 if authManager.isAuthenticating {
                     HStack(spacing: 12) {
                         ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: Color(red: 0.36, green: 0.61, blue: 0.84)))
+                            .progressViewStyle(CircularProgressViewStyle(tint: DesignSystem.Colors.primary))
                             .scaleEffect(0.8)
                         
                         Text("Authenticating...")
                             .font(.system(size: 15))
-                            .foregroundStyle(Color(red: 0.45, green: 0.42, blue: 0.38))
+                            .foregroundStyle(DesignSystem.Colors.textSecondary)
                     }
                     .padding(.vertical, 12)
                 } else {
@@ -318,15 +318,15 @@ struct LoginView: View {
                                     .fill(
                                         LinearGradient(
                                             colors: password.isEmpty ?
-                                                [Color(red: 0.8, green: 0.78, blue: 0.76), Color(red: 0.8, green: 0.78, blue: 0.76)] :
-                                                [Color(red: 0.36, green: 0.61, blue: 0.84), Color(red: 0.42, green: 0.67, blue: 0.88)],
+                                                [DesignSystem.Colors.textTertiary, DesignSystem.Colors.textTertiary] :
+                                                [DesignSystem.Colors.primary, DesignSystem.Colors.primary.opacity(0.85)],
                                             startPoint: .leading,
                                             endPoint: .trailing
                                         )
                                     )
                             )
                             .shadow(
-                                color: password.isEmpty ? Color.clear : Color(red: 0.36, green: 0.61, blue: 0.84).opacity(0.3),
+                                color: password.isEmpty ? Color.clear : DesignSystem.Colors.primary.opacity(0.3),
                                 radius: 8,
                                 x: 0,
                                 y: 4
@@ -344,11 +344,11 @@ struct LoginView: View {
             HStack(spacing: 12) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: 16))
-                    .foregroundStyle(Color(red: 0.95, green: 0.61, blue: 0.28))
+                    .foregroundStyle(DesignSystem.Colors.warning)
                 
                 Text(error.localizedDescription)
                     .font(.system(size: 14))
-                    .foregroundStyle(Color(red: 0.45, green: 0.42, blue: 0.38))
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
                     .multilineTextAlignment(.leading)
                 
                 Spacer()
@@ -359,7 +359,7 @@ struct LoginView: View {
                 Button(action: switchToPasswordAuth) {
                     Text("Use Password Instead")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(Color(red: 0.36, green: 0.61, blue: 0.84))
+                        .foregroundStyle(DesignSystem.Colors.primary)
                 }
                 .buttonStyle(.plain)
             }
@@ -368,7 +368,7 @@ struct LoginView: View {
                 Button(action: resetAuthentication) {
                     Text("Reset Authentication")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(Color(red: 0.95, green: 0.61, blue: 0.28))
+                        .foregroundStyle(DesignSystem.Colors.warning)
                 }
                 .buttonStyle(.plain)
             }
@@ -376,10 +376,10 @@ struct LoginView: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(red: 0.95, green: 0.61, blue: 0.28).opacity(0.1))
+                .fill(DesignSystem.Colors.warning.opacity(0.1))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(red: 0.95, green: 0.61, blue: 0.28).opacity(0.3), lineWidth: 1)
+                        .stroke(DesignSystem.Colors.warning.opacity(0.3), lineWidth: 1)
                 )
         )
     }

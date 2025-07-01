@@ -30,7 +30,7 @@ final class OnboardingState {
     // Privacy settings chosen during onboarding
     var enableBiometrics: Bool = false
     var enableAutoSave: Bool = true
-    var selectedTheme: AppTheme = .system
+    var selectedTheme: Gemi.AppTheme = .system
     
     // MARK: - Initialization
     

@@ -82,7 +82,7 @@ enum DesignSystem {
             #if os(macOS)
             return Color(NSColor(name: "PrimaryPastelBlue") { appearance in
                 if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
-                    return NSColor(red: 0.48, green: 0.70, blue: 0.90, alpha: 1.0) // Lighter pastel blue for dark mode
+                    return NSColor(red: 0.40, green: 0.58, blue: 0.78, alpha: 1.0) // Muted pastel blue for dark mode
                 } else {
                     return NSColor(red: 0.36, green: 0.61, blue: 0.84, alpha: 1.0) // Google DeepMind pastel blue for light mode
                 }
@@ -97,7 +97,7 @@ enum DesignSystem {
             #if os(macOS)
             return Color(NSColor(name: "SecondaryWarmBlue") { appearance in
                 if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
-                    return NSColor(red: 0.58, green: 0.71, blue: 0.84, alpha: 1.0) // Muted warm blue for dark mode
+                    return NSColor(red: 0.48, green: 0.60, blue: 0.72, alpha: 1.0) // Darker muted warm blue for dark mode
                 } else {
                     return NSColor(red: 0.59, green: 0.78, blue: 0.91, alpha: 0.8) // Lighter warm blue for light mode
                 }
@@ -227,7 +227,7 @@ enum DesignSystem {
             #if os(macOS)
             return Color(NSColor(name: "BackgroundPrimaryWarm") { appearance in
                 if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
-                    return NSColor(red: 0.16, green: 0.15, blue: 0.14, alpha: 1.0) // Deep warm charcoal for dark mode
+                    return NSColor(red: 0.11, green: 0.10, blue: 0.09, alpha: 1.0) // Deeper cozy evening charcoal for dark mode
                 } else {
                     return NSColor(red: 0.98, green: 0.98, blue: 0.97, alpha: 1.0) // Warm off-white for light mode
                 }
@@ -242,7 +242,7 @@ enum DesignSystem {
             #if os(macOS)
             return Color(NSColor(name: "BackgroundSecondaryWarm") { appearance in
                 if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
-                    return NSColor(red: 0.20, green: 0.19, blue: 0.18, alpha: 1.0) // Warmer elevated surface for dark mode
+                    return NSColor(red: 0.15, green: 0.13, blue: 0.11, alpha: 1.0) // Darker elevated surface for dark mode
                 } else {
                     return NSColor(red: 0.99, green: 0.98, blue: 0.96, alpha: 1.0) // Slightly elevated warm white for light mode
                 }
@@ -257,7 +257,7 @@ enum DesignSystem {
             #if os(macOS)
             return Color(NSColor(name: "BackgroundTertiaryWarm") { appearance in
                 if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
-                    return NSColor(red: 0.24, green: 0.23, blue: 0.21, alpha: 1.0) // Highest elevation warm surface for dark mode
+                    return NSColor(red: 0.17, green: 0.15, blue: 0.13, alpha: 1.0) // Darker highest elevation surface for dark mode
                 } else {
                     return NSColor(red: 0.96, green: 0.94, blue: 0.91, alpha: 1.0) // Subtle warm beige for light mode
                 }
@@ -283,7 +283,7 @@ enum DesignSystem {
             #if os(macOS)
             return Color(NSColor(name: "CanvasBackgroundWarm") { appearance in
                 if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
-                    return NSColor(red: 0.13, green: 0.12, blue: 0.11, alpha: 1.0) // Deep warm coffee for dark mode
+                    return NSColor(red: 0.08, green: 0.07, blue: 0.06, alpha: 1.0) // Deep cozy coffee for dark mode
                 } else {
                     return NSColor(red: 0.96, green: 0.94, blue: 0.90, alpha: 1.0) // Warm latte for light mode
                 }
@@ -298,7 +298,7 @@ enum DesignSystem {
             #if os(macOS)
             return Color(NSColor(name: "SidebarBackgroundWarm") { appearance in
                 if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
-                    return NSColor(red: 0.18, green: 0.17, blue: 0.15, alpha: 1.0) // Warm cocoa for dark mode
+                    return NSColor(red: 0.12, green: 0.11, blue: 0.10, alpha: 1.0) // Darker warm cocoa for dark mode
                 } else {
                     return NSColor(red: 0.94, green: 0.92, blue: 0.88, alpha: 1.0) // Warm oat milk for light mode
                 }
@@ -315,7 +315,7 @@ enum DesignSystem {
             #if os(macOS)
             return Color(NSColor(name: "DividerWarm") { appearance in
                 if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
-                    return NSColor(red: 0.32, green: 0.30, blue: 0.27, alpha: 1.0) // Warm brown divider for dark mode
+                    return NSColor(red: 0.25, green: 0.23, blue: 0.20, alpha: 1.0) // Darker warm brown divider for dark mode
                 } else {
                     return NSColor(red: 0.85, green: 0.82, blue: 0.78, alpha: 1.0) // Warm beige divider for light mode
                 }
