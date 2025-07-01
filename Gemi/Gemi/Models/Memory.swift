@@ -142,13 +142,13 @@ extension Memory {
             t.column("tags", .text).notNull() // JSON array
             t.column("isPinned", .boolean).notNull().defaults(to: false)
             t.column("memoryType", .text).notNull()
-            
-            // Indexes for performance
-            t.column("createdAt").indexed()
-            t.column("importance").indexed()
-            t.column("sourceEntryId").indexed()
-            t.column("memoryType").indexed()
         }
+        
+        // Create indexes for performance
+        try db.create(index: "memories_on_createdAt", on: databaseTableName, columns: ["createdAt"], options: .ifNotExists)
+        try db.create(index: "memories_on_importance", on: databaseTableName, columns: ["importance"], options: .ifNotExists)
+        try db.create(index: "memories_on_sourceEntryId", on: databaseTableName, columns: ["sourceEntryId"], options: .ifNotExists)
+        try db.create(index: "memories_on_memoryType", on: databaseTableName, columns: ["memoryType"], options: .ifNotExists)
         
         // Create FTS table for content search
         try db.create(virtualTable: "memories_fts", using: FTS5()) { t in
