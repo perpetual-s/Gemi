@@ -99,13 +99,19 @@ private struct WindowState: Codable {
 // MARK: - Window Style Modifier
 
 struct PremiumWindowStyle: ViewModifier {
-    @Environment(WindowStateManager.self) private var windowStateManager
+    let minWidth: CGFloat
+    let minHeight: CGFloat
+    
+    init(minWidth: CGFloat = 1000, minHeight: CGFloat = 600) {
+        self.minWidth = minWidth
+        self.minHeight = minHeight
+    }
     
     func body(content: Content) -> some View {
         content
             .frame(
-                minWidth: windowStateManager.minWindowSize.width,
-                minHeight: windowStateManager.minWindowSize.height
+                minWidth: minWidth,
+                minHeight: minHeight
             )
             .background(WindowAccessor())
     }
@@ -157,7 +163,7 @@ private struct WindowAccessor: NSViewRepresentable {
 // MARK: - View Extension
 
 extension View {
-    func premiumWindowStyle() -> some View {
-        self.modifier(PremiumWindowStyle())
+    func premiumWindowStyle(minWidth: CGFloat = 1000, minHeight: CGFloat = 600) -> some View {
+        self.modifier(PremiumWindowStyle(minWidth: minWidth, minHeight: minHeight))
     }
 }

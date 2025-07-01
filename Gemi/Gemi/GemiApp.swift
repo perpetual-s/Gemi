@@ -46,11 +46,12 @@ struct GemiApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ZStack {
+            Group {
                 if !onboardingState.hasCompletedOnboarding {
                     // Onboarding flow for first-time users
                     OnboardingView()
                         .environment(onboardingState)
+                        .environment(windowStateManager)
                 } else if authenticationManager.isAuthenticated {
                     // Main application interface
                     ContentView()
@@ -63,15 +64,17 @@ struct GemiApp: App {
                         .environment(accessibilityManager)
                         .environment(keyboardNavigation)
                         .preferredColorScheme(nil) // Respect system appearance
-                        .premiumWindowStyle()
                 } else {
                     // Authentication flow
                     AuthenticationFlowView()
                         .environment(authenticationManager)
                         .environment(onboardingState)
-                        .premiumWindowStyle()
+                        .environment(windowStateManager)
                 }
             }
+            .frame(minWidth: 1000, minHeight: 600)
+            .background(Color(red: 0.98, green: 0.98, blue: 0.98))
+            .premiumWindowStyle()
             .task {
                 // Initialize premium features
                 performanceOptimizer.startMonitoring()
@@ -94,8 +97,8 @@ struct GemiApp: App {
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
         .defaultSize(
-            width: windowStateManager.idealWindowSize.width,
-            height: windowStateManager.idealWindowSize.height
+            width: 1200,
+            height: 800
         )
         .windowToolbarStyle(.unified(showsTitle: false))
         .commands {

@@ -10,9 +10,9 @@ import SwiftUI
 struct OnboardingView: View {
     @Environment(OnboardingState.self) private var onboardingState
     @Environment(\.dismiss) private var dismiss
-    @State private var isAnimating = false
     
     var body: some View {
+        @Bindable var onboarding = onboardingState
         ZStack {
             // Background
             backgroundGradient
@@ -25,7 +25,7 @@ struct OnboardingView: View {
                 
                 // Content
                 Group {
-                    switch onboardingState.currentStep {
+                    switch onboarding.currentStep {
                     case .welcome:
                         WelcomeStepView()
                     case .privacy:
@@ -41,7 +41,7 @@ struct OnboardingView: View {
                     insertion: .move(edge: .trailing).combined(with: .opacity),
                     removal: .move(edge: .leading).combined(with: .opacity)
                 ))
-                .animation(DesignSystem.Animation.smooth, value: onboardingState.currentStep)
+                .animation(DesignSystem.Animation.smooth, value: onboarding.currentStep)
                 
                 // Navigation
                 navigationButtons
@@ -50,20 +50,13 @@ struct OnboardingView: View {
             }
         }
         .frame(width: 800, height: 600)
-        .background(.ultraThinMaterial)
+        .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .shadow(
             color: Color.black.opacity(0.2),
             radius: 40,
             y: 20
         )
-        .scaleEffect(isAnimating ? 1 : 0.9)
-        .opacity(isAnimating ? 1 : 0)
-        .onAppear {
-            withAnimation(DesignSystem.Animation.smooth) {
-                isAnimating = true
-            }
-        }
     }
     
     // MARK: - Background
@@ -319,6 +312,7 @@ struct SetupStepView: View {
     @State private var illustrationScale: CGFloat = 0
     
     var body: some View {
+        @Bindable var onboarding = onboardingState
         VStack(spacing: 40) {
             Spacer()
             
@@ -347,9 +341,9 @@ struct SetupStepView: View {
                         icon: "faceid",
                         title: "Use Face ID",
                         description: "Secure your journal with biometric authentication",
-                        isEnabled: onboardingState.enableBiometrics
+                        isEnabled: onboarding.enableBiometrics
                     ) {
-                        onboardingState.enableBiometrics.toggle()
+                        onboarding.enableBiometrics.toggle()
                     }
                     
                     // Auto-save
@@ -357,9 +351,9 @@ struct SetupStepView: View {
                         icon: "arrow.clockwise",
                         title: "Auto-save entries",
                         description: "Automatically save your writing every few seconds",
-                        isEnabled: onboardingState.enableAutoSave
+                        isEnabled: onboarding.enableAutoSave
                     ) {
-                        onboardingState.enableAutoSave.toggle()
+                        onboarding.enableAutoSave.toggle()
                     }
                     
                     // Theme selection
@@ -371,9 +365,9 @@ struct SetupStepView: View {
                             ForEach(AppTheme.allCases, id: \.self) { theme in
                                 ThemeOption(
                                     theme: theme,
-                                    isSelected: onboardingState.selectedTheme == theme
+                                    isSelected: onboarding.selectedTheme == theme
                                 ) {
-                                    onboardingState.selectedTheme = theme
+                                    onboarding.selectedTheme = theme
                                 }
                             }
                         }
