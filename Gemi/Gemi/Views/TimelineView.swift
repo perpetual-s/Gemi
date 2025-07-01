@@ -19,6 +19,9 @@ struct TimelineView: View {
     
     /// The journal store containing all entries (injected via @Environment)
     @Environment(JournalStore.self) private var journalStore
+    @Environment(PerformanceOptimizer.self) private var performanceOptimizer
+    @Environment(AccessibilityManager.self) private var accessibilityManager
+    @Environment(KeyboardNavigationState.self) private var keyboardNavigation
     
     // MARK: - State
     
@@ -34,6 +37,10 @@ struct TimelineView: View {
     /// Controls the alert for entry deletion confirmation
     @State private var showingDeleteAlert = false
     @State private var entryToDelete: JournalEntry?
+    
+    /// Search text for filtering entries
+    @State private var searchText = ""
+    @FocusState private var isSearchFocused: Bool
     
     private var groupedEntries: [Date: [JournalEntry]] {
         Dictionary(grouping: journalStore.entries) { entry in
@@ -133,65 +140,9 @@ struct TimelineView: View {
             LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
                 ForEach(groupedEntries.keys.sorted(by: >), id: \.self) { date in
                     Section {
-                        VStack(spacing: 16) {
-                            ForEach(Array(groupedEntries[date]!.enumerated()), id: \.element.id) { index, entry in
-                                TimelineCardView(
-                                    entry: entry,
-                                    isSelected: selectedEntry?.id == entry.id
-                                ) {
-                                    withAnimation(DesignSystem.Animation.encouragingSpring) {
-                                        selectedEntry = entry
-                                    }
-                                    // Haptic feedback on selection
-                                }
-                                .id(entry.id)
-                                .transition(reduceMotion ? .opacity : .asymmetric(
-                                    insertion: .opacity.combined(with: .scale(scale: 0.9)).combined(with: .offset(y: 20)),
-                                    removal: .opacity.combined(with: .scale(scale: 0.8)).combined(with: .offset(x: 200))
-                                ))
-                                .scaleIn(delay: reduceMotion ? 0 : Double(index) * 0.05, from: reduceMotion ? 1 : 0.85)
-                                .contextMenu {
-                                    Button {
-                                        // TODO: Edit functionality
-                                    } label: {
-                                        Label("Edit Entry", systemImage: "pencil")
-                                    }
-                                    
-                                    Divider()
-                                    
-                                    Button(role: .destructive) {
-                                        entryToDelete = entry
-                                        showingDeleteAlert = true
-                                        // Haptic feedback for delete warning
-                                    } label: {
-                                        Label("Delete Entry", systemImage: "trash")
-                                    }
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 8)
+                        timelineSection(for: date)
                     } header: {
-                        HStack {
-                            Text(formatDateHeader(date))
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(.secondary)
-                                .textCase(.uppercase)
-                                .tracking(1.2)
-                            
-                            Spacer()
-                            
-                            Text("\(groupedEntries[date]!.count) entries")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(.tertiary)
-                        }
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 12)
-                        .background(
-                            Rectangle()
-                                .fill(.ultraThinMaterial)
-                                .ignoresSafeArea(edges: .horizontal)
-                        )
+                        timelineSectionHeader(for: date)
                     }
                 }
             }
@@ -201,6 +152,80 @@ struct TimelineView: View {
         .refreshable {
             await journalStore.refreshEntries()
         }
+    }
+    
+    @ViewBuilder
+    private func timelineSection(for date: Date) -> some View {
+        VStack(spacing: 16) {
+            ForEach(Array(groupedEntries[date]!.enumerated()), id: \.element.id) { index, entry in
+                timelineCard(entry: entry, index: index)
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 8)
+    }
+    
+    @ViewBuilder
+    private func timelineCard(entry: JournalEntry, index: Int) -> some View {
+        TimelineCardView(
+            entry: entry,
+            isSelected: selectedEntry?.id == entry.id,
+            action: {
+                withAnimation(DesignSystem.Animation.encouragingSpring) {
+                    selectedEntry = entry
+                }
+            },
+            onEdit: {
+                // TODO: Edit functionality
+            },
+            onDelete: {
+                entryToDelete = entry
+                showingDeleteAlert = true
+            },
+            onDuplicate: {
+                // TODO: Duplicate functionality
+            },
+            onExport: {
+                // TODO: Export functionality
+            },
+            onShare: {
+                // TODO: Share functionality
+            }
+        )
+        .id(entry.id)
+        .transition(entryTransition)
+        .scaleIn(delay: reduceMotion ? 0 : Double(index) * 0.05, from: reduceMotion ? 1 : 0.85)
+    }
+    
+    @ViewBuilder
+    private func timelineSectionHeader(for date: Date) -> some View {
+        HStack {
+            Text(formatDateHeader(date))
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .tracking(1.2)
+            
+            Spacer()
+            
+            Text("\(groupedEntries[date]!.count) entries")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 12)
+        .background(
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .ignoresSafeArea(edges: .horizontal)
+        )
+    }
+    
+    private var entryTransition: AnyTransition {
+        reduceMotion ? .opacity : .asymmetric(
+            insertion: .opacity.combined(with: .scale(scale: 0.9)).combined(with: .offset(y: 20)),
+            removal: .opacity.combined(with: .scale(scale: 0.8)).combined(with: .offset(x: 200))
+        )
     }
     
     private func formatDateHeader(_ date: Date) -> String {

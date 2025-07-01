@@ -17,6 +17,9 @@ struct ContentView: View {
     // MARK: - Dependencies
     
     @Environment(JournalStore.self) private var journalStore
+    @Environment(PerformanceOptimizer.self) private var performanceOptimizer
+    @Environment(AccessibilityManager.self) private var accessibilityManager
+    @Environment(KeyboardNavigationState.self) private var keyboardNavigation
     
     // MARK: - State
     
@@ -24,6 +27,7 @@ struct ContentView: View {
     @State private var showingNewEntry = false
     @State private var showingChat = false
     @State private var sidebarSelection: NavigationItem = .timeline
+    @FocusState private var focusedField: FocusableField?
     
     // MARK: - Body
     
@@ -179,6 +183,8 @@ struct ContentView: View {
                     showingNewEntry = true
                     // Haptic feedback on button press
                 }
+                .keyboardShortcut("n", modifiers: .command)
+                .accessibleButton(label: AccessibilityLabels.newEntryButton)
                 .coachMark(
                     .firstEntry,
                     title: "Start Writing",
@@ -193,6 +199,8 @@ struct ContentView: View {
                     showingChat = true
                     // Haptic feedback on button press
                 }
+                .keyboardShortcut("t", modifiers: .command)
+                .accessibleButton(label: AccessibilityLabels.chatTitle)
                 .coachMark(
                     .aiChat,
                     title: "Talk with Gemi",
@@ -357,6 +365,8 @@ struct ContentView: View {
             case .timeline:
                 TimelineView(selectedEntry: $selectedEntry)
                     .padding(32)
+                    .highPerformanceScroll()
+                    .optimizedAnimation()
                     .transition(.asymmetric(
                         insertion: .opacity.combined(with: .offset(x: 30)),
                         removal: .opacity.combined(with: .offset(x: -30))

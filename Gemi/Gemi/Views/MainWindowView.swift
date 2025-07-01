@@ -15,6 +15,9 @@ struct MainWindowView: View {
     
     @Environment(JournalStore.self) private var journalStore
     @Environment(OnboardingState.self) private var onboardingState
+    @Environment(PerformanceOptimizer.self) private var performanceOptimizer
+    @Environment(AccessibilityManager.self) private var accessibilityManager
+    @Environment(KeyboardNavigationState.self) private var keyboardNavigation
     
     // MARK: - State
     
@@ -24,6 +27,7 @@ struct MainWindowView: View {
     @State private var showingSettings = false
     @State private var sidebarSelection: SidebarItem = .timeline
     @State private var hasShownOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+    @FocusState private var focusedField: FocusableField?
     
     // MARK: - Body
     
@@ -37,10 +41,13 @@ struct MainWindowView: View {
                 // Left Sidebar (30% - substantial and breathing)
                 modernSidebar
                     .frame(width: sidebarWidth)
+                    .accessibilityElement(children: .contain)
+                    .accessibilityLabel(AccessibilityLabels.timelineTitle)
                 
                 // Right Content Area (70% - spacious content focus with proper breathing room)
                 floatingContentArea
                     .frame(width: contentWidth)
+                    .optimizedAnimation()
             }
             .padding(DesignSystem.Spacing.base)
         }
@@ -62,6 +69,16 @@ struct MainWindowView: View {
         .sheet(isPresented: $showingSettings) {
             SettingsView(isPresented: $showingSettings)
                 .interactiveDismissDisabled()
+        }
+        .focusedValue(\.selectedEntry, selectedEntry)
+        .focusedValue(\.showSettings, $showingSettings)
+        .focusedValue(\.showChat, $showingChat)
+        .onKeyPress(.escape) {
+            if showingNewEntry {
+                showingNewEntry = false
+                return .handled
+            }
+            return .ignored
         }
     }
     

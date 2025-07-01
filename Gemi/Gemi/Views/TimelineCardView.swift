@@ -15,11 +15,19 @@ struct TimelineCardView: View {
     let entry: JournalEntry
     let isSelected: Bool
     let action: () -> Void
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+    let onDuplicate: () -> Void
+    let onExport: () -> Void
+    let onShare: () -> Void
     
     @State private var isHovered = false
     @State private var cardOffset: CGFloat = 0
     @State private var cardOpacity: Double = 0
     @State private var cardScale: CGFloat = 0.95
+    
+    @Environment(PerformanceOptimizer.self) private var performanceOptimizer
+    @Environment(AccessibilityManager.self) private var accessibilityManager
     
     // MARK: - Body
     
@@ -69,6 +77,24 @@ struct TimelineCardView: View {
                 cardOpacity = 1
                 cardScale = 1.0
             }
+        }
+        .contextMenu {
+            JournalEntryContextMenu(
+                entry: entry,
+                onEdit: onEdit,
+                onDelete: onDelete,
+                onDuplicate: onDuplicate,
+                onExport: onExport,
+                onShare: onShare
+            )
+        }
+        .accessibleCard(
+            label: String(format: AccessibilityLabels.entryCard, formatDateForAccessibility(entry.date)),
+            hint: "Double tap to read entry. Right click for more options.",
+            traits: .isButton
+        )
+        .keyboardNavigatable {
+            action()
         }
     }
     
@@ -253,6 +279,13 @@ struct TimelineCardView: View {
         default: return .gray
         }
     }
+    
+    private func formatDateForAccessibility(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .long
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
 }
 
 // MARK: - Compact Card Variant
@@ -336,7 +369,12 @@ struct CompactTimelineCardView: View {
                 mood: "grateful"
             ),
             isSelected: false,
-            action: {}
+            action: {},
+            onEdit: {},
+            onDelete: {},
+            onDuplicate: {},
+            onExport: {},
+            onShare: {}
         )
         
         TimelineCardView(
@@ -346,7 +384,12 @@ struct CompactTimelineCardView: View {
                 mood: "peaceful"
             ),
             isSelected: true,
-            action: {}
+            action: {},
+            onEdit: {},
+            onDelete: {},
+            onDuplicate: {},
+            onExport: {},
+            onShare: {}
         )
     }
     .padding(40)

@@ -30,6 +30,18 @@ struct GemiApp: App {
     /// Settings store
     @State private var settingsStore = SettingsStore()
     
+    /// Window state manager for premium window behavior
+    @State private var windowStateManager = WindowStateManager()
+    
+    /// Performance optimizer for 60fps animations
+    @State private var performanceOptimizer = PerformanceOptimizer()
+    
+    /// Accessibility manager for VoiceOver and system preferences
+    @State private var accessibilityManager = AccessibilityManager()
+    
+    /// Keyboard navigation state
+    @State private var keyboardNavigation = KeyboardNavigationState()
+    
     // MARK: - Body
     
     var body: some Scene {
@@ -46,25 +58,48 @@ struct GemiApp: App {
                         .environment(journalStore)
                         .environment(onboardingState)
                         .environment(settingsStore)
+                        .environment(windowStateManager)
+                        .environment(performanceOptimizer)
+                        .environment(accessibilityManager)
+                        .environment(keyboardNavigation)
                         .preferredColorScheme(nil) // Respect system appearance
+                        .premiumWindowStyle()
                 } else {
                     // Authentication flow
                     AuthenticationFlowView()
                         .environment(authenticationManager)
                         .environment(onboardingState)
+                        .premiumWindowStyle()
                 }
             }
             .task {
+                // Initialize premium features
+                performanceOptimizer.startMonitoring()
+                
                 // Load initial data on app launch
                 await journalStore.loadEntries()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResizeNotification)) { _ in
+                if let window = NSApp.mainWindow {
+                    windowStateManager.saveWindowState(frame: window.frame)
                 }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSWindow.didEnterFullScreenNotification)) { _ in
+                windowStateManager.setFullScreen(true)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSWindow.didExitFullScreenNotification)) { _ in
+                windowStateManager.setFullScreen(false)
+            }
         }
-        .windowStyle(.automatic)
-        .windowResizability(.contentMinSize)
-        .defaultSize(width: 1200, height: 800)
-        .windowToolbarStyle(.unified)
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
+        .defaultSize(
+            width: windowStateManager.idealWindowSize.width,
+            height: windowStateManager.idealWindowSize.height
+        )
+        .windowToolbarStyle(.unified(showsTitle: false))
         .commands {
-            GemiCommands()
+            GemiKeyboardCommands()
         }
     }
 }
