@@ -407,7 +407,7 @@ extension DatabaseManager {
     
     /// Update memory access time
     func updateMemoryAccessTime(_ id: UUID) async throws {
-        try await dbWriter.write { db in
+        _ = try await dbWriter.write { db in
             try db.execute(
                 sql: "UPDATE memories SET lastAccessedAt = ? WHERE id = ?",
                 arguments: [Date(), id]
@@ -444,12 +444,7 @@ extension DatabaseManager {
         }
     }
     
-    /// Get entry count
-    func getEntryCount() async throws -> Int {
-        try await dbReader.read { db in
-            try JournalEntry.fetchCount(db)
-        }
-    }
+
     
     /// Get entries with embeddings count
     func getEntriesWithEmbeddingsCount() async throws -> Int {

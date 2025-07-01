@@ -179,6 +179,7 @@ final class ChatViewModel {
     
     // MARK: - Private Methods
     
+    @MainActor
     private func fetchRelevantMemories(for query: String) async -> [String] {
         guard let memoryService = memoryService else { return [] }
         

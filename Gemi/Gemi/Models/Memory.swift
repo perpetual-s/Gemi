@@ -152,7 +152,7 @@ extension Memory {
         
         // Create FTS table for content search
         try db.create(virtualTable: "memories_fts", using: FTS5()) { t in
-            t.content("memories")
+            t.content = "memories"
             t.column("content")
             t.tokenizer = .porter()
         }
