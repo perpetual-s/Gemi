@@ -43,15 +43,6 @@ struct ContentView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(canvasBackground)
-        .toolbar {
-            ToolbarItem(placement: .navigation) {
-                HStack(spacing: 0) {
-                    // Empty space for visual balance
-                    Color.clear.frame(width: 280)
-                }
-            }
-        }
-        .toolbarBackground(.hidden, for: .windowToolbar)
         .sheet(isPresented: $showingNewEntry) {
             ComposeView(entry: .constant(nil))
         }
@@ -88,14 +79,14 @@ struct ContentView: View {
             // Two-tone background matching sidebar and content
             HStack(spacing: 0) {
                 // Left side - matching sidebar color
-                Color(red: 0.94, green: 0.93, blue: 0.92)
+                DesignSystem.Colors.sidebarBackground
                     .frame(width: 280)
                 
                 // Right side - lighter content area
                 LinearGradient(
                     colors: [
-                        Color(red: 0.98, green: 0.97, blue: 0.96),
-                        Color(red: 0.96, green: 0.95, blue: 0.94)
+                        DesignSystem.Colors.backgroundPrimary,
+                        DesignSystem.Colors.canvasBackground
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -281,7 +272,7 @@ struct ContentView: View {
             ZStack {
                 // Background
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color.white)
+                    .fill(DesignSystem.Colors.backgroundSecondary)
                 
                 // Content
                 VStack(spacing: 0) {
@@ -357,7 +348,7 @@ struct ContentView: View {
         }
         .padding(.horizontal, 32)
         .padding(.vertical, 24)
-        .background(Color(red: 0.98, green: 0.98, blue: 0.97))
+        .background(DesignSystem.Colors.backgroundTertiary)
     }
     
     @ViewBuilder

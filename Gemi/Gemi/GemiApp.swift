@@ -94,7 +94,6 @@ struct GemiApp: App {
                 windowStateManager.setFullScreen(false)
             }
         }
-        .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
         .defaultSize(
             width: 1200,
