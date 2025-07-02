@@ -2,7 +2,7 @@
 //  FloatingComposeView.swift
 //  Gemi
 //
-//  Created by Chaeho Shin on 1/2/25.
+//  Created by Chaeho Shin on 7/1/25.
 //
 
 import SwiftUI

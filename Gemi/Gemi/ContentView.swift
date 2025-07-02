@@ -24,7 +24,7 @@ struct ContentView: View {
     // MARK: - State
     
     @State private var selectedEntry: JournalEntry?
-    @State private var showingNewEntry = false
+    @State private var isComposingNewEntry = false
     @State private var showingChat = false
     @State private var sidebarSelection: NavigationItem = .timeline
     @FocusState private var focusedField: FocusableField?
@@ -43,9 +43,6 @@ struct ContentView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(canvasBackground)
-        .sheet(isPresented: $showingNewEntry) {
-            ComposeView(entry: .constant(nil))
-        }
         .overlay(alignment: .bottomTrailing) {
             // Floating action button for chat
             if !showingChat {
@@ -68,6 +65,15 @@ struct ContentView: View {
             Task {
                 await journalStore.refreshEntries()
             }
+        }
+        .onKeyPress(.escape) {
+            if isComposingNewEntry {
+                withAnimation(DesignSystem.Animation.cozySettle) {
+                    isComposingNewEntry = false
+                }
+                return .handled
+            }
+            return .ignored
         }
     }
     
@@ -185,7 +191,8 @@ struct ContentView: View {
                     label: "New Entry",
                     color: Color(red: 0.36, green: 0.61, blue: 0.84)
                 ) {
-                    showingNewEntry = true
+                    isComposingNewEntry = true
+                    sidebarSelection = .timeline
                     // Haptic feedback on button press
                 }
                 .keyboardShortcut("n", modifiers: .command)
@@ -297,7 +304,7 @@ struct ContentView: View {
     private var panelHeader: some View {
         HStack(spacing: 16) {
             // Icon
-            Image(systemName: sidebarSelection.icon)
+            Image(systemName: isComposingNewEntry && sidebarSelection == .timeline ? "square.and.pencil" : sidebarSelection.icon)
                 .font(.system(size: 24, weight: .medium))
                 .foregroundStyle(
                     LinearGradient(
@@ -310,26 +317,27 @@ struct ContentView: View {
                     )
                 )
                 .animation(.easeInOut(duration: 0.2), value: sidebarSelection)
+                .animation(.easeInOut(duration: 0.2), value: isComposingNewEntry)
             
             VStack(alignment: .leading, spacing: 2) {
-                Text(sidebarSelection.title)
+                Text(isComposingNewEntry && sidebarSelection == .timeline ? "New Entry" : sidebarSelection.title)
                     .font(.system(size: 28, weight: .semibold, design: .serif))
                     .foregroundStyle(.primary)
                     .animation(.easeInOut(duration: 0.2), value: sidebarSelection)
+                    .animation(.easeInOut(duration: 0.2), value: isComposingNewEntry)
                 
-                if let subtitle = sidebarSelection.subtitle {
-                    Text(subtitle)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(.secondary)
-                        .animation(.easeInOut(duration: 0.2), value: sidebarSelection)
-                }
+                Text(isComposingNewEntry && sidebarSelection == .timeline ? "Share your thoughts in this private, safe space" : (sidebarSelection.subtitle ?? ""))
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .animation(.easeInOut(duration: 0.2), value: sidebarSelection)
+                    .animation(.easeInOut(duration: 0.2), value: isComposingNewEntry)
             }
             
             Spacer()
             
             // Action buttons
             HStack(spacing: 8) {
-                if sidebarSelection == .timeline {
+                if sidebarSelection == .timeline && !isComposingNewEntry {
                     Button {
                         // Search action
                     } label: {
@@ -354,35 +362,60 @@ struct ContentView: View {
     @ViewBuilder
     private var panelContent: some View {
         ZStack {
-            switch sidebarSelection {
-            case .timeline:
-                TimelineView(selectedEntry: $selectedEntry)
+            if isComposingNewEntry && sidebarSelection == .timeline {
+                FloatingComposeView(entry: .constant(nil), onSave: {
+                    withAnimation(DesignSystem.Animation.cozySettle) {
+                        isComposingNewEntry = false
+                    }
+                    Task {
+                        await journalStore.refreshEntries()
+                    }
+                }, onCancel: {
+                    withAnimation(DesignSystem.Animation.cozySettle) {
+                        isComposingNewEntry = false
+                    }
+                })
+                .padding(32)
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .offset(y: -20)),
+                    removal: .opacity.combined(with: .offset(y: 20))
+                ))
+            } else {
+                switch sidebarSelection {
+                case .timeline:
+                    TimelineView(selectedEntry: $selectedEntry) {
+                        withAnimation(DesignSystem.Animation.cozySettle) {
+                            isComposingNewEntry = true
+                        }
+                    }
                     .padding(32)
                     .transition(.asymmetric(
                         insertion: .opacity.combined(with: .offset(x: 30)),
                         removal: .opacity.combined(with: .offset(x: -30))
                     ))
-            case .chat:
-                emptyChatView
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .offset(x: 30)),
-                        removal: .opacity.combined(with: .offset(x: -30))
-                    ))
-            case .memories:
-                memoriesView
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .offset(x: 30)),
-                        removal: .opacity.combined(with: .offset(x: -30))
-                    ))
-            case .insights:
-                insightsView
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .offset(x: 30)),
-                        removal: .opacity.combined(with: .offset(x: -30))
-                    ))
+                case .chat:
+                    emptyChatView
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .offset(x: 30)),
+                            removal: .opacity.combined(with: .offset(x: -30))
+                        ))
+                case .memories:
+                    memoriesView
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .offset(x: 30)),
+                            removal: .opacity.combined(with: .offset(x: -30))
+                        ))
+                case .insights:
+                    insightsView
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .offset(x: 30)),
+                            removal: .opacity.combined(with: .offset(x: -30))
+                        ))
+                }
             }
         }
         .animation(reduceMotion ? .linear(duration: 0.1) : DesignSystem.Animation.standard, value: sidebarSelection)
+        .animation(reduceMotion ? .linear(duration: 0.1) : DesignSystem.Animation.cozySettle, value: isComposingNewEntry)
     }
     
     // MARK: - Content Views
