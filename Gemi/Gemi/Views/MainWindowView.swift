@@ -22,12 +22,12 @@ struct MainWindowView: View {
     // MARK: - State
     
     @State private var selectedEntry: JournalEntry?
-    @State private var showingNewEntry = false
     @State private var showingChat = false
     @State private var showingSettings = false
     @State private var sidebarSelection: SidebarItem = .timeline
     @State private var hasShownOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
     @FocusState private var focusedField: FocusableField?
+    @State private var isComposingNewEntry = false
     
     // MARK: - Body
     
@@ -52,9 +52,6 @@ struct MainWindowView: View {
             .padding(DesignSystem.Spacing.base)
         }
         .gemiCanvas()
-        .sheet(isPresented: $showingNewEntry) {
-            ComposeView(entry: .constant(nil))
-        }
         .sheet(isPresented: $showingChat) {
             chatPlaceholder
         }
@@ -74,8 +71,10 @@ struct MainWindowView: View {
         .focusedValue(\.showSettings, $showingSettings)
         .focusedValue(\.showChat, $showingChat)
         .onKeyPress(.escape) {
-            if showingNewEntry {
-                showingNewEntry = false
+            if isComposingNewEntry {
+                withAnimation(DesignSystem.Animation.cozySettle) {
+                    isComposingNewEntry = false
+                }
                 return .handled
             }
             return .ignored
@@ -133,7 +132,8 @@ struct MainWindowView: View {
                     help: "Create new journal entry",
                     isLoading: false
                 ) {
-                    showingNewEntry = true
+                    isComposingNewEntry = true
+                    sidebarSelection = .timeline
                 }
                 .keyboardShortcut("n", modifiers: .command)
                 .coachMark(
@@ -323,12 +323,12 @@ struct MainWindowView: View {
     private var panelHeader: some View {
         HStack(spacing: DesignSystem.Spacing.large) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.small) {
-                Text(sidebarSelection.title)
+                Text(isComposingNewEntry ? "New Entry" : sidebarSelection.title)
                     .font(DesignSystem.Typography.title1)
                     .elegantSerifStyle()
                     .foregroundStyle(DesignSystem.Colors.textPrimary)
                 
-                if let description = sidebarSelection.description {
+                if let description = isComposingNewEntry ? "Share your thoughts in this private, safe space" : sidebarSelection.description {
                     Text(description)
                         .font(DesignSystem.Typography.body)
                         .foregroundStyle(DesignSystem.Colors.textSecondary)
@@ -398,19 +398,41 @@ struct MainWindowView: View {
     @ViewBuilder
     private var panelContent: some View {
         Group {
-            switch sidebarSelection {
-            case .timeline:
-                TimelineView(selectedEntry: $selectedEntry)
+            if isComposingNewEntry {
+                FloatingComposeView(entry: .constant(nil), onSave: {
+                    // On save callback
+                    withAnimation(DesignSystem.Animation.cozySettle) {
+                        isComposingNewEntry = false
+                    }
+                    Task {
+                        await journalStore.refreshEntries()
+                    }
+                }, onCancel: {
+                    // On cancel callback
+                    withAnimation(DesignSystem.Animation.cozySettle) {
+                        isComposingNewEntry = false
+                    }
+                })
+                .padding(DesignSystem.Spacing.contentPadding)
+            } else {
+                switch sidebarSelection {
+                case .timeline:
+                    TimelineView(selectedEntry: $selectedEntry) {
+                        withAnimation(DesignSystem.Animation.cozySettle) {
+                            isComposingNewEntry = true
+                        }
+                    }
                     .padding(DesignSystem.Spacing.contentPadding)
-                
-            case .chat:
-                chatPlaceholder
-                
-            case .memories:
-                memoriesPlaceholder
-                
-            case .insights:
-                insightsPlaceholder
+                    
+                case .chat:
+                    chatPlaceholder
+                    
+                case .memories:
+                    memoriesPlaceholder
+                    
+                case .insights:
+                    insightsPlaceholder
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

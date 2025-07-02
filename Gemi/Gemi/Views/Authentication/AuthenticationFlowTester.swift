@@ -395,20 +395,15 @@ struct AuthenticationFlowTester: View {
         var databaseOperationSuccess = false
         var authPromptTriggered = false
         
-        do {
-            // Monitor for authentication state changes during database operations
-            let initialAuthState = authManager.isAuthenticated
-            
-            // Perform database operation
-            _ = await journalStore.loadEntries()
-            databaseOperationSuccess = true
-            
-            // Check if auth state changed (would indicate prompt)
-            authPromptTriggered = (authManager.isAuthenticated != initialAuthState)
-            
-        } catch {
-            databaseOperationSuccess = false
-        }
+        // Monitor for authentication state changes during database operations
+        let initialAuthState = authManager.isAuthenticated
+        
+        // Perform database operation
+        _ = await journalStore.loadEntries()
+        databaseOperationSuccess = true
+        
+        // Check if auth state changed (would indicate prompt)
+        authPromptTriggered = (authManager.isAuthenticated != initialAuthState)
         
         let passed = databaseOperationSuccess && !authPromptTriggered && authManager.isAuthenticated
         let details = "DB Operation: \(databaseOperationSuccess), No Auth Prompt: \(!authPromptTriggered)"

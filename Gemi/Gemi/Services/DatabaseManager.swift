@@ -115,6 +115,14 @@ final class DatabaseManager: Sendable {
             print("Database migration completed: 'title' column added")
         }
         
+        if !columnNames.contains("mood") {
+            print("Migrating database: Adding 'mood' column")
+            try db.alter(table: "entries") { table in
+                table.add(column: "mood", .text)
+            }
+            print("Database migration completed: 'mood' column added")
+        }
+        
         // Add any future migrations here
     }
     
@@ -417,7 +425,7 @@ extension DatabaseManager {
     
     /// Delete memories for a specific entry
     func deleteMemoriesForEntry(_ entryId: UUID) async throws {
-        try await dbWriter.write { db in
+        _ = try await dbWriter.write { db in
             try Memory
                 .filter(Column("sourceEntryId") == entryId)
                 .deleteAll(db)

@@ -25,14 +25,14 @@ struct TimelineView: View {
     
     // MARK: - State
     
-    /// Controls the presentation of the new entry creation view
-    @State private var showingNewEntry = false
-    
     /// Controls the presentation of the AI chat overlay
     @State private var showingChat = false
     
     /// Selected entry for potential future detail view or actions
     @Binding var selectedEntry: JournalEntry?
+    
+    /// Callback to handle new entry creation
+    var onNewEntry: (() -> Void)?
     
     /// Controls the alert for entry deletion confirmation
     @State private var showingDeleteAlert = false
@@ -84,7 +84,7 @@ struct TimelineView: View {
                 
                 // New Entry button
                 Button {
-                    showingNewEntry = true
+                    onNewEntry?()
                 } label: {
                     Label("New Entry", systemImage: "square.and.pencil")
                 }
@@ -109,9 +109,6 @@ struct TimelineView: View {
             Task {
                 await journalStore.refreshEntries()
             }
-        }
-        .sheet(isPresented: $showingNewEntry) {
-            ComposeView(entry: .constant(nil))
         }
         .sheet(isPresented: $showingChat) {
             // TODO: Replace with actual ChatOverlay when implemented
@@ -382,7 +379,7 @@ struct TimelineView: View {
                 // Warm, inviting action buttons
                 VStack(spacing: DesignSystem.Spacing.base) {
                     Button {
-                        showingNewEntry = true
+                        onNewEntry?()
                     } label: {
                         HStack(spacing: DesignSystem.Spacing.small) {
                             Image(systemName: "heart.text.square")
@@ -715,7 +712,7 @@ struct LoadingCardPlaceholder: View {
         }
     }()
     
-    return TimelineView(selectedEntry: .constant(nil))
+    return TimelineView(selectedEntry: .constant(nil), onNewEntry: nil)
         .environment(store)
         .frame(width: 800, height: 600)
 }
@@ -729,7 +726,7 @@ struct LoadingCardPlaceholder: View {
         }
     }()
     
-    return TimelineView(selectedEntry: .constant(nil))
+    return TimelineView(selectedEntry: .constant(nil), onNewEntry: nil)
         .environment(emptyStore)
         .frame(width: 800, height: 600)
 } 

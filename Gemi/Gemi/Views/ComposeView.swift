@@ -36,9 +36,13 @@ struct ComposeView: View {
     
     // MARK: - Initialization
     
-    init(entry: Binding<JournalEntry?>, onSave: (() -> Void)? = nil) {
+    /// Callback when user cancels the compose view
+    var onCancel: (() -> Void)?
+    
+    init(entry: Binding<JournalEntry?>, onSave: (() -> Void)? = nil, onCancel: (() -> Void)? = nil) {
         self._entry = entry
         self.onSave = onSave
+        self.onCancel = onCancel
     }
     
     /// Error state for displaying save errors
@@ -80,29 +84,21 @@ struct ComposeView: View {
     // MARK: - Body
     
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // Main text editor
-                textEditorSection
-                
-                // Bottom toolbar with actions
-                if !isFocusMode {
-                    bottomToolbar
-                }
+        VStack(spacing: 0) {
+            // Main text editor
+            textEditorSection
+            
+            // Bottom toolbar with actions
+            if !isFocusMode {
+                bottomToolbar
             }
-            .navigationTitle(isFocusMode ? "" : "New Entry")
-            .navigationSubtitle(isFocusMode ? "" : entryWordCount)
-            .toolbar {
-                if !isFocusMode {
-                    toolbarContent
-                }
-            }
-            .alert("Error Saving Entry", isPresented: $showingError) {
-                Button("OK") { }
-            } message: {
-                Text(errorMessage ?? "An unknown error occurred while saving your journal entry.")
-            }
-            .onAppear {
+        }
+        .alert("Error Saving Entry", isPresented: $showingError) {
+            Button("OK") { }
+        } message: {
+            Text(errorMessage ?? "An unknown error occurred while saving your journal entry.")
+        }
+        .onAppear {
                 // Initialize content from entry if editing, otherwise start fresh
                 if let existingEntry = entry {
                     content = existingEntry.content
@@ -139,7 +135,6 @@ struct ComposeView: View {
             ) { result in
                 handleImageSelection(result)
             }
-        }
     }
     
     // MARK: - Text Editor Section
@@ -257,6 +252,17 @@ struct ComposeView: View {
             
             // Entry info and actions (right side)
             HStack(spacing: DesignSystem.Spacing.base) {
+                // Cancel button
+                Button("Cancel") {
+                    if let onCancel = onCancel {
+                        onCancel()
+                    } else {
+                        dismiss()
+                    }
+                }
+                .gemiSecondaryButton()
+                .keyboardShortcut(.escape)
+                
                 // Encouraging recording indicator
                 if speechService.isRecording {
                     HStack(spacing: DesignSystem.Spacing.small) {
@@ -337,41 +343,6 @@ struct ComposeView: View {
                         .frame(height: 1)
                 }
         )
-    }
-    
-    // MARK: - Toolbar Content
-    
-    @ToolbarContentBuilder
-    private var toolbarContent: some ToolbarContent {
-        // Cancel button
-        ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel") {
-                dismiss()
-            }
-            .keyboardShortcut(.escape)
-        }
-        
-        // Save button (secondary)
-        ToolbarItem(placement: .confirmationAction) {
-            Button("Save") {
-                Task {
-                    await saveEntry()
-                }
-            }
-            .disabled(isSaving || !canSave)
-            .keyboardShortcut("s", modifiers: .command)
-        }
-        
-        ToolbarItem(placement: .primaryAction) {
-            Button(action: {
-                withAnimation(DesignSystem.Animation.cozySettle) {
-                    isFocusMode.toggle()
-                }
-            }) {
-                Label("Focus Mode", systemImage: isFocusMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
-            }
-            .help(isFocusMode ? "Exit focus mode" : "Enter focus mode for distraction-free writing")
-        }
     }
     
     // MARK: - Computed Properties
@@ -493,10 +464,12 @@ struct ComposeView: View {
             print("Journal entry saved successfully")
             
             // Call onSave callback if provided
-            onSave?()
-            
-            // Close the compose view after successful save
-            dismiss()
+            if let onSave = onSave {
+                onSave()
+            } else {
+                // Only dismiss if we're in a sheet context (no custom onSave)
+                dismiss()
+            }
         } catch {
             print("Failed to save journal entry: \(error)")
             
