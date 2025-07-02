@@ -62,6 +62,12 @@ final class NavigationModel {
     /// Show search interface
     var isSearchActive: Bool = false
     
+    /// Show editor interface
+    var showingEditor: Bool = false
+    
+    /// Entry being edited
+    var editingEntry: JournalEntry? = nil
+    
     /// Writing streak count
     var writingStreak: Int = 0
     
@@ -127,6 +133,30 @@ final class NavigationModel {
     func updateSyncStatus(_ status: SyncStatus) {
         withAnimation(ModernDesignSystem.Animation.easeOutFast) {
             syncStatus = status
+        }
+    }
+    
+    /// Open editor for new entry
+    func openNewEntry() {
+        withAnimation(ModernDesignSystem.Animation.spring) {
+            editingEntry = nil
+            showingEditor = true
+        }
+    }
+    
+    /// Open editor for existing entry
+    func openEntry(_ entry: JournalEntry) {
+        withAnimation(ModernDesignSystem.Animation.spring) {
+            editingEntry = entry
+            showingEditor = true
+        }
+    }
+    
+    /// Close editor
+    func closeEditor() {
+        withAnimation(ModernDesignSystem.Animation.spring) {
+            showingEditor = false
+            editingEntry = nil
         }
     }
     

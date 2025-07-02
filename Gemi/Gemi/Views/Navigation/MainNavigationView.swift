@@ -11,7 +11,6 @@ struct MainNavigationView: View {
     @State private var navigation = NavigationModel()
     @State private var columnVisibility = NavigationSplitViewVisibility.all
     @FocusState private var isSearchFocused: Bool
-    @State private var showComposeView = false
     
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
@@ -27,43 +26,57 @@ struct MainNavigationView: View {
                     navigationModel: navigation,
                     isSearchFocused: $isSearchFocused,
                     onNewEntry: {
-                        showComposeView = true
+                        navigation.openNewEntry()
                     }
                 )
                 
-                // Content based on selected section
-                ZStack {
-                    switch navigation.selectedSection {
-                    case .today:
-                        TodayView()
-                    case .entries:
-                        JournalTimelineView()
-                    case .insights:
-                        InsightsView()
-                    case .settings:
-                        SettingsView(isPresented: .constant(true))
+                // Content based on selected section or editor
+                if navigation.showingEditor {
+                    EnhancedJournalEditor(
+                        entry: .constant(navigation.editingEntry),
+                        isPresented: .constant(true),
+                        onSave: { entry in
+                            Task {
+                                if navigation.editingEntry == nil {
+                                    // New entry
+                                    try? await JournalStore().addEntry(entry)
+                                } else {
+                                    // Update existing entry
+                                    try? await JournalStore().updateEntry(navigation.editingEntry!, content: entry.content)
+                                }
+                                navigation.closeEditor()
+                            }
+                        }
+                    )
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .move(edge: .leading).combined(with: .opacity)
+                    ))
+                } else {
+                    ZStack {
+                        switch navigation.selectedSection {
+                        case .today:
+                            TodayView()
+                        case .entries:
+                            JournalTimelineView()
+                        case .insights:
+                            InsightsView()
+                        case .settings:
+                            SettingsView(isPresented: .constant(true))
+                        }
                     }
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .move(edge: .leading).combined(with: .opacity)
+                    ))
+                    .id(navigation.selectedSection)
                 }
-                .transition(.asymmetric(
-                    insertion: .move(edge: .trailing).combined(with: .opacity),
-                    removal: .move(edge: .leading).combined(with: .opacity)
-                ))
-                .id(navigation.selectedSection)
             }
         }
         .navigationSplitViewStyle(.balanced)
         .environment(navigation)
         .onAppear {
             setupKeyboardShortcuts()
-        }
-        .sheet(isPresented: $showComposeView) {
-            EnhancedJournalEditor(
-                entry: .constant(nil),
-                isPresented: $showComposeView,
-                onSave: { entry in
-                    // Handle save
-                }
-            )
         }
     }
     

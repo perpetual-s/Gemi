@@ -12,6 +12,7 @@ struct EnhancedJournalEditor: View {
     @Binding var entry: JournalEntry?
     @Binding var isPresented: Bool
     var onSave: ((JournalEntry) -> Void)?
+    @Environment(NavigationModel.self) private var navigationModel
     
     @State private var title: String = ""
     @State private var content: AttributedString = AttributedString("")
@@ -262,7 +263,7 @@ struct EnhancedJournalEditor: View {
     private var editorToolbar: some View {
         HStack(spacing: ModernDesignSystem.Spacing.md) {
             Button {
-                isPresented = false
+                navigationModel.closeEditor()
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 16, weight: .medium))
@@ -501,7 +502,7 @@ struct EnhancedJournalEditor: View {
         
         if !silent {
             onSave?(updatedEntry)
-            isPresented = false
+            navigationModel.closeEditor()
         }
     }
     

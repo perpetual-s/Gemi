@@ -8,10 +8,13 @@
 import SwiftUI
 
 struct TodayView: View {
+    @Environment(NavigationModel.self) private var navigationModel
+    @Environment(JournalStore.self) private var journalStore
     @State private var todayEntry: JournalEntry?
     @State private var isWriting = false
     @State private var writingPrompt = WritingPrompt.random()
     @State private var promptOpacity = 1.0
+    @State private var recentEntries: [JournalEntry] = []
     
     var body: some View {
         ScrollView {
@@ -43,8 +46,11 @@ struct TodayView: View {
             .frame(maxWidth: .infinity)
         }
         .background(ModernDesignSystem.Colors.backgroundPrimary)
+        .task {
+            await loadTodayEntry()
+            await loadRecentEntries()
+        }
         .onAppear {
-            loadTodayEntry()
             animatePrompt()
         }
     }
@@ -198,7 +204,7 @@ struct TodayView: View {
                 Spacer()
                 
                 Button {
-                    // TODO: Edit entry
+                    navigationModel.openEntry(entry)
                 } label: {
                     Text("Continue writing")
                         .font(ModernDesignSystem.Typography.callout)
@@ -238,7 +244,7 @@ struct TodayView: View {
                 Spacer()
                 
                 Button {
-                    // TODO: Navigate to entries
+                    navigationModel.navigate(to: .entries)
                 } label: {
                     Text("View all")
                         .font(ModernDesignSystem.Typography.callout)
@@ -247,32 +253,46 @@ struct TodayView: View {
                 .buttonStyle(.plain)
             }
             
-            // Placeholder for recent entries
+            // Recent entries
             VStack(spacing: ModernDesignSystem.Spacing.sm) {
-                ForEach(0..<3) { index in
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Entry from \(index + 1) days ago")
-                                .font(ModernDesignSystem.Typography.callout)
-                                .foregroundColor(ModernDesignSystem.Colors.textPrimary)
+                ForEach(recentEntries.prefix(3)) { entry in
+                    Button {
+                        navigationModel.openEntry(entry)
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(entry.date.formatted(date: .abbreviated, time: .omitted))
+                                    .font(ModernDesignSystem.Typography.callout)
+                                    .foregroundColor(ModernDesignSystem.Colors.textPrimary)
+                                
+                                Text(entry.content)
+                                    .font(ModernDesignSystem.Typography.caption)
+                                    .foregroundColor(ModernDesignSystem.Colors.textSecondary)
+                                    .lineLimit(1)
+                            }
                             
-                            Text("Preview of the journal entry content...")
-                                .font(ModernDesignSystem.Typography.caption)
-                                .foregroundColor(ModernDesignSystem.Colors.textSecondary)
-                                .lineLimit(1)
+                            Spacer()
+                            
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 14))
+                                .foregroundColor(ModernDesignSystem.Colors.textTertiary)
                         }
-                        
-                        Spacer()
-                        
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 14))
-                            .foregroundColor(ModernDesignSystem.Colors.textTertiary)
+                        .padding(ModernDesignSystem.Spacing.sm)
+                        .background(
+                            RoundedRectangle(cornerRadius: ModernDesignSystem.Components.radiusSM)
+                                .fill(ModernDesignSystem.Colors.backgroundSecondary)
+                        )
                     }
-                    .padding(ModernDesignSystem.Spacing.sm)
-                    .background(
-                        RoundedRectangle(cornerRadius: ModernDesignSystem.Components.radiusSM)
-                            .fill(ModernDesignSystem.Colors.backgroundSecondary)
-                    )
+                    .buttonStyle(.plain)
+                }
+                
+                // Placeholder if no entries
+                if recentEntries.isEmpty {
+                    Text("No recent entries yet")
+                        .font(ModernDesignSystem.Typography.caption)
+                        .foregroundColor(ModernDesignSystem.Colors.textTertiary)
+                        .frame(maxWidth: .infinity)
+                        .padding(ModernDesignSystem.Spacing.md)
                 }
             }
         }
@@ -280,15 +300,31 @@ struct TodayView: View {
     
     // MARK: - Methods
     
-    private func loadTodayEntry() {
-        // TODO: Load today's entry from database
+    private func loadTodayEntry() async {
+        await journalStore.loadEntries()
+        
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        
+        todayEntry = journalStore.entries.first { entry in
+            calendar.isDate(entry.date, inSameDayAs: today)
+        }
+    }
+    
+    private func loadRecentEntries() async {
+        await journalStore.loadEntries()
+        
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        
+        recentEntries = journalStore.entries
+            .filter { !calendar.isDate($0.date, inSameDayAs: today) }
+            .prefix(3)
+            .map { $0 }
     }
     
     private func startWriting() {
-        withAnimation(ModernDesignSystem.Animation.spring) {
-            isWriting = true
-        }
-        // TODO: Navigate to compose view
+        navigationModel.openNewEntry()
     }
     
     private func refreshPrompt() {
