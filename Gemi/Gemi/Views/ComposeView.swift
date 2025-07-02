@@ -601,13 +601,8 @@ struct ComposeView: View {
 // MARK: - Previews
 
 #Preview("Empty Compose View") {
-    let store: JournalStore = {
-        do {
-            return try JournalStore()
-        } catch {
-            fatalError("Failed to create JournalStore for preview")
-        }
-    }()
+    // For preview, we'll use a mock store if initialization fails
+    let store = (try? JournalStore()) ?? JournalStore.preview
     
     return ComposeView(entry: .constant(nil))
         .environment(store)
@@ -615,13 +610,8 @@ struct ComposeView: View {
 }
 
 #Preview("Compose View with Content") {
-    let store: JournalStore = {
-        do {
-            return try JournalStore()
-        } catch {
-            fatalError("Failed to create JournalStore for preview")
-        }
-    }()
+    // For preview, we'll use a mock store if initialization fails
+    let store = (try? JournalStore()) ?? JournalStore.preview
     
     return ComposeView(entry: .constant(JournalEntry(title: "Test Entry", content: "This is a test entry.")))
         .environment(store)

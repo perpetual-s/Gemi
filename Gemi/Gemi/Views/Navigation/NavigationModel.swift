@@ -141,6 +141,7 @@ final class NavigationModel {
         withAnimation(ModernDesignSystem.Animation.spring) {
             editingEntry = nil
             showingEditor = true
+            selectedSection = .entries // Navigate to entries section to show the editor
         }
     }
     
@@ -149,6 +150,7 @@ final class NavigationModel {
         withAnimation(ModernDesignSystem.Animation.spring) {
             editingEntry = entry
             showingEditor = true
+            selectedSection = .entries // Navigate to entries section to show the editor
         }
     }
     

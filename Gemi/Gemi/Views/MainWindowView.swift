@@ -28,6 +28,8 @@ struct MainWindowView: View {
     @State private var hasShownOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
     @FocusState private var focusedField: FocusableField?
     @State private var isComposingNewEntry = false
+    @State private var chatViewModel = ChatViewModel(ollamaService: OllamaService())
+    @State private var sortOrder: SortOrder = .dateDescending
     
     // MARK: - Body
     
@@ -53,7 +55,7 @@ struct MainWindowView: View {
         }
         .gemiCanvas()
         .sheet(isPresented: $showingChat) {
-            chatPlaceholder
+            ChatView(isPresented: $showingChat)
         }
         .onAppear {
             Task {
@@ -112,14 +114,12 @@ struct MainWindowView: View {
                 
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.micro) {
                     Text("Gemi")
-                        .font(DesignSystem.Typography.title2)
-                        .elegantSerifStyle()
-                        .foregroundStyle(DesignSystem.Colors.textPrimary)
+                        .font(ModernDesignSystem.Typography.title2)
+                        .foregroundStyle(ModernDesignSystem.Colors.adaptiveTextPrimary)
                     
                     Text("AI Journal")
-                        .font(DesignSystem.Typography.footnote)
-                        .foregroundStyle(DesignSystem.Colors.textTertiary)
-                        .diaryTypography()
+                        .font(ModernDesignSystem.Typography.footnote)
+                        .foregroundStyle(ModernDesignSystem.Colors.adaptiveTextTertiary)
                 }
                 
                 Spacer()
@@ -324,15 +324,13 @@ struct MainWindowView: View {
         HStack(spacing: DesignSystem.Spacing.large) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.small) {
                 Text(isComposingNewEntry ? "New Entry" : sidebarSelection.title)
-                    .font(DesignSystem.Typography.title1)
-                    .elegantSerifStyle()
-                    .foregroundStyle(DesignSystem.Colors.textPrimary)
+                    .font(ModernDesignSystem.Typography.title1)
+                    .foregroundStyle(ModernDesignSystem.Colors.adaptiveTextPrimary)
                 
                 if let description = isComposingNewEntry ? "Share your thoughts in this private, safe space" : sidebarSelection.description {
                     Text(description)
-                        .font(DesignSystem.Typography.body)
-                        .foregroundStyle(DesignSystem.Colors.textSecondary)
-                        .diaryTypography()
+                        .font(ModernDesignSystem.Typography.body)
+                        .foregroundStyle(ModernDesignSystem.Colors.adaptiveTextSecondary)
                 }
             }
             
@@ -379,7 +377,7 @@ struct MainWindowView: View {
             
             if sidebarSelection == .chat {
                 Button {
-                    // Clear chat
+                    chatViewModel.clearChat()
                 } label: {
                     Image(systemName: "trash")
                         .font(.system(size: DesignSystem.Components.iconMedium))
@@ -554,13 +552,12 @@ struct MainWindowView: View {
             // Warm headline
             VStack(spacing: DesignSystem.Spacing.small) {
                 Text("A friend who truly listens")
-                    .font(DesignSystem.Typography.display)
-                    .elegantSerifStyle()
+                    .font(ModernDesignSystem.Typography.display)
                     .foregroundStyle(
                         LinearGradient(
                             colors: [
-                                DesignSystem.Colors.primary,
-                                DesignSystem.Colors.primary.opacity(0.7)
+                                ModernDesignSystem.Colors.primary,
+                                ModernDesignSystem.Colors.primary.opacity(0.7)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -569,9 +566,8 @@ struct MainWindowView: View {
                     .multilineTextAlignment(.center)
                 
                 Text("No judgments, just understanding")
-                    .font(DesignSystem.Typography.title3)
-                    .handwrittenStyle()
-                    .foregroundStyle(DesignSystem.Colors.textSecondary)
+                    .font(ModernDesignSystem.Typography.title3)
+                    .foregroundStyle(ModernDesignSystem.Colors.adaptiveTextSecondary)
                     .multilineTextAlignment(.center)
             }
             
@@ -934,13 +930,12 @@ struct MainWindowView: View {
             // Warm headline
             VStack(spacing: DesignSystem.Spacing.small) {
                 Text("Watch yourself flourish")
-                    .font(DesignSystem.Typography.display)
-                    .elegantSerifStyle()
+                    .font(ModernDesignSystem.Typography.display)
                     .foregroundStyle(
                         LinearGradient(
                             colors: [
-                                DesignSystem.Colors.success,
-                                DesignSystem.Colors.success.opacity(0.7)
+                                ModernDesignSystem.Colors.success,
+                                ModernDesignSystem.Colors.success.opacity(0.7)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -949,9 +944,8 @@ struct MainWindowView: View {
                     .multilineTextAlignment(.center)
                 
                 Text("Growth becomes visible over time")
-                    .font(DesignSystem.Typography.title3)
-                    .handwrittenStyle()
-                    .foregroundStyle(DesignSystem.Colors.textSecondary)
+                    .font(ModernDesignSystem.Typography.title3)
+                    .foregroundStyle(ModernDesignSystem.Colors.adaptiveTextSecondary)
                     .multilineTextAlignment(.center)
             }
             
@@ -1001,6 +995,71 @@ struct MainWindowView: View {
     
     // Animation state for insights
     @State private var insightGrow = false
+    
+    // MARK: - Types
+    
+    enum SortOrder {
+        case dateAscending
+        case dateDescending
+        case lengthAscending
+        case lengthDescending
+    }
+    
+    // MARK: - Export Functionality
+    
+    private func exportAllEntries() {
+        Task {
+            do {
+                // Create export content
+                let entries = journalStore.entries.sorted { entry1, entry2 in
+                    switch sortOrder {
+                    case .dateAscending:
+                        return entry1.date < entry2.date
+                    case .dateDescending:
+                        return entry1.date > entry2.date
+                    case .lengthAscending:
+                        return entry1.content.count < entry2.content.count
+                    case .lengthDescending:
+                        return entry1.content.count > entry2.content.count
+                    }
+                }
+                
+                let formatter = DateFormatter()
+                formatter.dateStyle = .long
+                formatter.timeStyle = .short
+                
+                var exportContent = "# Gemi Journal Export\n\n"
+                exportContent += "Exported on: \(formatter.string(from: Date()))\n\n"
+                exportContent += "Total Entries: \(entries.count)\n\n"
+                exportContent += "---\n\n"
+                
+                for entry in entries {
+                    exportContent += "## \(formatter.string(from: entry.date))\n\n"
+                    if !entry.title.isEmpty {
+                        exportContent += "**\(entry.title)**\n\n"
+                    }
+                    exportContent += entry.content
+                    exportContent += "\n\n---\n\n"
+                }
+                
+                // Save to file
+                let panel = NSSavePanel()
+                panel.allowedContentTypes = [.plainText]
+                panel.nameFieldStringValue = "Gemi_Journal_Export_\(Date().ISO8601Format()).txt"
+                panel.title = "Export Journal Entries"
+                panel.message = "Choose where to save your journal export"
+                
+                let response = await panel.beginSheetModal(for: NSApp.keyWindow!)
+                if response == .OK, let url = panel.url {
+                    try exportContent.write(to: url, atomically: true, encoding: .utf8)
+                    HapticFeedback.success()
+                }
+            } catch {
+                print("Export failed: \(error)")
+                HapticFeedback.error()
+            }
+        }
+    }
 }
 
 // MARK: - Sidebar Item Model
@@ -1152,13 +1211,8 @@ private struct EncouragingActionButton: View {
 // MARK: - Previews
 
 #Preview("Main Window") {
-    let store: JournalStore = {
-        do {
-            return try JournalStore()
-        } catch {
-            fatalError("Failed to create JournalStore for preview")
-        }
-    }()
+    // For preview, we'll use a mock store if initialization fails
+    let store = (try? JournalStore()) ?? JournalStore.preview
     
     return MainWindowView()
         .environment(store)

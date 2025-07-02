@@ -1,7 +1,7 @@
 # Gemi Project .gitignore
 
 # CRITICAL: Never commit private documentation
-/Documentation/
+/Documentation/private/
 
 # macOS system files
 .DS_Store
@@ -9,6 +9,7 @@
 
 # Xcode build artifacts and user data
 DerivedData/
+build/
 *.xcuserstate
 *.xcuserdatad/
 project.xcworkspace/xcuserdata/
@@ -54,4 +55,6 @@ Models/
 
 # Backup files
 *.orig
-*.bak 
+*.bak
+*_backup.swift
+*_backup.* 

@@ -49,7 +49,10 @@ struct AuthenticationFlowPreview: View {
             let store = try JournalStore()
             self._journalStore = State(initialValue: store)
         } catch {
-            fatalError("Failed to initialize test journal store: \(error)")
+            // For testing, use a preview store if initialization fails
+            print("⚠️ Failed to initialize test journal store: \(error)")
+            print("⚠️ Using preview store for testing")
+            self._journalStore = State(initialValue: JournalStore.preview)
         }
     }
     

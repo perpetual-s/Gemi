@@ -706,13 +706,8 @@ struct LoadingCardPlaceholder: View {
 // MARK: - Previews
 
 #Preview("Timeline with Entries") {
-    let store: JournalStore = {
-        do {
-            return try JournalStore()
-        } catch {
-            fatalError("Failed to create JournalStore for preview")
-        }
-    }()
+    // For preview, we'll use a mock store if initialization fails
+    let store = (try? JournalStore()) ?? JournalStore.preview
     
     return TimelineView(selectedEntry: .constant(nil), onNewEntry: nil)
         .environment(store)
@@ -720,13 +715,8 @@ struct LoadingCardPlaceholder: View {
 }
 
 #Preview("Empty Timeline") {
-    let emptyStore: JournalStore = {
-        do {
-            return try JournalStore()
-        } catch {
-            fatalError("Failed to create JournalStore for preview")
-        }
-    }()
+    // For preview, we'll use a mock store if initialization fails
+    let emptyStore = (try? JournalStore()) ?? JournalStore.preview
     
     return TimelineView(selectedEntry: .constant(nil), onNewEntry: nil)
         .environment(emptyStore)

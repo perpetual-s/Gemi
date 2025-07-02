@@ -210,6 +210,27 @@ final class ChatViewModel {
     var showTypingIndicator: Bool {
         isGenerating && !streamingResponse.isEmpty
     }
+    
+    /// Clear all chat messages and reset to welcome state
+    func clearChat() {
+        // Cancel any ongoing generation
+        streamTask?.cancel()
+        
+        // Clear messages
+        messages.removeAll()
+        
+        // Reset state
+        currentInput = ""
+        isGenerating = false
+        streamingResponse = ""
+        errorMessage = nil
+        
+        // Add welcome message back
+        messages.append(ChatMessage(
+            content: "Hello! I'm Gemi, your private diary companion. I'm here to help you reflect, write, and explore your thoughts. Everything we discuss stays on your device. How can I help you today?",
+            isUser: false
+        ))
+    }
 }
 
 // MARK: - Memory Service Implementation

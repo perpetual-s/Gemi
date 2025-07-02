@@ -153,13 +153,8 @@ struct ContentView: View {
 // MARK: - Preview
 
 #Preview {
-    let store: JournalStore = {
-        do {
-            return try JournalStore()
-        } catch {
-            fatalError("Failed to create JournalStore for preview")
-        }
-    }()
+    // For preview, we'll use a mock store if initialization fails
+    let store = (try? JournalStore()) ?? JournalStore.preview
     
     ContentView()
         .environment(store)

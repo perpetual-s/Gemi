@@ -65,12 +65,18 @@ final class ConversationStore {
     static let shared = ConversationStore()
     
     private let logger = Logger(subsystem: "com.chaehoshin.Gemi", category: "ConversationStore")
-    private let databaseManager = DatabaseManager.shared
+    private var databaseManager: DatabaseManager? = nil
     
     private var currentConversationId: UUID?
     private let maxConversationAge: TimeInterval = 60 * 60 * 2 // 2 hours
     
     private init() {
+        do {
+            self.databaseManager = try DatabaseManager.shared()
+        } catch {
+            logger.error("Failed to initialize DatabaseManager: \(error)")
+        }
+        
         Task {
             await setupDatabase()
         }
@@ -80,6 +86,9 @@ final class ConversationStore {
     
     private func setupDatabase() async {
         do {
+            guard let databaseManager = databaseManager else {
+                throw ConversationStoreError.databaseNotInitialized
+            }
             try await databaseManager.setupConversationTables()
             logger.info("Conversation tables set up successfully")
         } catch {
@@ -133,6 +142,9 @@ final class ConversationStore {
             contextSources: contextData
         )
         
+        guard let databaseManager = databaseManager else {
+            throw ConversationStoreError.databaseNotInitialized
+        }
         try await databaseManager.saveConversationMessage(message)
         
         // Update conversation metadata
@@ -161,6 +173,9 @@ final class ConversationStore {
     
     /// Search messages across all conversations
     func searchMessages(query: String, limit: Int = 20) async throws -> [ConversationMessage] {
+        guard let databaseManager = databaseManager else {
+            throw ConversationStoreError.databaseNotInitialized
+        }
         return try await databaseManager.searchConversationMessages(query: query, limit: limit)
     }
     
@@ -215,6 +230,9 @@ final class ConversationStore {
     
     /// Get conversation statistics
     func getConversationStats() async throws -> ConversationStats {
+        guard let databaseManager = databaseManager else {
+            throw ConversationStoreError.databaseNotInitialized
+        }
         let totalConversations = try await databaseManager.getConversationCount()
         let totalMessages = try await databaseManager.getMessageCount()
         let averageLength = totalConversations > 0 ? Float(totalMessages) / Float(totalConversations) : 0
@@ -229,14 +247,23 @@ final class ConversationStore {
     // MARK: - Private Methods
     
     private func fetchConversation(id: UUID) async throws -> Conversation? {
+        guard let databaseManager = databaseManager else {
+            throw ConversationStoreError.databaseNotInitialized
+        }
         return try await databaseManager.fetchConversation(id: id)
     }
     
     private func saveConversation(_ conversation: Conversation) async throws {
+        guard let databaseManager = databaseManager else {
+            throw ConversationStoreError.databaseNotInitialized
+        }
         try await databaseManager.saveConversation(conversation)
     }
     
     private func fetchMessages(conversationId: UUID, limit: Int) async throws -> [ConversationMessage] {
+        guard let databaseManager = databaseManager else {
+            throw ConversationStoreError.databaseNotInitialized
+        }
         return try await databaseManager.fetchConversationMessages(
             conversationId: conversationId,
             limit: limit
@@ -244,12 +271,18 @@ final class ConversationStore {
     }
     
     private func fetchMostRecentConversation() async throws -> Conversation? {
+        guard let databaseManager = databaseManager else {
+            throw ConversationStoreError.databaseNotInitialized
+        }
         return try await databaseManager.fetchMostRecentConversation()
     }
     
     private func updateConversationMetadata(_ conversationId: UUID) async throws {
         guard var conversation = try await fetchConversation(id: conversationId) else { return }
         
+        guard let databaseManager = databaseManager else {
+            throw ConversationStoreError.databaseNotInitialized
+        }
         let messageCount = try await databaseManager.getMessageCount(for: conversationId)
         
         conversation = Conversation(
@@ -267,8 +300,24 @@ final class ConversationStore {
     
     func cleanupOldConversations(olderThan days: Int = 30) async throws {
         let cutoffDate = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
+        guard let databaseManager = databaseManager else {
+            throw ConversationStoreError.databaseNotInitialized
+        }
         let deletedCount = try await databaseManager.deleteConversationsOlderThan(cutoffDate)
         logger.info("Cleaned up \(deletedCount) old conversations")
+    }
+}
+
+// MARK: - Errors
+
+enum ConversationStoreError: Error, LocalizedError {
+    case databaseNotInitialized
+    
+    var errorDescription: String? {
+        switch self {
+        case .databaseNotInitialized:
+            return "Database manager is not initialized"
+        }
     }
 }
 

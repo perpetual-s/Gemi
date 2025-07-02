@@ -9,6 +9,7 @@ import SwiftUI
 
 struct NavigationDemo: View {
     @State private var navigation = NavigationModel()
+    @FocusState private var isSearchFocused: Bool
     
     var body: some View {
         HStack(spacing: 0) {
@@ -17,7 +18,11 @@ struct NavigationDemo: View {
             
             // Main content
             VStack(spacing: 0) {
-                TopToolbar()
+                TopToolbar(
+                    navigationModel: navigation,
+                    isSearchFocused: $isSearchFocused,
+                    onNewEntry: { }
+                )
                 
                 // Content area
                 ScrollView {

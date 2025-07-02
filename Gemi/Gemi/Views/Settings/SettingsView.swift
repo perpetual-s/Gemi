@@ -282,6 +282,18 @@ struct SettingsView: View {
             isClosing = false
         }
     }
+    
+    private func resetToDefaults() {
+        // Reset all user defaults to their initial values
+        UserDefaults.standard.removePersistentDomain(forName: Bundle.main.bundleIdentifier!)
+        UserDefaults.standard.synchronize()
+        
+        // Show confirmation feedback
+        NSSound.beep()
+        
+        // Reload settings if needed
+        selectedCategory = .general
+    }
 }
 
 // MARK: - Settings Category

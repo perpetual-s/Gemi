@@ -17,13 +17,27 @@ final class DatabaseManager: Sendable {
     
     // MARK: - Singleton
     
-    static let shared: DatabaseManager = {
-        do {
-            return try DatabaseManager()
-        } catch {
-            fatalError("Failed to initialize DatabaseManager: \(error)")
+    private static var _shared: DatabaseManager?
+    private static let sharedQueue = DispatchQueue(label: "dev.perpetual-s.Gemi.DatabaseManager.shared")
+    
+    /// Thread-safe access to the shared DatabaseManager instance
+    /// - Throws: DatabaseError if initialization fails
+    static func shared() throws -> DatabaseManager {
+        try sharedQueue.sync {
+            if let existing = _shared {
+                return existing
+            }
+            
+            do {
+                let manager = try DatabaseManager()
+                _shared = manager
+                return manager
+            } catch {
+                print("❌ Failed to initialize DatabaseManager: \(error)")
+                throw error
+            }
         }
-    }()
+    }
     
     // MARK: - Properties
     
@@ -186,6 +200,8 @@ final class DatabaseManager: Sendable {
         
         // Decrypt all entries
         var decryptedEntries: [JournalEntry] = []
+        var decryptionErrors = 0
+        
         for encryptedEntry in encryptedEntries {
             do {
                 let decryptedContent = try await decryptContent(encryptedEntry.content)
@@ -199,10 +215,22 @@ final class DatabaseManager: Sendable {
                 )
                 decryptedEntries.append(decryptedEntry)
             } catch {
+                decryptionErrors += 1
                 print("❌ Failed to decrypt entry \(encryptedEntry.id): \(error)")
-                // Skip this entry but continue with others
-                continue
+                // Include entry with placeholder content to maintain user's data
+                let placeholderEntry = JournalEntry(
+                    id: encryptedEntry.id,
+                    date: encryptedEntry.date,
+                    title: "[Decryption Error]",
+                    content: "This entry could not be decrypted. The encryption key may have changed.",
+                    mood: encryptedEntry.mood
+                )
+                decryptedEntries.append(placeholderEntry)
             }
+        }
+        
+        if decryptionErrors > 0 {
+            print("⚠️ Failed to decrypt \(decryptionErrors) out of \(encryptedEntries.count) entries")
         }
         
         return decryptedEntries
@@ -231,12 +259,12 @@ final class DatabaseManager: Sendable {
             )
         } catch {
             print("❌ Failed to decrypt entry \(encryptedEntry.id): \(error)")
-            // Return entry with empty content rather than crashing
+            // Return entry with placeholder content to maintain data integrity
             return JournalEntry(
                 id: encryptedEntry.id,
                 date: encryptedEntry.date,
-                title: "Unable to decrypt",
-                content: "This entry could not be decrypted.",
+                title: "[Decryption Error]",
+                content: "This entry could not be decrypted. The encryption key may have changed.",
                 mood: encryptedEntry.mood
             )
         }
@@ -274,11 +302,19 @@ extension DatabaseManager {
     /// - Returns: Base64-encoded encrypted content with nonce
     /// - Throws: EncryptionError
     private func encryptContent(_ content: String) async throws -> String {
+        // Handle empty content gracefully
+        if content.isEmpty {
+            return ""
+        }
+        
         let key = try await getOrCreateEncryptionKey()
         let data = Data(content.utf8)
         
         let sealedBox = try AES.GCM.seal(data, using: key)
-        let encryptedData = sealedBox.combined!
+        
+        guard let encryptedData = sealedBox.combined else {
+            throw DatabaseError.encryptionFailed
+        }
         
         return encryptedData.base64EncodedString()
     }
@@ -288,6 +324,11 @@ extension DatabaseManager {
     /// - Returns: Decrypted plain text content
     /// - Throws: DecryptionError
     private func decryptContent(_ encryptedContent: String) async throws -> String {
+        // Handle empty content gracefully
+        if encryptedContent.isEmpty {
+            return ""
+        }
+        
         let key = try await getOrCreateEncryptionKey()
         
         guard let encryptedData = Data(base64Encoded: encryptedContent) else {
@@ -300,20 +341,14 @@ extension DatabaseManager {
             throw DatabaseError.invalidEncryptedData
         }
         
-        do {
-            let sealedBox = try AES.GCM.SealedBox(combined: encryptedData)
-            let decryptedData = try AES.GCM.open(sealedBox, using: key)
-            
-            guard let decryptedString = String(data: decryptedData, encoding: .utf8) else {
-                throw DatabaseError.decryptionFailed
-            }
-            
-            return decryptedString
-        } catch {
-            print("❌ Decryption failed: \(error)")
-            // Return empty string for now to prevent app crashes
-            return ""
+        let sealedBox = try AES.GCM.SealedBox(combined: encryptedData)
+        let decryptedData = try AES.GCM.open(sealedBox, using: key)
+        
+        guard let decryptedString = String(data: decryptedData, encoding: .utf8) else {
+            throw DatabaseError.decryptionFailed
         }
+        
+        return decryptedString
     }
 }
 
@@ -530,6 +565,7 @@ enum DatabaseError: Error, LocalizedError {
     case applicationSupportDirectoryNotFound
     case invalidEncryptedData
     case decryptionFailed
+    case encryptionFailed
     case keychainError(OSStatus)
     
     var errorDescription: String? {
@@ -540,6 +576,8 @@ enum DatabaseError: Error, LocalizedError {
             return "Invalid encrypted data format"
         case .decryptionFailed:
             return "Failed to decrypt journal content"
+        case .encryptionFailed:
+            return "Failed to encrypt journal content"
         case .keychainError(let status):
             return "Keychain error: \(status)"
         }

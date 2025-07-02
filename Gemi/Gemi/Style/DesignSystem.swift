@@ -14,59 +14,59 @@ enum DesignSystem {
     // MARK: - Personal Diary Typography - Warm & Handwritten Feel
     
     enum Typography {
-        /// Large display text for app title and major moments (40pt) - Elegant script feeling
-        static let display = Font.system(size: 40, weight: .light, design: .serif)
+        /// Large display text for app title and major moments (40pt) - SF Pro Display
+        static let display = Font.system(size: 40, weight: .light, design: .default)
             .leading(.tight)
         
-        /// Primary headings for entry titles (28pt) - Personal handwriting style
-        static let title1 = Font.system(size: 28, weight: .medium, design: .serif)
+        /// Primary headings for entry titles (28pt) - SF Pro Display
+        static let title1 = Font.system(size: 28, weight: .medium, design: .default)
         
-        /// Secondary headings for sections (22pt) - Relaxed journal headers
-        static let title2 = Font.system(size: 22, weight: .regular, design: .serif)
+        /// Secondary headings for sections (22pt) - SF Pro Display
+        static let title2 = Font.system(size: 22, weight: .regular, design: .default)
         
-        /// Section headings for organization (20pt) - Gentle emphasis
-        static let title3 = Font.system(size: 20, weight: .medium, design: .default)
+        /// Section headings for organization (20pt) - SF Pro Rounded
+        static let title3 = Font.system(size: 20, weight: .medium, design: .rounded)
         
-        /// Emphasized body text for highlights (17pt) - Friendly weight
-        static let headline = Font.system(size: 17, weight: .medium, design: .default)
+        /// Emphasized body text for highlights (17pt) - SF Pro Rounded
+        static let headline = Font.system(size: 17, weight: .medium, design: .rounded)
         
-        /// Primary body text for diary entries (17pt) - Comfortable reading
-        static let body = Font.system(size: 17, weight: .regular, design: .default)
+        /// Primary body text for diary entries (17pt) - SF Pro Rounded
+        static let body = Font.system(size: 17, weight: .regular, design: .rounded)
         
-        /// Secondary body text for descriptions (15pt) - Softer presence
-        static let callout = Font.system(size: 15, weight: .regular, design: .default)
+        /// Secondary body text for descriptions (15pt) - SF Pro Rounded
+        static let callout = Font.system(size: 15, weight: .regular, design: .rounded)
         
-        /// Tertiary text for metadata (13pt) - Gentle information
-        static let subheadline = Font.system(size: 13, weight: .regular, design: .default)
+        /// Tertiary text for metadata (13pt) - SF Pro Rounded
+        static let subheadline = Font.system(size: 13, weight: .regular, design: .rounded)
         
-        /// Small text for timestamps (12pt) - Unobtrusive details
-        static let footnote = Font.system(size: 12, weight: .light, design: .default)
+        /// Small text for timestamps (12pt) - SF Pro Rounded
+        static let footnote = Font.system(size: 12, weight: .light, design: .rounded)
         
-        /// Captions and subtle labels (11pt) - Whisper-soft
-        static let caption1 = Font.system(size: 11, weight: .light, design: .default)
+        /// Captions and subtle labels (11pt) - SF Pro Rounded
+        static let caption1 = Font.system(size: 11, weight: .light, design: .rounded)
         
-        /// Smallest text for fine details (10pt) - Barely-there guidance
-        static let caption2 = Font.system(size: 10, weight: .ultraLight, design: .default)
+        /// Smallest text for fine details (10pt) - SF Pro Rounded
+        static let caption2 = Font.system(size: 10, weight: .ultraLight, design: .rounded)
         
         /// Monospaced for technical elements - warmer mono
         static let mono = Font.system(size: 13, weight: .regular, design: .monospaced)
         
         // MARK: - Specialized Diary Typography
         
-        /// For the main diary editor - feels like personal handwriting
-        static let diaryBody = Font.system(size: 18, weight: .regular, design: .default)
+        /// For the main diary editor - New York font for personal handwriting feel
+        static let diaryBody = Font.custom("New York", size: 18).weight(.regular)
         
         /// For diary entry dates - elegant and personal
-        static let diaryDate = Font.system(size: 14, weight: .light, design: .serif)
+        static let diaryDate = Font.custom("New York", size: 14).weight(.light)
         
-        /// For entry previews in timeline - inviting glimpse
-        static let diaryPreview = Font.system(size: 15, weight: .light, design: .default)
+        /// For entry previews in timeline - inviting glimpse with New York
+        static let diaryPreview = Font.custom("New York", size: 15).weight(.light)
         
-        /// For AI chat responses - friendly conversation
-        static let chatResponse = Font.system(size: 16, weight: .regular, design: .default)
+        /// For AI chat responses - friendly conversation with SF Pro Rounded
+        static let chatResponse = Font.system(size: 16, weight: .regular, design: .rounded)
         
-        /// For prompts and inspiration - gentle guidance
-        static let prompt = Font.system(size: 16, weight: .light, design: .serif)
+        /// For prompts and inspiration - gentle guidance with New York
+        static let prompt = Font.custom("New York", size: 16).weight(.light)
     }
     
     /// Alias for Typography to maintain compatibility
@@ -793,10 +793,10 @@ enum DesignSystem {
         static let writingFlow = SwiftUI.Animation.timingCurve(0.4, 0, 0.2, 1, duration: 0.2)
         
         /// Heartbeat pulse for subtle life
-        static let heartbeat = SwiftUI.Animation.easeInOut(duration: 1.2).repeatForever(autoreverses: true)
+        static let heartbeat = SwiftUI.Animation.easeInOut(duration: 1.2)
         
         /// Gentle breathing for ambient elements
-        static let breathing = SwiftUI.Animation.easeInOut(duration: 2.5).repeatForever(autoreverses: true)
+        static let breathing = SwiftUI.Animation.easeInOut(duration: 2.5)
         
         // MARK: - Legacy Aliases for Compatibility
         static let spring = encouragingSpring

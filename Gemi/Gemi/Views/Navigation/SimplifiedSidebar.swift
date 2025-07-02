@@ -62,19 +62,27 @@ struct SimplifiedSidebar: View {
     
     private var sidebarHeader: some View {
         HStack(spacing: ModernDesignSystem.Spacing.sm) {
-            Image(systemName: "moon.stars.fill")
-                .font(.system(size: 24))
-                .foregroundColor(ModernDesignSystem.Colors.primary)
-                .frame(width: 32, height: 32)
-            
-            if !navigation.isSidebarCollapsed {
+            if navigation.isSidebarCollapsed {
+                Button(action: { navigation.toggleSidebar() }) {
+                    Image(systemName: "moon.stars.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(ModernDesignSystem.Colors.primary)
+                        .frame(width: 32, height: 32)
+                }
+                .buttonStyle(.plain)
+            } else {
+                Image(systemName: "moon.stars.fill")
+                    .font(.system(size: 24))
+                    .foregroundColor(ModernDesignSystem.Colors.primary)
+                    .frame(width: 32, height: 32)
+                
                 Text("Gemi")
                     .font(ModernDesignSystem.Typography.title2)
                     .foregroundColor(ModernDesignSystem.Colors.textPrimary)
                 
                 Spacer()
                 
-                Button(action: navigation.toggleSidebar) {
+                Button(action: { navigation.toggleSidebar() }) {
                     Image(systemName: "sidebar.left")
                         .font(.system(size: 16))
                         .foregroundColor(ModernDesignSystem.Colors.textSecondary)
@@ -151,7 +159,7 @@ struct NavigationItem: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .keyboardShortcut(section.keyboardShortcut ?? KeyEquivalent(""), modifiers: .command)
+        .keyboardShortcut(section.keyboardShortcut ?? "0", modifiers: .command)
         .help(section.rawValue)
         .onHover { hovering in
             if isCollapsed && hovering {

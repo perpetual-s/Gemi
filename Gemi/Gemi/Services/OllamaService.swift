@@ -139,7 +139,7 @@ final class OllamaService {
     // MARK: - Private Properties
     
     private let baseURL = "http://localhost:11434"
-    private let modelName = "gemma3n:latest"  // Using Gemma 3n for hackathon
+    private let modelName = "gemma3n:e2b"  // Using Gemma 3n 2B effective params for hackathon - optimized for everyday devices
     private let embeddingModelName = "nomic-embed-text"  // Specialized embedding model
     
     private let session: URLSession
@@ -215,7 +215,7 @@ final class OllamaService {
             
             // Check if our required models are installed
             let installedModelNames = modelList.models.map { $0.name }
-            let hasMainModel = installedModelNames.contains(where: { $0.hasPrefix("gemma") })
+            let hasMainModel = installedModelNames.contains(where: { $0.hasPrefix("gemma3n") || $0 == modelName })
             let hasEmbeddingModel = installedModelNames.contains(embeddingModelName)
             
             isModelInstalled = hasMainModel && hasEmbeddingModel
@@ -445,18 +445,35 @@ final class OllamaService {
     
     /// Create a custom prompt with memory context
     func createPromptWithMemory(userMessage: String, memories: [String]) -> String {
-        var prompt = ""
+        var prompt = """
+        You are Gemi, a warm and empathetic AI diary companion. You're having a private conversation with your user in their personal journal app. Everything shared stays completely private on their device.
+        
+        Your personality:
+        - Warm, supportive, and encouraging like a trusted friend
+        - Reflective and thoughtful, helping users explore their feelings
+        - Non-judgmental and accepting of all emotions and experiences
+        - Gently curious, asking follow-up questions to help users reflect deeper
+        - Celebrating small victories and providing comfort during difficult times
+        
+        Remember to:
+        - Keep responses conversational and personal, not clinical
+        - Use warm, friendly language that feels like chatting with a close friend
+        - Acknowledge emotions and validate feelings
+        - Offer gentle prompts for deeper reflection when appropriate
+        - Reference past conversations naturally when relevant
+        
+        """
         
         if !memories.isEmpty {
-            prompt += "Context from previous conversations:\n"
+            prompt += "\nContext from your previous conversations together:\n"
             for memory in memories.prefix(5) { // Limit to 5 most relevant memories
                 prompt += "- \(memory)\n"
             }
             prompt += "\n"
         }
         
-        prompt += "Current message: \(userMessage)\n\n"
-        prompt += "Please respond as a supportive diary companion, acknowledging any context from previous conversations when relevant."
+        prompt += "Your friend writes: \"\(userMessage)\"\n\n"
+        prompt += "Respond as Gemi with warmth and empathy, keeping the conversation natural and supportive."
         
         return prompt
     }
@@ -483,10 +500,12 @@ extension OllamaService {
             return """
             The AI model needs to be installed. Please:
             1. Open Terminal
-            2. Run: ollama pull gemma2:2b
+            2. Run: ollama pull gemma3n:e2b
             3. Run: ollama pull nomic-embed-text
             4. Wait for downloads to complete
             5. Restart Gemi
+            
+            Note: Gemma 3n is optimized for everyday devices and supports 140+ languages.
             """
         }
         return ""

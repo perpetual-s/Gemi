@@ -144,6 +144,7 @@ struct HoverEffectModifier: ViewModifier {
 
 struct FloatingModifier: ViewModifier {
     @State private var offset: CGFloat = 0
+    @State private var animationTask: Task<Void, Never>?
     let amplitude: CGFloat
     let duration: Double
     
@@ -156,40 +157,70 @@ struct FloatingModifier: ViewModifier {
         content
             .offset(y: offset)
             .onAppear {
-                withAnimation(
-                    .easeInOut(duration: duration)
-                    .repeatForever(autoreverses: true)
-                ) {
-                    offset = amplitude
+                animationTask = Task {
+                    while !Task.isCancelled {
+                        withAnimation(.easeInOut(duration: duration)) {
+                            offset = amplitude
+                        }
+                        try? await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
+                        
+                        if Task.isCancelled { break }
+                        
+                        withAnimation(.easeInOut(duration: duration)) {
+                            offset = 0
+                        }
+                        try? await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
+                    }
                 }
+            }
+            .onDisappear {
+                animationTask?.cancel()
+                animationTask = nil
+                offset = 0
             }
     }
 }
 
 struct PulseModifier: ViewModifier {
-    @State private var isPulsing = false
-    let scale: Double
-    let opacity: Double
+    @State private var scale: CGFloat = 1
+    @State private var opacity: Double = 0.8
+    @State private var animationTask: Task<Void, Never>?
+    let targetScale: Double
+    let targetOpacity: Double
     
     init(scale: Double = 1.05, opacity: Double = 0.8) {
-        self.scale = scale
-        self.opacity = opacity
+        self.targetScale = scale
+        self.targetOpacity = opacity
     }
     
     func body(content: Content) -> some View {
         content
             .overlay(
                 content
-                    .scaleEffect(isPulsing ? scale : 1)
-                    .opacity(isPulsing ? 0 : opacity)
-                    .animation(
-                        DesignSystem.Animation.heartbeat
-                            .repeatForever(autoreverses: false),
-                        value: isPulsing
-                    )
+                    .scaleEffect(scale)
+                    .opacity(opacity)
             )
             .onAppear {
-                isPulsing = true
+                animationTask = Task {
+                    while !Task.isCancelled {
+                        withAnimation(DesignSystem.Animation.heartbeat) {
+                            scale = targetScale
+                            opacity = 0
+                        }
+                        try? await Task.sleep(nanoseconds: UInt64(1.5 * 1_000_000_000))
+                        
+                        if Task.isCancelled { break }
+                        
+                        scale = 1
+                        opacity = targetOpacity
+                    }
+                }
+            }
+            .onDisappear {
+                animationTask?.cancel()
+                animationTask = nil
+                scale = 1
+                opacity = targetOpacity
             }
     }
 }
@@ -212,7 +243,8 @@ struct ParallaxModifier: GeometryEffect {
 // MARK: - Loading States
 
 struct SkeletonModifier: ViewModifier {
-    @State private var phase: CGFloat = 0
+    @State private var phase: CGFloat = -1
+    @State private var animationTask: Task<Void, Never>?
     let gradient: LinearGradient
     
     init() {
@@ -238,12 +270,23 @@ struct SkeletonModifier: ViewModifier {
                 .mask(content)
             )
             .onAppear {
-                withAnimation(
-                    .linear(duration: 1.5)
-                    .repeatForever(autoreverses: false)
-                ) {
-                    phase = 1
+                animationTask = Task {
+                    while !Task.isCancelled {
+                        withAnimation(.linear(duration: 1.5)) {
+                            phase = 1
+                        }
+                        try? await Task.sleep(nanoseconds: UInt64(1.5 * 1_000_000_000))
+                        
+                        if Task.isCancelled { break }
+                        
+                        phase = -1
+                    }
                 }
+            }
+            .onDisappear {
+                animationTask?.cancel()
+                animationTask = nil
+                phase = -1
             }
     }
 }
