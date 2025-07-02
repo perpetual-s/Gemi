@@ -46,32 +46,17 @@ struct GemiApp: App {
     
     var body: some Scene {
         WindowGroup {
-            Group {
-                if !onboardingState.hasCompletedOnboarding {
-                    // Onboarding flow for first-time users
-                    OnboardingView()
-                        .environment(onboardingState)
-                        .environment(windowStateManager)
-                } else if authenticationManager.isAuthenticated {
-                    // Main application interface
-                    ContentView()
-                        .environment(authenticationManager)
-                        .environment(journalStore)
-                        .environment(onboardingState)
-                        .environment(settingsStore)
-                        .environment(windowStateManager)
-                        .environment(performanceOptimizer)
-                        .environment(accessibilityManager)
-                        .environment(keyboardNavigation)
-                        .preferredColorScheme(nil) // Respect system appearance
-                } else {
-                    // Authentication flow
-                    AuthenticationFlowView()
-                        .environment(authenticationManager)
-                        .environment(onboardingState)
-                        .environment(windowStateManager)
-                }
-            }
+            // Main application interface - no authentication or onboarding required
+            ContentView()
+                .environment(authenticationManager)
+                .environment(journalStore)
+                .environment(onboardingState)
+                .environment(settingsStore)
+                .environment(windowStateManager)
+                .environment(performanceOptimizer)
+                .environment(accessibilityManager)
+                .environment(keyboardNavigation)
+                .preferredColorScheme(nil) // Respect system appearance
             .frame(minWidth: 1000, minHeight: 600)
             .background(Color(red: 0.98, green: 0.98, blue: 0.98))
             .premiumWindowStyle()
@@ -107,23 +92,7 @@ struct GemiApp: App {
 }
 
 // MARK: - Authentication Flow
-
-/// Handles the authentication flow before accessing the main app
-struct AuthenticationFlowView: View {
-    @Environment(AuthenticationManager.self) private var authManager
-    
-    var body: some View {
-        Group {
-            if authManager.isFirstTimeSetup {
-                WelcomeView()
-            } else {
-                LoginView()
-            }
-        }
-        .frame(minWidth: 1000, minHeight: 600)
-        .background(DesignSystem.Colors.systemBackground)
-    }
-}
+// Authentication has been removed - app now launches directly into ContentView
 
 // MARK: - Main Application Interface
 

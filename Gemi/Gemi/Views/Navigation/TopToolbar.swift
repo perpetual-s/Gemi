@@ -8,8 +8,10 @@
 import SwiftUI
 
 struct TopToolbar: View {
-    @Environment(NavigationModel.self) private var navigation
-    @FocusState private var searchFieldFocused: Bool
+    let navigationModel: NavigationModel
+    @FocusState.Binding var isSearchFocused: Bool
+    let onNewEntry: () -> Void
+    
     @State private var showUserMenu = false
     @State private var isSearchHovered = false
     
@@ -50,19 +52,19 @@ struct TopToolbar: View {
                 .foregroundColor(ModernDesignSystem.Colors.textSecondary)
             
             TextField("Search entries...", text: .init(
-                get: { navigation.searchQuery },
-                set: { navigation.searchQuery = $0 }
+                get: { navigationModel.searchQuery },
+                set: { navigationModel.searchQuery = $0 }
             ))
             .textFieldStyle(.plain)
             .font(ModernDesignSystem.Typography.body)
-            .focused($searchFieldFocused)
+            .focused($isSearchFocused)
             .onSubmit {
-                navigation.activateSearch()
+                navigationModel.activateSearch()
             }
             
-            if !navigation.searchQuery.isEmpty {
+            if !navigationModel.searchQuery.isEmpty {
                 Button {
-                    navigation.searchQuery = ""
+                    navigationModel.searchQuery = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 14))
@@ -72,7 +74,7 @@ struct TopToolbar: View {
             }
             
             // Keyboard shortcut hint
-            if !searchFieldFocused && navigation.searchQuery.isEmpty {
+            if !isSearchFocused && navigationModel.searchQuery.isEmpty {
                 Text("⌘K")
                     .font(ModernDesignSystem.Typography.caption)
                     .foregroundColor(ModernDesignSystem.Colors.textTertiary)
@@ -92,10 +94,10 @@ struct TopToolbar: View {
                 .overlay(
                     RoundedRectangle(cornerRadius: ModernDesignSystem.Components.radiusSM)
                         .stroke(
-                            searchFieldFocused ? ModernDesignSystem.Colors.primary :
+                            isSearchFocused ? ModernDesignSystem.Colors.primary :
                             isSearchHovered ? ModernDesignSystem.Colors.border :
                             Color.clear,
-                            lineWidth: searchFieldFocused ? 2 : 1
+                            lineWidth: isSearchFocused ? 2 : 1
                         )
                 )
         )
@@ -106,7 +108,7 @@ struct TopToolbar: View {
             }
         }
         .onTapGesture {
-            searchFieldFocused = true
+            isSearchFocused = true
         }
         .keyboardShortcut("k", modifiers: .command)
     }
@@ -114,9 +116,8 @@ struct TopToolbar: View {
     // MARK: - New Entry Button
     
     private var newEntryButton: some View {
-        Button {
-            // TODO: Create new entry
-        } label: {
+        Button(action: onNewEntry) {
+
             Label("New Entry", systemImage: "plus")
                 .font(ModernDesignSystem.Typography.callout)
                 .fontWeight(.medium)
@@ -160,13 +161,13 @@ struct TopToolbar: View {
                         )
                     
                     // Streak counter
-                    if navigation.writingStreak > 0 {
+                    if navigationModel.writingStreak > 0 {
                         HStack(spacing: 4) {
                             Image(systemName: "flame.fill")
                                 .font(.system(size: 14))
                                 .foregroundColor(ModernDesignSystem.Colors.moodEnergetic)
                             
-                            Text("\(navigation.writingStreak)")
+                            Text("\(navigationModel.writingStreak)")
                                 .font(ModernDesignSystem.Typography.callout)
                                 .fontWeight(.medium)
                                 .foregroundColor(ModernDesignSystem.Colors.textPrimary)
@@ -188,21 +189,21 @@ struct TopToolbar: View {
     
     private var syncStatusIndicator: some View {
         HStack(spacing: 4) {
-            Image(systemName: navigation.syncStatus.icon)
+            Image(systemName: navigationModel.syncStatus.icon)
                 .font(.system(size: 12))
-                .foregroundColor(navigation.syncStatus.color)
+                .foregroundColor(navigationModel.syncStatus.color)
                 .rotationEffect(
-                    navigation.syncStatus.icon == "arrow.triangle.2.circlepath" ?
+                    navigationModel.syncStatus.icon == "arrow.triangle.2.circlepath" ?
                     .degrees(360) : .zero
                 )
                 .animation(
-                    navigation.syncStatus.icon == "arrow.triangle.2.circlepath" ?
+                    navigationModel.syncStatus.icon == "arrow.triangle.2.circlepath" ?
                     .linear(duration: 1).repeatForever(autoreverses: false) :
                     .default,
-                    value: navigation.syncStatus.icon
+                    value: navigationModel.syncStatus.icon
                 )
             
-            if case .error(let message) = navigation.syncStatus {
+            if case .error(let message) = navigationModel.syncStatus {
                 Text(message)
                     .font(ModernDesignSystem.Typography.caption)
                     .foregroundColor(ModernDesignSystem.Colors.error)
@@ -213,7 +214,7 @@ struct TopToolbar: View {
         .padding(.vertical, 4)
         .background(
             Capsule()
-                .fill(navigation.syncStatus.color.opacity(0.1))
+                .fill(navigationModel.syncStatus.color.opacity(0.1))
         )
     }
     
@@ -239,7 +240,7 @@ struct TopToolbar: View {
         
         Section {
             Button {
-                navigation.navigate(to: .settings)
+                navigationModel.navigate(to: .settings)
             } label: {
                 Label("Settings", systemImage: "gearshape")
             }
@@ -251,27 +252,31 @@ struct TopToolbar: View {
                 Label("Help", systemImage: "questionmark.circle")
             }
         }
-        
-        Divider()
-        
-        Button {
-            // TODO: Sign out
-        } label: {
-            Label("Sign Out", systemImage: "arrow.right.square")
-        }
     }
 }
 
 // MARK: - Preview
 
 struct TopToolbar_Previews: PreviewProvider {
-    static var previews: some View {
-        VStack {
-            TopToolbar()
-            
-            Spacer()
+    struct Preview: View {
+        @FocusState var isSearchFocused: Bool
+        
+        var body: some View {
+            VStack {
+                TopToolbar(
+                    navigationModel: NavigationModel(),
+                    isSearchFocused: $isSearchFocused,
+                    onNewEntry: { }
+                )
+                
+                Spacer()
+            }
+            .frame(width: 1000, height: 600)
+            .environment(NavigationModel())
         }
-        .frame(width: 1000, height: 600)
-        .environment(NavigationModel())
+    }
+    
+    static var previews: some View {
+        Preview()
     }
 }
