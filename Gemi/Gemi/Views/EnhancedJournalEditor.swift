@@ -54,16 +54,16 @@ struct EnhancedJournalEditor: View {
         case dark = "Dark"
         case cream = "Cream"
         
-        var color: Color {
+        func color(for colorScheme: ColorScheme) -> Color {
             switch self {
             case .paper:
-                return Color(red: 0.99, green: 0.98, blue: 0.97)
+                return colorScheme == .dark ? Color(red: 0.15, green: 0.15, blue: 0.17) : Color(red: 0.99, green: 0.98, blue: 0.97)
             case .gradient:
                 return Color.clear
             case .dark:
                 return Color(red: 0.1, green: 0.1, blue: 0.12)
             case .cream:
-                return Color(red: 1.0, green: 0.98, blue: 0.94)
+                return colorScheme == .dark ? Color(red: 0.2, green: 0.18, blue: 0.16) : Color(red: 1.0, green: 0.98, blue: 0.94)
             }
         }
     }
@@ -141,14 +141,14 @@ struct EnhancedJournalEditor: View {
         case .gradient:
             LinearGradient(
                 colors: [
-                    ModernDesignSystem.Colors.backgroundSecondary,
-                    ModernDesignSystem.Colors.backgroundPrimary
+                    ModernDesignSystem.Colors.backgroundSecondary(for: colorScheme),
+                    ModernDesignSystem.Colors.backgroundPrimary(for: colorScheme)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
         case .dark, .cream:
-            selectedBackground.color
+            selectedBackground.color(for: colorScheme)
         }
     }
     
@@ -864,9 +864,13 @@ struct SlashCommandMenu: View {
 }
 
 struct PaperTextureBackground: View {
+    @Environment(\.colorScheme) var colorScheme
+    
     var body: some View {
         ZStack {
-            Color(red: 0.99, green: 0.98, blue: 0.97)
+            Color(red: colorScheme == .dark ? 0.15 : 0.99, 
+                  green: colorScheme == .dark ? 0.15 : 0.98, 
+                  blue: colorScheme == .dark ? 0.17 : 0.97)
             
             Canvas { context, size in
                 for _ in 0..<500 {

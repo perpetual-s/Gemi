@@ -9,6 +9,7 @@ import SwiftUI
 
 struct JournalTimelineView: View {
     @Environment(JournalStore.self) private var journalStore
+    @Environment(NavigationModel.self) private var navigationModel
     @State private var entries: [JournalEntry] = []
     @State private var filteredEntries: [JournalEntry] = []
     @State private var isLoading = false
@@ -32,10 +33,6 @@ struct JournalTimelineView: View {
     // Calendar
     @State private var showCalendar = false
     @State private var selectedDate: Date?
-    
-    // Entry interaction
-    @State private var entryToEdit: JournalEntry?
-    @State private var showingEditor = false
     
     enum GroupingMode: String, CaseIterable {
         case day = "Day"
@@ -82,21 +79,6 @@ struct JournalTimelineView: View {
             }
         }
         .background(ModernDesignSystem.Colors.backgroundSecondary)
-        .sheet(isPresented: $showingEditor) {
-            if let entry = entryToEdit {
-                EnhancedJournalEditor(
-                    entry: .constant(entry),
-                    isPresented: $showingEditor,
-                    onSave: { updatedEntry in
-                        // Update the entry in the store
-                        Task {
-                            try? await journalStore.updateEntry(entry, content: updatedEntry.content)
-                            await loadEntries()
-                        }
-                    }
-                )
-            }
-        }
         .task {
             await loadEntries()
         }
@@ -609,8 +591,7 @@ struct JournalTimelineView: View {
     }
     
     private func editEntry(_ entry: JournalEntry) {
-        entryToEdit = entry
-        showingEditor = true
+        navigationModel.openEntry(entry)
     }
     
     private func deleteEntry(_ entry: JournalEntry) {

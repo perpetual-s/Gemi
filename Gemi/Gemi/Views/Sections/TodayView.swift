@@ -10,6 +10,7 @@ import SwiftUI
 struct TodayView: View {
     @Environment(NavigationModel.self) private var navigationModel
     @Environment(JournalStore.self) private var journalStore
+    @Environment(\.colorScheme) private var colorScheme
     @State private var todayEntry: JournalEntry?
     @State private var isWriting = false
     @State private var writingPrompt = WritingPrompt.random()
@@ -45,7 +46,7 @@ struct TodayView: View {
             .frame(maxWidth: ModernDesignSystem.Spacing.maxContentWidth)
             .frame(maxWidth: .infinity)
         }
-        .background(ModernDesignSystem.Colors.backgroundPrimary)
+        .background(ModernDesignSystem.Colors.backgroundPrimary(for: colorScheme))
         .task {
             await loadTodayEntry()
             await loadRecentEntries()

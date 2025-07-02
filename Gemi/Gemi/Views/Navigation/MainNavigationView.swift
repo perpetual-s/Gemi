@@ -11,6 +11,7 @@ struct MainNavigationView: View {
     @State private var navigation = NavigationModel()
     @State private var columnVisibility = NavigationSplitViewVisibility.all
     @FocusState private var isSearchFocused: Bool
+    @Environment(JournalStore.self) private var journalStore
     
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
@@ -39,10 +40,10 @@ struct MainNavigationView: View {
                             Task {
                                 if navigation.editingEntry == nil {
                                     // New entry
-                                    try? await JournalStore().addEntry(entry)
+                                    try? await journalStore.addEntry(entry)
                                 } else {
                                     // Update existing entry
-                                    try? await JournalStore().updateEntry(navigation.editingEntry!, content: entry.content)
+                                    try? await journalStore.updateEntry(navigation.editingEntry!, content: entry.content)
                                 }
                                 navigation.closeEditor()
                             }
