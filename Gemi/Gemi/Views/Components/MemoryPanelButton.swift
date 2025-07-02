@@ -71,7 +71,7 @@ struct MemoryPanelButton: View {
     
     private func loadMemoryCount() async {
         do {
-            memoryCount = try await DatabaseManager.shared.getMemoryCount()
+            memoryCount = try await DatabaseManager.shared().getMemoryCount()
         } catch {
             // Handle error silently
         }

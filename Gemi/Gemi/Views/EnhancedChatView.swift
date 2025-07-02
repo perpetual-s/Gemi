@@ -539,7 +539,7 @@ final class EnhancedChatViewModel {
                     memoryType: .conversationFact
                 )
                 
-                try await DatabaseManager.shared.saveMemory(memory)
+                try await DatabaseManager.shared().saveMemory(memory)
                 
                 // Show memory indicator
                 await MainActor.run {
@@ -563,7 +563,7 @@ final class EnhancedChatViewModel {
     
     private func loadMemoryStats() async {
         do {
-            totalMemories = try await DatabaseManager.shared.getMemoryCount()
+            totalMemories = try await DatabaseManager.shared().getMemoryCount()
         } catch {
             logger.error("Failed to load memory stats: \(error)")
         }

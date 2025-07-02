@@ -913,8 +913,16 @@ class MemoryPanelViewModel: ObservableObject {
     @Published var minImportanceThreshold: Double = 0.1
     
     private let memoryStore = MemoryStore.shared
-    private let databaseManager = DatabaseManager.shared
+    private let databaseManager: DatabaseManager
     private let logger = Logger(subsystem: "com.chaehoshin.Gemi", category: "MemoryPanelViewModel")
+    
+    init() {
+        do {
+            self.databaseManager = try DatabaseManager.shared()
+        } catch {
+            fatalError("Failed to initialize DatabaseManager: \(error)")
+        }
+    }
     
     func loadMemories() async {
         do {

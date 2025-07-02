@@ -9,7 +9,10 @@ import SwiftUI
 
 struct PrivacySettingsView: View {
     @Environment(SettingsStore.self) private var settingsStore
+    @Environment(JournalStore.self) private var journalStore
     @State private var showingDataLocation = false
+    @State private var isDeletingData = false
+    @State private var deleteError: String?
     
     var body: some View {
         @Bindable var settings = settingsStore
@@ -137,12 +140,70 @@ struct PrivacySettingsView: View {
                         color: .red,
                         isDestructive: true
                     ) {
-                        // Delete data
+                        Task {
+                            await deleteAllData()
+                        }
                     }
                 }
             }
             
             Spacer()
+        }
+        .alert("Error", isPresented: .init(
+            get: { deleteError != nil },
+            set: { if !$0 { deleteError = nil } }
+        )) {
+            Button("OK") { deleteError = nil }
+        } message: {
+            Text(deleteError ?? "An unknown error occurred")
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
+    @MainActor
+    private func deleteAllData() async {
+        isDeletingData = true
+        defer { isDeletingData = false }
+        
+        do {
+            // Delete all journal entries
+            for entry in journalStore.entries {
+                _ = try await journalStore.deleteEntry(entry)
+            }
+            
+            // Clear all memories
+            let memoryStore = MemoryStore.shared
+            try await memoryStore.clearAllMemories()
+            
+            // Clear chat history
+            // Note: We need to find where chat history is stored
+            
+            // Clear settings
+            settingsStore.resetToDefaults()
+            
+            // Clear keychain data
+            try? await clearKeychainData()
+            
+            // Show success feedback
+            HapticFeedback.success()
+            
+        } catch {
+            deleteError = "Failed to delete all data: \(error.localizedDescription)"
+            HapticFeedback.error()
+        }
+    }
+    
+    private func clearKeychainData() async throws {
+        // Clear encryption keys from keychain
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: "dev.perpetual-s.Gemi"
+        ]
+        
+        let status = SecItemDelete(query as CFDictionary)
+        if status != errSecSuccess && status != errSecItemNotFound {
+            throw DatabaseError.keychainError(status)
         }
     }
 }

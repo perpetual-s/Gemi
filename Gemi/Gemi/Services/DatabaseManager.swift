@@ -17,26 +17,22 @@ final class DatabaseManager: Sendable {
     
     // MARK: - Singleton
     
-    private static var _shared: DatabaseManager?
-    private static let sharedQueue = DispatchQueue(label: "dev.perpetual-s.Gemi.DatabaseManager.shared")
+    private static let _shared: DatabaseManager? = {
+        do {
+            return try DatabaseManager()
+        } catch {
+            print("❌ Failed to initialize DatabaseManager singleton: \(error)")
+            return nil
+        }
+    }()
     
     /// Thread-safe access to the shared DatabaseManager instance
     /// - Throws: DatabaseError if initialization fails
     static func shared() throws -> DatabaseManager {
-        try sharedQueue.sync {
-            if let existing = _shared {
-                return existing
-            }
-            
-            do {
-                let manager = try DatabaseManager()
-                _shared = manager
-                return manager
-            } catch {
-                print("❌ Failed to initialize DatabaseManager: \(error)")
-                throw error
-            }
+        guard let manager = _shared else {
+            throw DatabaseError.initializationFailed("Failed to initialize DatabaseManager singleton")
         }
+        return manager
     }
     
     // MARK: - Properties
@@ -567,6 +563,7 @@ enum DatabaseError: Error, LocalizedError {
     case decryptionFailed
     case encryptionFailed
     case keychainError(OSStatus)
+    case initializationFailed(String)
     
     var errorDescription: String? {
         switch self {
@@ -580,6 +577,8 @@ enum DatabaseError: Error, LocalizedError {
             return "Failed to encrypt journal content"
         case .keychainError(let status):
             return "Keychain error: \(status)"
+        case .initializationFailed(let message):
+            return message
         }
     }
 } 

@@ -12,7 +12,15 @@ import os.log
 final class EmbeddingService {
     private let logger = Logger(subsystem: "com.chaehoshin.Gemi", category: "EmbeddingService")
     private let ollamaService = OllamaService.shared
-    private let databaseManager = DatabaseManager.shared
+    private let databaseManager: DatabaseManager
+    
+    init() {
+        do {
+            self.databaseManager = try DatabaseManager.shared()
+        } catch {
+            fatalError("Failed to initialize DatabaseManager: \(error)")
+        }
+    }
     
     private let embeddingModel = "nomic-embed-text"
     private let maxBatchSize = 10

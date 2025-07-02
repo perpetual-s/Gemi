@@ -13,7 +13,15 @@ import os.log
 final class ContextRetriever {
     private let logger = Logger(subsystem: "com.chaehoshin.Gemi", category: "ContextRetriever")
     private let embeddingService = EmbeddingService()
-    private let databaseManager = DatabaseManager.shared
+    private let databaseManager: DatabaseManager
+    
+    init() {
+        do {
+            self.databaseManager = try DatabaseManager.shared()
+        } catch {
+            fatalError("Failed to initialize DatabaseManager: \(error)")
+        }
+    }
     
     // Configuration
     private let defaultResultLimit = 5

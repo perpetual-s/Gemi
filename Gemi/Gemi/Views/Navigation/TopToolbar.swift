@@ -14,6 +14,9 @@ struct TopToolbar: View {
     
     @State private var showUserMenu = false
     @State private var isSearchHovered = false
+    @State private var showProfileView = false
+    @State private var showStatisticsView = false
+    @State private var showHelpView = false
     
     var body: some View {
         HStack(spacing: ModernDesignSystem.Spacing.md) {
@@ -41,6 +44,15 @@ struct TopToolbar: View {
                 .frame(height: 1),
             alignment: .bottom
         )
+        .sheet(isPresented: $showProfileView) {
+            ProfileView()
+        }
+        .sheet(isPresented: $showStatisticsView) {
+            StatisticsView()
+        }
+        .sheet(isPresented: $showHelpView) {
+            HelpView()
+        }
     }
     
     // MARK: - Search Bar
@@ -224,13 +236,13 @@ struct TopToolbar: View {
     private var userMenuContent: some View {
         Section {
             Button {
-                // TODO: Show profile
+                showProfileView = true
             } label: {
                 Label("Profile", systemImage: "person.circle")
             }
             
             Button {
-                // TODO: Show statistics
+                showStatisticsView = true
             } label: {
                 Label("Writing Statistics", systemImage: "chart.line.uptrend.xyaxis")
             }
@@ -247,7 +259,7 @@ struct TopToolbar: View {
             .keyboardShortcut(",", modifiers: .command)
             
             Button {
-                // TODO: Show help
+                showHelpView = true
             } label: {
                 Label("Help", systemImage: "questionmark.circle")
             }

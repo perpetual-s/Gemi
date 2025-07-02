@@ -267,7 +267,7 @@ final class GemiAICoordinator {
         logger.info("Processing unembedded entries")
         
         do {
-            let entries = try await DatabaseManager.shared.fetchEntriesWithoutEmbeddings()
+            let entries = try await DatabaseManager.shared().fetchEntriesWithoutEmbeddings()
             logger.info("Found \(entries.count) entries without embeddings")
             
             for entry in entries {

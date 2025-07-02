@@ -18,6 +18,7 @@ struct FloatingComposeView: View {
     // MARK: - State
     
     @Binding var entry: JournalEntry?
+    @State private var title: String = ""
     @State private var content: String = ""
     @State private var isSaving: Bool = false
     @State private var errorMessage: String?
@@ -77,6 +78,7 @@ struct FloatingComposeView: View {
         .animation(DesignSystem.Animation.breathing, value: editorGlow)
         .onAppear {
             if let existingEntry = entry {
+                title = existingEntry.title
                 content = existingEntry.content
             }
             
@@ -97,7 +99,7 @@ struct FloatingComposeView: View {
     private var floatingHeader: some View {
         HStack {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.tiny) {
-                Text("New Entry")
+                Text(entry != nil ? "Edit Entry" : "New Entry")
                     .font(ModernDesignSystem.Typography.title2)
                     .foregroundStyle(ModernDesignSystem.Colors.adaptiveTextPrimary)
                 
@@ -145,36 +147,51 @@ struct FloatingComposeView: View {
     
     @ViewBuilder
     private var editorSection: some View {
-        ZStack(alignment: .topLeading) {
-            // Text editor with encouraging typography
-            TextEditor(text: $content)
-                .focused($isTextEditorFocused)
-                .font(ModernDesignSystem.Typography.journal)
-                .scrollContentBackground(.hidden)
-                .padding(DesignSystem.Spacing.large)
-                .onChange(of: content) { oldValue, newValue in
-                    handleContentChange(oldValue: oldValue, newValue: newValue)
-                }
+        VStack(alignment: .leading, spacing: 0) {
+            // Title input
+            TextField("Add a title (optional)", text: $title)
+                .font(ModernDesignSystem.Typography.title2)
+                .foregroundStyle(ModernDesignSystem.Colors.adaptiveTextPrimary)
+                .textFieldStyle(.plain)
+                .padding(.horizontal, DesignSystem.Spacing.large)
+                .padding(.top, DesignSystem.Spacing.medium)
+                .padding(.bottom, DesignSystem.Spacing.small)
             
-            // Warm placeholder
-            if content.isEmpty {
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
-                    Text("What's on your mind today?")
-                        .font(ModernDesignSystem.Typography.title3)
-                        .foregroundStyle(ModernDesignSystem.Colors.primary.opacity(0.7))
-                    
-                    Text("Share your thoughts, feelings, or experiences.\nThis is your private space to reflect and express yourself freely.")
-                        .font(ModernDesignSystem.Typography.body)
-                        .foregroundStyle(ModernDesignSystem.Colors.textPlaceholder)
-                        .multilineTextAlignment(.leading)
+            Divider()
+                .padding(.horizontal, DesignSystem.Spacing.large)
+            
+            // Content editor
+            ZStack(alignment: .topLeading) {
+                // Text editor with encouraging typography
+                TextEditor(text: $content)
+                    .focused($isTextEditorFocused)
+                    .font(ModernDesignSystem.Typography.journal)
+                    .scrollContentBackground(.hidden)
+                    .padding(DesignSystem.Spacing.large)
+                    .onChange(of: content) { oldValue, newValue in
+                        handleContentChange(oldValue: oldValue, newValue: newValue)
+                    }
+                
+                // Warm placeholder
+                if content.isEmpty {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
+                        Text("What's on your mind today?")
+                            .font(ModernDesignSystem.Typography.title3)
+                            .foregroundStyle(ModernDesignSystem.Colors.primary.opacity(0.7))
+                        
+                        Text("Share your thoughts, feelings, or experiences.\nThis is your private space to reflect and express yourself freely.")
+                            .font(ModernDesignSystem.Typography.body)
+                            .foregroundStyle(ModernDesignSystem.Colors.textPlaceholder)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .padding(DesignSystem.Spacing.large)
+                    .allowsHitTesting(false)
+                    .opacity(isTextEditorFocused ? 0.6 : 1.0)
+                    .animation(DesignSystem.Animation.smooth, value: isTextEditorFocused)
                 }
-                .padding(DesignSystem.Spacing.large)
-                .allowsHitTesting(false)
-                .opacity(isTextEditorFocused ? 0.6 : 1.0)
-                .animation(DesignSystem.Animation.smooth, value: isTextEditorFocused)
             }
+            .frame(maxHeight: .infinity)
         }
-        .frame(maxHeight: .infinity)
     }
     
     // MARK: - Bottom Actions
@@ -317,10 +334,16 @@ struct FloatingComposeView: View {
         
         do {
             if let existingEntry = entry {
-                try await journalStore.updateEntry(existingEntry, content: content)
-                entry?.content = content
+                // Update existing entry with new title and content
+                var updatedEntry = existingEntry
+                updatedEntry.title = title
+                updatedEntry.content = content
+                try await journalStore.updateEntry(updatedEntry)
+                entry = updatedEntry
             } else {
-                try await journalStore.addEntry(content: content)
+                // Create new entry with title and content
+                let newEntry = JournalEntry(title: title, content: content)
+                try await journalStore.addEntry(newEntry)
             }
             
             print("Journal entry saved successfully")

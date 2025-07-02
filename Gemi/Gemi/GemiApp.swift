@@ -44,61 +44,63 @@ struct GemiApp: App {
     
     var body: some Scene {
         WindowGroup {
-            if let journalStore = journalStore {
-                // Main application interface - no authentication or onboarding required
-                ContentView()
-                    .environment(authenticationManager)
-                    .environment(journalStore)
-                    .environment(onboardingState)
-                    .environment(settingsStore)
-                    .environment(windowStateManager)
-                    .environment(performanceOptimizer)
-                    .environment(accessibilityManager)
-                    .environment(keyboardNavigation)
-                    .preferredColorScheme(nil) // Respect system appearance
-                .frame(minWidth: 1000, minHeight: 600)
-                .background(DesignSystem.Colors.backgroundPrimary)
-                .premiumWindowStyle()
-                .task {
-                    // Initialize premium features
-                    performanceOptimizer.startMonitoring()
-                    
-                    // Load initial data on app launch
-                    await journalStore.loadEntries()
-                }
-            } else {
-                // Error state UI
-                VStack(spacing: 20) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 48))
-                        .foregroundStyle(.orange)
-                    
-                    Text("Failed to Initialize Gemi")
-                        .font(.title)
-                        .fontWeight(.semibold)
-                    
-                    Text(initializationError?.localizedDescription ?? "An unexpected error occurred while starting the application.")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: 400)
-                    
-                    HStack(spacing: 12) {
-                        Button("Retry") {
-                            initializeJournalStore()
-                        }
-                        .buttonStyle(.borderedProminent)
+            Group {
+                if let journalStore = journalStore {
+                    // Main application interface - no authentication or onboarding required
+                    ContentView()
+                        .environment(authenticationManager)
+                        .environment(journalStore)
+                        .environment(onboardingState)
+                        .environment(settingsStore)
+                        .environment(windowStateManager)
+                        .environment(performanceOptimizer)
+                        .environment(accessibilityManager)
+                        .environment(keyboardNavigation)
+                        .preferredColorScheme(nil) // Respect system appearance
+                    .frame(minWidth: 1000, minHeight: 600)
+                    .background(DesignSystem.Colors.backgroundPrimary)
+                    .premiumWindowStyle()
+                    .task {
+                        // Initialize premium features
+                        performanceOptimizer.startMonitoring()
                         
-                        Button("Quit") {
-                            NSApplication.shared.terminate(nil)
-                        }
-                        .buttonStyle(.bordered)
+                        // Load initial data on app launch
+                        await journalStore.loadEntries()
                     }
-                }
-                .padding(40)
-                .frame(minWidth: 600, minHeight: 400)
-                .task {
-                    initializeJournalStore()
+                } else {
+                    // Error state UI
+                    VStack(spacing: 20) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 48))
+                            .foregroundStyle(.orange)
+                        
+                        Text("Failed to Initialize Gemi")
+                            .font(.title)
+                            .fontWeight(.semibold)
+                        
+                        Text(initializationError?.localizedDescription ?? "An unexpected error occurred while starting the application.")
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: 400)
+                        
+                        HStack(spacing: 12) {
+                            Button("Retry") {
+                                initializeJournalStore()
+                            }
+                            .buttonStyle(.borderedProminent)
+                            
+                            Button("Quit") {
+                                NSApplication.shared.terminate(nil)
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+                    .padding(40)
+                    .frame(minWidth: 600, minHeight: 400)
+                    .task {
+                        initializeJournalStore()
+                    }
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResizeNotification)) { _ in

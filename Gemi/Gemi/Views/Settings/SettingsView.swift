@@ -441,7 +441,36 @@ class SettingsStore {
     }
     
     func resetToDefaults() {
-        // Reset all settings
+        // Reset all settings to default values
+        autoSaveInterval = 3.0
+        enableSounds = true
+        startupBehavior = .showTimeline
+        
+        theme = .system
+        accentColor = .blue
+        fontSize = .medium
+        showLineNumbers = false
+        
+        requireAuthOnLaunch = true
+        lockAfterMinutes = 15
+        enableAnalytics = false
+        
+        aiModel = "gemma-3n"
+        streamResponses = true
+        memoryLimit = 50
+        contextWindow = 4096
+        
+        autoBackup = true
+        backupFrequency = .daily
+        backupLocation = nil
+        
+        // Clear UserDefaults
+        let defaults = UserDefaults.standard
+        let domain = Bundle.main.bundleIdentifier!
+        defaults.removePersistentDomain(forName: domain)
+        defaults.synchronize()
+        
+        saveSettings()
     }
 }
 

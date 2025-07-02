@@ -87,7 +87,7 @@ final class JournalRAGService {
         
         do {
             // Delete old embeddings
-            try await DatabaseManager.shared.deleteMemoriesForEntry(entry.id)
+            try await DatabaseManager.shared().deleteMemoriesForEntry(entry.id)
             
             // Process as new
             await processNewEntry(entry)
@@ -179,7 +179,7 @@ final class JournalRAGService {
             }
             
             // Check if we have any processed entries
-            let memoryCount = try await DatabaseManager.shared.getMemoryCount()
+            let memoryCount = try await DatabaseManager.shared().getMemoryCount()
             if memoryCount == 0 {
                 // Try to process entries
                 try await processUnembeddedEntries()
@@ -194,9 +194,9 @@ final class JournalRAGService {
     
     /// Get statistics about the RAG system
     func getStatistics() async throws -> RAGStatistics {
-        let memoryCount = try await DatabaseManager.shared.getMemoryCount()
-        let entryCount = try await DatabaseManager.shared.getEntryCount()
-        let processedCount = try await DatabaseManager.shared.getEntriesWithEmbeddingsCount()
+        let memoryCount = try await DatabaseManager.shared().getMemoryCount()
+        let entryCount = try await DatabaseManager.shared().getEntryCount()
+        let processedCount = try await DatabaseManager.shared().getEntriesWithEmbeddingsCount()
         
         return RAGStatistics(
             totalEntries: entryCount,

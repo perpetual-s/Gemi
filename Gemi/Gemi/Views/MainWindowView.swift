@@ -358,10 +358,22 @@ struct MainWindowView: View {
         HStack(spacing: DesignSystem.Spacing.small) {
             if sidebarSelection == .timeline {
                 Menu {
-                    Button("Sort by Date") { }
-                    Button("Sort by Length") { }
+                    Button("Sort by Date (Newest First)") { 
+                        sortEntries(by: .dateDescending)
+                    }
+                    Button("Sort by Date (Oldest First)") { 
+                        sortEntries(by: .dateAscending)
+                    }
+                    Button("Sort by Length (Longest First)") { 
+                        sortEntries(by: .lengthDescending)
+                    }
+                    Button("Sort by Length (Shortest First)") { 
+                        sortEntries(by: .lengthAscending)
+                    }
                     Divider()
-                    Button("Export All") { }
+                    Button("Export All Entries...") { 
+                        exportAllEntries()
+                    }
                 } label: {
                     Image(systemName: "ellipsis.circle")
                         .font(.system(size: DesignSystem.Components.iconMedium))
@@ -1206,6 +1218,39 @@ private struct EncouragingActionButton: View {
         }
         .help(help)
     }
+}
+
+// MARK: - Helper Methods
+
+extension MainWindowView {
+    private func sortEntries(by order: SortOrder) {
+        sortOrder = order
+        
+        withAnimation(DesignSystem.Animation.spring) {
+            switch order {
+            case .dateDescending:
+                journalStore.entries.sort { $0.date > $1.date }
+            case .dateAscending:
+                journalStore.entries.sort { $0.date < $1.date }
+            case .lengthDescending:
+                journalStore.entries.sort { $0.content.count > $1.content.count }
+            case .lengthAscending:
+                journalStore.entries.sort { $0.content.count < $1.content.count }
+            }
+        }
+        
+        HapticFeedback.selection()
+    }
+    
+}
+
+// MARK: - Supporting Types
+
+enum SortOrder {
+    case dateDescending
+    case dateAscending
+    case lengthDescending
+    case lengthAscending
 }
 
 // MARK: - Previews

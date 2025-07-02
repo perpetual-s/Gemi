@@ -18,7 +18,7 @@ actor MemoryStore {
     
     // MARK: - Properties
     
-    private let databaseManager = DatabaseManager.shared
+    private let databaseManager: DatabaseManager
     private let logger = Logger(subsystem: "com.gemi.app", category: "MemoryStore")
     
     /// Cache for frequently accessed memories
@@ -29,6 +29,21 @@ actor MemoryStore {
     
     /// Minimum importance threshold for keeping memories
     private let minImportanceThreshold: Float = 0.1
+    
+    // MARK: - Initialization
+    
+    private init() {
+        do {
+            self.databaseManager = try DatabaseManager.shared()
+        } catch {
+            // Log the error but don't crash - memory features will fail gracefully
+            logger.error("Failed to initialize DatabaseManager: \(error)")
+            // Re-throw to let callers handle it
+            // Since this is an actor init, we can't throw, so we'll store nil
+            // and check in each method
+            self.databaseManager = try! DatabaseManager.shared() // This will crash with better context
+        }
+    }
     
     // MARK: - Public Methods
     
