@@ -98,14 +98,12 @@ struct FloatingComposeView: View {
         HStack {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.tiny) {
                 Text("New Entry")
-                    .font(DesignSystem.Typography.title2)
-                    .elegantSerifStyle()
-                    .foregroundStyle(DesignSystem.Colors.textPrimary)
+                    .font(ModernDesignSystem.Typography.title2)
+                    .foregroundStyle(ModernDesignSystem.Colors.adaptiveTextPrimary)
                 
                 Text("Share your thoughts in this private, safe space")
-                    .font(DesignSystem.Typography.caption1)
-                    .diaryTypography()
-                    .foregroundStyle(DesignSystem.Colors.textSecondary)
+                    .font(ModernDesignSystem.Typography.caption)
+                    .foregroundStyle(ModernDesignSystem.Colors.adaptiveTextSecondary)
             }
             
             Spacer()
@@ -151,8 +149,7 @@ struct FloatingComposeView: View {
             // Text editor with encouraging typography
             TextEditor(text: $content)
                 .focused($isTextEditorFocused)
-                .font(DesignSystem.Typography.diaryBody)
-                .relaxedReadingStyle()
+                .font(ModernDesignSystem.Typography.journal)
                 .scrollContentBackground(.hidden)
                 .padding(DesignSystem.Spacing.large)
                 .onChange(of: content) { oldValue, newValue in
@@ -163,14 +160,12 @@ struct FloatingComposeView: View {
             if content.isEmpty {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
                     Text("What's on your mind today?")
-                        .font(DesignSystem.Typography.title3)
-                        .elegantSerifStyle()
-                        .foregroundStyle(DesignSystem.Colors.primary.opacity(0.7))
+                        .font(ModernDesignSystem.Typography.title3)
+                        .foregroundStyle(ModernDesignSystem.Colors.primary.opacity(0.7))
                     
                     Text("Share your thoughts, feelings, or experiences.\nThis is your private space to reflect and express yourself freely.")
-                        .font(DesignSystem.Typography.body)
-                        .diaryTypography()
-                        .foregroundStyle(DesignSystem.Colors.textPlaceholder)
+                        .font(ModernDesignSystem.Typography.body)
+                        .foregroundStyle(ModernDesignSystem.Colors.textPlaceholder)
                         .multilineTextAlignment(.leading)
                 }
                 .padding(DesignSystem.Spacing.large)
@@ -190,8 +185,7 @@ struct FloatingComposeView: View {
             // Word count
             HStack(spacing: DesignSystem.Spacing.tiny) {
                 Text("\(wordCount) \(wordCount == 1 ? "word" : "words")")
-                    .font(DesignSystem.Typography.caption1)
-                    .handwrittenStyle()
+                    .font(ModernDesignSystem.Typography.caption)
                     .foregroundStyle(wordCountColor)
                     .scaleEffect(wordCountPulse ? 1.2 : 1.0)
                     .animation(DesignSystem.Animation.supportiveEmphasis, value: wordCountPulse)

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 import os.log
 
 /// Ollama API response models
@@ -138,7 +139,7 @@ final class OllamaService {
     // MARK: - Private Properties
     
     private let baseURL = "http://localhost:11434"
-    private let modelName = "gemma2:2b"  // Using smaller Gemma 2B for better performance
+    private let modelName = "gemma3n:latest"  // Using Gemma 3n for hackathon
     private let embeddingModelName = "nomic-embed-text"  // Specialized embedding model
     
     private let session: URLSession
@@ -575,4 +576,204 @@ extension OllamaService {
         
         return modelList.models.map { $0.name }
     }
+    
+    // MARK: - Specialized Analysis Methods for Insights
+    
+    /// Analyze sentiment of journal entries
+    func analyzeSentiment(text: String) async throws -> SentimentAnalysis {
+        let prompt = """
+        Analyze the sentiment and emotions in this journal entry. Return a JSON response with:
+        - overall_sentiment: "positive", "negative", or "neutral"
+        - confidence: 0.0 to 1.0
+        - emotions: array of detected emotions with scores
+        - key_phrases: phrases that indicate the sentiment
+        
+        Journal entry: "\(text)"
+        
+        Respond ONLY with valid JSON, no other text.
+        """
+        
+        let response = try await generateChat(prompt: prompt)
+        
+        // Parse JSON response
+        guard let data = response.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            // Fallback if JSON parsing fails
+            return SentimentAnalysis(
+                overallSentiment: "neutral",
+                confidence: 0.5,
+                emotions: [],
+                keyPhrases: []
+            )
+        }
+        
+        return SentimentAnalysis(
+            overallSentiment: json["overall_sentiment"] as? String ?? "neutral",
+            confidence: json["confidence"] as? Double ?? 0.5,
+            emotions: parseEmotions(json["emotions"] as? [[String: Any]] ?? []),
+            keyPhrases: json["key_phrases"] as? [String] ?? []
+        )
+    }
+    
+    /// Extract topics from journal entries
+    func extractTopics(entries: [String]) async throws -> [Topic] {
+        let entriesText = entries.prefix(10).joined(separator: "\n\n---\n\n")
+        
+        let prompt = """
+        Extract the main topics and themes from these journal entries. Return a JSON response with:
+        - topics: array of topics, each with name, frequency (1-10), and related_words
+        
+        Journal entries:
+        \(entriesText)
+        
+        Respond ONLY with valid JSON array of topics.
+        """
+        
+        let response = try await generateChat(prompt: prompt)
+        
+        // Parse and return topics
+        guard let data = response.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let topicsData = json["topics"] as? [[String: Any]] else {
+            return []
+        }
+        
+        return topicsData.compactMap { topicData in
+            guard let name = topicData["name"] as? String,
+                  let frequency = topicData["frequency"] as? Int else {
+                return nil
+            }
+            
+            return Topic(
+                name: name,
+                frequency: frequency,
+                relatedWords: topicData["related_words"] as? [String] ?? []
+            )
+        }
+    }
+    
+    /// Generate personalized insights
+    func generateInsights(entries: [JournalEntry]) async throws -> [PersonalInsight] {
+        let recentEntries = entries.prefix(10).map { entry in
+            "Date: \(entry.date.formatted(date: .abbreviated, time: .omitted))\nMood: \(entry.mood ?? "unknown")\nContent: \(String(entry.content.prefix(200)))"
+        }.joined(separator: "\n\n---\n\n")
+        
+        let prompt = """
+        Based on these journal entries, generate 3-5 personalized insights about patterns, growth, and wellbeing.
+        Focus on:
+        - Happiness patterns (when/what makes them happy)
+        - Stress triggers and coping mechanisms
+        - Personal growth observations
+        - Relationship patterns
+        - Goal progress
+        
+        Return a JSON array of insights, each with:
+        - type: "happiness", "stress", "growth", "relationships", or "goals"
+        - title: short descriptive title (max 10 words)
+        - description: detailed insight (2-3 sentences)
+        - confidence: 0.0 to 1.0
+        
+        Journal entries:
+        \(recentEntries)
+        
+        Respond ONLY with valid JSON array.
+        """
+        
+        let response = try await generateChat(prompt: prompt)
+        
+        // Parse insights
+        guard let data = response.data(using: String.Encoding.utf8),
+              let insightsData = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+            return []
+        }
+        
+        return insightsData.compactMap { insightData in
+            guard let type = insightData["type"] as? String,
+                  let title = insightData["title"] as? String,
+                  let description = insightData["description"] as? String else {
+                return nil
+            }
+            
+            return PersonalInsight(
+                type: InsightType(rawValue: type) ?? .general,
+                title: title,
+                description: description,
+                confidence: insightData["confidence"] as? Double ?? 0.7,
+                date: Date()
+            )
+        }
+    }
+    
+    private func parseEmotions(_ emotionsData: [[String: Any]]) -> [Emotion] {
+        return emotionsData.compactMap { emotionData in
+            guard let name = emotionData["name"] as? String,
+                  let score = emotionData["score"] as? Double else {
+                return nil
+            }
+            
+            return Emotion(name: name, score: score)
+        }
+    }
+}
+
+// MARK: - Supporting Types for Insights
+
+struct SentimentAnalysis {
+    let overallSentiment: String
+    let confidence: Double
+    let emotions: [Emotion]
+    let keyPhrases: [String]
+}
+
+struct Emotion: Identifiable {
+    let id = UUID()
+    let name: String
+    let score: Double
+}
+
+struct Topic: Identifiable {
+    let id = UUID()
+    let name: String
+    let frequency: Int
+    let relatedWords: [String]
+}
+
+enum InsightType: String {
+    case happiness
+    case stress
+    case growth
+    case relationships
+    case goals
+    case general
+    
+    var icon: String {
+        switch self {
+        case .happiness: return "sun.max.fill"
+        case .stress: return "bolt.fill"
+        case .growth: return "arrow.up.right.circle.fill"
+        case .relationships: return "heart.fill"
+        case .goals: return "target"
+        case .general: return "lightbulb.fill"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .happiness: return .yellow
+        case .stress: return .red
+        case .growth: return .green
+        case .relationships: return .pink
+        case .goals: return .blue
+        case .general: return .purple
+        }
+    }
+}
+
+struct PersonalInsight: Identifiable {
+    let id = UUID()
+    let type: InsightType
+    let title: String
+    let description: String
+    let confidence: Double
+    let date: Date
 }

@@ -17,6 +17,12 @@ struct InsightsView: View {
     @State private var showingMemoryManager = false
     @State private var isAnalyzing = false
     @State private var insights: JournalInsights?
+    @State private var personalInsights: [PersonalInsight] = []
+    @State private var topics: [Topic] = []
+    @State private var moodData: [MoodDataPoint] = []
+    @State private var ollamaStatus: String = "Checking..."
+    
+    private let ollamaService = OllamaService.shared
     
     var body: some View {
         ScrollView {
@@ -32,6 +38,14 @@ struct InsightsView: View {
                 
                 // Writing Patterns
                 writingPatternsSection
+                
+                // Topics Word Cloud
+                if !topics.isEmpty {
+                    topicsSection
+                }
+                
+                // Writing Calendar
+                writingCalendarSection
                 
                 // AI Insights
                 aiInsightsSection
@@ -122,20 +136,60 @@ struct InsightsView: View {
                 .font(DesignSystem.Typography.title2)
                 .foregroundStyle(DesignSystem.Colors.textPrimary)
             
-            // Mood chart placeholder
-            RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
-                .fill(DesignSystem.Colors.backgroundSecondary)
+            if !moodData.isEmpty {
+                Chart(moodData) { dataPoint in
+                    LineMark(
+                        x: .value("Date", dataPoint.date),
+                        y: .value("Mood", dataPoint.moodScore)
+                    )
+                    .foregroundStyle(DesignSystem.Colors.primary)
+                    .interpolationMethod(.catmullRom)
+                    
+                    AreaMark(
+                        x: .value("Date", dataPoint.date),
+                        y: .value("Mood", dataPoint.moodScore)
+                    )
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [DesignSystem.Colors.primary.opacity(0.3), DesignSystem.Colors.primary.opacity(0.1)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .interpolationMethod(.catmullRom)
+                }
                 .frame(height: 200)
-                .overlay(
-                    VStack {
-                        Image(systemName: "chart.line.uptrend.xyaxis")
-                            .font(.system(size: 40))
-                            .foregroundStyle(DesignSystem.Colors.textTertiary)
-                        Text("Mood tracking coming soon")
-                            .font(DesignSystem.Typography.caption1)
-                            .foregroundStyle(DesignSystem.Colors.textTertiary)
+                .chartYScale(domain: 0...5)
+                .chartYAxis {
+                    AxisMarks(position: .leading) { value in
+                        AxisValueLabel {
+                            if let intValue = value.as(Int.self) {
+                                Text(moodLabel(for: intValue))
+                                    .font(DesignSystem.Typography.caption2)
+                            }
+                        }
                     }
+                }
+                .padding(DesignSystem.Spacing.medium)
+                .background(
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
+                        .fill(DesignSystem.Colors.backgroundSecondary)
                 )
+            } else {
+                RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
+                    .fill(DesignSystem.Colors.backgroundSecondary)
+                    .frame(height: 200)
+                    .overlay(
+                        VStack {
+                            Image(systemName: "chart.line.uptrend.xyaxis")
+                                .font(.system(size: 40))
+                                .foregroundStyle(DesignSystem.Colors.textTertiary)
+                            Text("Add mood to entries to see patterns")
+                                .font(DesignSystem.Typography.caption1)
+                                .foregroundStyle(DesignSystem.Colors.textTertiary)
+                        }
+                    )
+            }
         }
     }
     
@@ -159,7 +213,7 @@ struct InsightsView: View {
                 // Topics
                 InsightCard(
                     title: "Common Topics",
-                    description: "Personal growth, Work, Relationships",
+                    description: topics.prefix(3).map { $0.name }.joined(separator: ", "),
                     icon: "tag.circle.fill",
                     color: .pink
                 )
@@ -200,27 +254,57 @@ struct InsightsView: View {
                     RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
                         .fill(DesignSystem.Colors.backgroundSecondary)
                 )
-            } else if let insights = insights {
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.small) {
-                    ForEach(insights.patterns, id: \.self) { pattern in
-                        HStack(alignment: .top, spacing: DesignSystem.Spacing.small) {
-                            Image(systemName: "sparkle")
-                                .font(.system(size: 14))
-                                .foregroundStyle(DesignSystem.Colors.primary)
-                                .padding(.top, 2)
+            } else if !personalInsights.isEmpty {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
+                    ForEach(personalInsights) { insight in
+                        HStack(alignment: .top, spacing: DesignSystem.Spacing.medium) {
+                            Image(systemName: insight.type.icon)
+                                .font(.system(size: 20))
+                                .foregroundStyle(insight.type.color)
+                                .frame(width: 30)
                             
-                            Text(pattern)
-                                .font(DesignSystem.Typography.body)
-                                .foregroundStyle(DesignSystem.Colors.textPrimary)
+                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.tiny) {
+                                Text(insight.title)
+                                    .font(DesignSystem.Typography.callout)
+                                    .fontWeight(.medium)
+                                    .foregroundStyle(DesignSystem.Colors.textPrimary)
+                                
+                                Text(insight.description)
+                                    .font(DesignSystem.Typography.body)
+                                    .foregroundStyle(DesignSystem.Colors.textSecondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                
+                                HStack {
+                                    Text("Confidence: \(Int(insight.confidence * 100))%")
+                                        .font(DesignSystem.Typography.caption2)
+                                        .foregroundStyle(DesignSystem.Colors.textTertiary)
+                                    
+                                    Spacer()
+                                    
+                                    Text(insight.date.formatted(date: .abbreviated, time: .omitted))
+                                        .font(DesignSystem.Typography.caption2)
+                                        .foregroundStyle(DesignSystem.Colors.textTertiary)
+                                }
+                            }
                         }
+                        .padding(DesignSystem.Spacing.large)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
+                                .fill(DesignSystem.Colors.backgroundSecondary)
+                        )
                     }
                 }
-                .padding(DesignSystem.Spacing.large)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
-                        .fill(DesignSystem.Colors.backgroundSecondary)
-                )
+            } else if insights != nil {
+                Text("No insights available. Write more entries to see patterns.")
+                    .font(DesignSystem.Typography.body)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(DesignSystem.Spacing.large)
+                    .background(
+                        RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
+                            .fill(DesignSystem.Colors.backgroundSecondary)
+                    )
             }
         }
     }
@@ -283,20 +367,64 @@ struct InsightsView: View {
     
     private func analyzeJournal() async {
         isAnalyzing = true
+        defer { isAnalyzing = false }
         
-        // Simulate AI analysis
-        try? await Task.sleep(nanoseconds: 2_000_000_000)
+        // Check Ollama status
+        let isOllamaRunning = await ollamaService.checkOllamaStatus()
+        if !isOllamaRunning {
+            ollamaStatus = "Ollama not running. Please start Ollama to enable AI insights."
+            return
+        }
         
-        insights = JournalInsights(
-            patterns: [
-                "You tend to write more on weekends, especially Sunday evenings",
-                "Your mood improves after journaling about gratitude",
-                "You've been focusing on personal growth themes this month",
-                "Writing in the morning correlates with more positive entries"
-            ]
-        )
+        // Filter entries by time range
+        let filteredEntries = filterEntriesByTimeRange(journalStore.entries)
+        guard !filteredEntries.isEmpty else {
+            insights = JournalInsights(patterns: [])
+            return
+        }
         
-        isAnalyzing = false
+        // Generate mood data
+        moodData = generateMoodData(from: filteredEntries)
+        
+        do {
+            // Extract topics
+            if filteredEntries.count >= 3 {
+                let entriesText = filteredEntries.prefix(20).map { $0.content }
+                topics = try await ollamaService.extractTopics(entries: entriesText)
+            }
+            
+            // Generate personalized insights
+            if filteredEntries.count >= 5 {
+                personalInsights = try await ollamaService.generateInsights(entries: Array(filteredEntries.prefix(20)))
+            }
+            
+            // Basic pattern analysis (fallback)
+            var patterns: [String] = []
+            
+            // Writing frequency pattern
+            let dayFrequency = Dictionary(grouping: filteredEntries) { entry in
+                Calendar.current.component(.weekday, from: entry.createdAt)
+            }
+            if let mostFrequentDay = dayFrequency.max(by: { $0.value.count < $1.value.count }) {
+                let dayName = Calendar.current.weekdaySymbols[mostFrequentDay.key - 1]
+                patterns.append("You tend to write more on \(dayName)s")
+            }
+            
+            // Time of day pattern
+            let hourFrequency = Dictionary(grouping: filteredEntries) { entry in
+                Calendar.current.component(.hour, from: entry.createdAt)
+            }
+            if let mostFrequentHour = hourFrequency.max(by: { $0.value.count < $1.value.count }) {
+                let timeDescription = mostFrequentHour.key < 12 ? "mornings" : (mostFrequentHour.key < 17 ? "afternoons" : "evenings")
+                patterns.append("You're most active in the \(timeDescription)")
+            }
+            
+            insights = JournalInsights(patterns: patterns)
+            
+        } catch {
+            print("AI analysis failed: \(error)")
+            insights = JournalInsights(patterns: ["AI analysis unavailable. Please check Ollama connection."])
+        }
     }
     
     private func calculateStreak() -> Int {
@@ -347,6 +475,117 @@ struct InsightsView: View {
         
         return Calendar.current.weekdaySymbols[mostCommon - 1]
     }
+    
+    // MARK: - Topics Section
+    
+    private var topicsSection: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
+            Text("Topics & Themes")
+                .font(DesignSystem.Typography.title2)
+                .foregroundStyle(DesignSystem.Colors.textPrimary)
+            
+            // Simple word cloud visualization
+            InsightsFlowLayout(spacing: DesignSystem.Spacing.small) {
+                ForEach(topics.prefix(15)) { topic in
+                    Text(topic.name)
+                        .font(.system(size: CGFloat(12 + topic.frequency * 2)))
+                        .fontWeight(topic.frequency > 5 ? .medium : .regular)
+                        .foregroundStyle(topicColor(for: topic.frequency))
+                        .padding(.horizontal, DesignSystem.Spacing.small)
+                        .padding(.vertical, DesignSystem.Spacing.tiny)
+                        .background(
+                            Capsule()
+                                .fill(topicColor(for: topic.frequency).opacity(0.1))
+                        )
+                }
+            }
+            .padding(DesignSystem.Spacing.large)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
+                    .fill(DesignSystem.Colors.backgroundSecondary)
+            )
+        }
+    }
+    
+    // MARK: - Writing Calendar Section
+    
+    private var writingCalendarSection: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
+            Text("Writing Calendar")
+                .font(DesignSystem.Typography.title2)
+                .foregroundStyle(DesignSystem.Colors.textPrimary)
+            
+            // Simple calendar heatmap
+            CalendarHeatmap(entries: journalStore.entries)
+                .frame(height: 150)
+                .padding(DesignSystem.Spacing.medium)
+                .background(
+                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
+                        .fill(DesignSystem.Colors.backgroundSecondary)
+                )
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func filterEntriesByTimeRange(_ entries: [JournalEntry]) -> [JournalEntry] {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        switch selectedTimeRange {
+        case .week:
+            let weekAgo = calendar.date(byAdding: .day, value: -7, to: now)!
+            return entries.filter { $0.createdAt >= weekAgo }
+        case .month:
+            let monthAgo = calendar.date(byAdding: .month, value: -1, to: now)!
+            return entries.filter { $0.createdAt >= monthAgo }
+        case .year:
+            let yearAgo = calendar.date(byAdding: .year, value: -1, to: now)!
+            return entries.filter { $0.createdAt >= yearAgo }
+        case .all:
+            return entries
+        }
+    }
+    
+    private func generateMoodData(from entries: [JournalEntry]) -> [MoodDataPoint] {
+        let entriesWithMood = entries.filter { $0.mood != nil }
+        
+        return entriesWithMood.map { entry in
+            let moodScore: Double = {
+                switch entry.mood?.lowercased() {
+                case "very happy", "excited", "joyful": return 5.0
+                case "happy", "good", "content": return 4.0
+                case "neutral", "okay", "fine": return 3.0
+                case "sad", "down", "tired": return 2.0
+                case "very sad", "depressed", "anxious": return 1.0
+                default: return 3.0
+                }
+            }()
+            
+            return MoodDataPoint(date: entry.createdAt, moodScore: moodScore)
+        }.sorted { $0.date < $1.date }
+    }
+    
+    private func moodLabel(for score: Int) -> String {
+        switch score {
+        case 5: return "😊"
+        case 4: return "🙂"
+        case 3: return "😐"
+        case 2: return "😔"
+        case 1: return "😢"
+        default: return ""
+        }
+    }
+    
+    private func topicColor(for frequency: Int) -> Color {
+        switch frequency {
+        case 8...10: return DesignSystem.Colors.primary
+        case 5...7: return .purple
+        case 3...4: return .blue
+        default: return DesignSystem.Colors.textSecondary
+        }
+    }
 }
 
 // MARK: - Supporting Types
@@ -360,6 +599,12 @@ enum TimeRange: String, CaseIterable {
 
 struct JournalInsights {
     let patterns: [String]
+}
+
+struct MoodDataPoint: Identifiable {
+    let id = UUID()
+    let date: Date
+    let moodScore: Double
 }
 
 // MARK: - Components
@@ -429,6 +674,174 @@ struct InsightCard: View {
             RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
                 .fill(DesignSystem.Colors.backgroundSecondary)
         )
+    }
+}
+
+// MARK: - InsightsFlowLayout
+
+struct InsightsFlowLayout: Layout {
+    var spacing: CGFloat = 8
+    
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let result = FlowResult(
+            in: proposal.replacingUnspecifiedDimensions().width,
+            subviews: subviews,
+            spacing: spacing
+        )
+        return result.size
+    }
+    
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let result = FlowResult(
+            in: bounds.width,
+            subviews: subviews,
+            spacing: spacing
+        )
+        for (index, frame) in result.frames.enumerated() {
+            subviews[index].place(at: CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY), proposal: ProposedViewSize(frame.size))
+        }
+    }
+    
+    struct FlowResult {
+        var frames: [CGRect] = []
+        var size: CGSize = .zero
+        
+        init(in maxWidth: CGFloat, subviews: Subviews, spacing: CGFloat) {
+            var currentX: CGFloat = 0
+            var currentY: CGFloat = 0
+            var lineHeight: CGFloat = 0
+            var maxX: CGFloat = 0
+            
+            for subview in subviews {
+                let dimensions = subview.dimensions(in: ProposedViewSize(width: nil, height: nil))
+                
+                if currentX + dimensions.width > maxWidth && currentX > 0 {
+                    currentX = 0
+                    currentY += lineHeight + spacing
+                    lineHeight = 0
+                }
+                
+                frames.append(CGRect(x: currentX, y: currentY, width: dimensions.width, height: dimensions.height))
+                lineHeight = max(lineHeight, dimensions.height)
+                currentX += dimensions.width + spacing
+                maxX = max(maxX, currentX - spacing)
+            }
+            
+            size = CGSize(width: maxX, height: currentY + lineHeight)
+        }
+    }
+}
+
+// MARK: - CalendarHeatmap
+
+struct CalendarHeatmap: View {
+    let entries: [JournalEntry]
+    
+    private let columns = 7
+    private let cellSize: CGFloat = 15
+    private let cellSpacing: CGFloat = 2
+    
+    var body: some View {
+        GeometryReader { geometry in
+            let weeks = calculateWeeks()
+            let maxEntriesPerDay = weeks.flatMap { $0 }.compactMap { $0?.count }.max() ?? 1
+            
+            HStack(alignment: .top, spacing: cellSpacing) {
+                // Weekday labels
+                VStack(spacing: cellSpacing) {
+                    ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { day in
+                        Text(day)
+                            .font(.system(size: 10))
+                            .foregroundStyle(DesignSystem.Colors.textTertiary)
+                            .frame(width: cellSize, height: cellSize)
+                    }
+                }
+                
+                // Calendar cells
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: cellSpacing) {
+                        ForEach(0..<weeks.count, id: \.self) { weekIndex in
+                            VStack(spacing: cellSpacing) {
+                                ForEach(0..<7) { dayIndex in
+                                    if let dayData = weeks[weekIndex][dayIndex] {
+                                        CalendarCell(
+                                            count: dayData.count,
+                                            maxCount: maxEntriesPerDay,
+                                            date: dayData.date
+                                        )
+                                    } else {
+                                        Color.clear
+                                            .frame(width: cellSize, height: cellSize)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .padding()
+        }
+    }
+    
+    private func calculateWeeks() -> [[DayData?]] {
+        let calendar = Calendar.current
+        let today = Date()
+        let twelveWeeksAgo = calendar.date(byAdding: .weekOfYear, value: -12, to: today)!
+        
+        // Group entries by date
+        let entriesByDate = Dictionary(grouping: entries) { entry in
+            calendar.startOfDay(for: entry.createdAt)
+        }
+        
+        var weeks: [[DayData?]] = []
+        var currentDate = twelveWeeksAgo
+        
+        while currentDate <= today {
+            var week: [DayData?] = []
+            
+            for _ in 0..<7 {
+                let dayEntries = entriesByDate[calendar.startOfDay(for: currentDate)] ?? []
+                if currentDate <= today {
+                    week.append(DayData(date: currentDate, count: dayEntries.count))
+                } else {
+                    week.append(nil)
+                }
+                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
+            }
+            
+            weeks.append(week)
+        }
+        
+        return weeks
+    }
+    
+    struct DayData {
+        let date: Date
+        let count: Int
+    }
+}
+
+struct CalendarCell: View {
+    let count: Int
+    let maxCount: Int
+    let date: Date
+    
+    private let cellSize: CGFloat = 15
+    
+    var body: some View {
+        RoundedRectangle(cornerRadius: 2)
+            .fill(cellColor)
+            .frame(width: cellSize, height: cellSize)
+            .help("\(count) entries on \(date.formatted(date: .abbreviated, time: .omitted))")
+    }
+    
+    private var cellColor: Color {
+        if count == 0 {
+            return DesignSystem.Colors.backgroundTertiary
+        }
+        
+        let intensity = Double(count) / Double(max(maxCount, 1))
+        return DesignSystem.Colors.primary.opacity(0.2 + (intensity * 0.8))
     }
 }
 

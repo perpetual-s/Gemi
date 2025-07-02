@@ -14,69 +14,69 @@ enum ModernDesignSystem {
     // MARK: - Colors
     
     enum Colors {
-        // MARK: Primary Colors
+        // MARK: Primary Colors - Google DeepMind Pastel Blue Theme
         
-        /// Primary accent - Soft blue (#5B8DEE)
-        static let primary = Color(hex: "5B8DEE")
+        /// Primary accent - Warm pastel blue (#5B9BD5)
+        static let primary = Color(hex: "5B9BD5")
         
-        /// Primary hover state
-        static let primaryHover = Color(hex: "4A7DD8")
+        /// Primary hover state - Slightly deeper
+        static let primaryHover = Color(hex: "4A8BC2")
         
-        /// Primary pressed state
-        static let primaryPressed = Color(hex: "3A6DC8")
+        /// Primary pressed state - Pressed blue
+        static let primaryPressed = Color(hex: "3A7BAF")
         
-        // MARK: Background Colors
+        // MARK: Background Colors - Warm Paper & Cozy Evening
         
-        /// Pure white background
-        static let backgroundPrimary = Color(hex: "FFFFFF")
+        /// Warm paper background - Cream-white with warmth (#FEFCF8)
+        static let backgroundPrimary = Color(hex: "FEFCF8")
         
-        /// Off-white background
-        static let backgroundSecondary = Color(hex: "FAFAFA")
+        /// Cozy surface - Secondary warm background (#F8F6F2)
+        static let backgroundSecondary = Color(hex: "F8F6F2")
         
-        /// Tertiary background for depth
-        static let backgroundTertiary = Color(hex: "F5F5F5")
+        /// Journal page - Entry background with warmth (#FCFAF6)
+        static let backgroundTertiary = Color(hex: "FCFAF6")
         
-        /// Canvas background
-        static let canvas = Color(hex: "F8F8F8")
+        /// Warm canvas background
+        static let canvas = Color(hex: "FEFCF8")
         
-        // MARK: Dark Mode Backgrounds
+        // MARK: Dark Mode Backgrounds - Cozy Evening
         
-        /// OLED black background (dark mode)
-        static let backgroundPrimaryDark = Color(hex: "000000")
+        /// Cozy evening primary - Deep warm brown (#1C1A17)
+        static let backgroundPrimaryDark = Color(hex: "1C1A17")
         
-        /// Near-black background (dark mode)
-        static let backgroundSecondaryDark = Color(hex: "0A0A0A")
+        /// Cozy evening secondary - Warmer dark surface (#252219)
+        static let backgroundSecondaryDark = Color(hex: "252219")
         
-        /// Elevated surface (dark mode)
-        static let backgroundTertiaryDark = Color(hex: "141414")
+        /// Journal page dark - Entry background (#1F1D1A)
+        static let backgroundTertiaryDark = Color(hex: "1F1D1A")
         
-        /// Canvas dark
-        static let canvasDark = Color(hex: "050505")
+        /// Canvas evening - Warm dark canvas
+        static let canvasDark = Color(hex: "1C1A17")
         
-        // MARK: Text Colors
+        // MARK: Text Colors - Warm & Readable
         
-        /// Rich black text
-        static let textPrimary = Color(hex: "1A1A1A")
+        /// Warm text - Primary text with brown undertones (#2D2B27)
+        static let textPrimary = Color(hex: "2D2B27")
         
-        /// Secondary gray text
-        static let textSecondary = Color(hex: "6B7280")
+        /// Softer text - Secondary with warmth (#5D5B57)
+        static let textSecondary = Color(hex: "5D5B57")
         
-        /// Tertiary light gray text
-        static let textTertiary = Color(hex: "9CA3AF")
+        /// Gentle text - Tertiary warm gray (#8D8B87)
+        static let textTertiary = Color(hex: "8D8B87")
         
-        /// Placeholder text
-        static let textPlaceholder = Color(hex: "C4C4C4")
+        /// Placeholder text - Subtle warm tone
+        static let textPlaceholder = Color(hex: "B8B6B2")
         
-        // MARK: Dark Mode Text
+        // MARK: Dark Mode Text - Warm Evening Tones
         
-        /// Primary text (dark mode)
-        static let textPrimaryDark = Color(hex: "FFFFFF")
+        /// Primary text (dark mode) - Warm cream (#E8E6E2)
+        static let textPrimaryDark = Color(hex: "E8E6E2")
         
-        /// Secondary text (dark mode)
-        static let textSecondaryDark = Color(hex: "A1A1AA")
+        /// Secondary text (dark mode) - Softer warm (#B8B6B2)
+        static let textSecondaryDark = Color(hex: "B8B6B2")
         
-        /// Tertiary text (dark mode)
-        static let textTertiaryDark = Color(hex: "71717A")
+        /// Tertiary text (dark mode) - Gentle warm (#888684)
+        static let textTertiaryDark = Color(hex: "888684")
         
         // MARK: Mood Accent Colors
         
@@ -123,10 +123,21 @@ enum ModernDesignSystem {
         /// Border dark mode
         static let borderDark = Color(hex: "2A2A2A")
         
-        /// Shadow colors
-        static let shadow = Color.black.opacity(0.08)
-        static let shadowMedium = Color.black.opacity(0.12)
-        static let shadowHeavy = Color.black.opacity(0.16)
+        // MARK: Shadow Colors - Warm & Defined
+        
+        /// Warm shadow - Primary with brown tones
+        static let warmShadow = Color(hex: "C4B8A8")
+        
+        /// Deep shadow - Deeper brown structure
+        static let deepShadow = Color(hex: "B4A898")
+        
+        /// Gentle shadow - Subtle warm shadows
+        static let gentleShadow = Color(hex: "D4C8B8")
+        
+        /// Legacy shadow support
+        static let shadow = warmShadow.opacity(0.15)
+        static let shadowMedium = warmShadow.opacity(0.25)
+        static let shadowHeavy = deepShadow.opacity(0.35)
         
         // MARK: Glass Morphism
         
@@ -137,66 +148,128 @@ enum ModernDesignSystem {
         /// Glass border
         static let glassBorder = Color.white.opacity(0.2)
         static let glassBorderDark = Color.white.opacity(0.1)
+        
+        // MARK: - Adaptive Color Support
+        
+        /// Adaptive background that switches between light and dark
+        static var adaptiveBackground: Color {
+            Color(light: backgroundPrimary, dark: backgroundPrimaryDark)
+        }
+        
+        /// Adaptive secondary background
+        static var adaptiveBackgroundSecondary: Color {
+            Color(light: backgroundSecondary, dark: backgroundSecondaryDark)
+        }
+        
+        /// Adaptive tertiary background  
+        static var adaptiveBackgroundTertiary: Color {
+            Color(light: backgroundTertiary, dark: backgroundTertiaryDark)
+        }
+        
+        /// Adaptive primary text
+        static var adaptiveTextPrimary: Color {
+            Color(light: textPrimary, dark: textPrimaryDark)
+        }
+        
+        /// Adaptive secondary text
+        static var adaptiveTextSecondary: Color {
+            Color(light: textSecondary, dark: textSecondaryDark)
+        }
+        
+        /// Adaptive tertiary text
+        static var adaptiveTextTertiary: Color {
+            Color(light: textTertiary, dark: textTertiaryDark)
+        }
     }
     
     // MARK: - Typography
     
     enum Typography {
-        // MARK: Font Families
+        // MARK: Font Families - Cozy Coffee Shop Warmth
         
-        /// Headers - SF Pro Display or Inter
+        /// Headers - SF Pro Display for structured titles
         static let headerFamily = "SF Pro Display"
-        static let headerFallback = "Inter"
         
-        /// Body text - SF Pro Text
-        static let bodyFamily = "SF Pro Text"
+        /// Body text - SF Pro Rounded for warmth and friendliness
+        static let bodyFamily = "SF Pro Rounded"
+        
+        /// Journal content - New York for personal, handwritten feel  
+        static let journalFamily = "New York"
+        
+        /// Technical/UI text - SF Pro Text for interface elements
+        static let uiFamily = "SF Pro Text"
         
         /// Monospace - SF Mono
         static let monoFamily = "SF Mono"
         
-        // MARK: Font Sizes with 1.25 Ratio Scale
+        // MARK: Font Sizes with 1.25 Ratio Scale (Warmer Sizing)
         
-        /// Display (45px)
-        static let displaySize: CGFloat = 45
+        /// Display (40px) - Reduced from 45 for more intimate feel
+        static let displaySize: CGFloat = 40
         
-        /// Title 1 (36px)
-        static let title1Size: CGFloat = 36
+        /// Title 1 (32px) - Reduced from 36 for cozy warmth
+        static let title1Size: CGFloat = 32
         
-        /// Title 2 (28px)
-        static let title2Size: CGFloat = 28
+        /// Title 2 (26px) - Reduced from 28 for comfortable reading
+        static let title2Size: CGFloat = 26
         
-        /// Title 3 (22px)
-        static let title3Size: CGFloat = 22
+        /// Title 3 (21px) - Slightly reduced for warmth
+        static let title3Size: CGFloat = 21
         
-        /// Headline (18px)
+        /// Headline (18px) - Comfortable emphasis
         static let headlineSize: CGFloat = 18
         
-        /// Body (14px base)
-        static let bodySize: CGFloat = 14
+        /// Body (16px) - Increased from 14 for better readability
+        static let bodySize: CGFloat = 16
         
-        /// Callout (16px)
-        static let calloutSize: CGFloat = 16
+        /// Callout (15px) - Reduced from 16 for subtlety
+        static let calloutSize: CGFloat = 15
         
-        /// Caption (12px)
-        static let captionSize: CGFloat = 12
+        /// Caption (13px) - Increased from 12 for warmth
+        static let captionSize: CGFloat = 13
         
-        /// Footnote (11px)
+        /// Footnote (11px) - Standard small text
         static let footnoteSize: CGFloat = 11
         
-        // MARK: Font Styles
+        // MARK: Font Styles - Cozy Coffee Shop Implementation
         
-        static let display = Font.custom(headerFamily, size: displaySize).weight(.light)
-        static let title1 = Font.custom(headerFamily, size: title1Size).weight(.semibold)
-        static let title2 = Font.custom(headerFamily, size: title2Size).weight(.medium)
-        static let title3 = Font.custom(headerFamily, size: title3Size).weight(.medium)
-        static let headline = Font.custom(bodyFamily, size: headlineSize).weight(.semibold)
-        static let body = Font.custom(bodyFamily, size: bodySize).weight(.regular)
-        static let callout = Font.custom(bodyFamily, size: calloutSize).weight(.regular)
-        static let caption = Font.custom(bodyFamily, size: captionSize).weight(.regular)
-        static let footnote = Font.custom(bodyFamily, size: footnoteSize).weight(.regular)
-        static let mono = Font.custom(monoFamily, size: bodySize).weight(.regular)
+        /// Display text for major headings - elegant but approachable
+        static let display = Font.custom(headerFamily, size: displaySize, relativeTo: .largeTitle).weight(.light)
         
-        // MARK: Line Heights
+        /// Primary titles - confident but warm
+        static let title1 = Font.custom(headerFamily, size: title1Size, relativeTo: .title).weight(.medium)
+        
+        /// Secondary titles - structured yet friendly
+        static let title2 = Font.custom(headerFamily, size: title2Size, relativeTo: .title2).weight(.medium)
+        
+        /// Section headings - approachable emphasis
+        static let title3 = Font.custom(bodyFamily, size: title3Size, relativeTo: .title3).weight(.semibold)
+        
+        /// Important text - warm prominence
+        static let headline = Font.custom(bodyFamily, size: headlineSize, relativeTo: .headline).weight(.medium)
+        
+        /// Primary body text - cozy and readable
+        static let body = Font.custom(bodyFamily, size: bodySize, relativeTo: .body).weight(.regular)
+        
+        /// Secondary text - gentle information
+        static let callout = Font.custom(bodyFamily, size: calloutSize, relativeTo: .callout).weight(.regular)
+        
+        /// Small text - subtle but warm
+        static let caption = Font.custom(bodyFamily, size: captionSize, relativeTo: .caption).weight(.regular)
+        
+        /// Tiny text - whisper-soft details
+        static let footnote = Font.custom(bodyFamily, size: footnoteSize, relativeTo: .footnote).weight(.light)
+        
+        /// Journal writing - personal and intimate
+        static let journal = Font.custom(journalFamily, size: bodySize + 2, relativeTo: .body).weight(.regular)
+        
+        /// Interface elements - clean and functional
+        static let ui = Font.custom(uiFamily, size: bodySize, relativeTo: .body).weight(.regular)
+        
+        /// Technical/code text - structured clarity
+        static let mono = Font.custom(monoFamily, size: bodySize - 1, relativeTo: .body).weight(.regular)
+        
+        // MARK: Line Heights - Generous Breathing Room
         
         static let displayLineHeight: CGFloat = 1.1
         static let headingLineHeight: CGFloat = 1.2
@@ -376,9 +449,31 @@ enum ModernDesignSystem {
     }
 }
 
-// MARK: - Color Extension
+// MARK: - Color Extensions
 
 extension Color {
+    /// Create an adaptive color that switches between light and dark mode
+    init(light: Color, dark: Color) {
+        #if canImport(AppKit)
+        self = Color(NSColor(name: nil) { appearance in
+            return appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? 
+                NSColor(dark) : NSColor(light)
+        })
+        #else
+        self = light
+        #endif
+    }
+    
+    /// Get NSColor representation for macOS
+    var nsColor: NSColor {
+        return NSColor(self)
+    }
+}
+
+// MARK: - Hex Color Support
+
+extension Color {
+    /// Create color from hex string
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0
@@ -394,7 +489,7 @@ extension Color {
         default:
             (a, r, g, b) = (1, 1, 1, 0)
         }
-        
+
         self.init(
             .sRGB,
             red: Double(r) / 255,
