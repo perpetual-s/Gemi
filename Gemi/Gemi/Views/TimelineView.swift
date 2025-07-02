@@ -19,6 +19,7 @@ struct TimelineView: View {
     
     /// The journal store containing all entries (injected via @Environment)
     @Environment(JournalStore.self) private var journalStore
+    @Environment(NavigationModel.self) private var navigationModel
     @Environment(PerformanceOptimizer.self) private var performanceOptimizer
     @Environment(AccessibilityManager.self) private var accessibilityManager
     @Environment(KeyboardNavigationState.self) private var keyboardNavigation
@@ -170,10 +171,11 @@ struct TimelineView: View {
             action: {
                 withAnimation(DesignSystem.Animation.encouragingSpring) {
                     selectedEntry = entry
+                    navigationModel.openEntry(entry)
                 }
             },
             onEdit: {
-                // TODO: Edit functionality
+                navigationModel.openEntry(entry)
             },
             onDelete: {
                 entryToDelete = entry

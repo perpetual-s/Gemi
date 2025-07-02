@@ -7,12 +7,8 @@
 
 import SwiftUI
 
-/// ContentView presents Gemi's stunning floating interface with a modern macOS design
+/// ContentView presents Gemi's simplified navigation architecture focusing on journaling
 struct ContentView: View {
-    
-    // MARK: - Accessibility
-    
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     // MARK: - Dependencies
     
@@ -20,244 +16,58 @@ struct ContentView: View {
     @Environment(PerformanceOptimizer.self) private var performanceOptimizer
     @Environment(AccessibilityManager.self) private var accessibilityManager
     @Environment(KeyboardNavigationState.self) private var keyboardNavigation
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     // MARK: - State
     
+    @State private var navigationModel = NavigationModel()
     @State private var selectedEntry: JournalEntry?
-    @State private var isComposingNewEntry = false
-    @State private var showingChat = false
-    @State private var sidebarSelection: NavigationItem = .timeline
-    @FocusState private var focusedField: FocusableField?
+    @State private var showingAIAssistant = false
+    @State private var showingSettings = false
+    @FocusState private var isSearchFocused: Bool
     
     // MARK: - Body
     
     var body: some View {
-        HStack(spacing: 0) {
-            // Translucent sidebar with vibrancy
-            translucntSidebar
-                .frame(width: 280)
-            
-            // Main content area with floating panel
-            mainContentArea
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(canvasBackground)
-        .overlay(alignment: .bottomTrailing) {
-            // Floating action button for chat
-            if !showingChat {
-                ChatFloatingActionButton {
-                    showingChat = true
-                    // Haptic feedback on button press
+        VStack(spacing: 0) {
+            // Top toolbar
+            TopToolbar(
+                navigationModel: navigationModel,
+                isSearchFocused: $isSearchFocused,
+                onNewEntry: {
+                    navigationModel.openNewEntry()
                 }
-                .padding(32)
-                .transition(.asymmetric(
-                    insertion: .scale.combined(with: .opacity),
-                    removal: .scale.combined(with: .opacity)
-                ))
+            )
+            
+            // Main content with sidebar
+            HStack(spacing: 0) {
+                // Simplified sidebar
+                SimplifiedSidebar()
+                    .environment(navigationModel)
+                
+                // Content area
+                mainContentArea
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .overlay {
-            // Chat overlay
-            ChatView(isPresented: $showingChat)
-        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(DesignSystem.Colors.backgroundPrimary)
+        .environment(navigationModel)
         .onAppear {
             Task {
                 await journalStore.refreshEntries()
+                updateWritingStreak()
             }
         }
+        .onChange(of: journalStore.entries.count) { _, _ in
+            updateWritingStreak()
+        }
         .onKeyPress(.escape) {
-            if isComposingNewEntry {
-                withAnimation(DesignSystem.Animation.cozySettle) {
-                    isComposingNewEntry = false
-                }
+            if navigationModel.showingEditor {
+                navigationModel.closeEditor()
                 return .handled
             }
             return .ignored
-        }
-    }
-    
-    // MARK: - Canvas Background
-    
-    @ViewBuilder
-    private var canvasBackground: some View {
-        ZStack {
-            // Two-tone background matching sidebar and content
-            HStack(spacing: 0) {
-                // Left side - matching sidebar color
-                DesignSystem.Colors.sidebarBackground
-                    .frame(width: 280)
-                
-                // Right side - lighter content area
-                LinearGradient(
-                    colors: [
-                        DesignSystem.Colors.backgroundPrimary,
-                        DesignSystem.Colors.canvasBackground
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            }
-            
-            // Subtle noise texture overlay
-            Rectangle()
-                .fill(.regularMaterial)
-                .opacity(0.02)
-        }
-        .ignoresSafeArea()
-    }
-    
-    // MARK: - Translucent Sidebar
-    
-    @ViewBuilder
-    private var translucntSidebar: some View {
-        ZStack {
-            // Vibrancy background
-            VisualEffectBlur(material: .sidebar, blendingMode: .behindWindow)
-            
-            VStack(spacing: 0) {
-                // App identity section
-                appIdentitySection
-                    .padding(.horizontal, 20)
-                    .padding(.top, 28)
-                    .padding(.bottom, 20)
-                
-                Divider()
-                    .opacity(0.3)
-                
-                // Navigation items
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 8) {
-                        ForEach(NavigationItem.allCases, id: \.self) { item in
-                            navigationItem(item)
-                        }
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 20)
-                }
-                
-                Spacer(minLength: 0)
-                
-                // Bottom section
-                bottomSection
-                    .padding(20)
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private var appIdentitySection: some View {
-        VStack(spacing: 16) {
-            // App icon and name
-            HStack(spacing: 12) {
-                // Beautiful gradient icon
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color(red: 0.36, green: 0.61, blue: 0.84),
-                                    Color(red: 0.48, green: 0.70, blue: 0.90)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 48, height: 48)
-                    
-                    Image(systemName: "book.pages.fill")
-                        .font(.system(size: 24, weight: .medium))
-                        .foregroundStyle(.white)
-                }
-                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Gemi")
-                        .font(.system(size: 20, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.primary)
-                    
-                    Text("AI Journal")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.secondary)
-                }
-                
-                Spacer()
-            }
-            
-            // Quick action buttons
-            HStack(spacing: 8) {
-                QuickActionButton(
-                    icon: "square.and.pencil",
-                    label: "New Entry",
-                    color: Color(red: 0.36, green: 0.61, blue: 0.84)
-                ) {
-                    isComposingNewEntry = true
-                    sidebarSelection = .timeline
-                    // Haptic feedback on button press
-                }
-                .keyboardShortcut("n", modifiers: .command)
-                
-                QuickActionButton(
-                    icon: "message.fill",
-                    label: "Chat",
-                    color: Color(red: 0.48, green: 0.70, blue: 0.90)
-                ) {
-                    showingChat = true
-                    // Haptic feedback on button press
-                }
-                .keyboardShortcut("t", modifiers: .command)
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private func navigationItem(_ item: NavigationItem) -> some View {
-        NavigationButton(
-            item: item,
-            isSelected: sidebarSelection == item
-        ) {
-            withAnimation(DesignSystem.Animation.encouragingSpring) {
-                sidebarSelection = item
-            }
-            HapticFeedback.selection()
-        }
-    }
-    
-    @ViewBuilder
-    private var bottomSection: some View {
-        VStack(spacing: 16) {
-            Divider()
-                .opacity(0.3)
-            
-            // Entry count
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("\(journalStore.entries.count)")
-                        .font(.system(size: 24, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.primary)
-                    
-                    Text("journal entries")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.secondary)
-                }
-                
-                Spacer()
-                
-                // Settings button
-                Button {
-                    // Settings action
-                } label: {
-                    Image(systemName: "gearshape.fill")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 36, height: 36)
-                        .background(
-                            Circle()
-                                .fill(Color.primary.opacity(0.08))
-                        )
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
         }
     }
     
@@ -266,447 +76,77 @@ struct ContentView: View {
     @ViewBuilder
     private var mainContentArea: some View {
         ZStack {
-            // Content based on selection
-            floatingPanel
-                .padding(40)
-        }
-    }
-    
-    @ViewBuilder
-    private var floatingPanel: some View {
-        VStack(spacing: 0) {
-            // Panel content
-            ZStack {
-                // Background
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(DesignSystem.Colors.backgroundSecondary)
+            switch navigationModel.selectedSection {
+            case .today:
+                TodayView()
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .move(edge: .trailing)),
+                        removal: .opacity.combined(with: .move(edge: .leading))
+                    ))
                 
-                // Content
-                VStack(spacing: 0) {
-                    // Header
-                    panelHeader
-                    
-                    Divider()
-                        .opacity(0.1)
-                    
-                    // Main content
-                    panelContent
-                }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-            .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
-            .shadow(color: Color.black.opacity(0.08), radius: 24, x: 0, y: 8)
-            .shadow(color: Color.black.opacity(0.08), radius: 48, x: 0, y: 16)
-        }
-    }
-    
-    @ViewBuilder
-    private var panelHeader: some View {
-        HStack(spacing: 16) {
-            // Icon
-            Image(systemName: isComposingNewEntry && sidebarSelection == .timeline ? "square.and.pencil" : sidebarSelection.icon)
-                .font(.system(size: 24, weight: .medium))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.36, green: 0.61, blue: 0.84),
-                            Color(red: 0.48, green: 0.70, blue: 0.90)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .animation(.easeInOut(duration: 0.2), value: sidebarSelection)
-                .animation(.easeInOut(duration: 0.2), value: isComposingNewEntry)
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(isComposingNewEntry && sidebarSelection == .timeline ? "New Entry" : sidebarSelection.title)
-                    .font(.system(size: 28, weight: .semibold, design: .serif))
-                    .foregroundStyle(.primary)
-                    .animation(.easeInOut(duration: 0.2), value: sidebarSelection)
-                    .animation(.easeInOut(duration: 0.2), value: isComposingNewEntry)
-                
-                Text(isComposingNewEntry && sidebarSelection == .timeline ? "Share your thoughts in this private, safe space" : (sidebarSelection.subtitle ?? ""))
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .animation(.easeInOut(duration: 0.2), value: sidebarSelection)
-                    .animation(.easeInOut(duration: 0.2), value: isComposingNewEntry)
-            }
-            
-            Spacer()
-            
-            // Action buttons
-            HStack(spacing: 8) {
-                if sidebarSelection == .timeline && !isComposingNewEntry {
-                    Button {
-                        // Search action
-                    } label: {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 36, height: 36)
-                            .background(
-                                Circle()
-                                    .fill(Color.primary.opacity(0.08))
-                            )
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }
-        }
-        .padding(.horizontal, 32)
-        .padding(.vertical, 24)
-        .background(DesignSystem.Colors.backgroundTertiary)
-    }
-    
-    @ViewBuilder
-    private var panelContent: some View {
-        ZStack {
-            if isComposingNewEntry && sidebarSelection == .timeline {
-                FloatingComposeView(entry: .constant(nil), onSave: {
-                    withAnimation(DesignSystem.Animation.cozySettle) {
-                        isComposingNewEntry = false
-                    }
-                    Task {
-                        await journalStore.refreshEntries()
-                    }
-                }, onCancel: {
-                    withAnimation(DesignSystem.Animation.cozySettle) {
-                        isComposingNewEntry = false
-                    }
-                })
-                .padding(32)
-                .transition(.asymmetric(
-                    insertion: .opacity.combined(with: .offset(y: -20)),
-                    removal: .opacity.combined(with: .offset(y: 20))
-                ))
-            } else {
-                switch sidebarSelection {
-                case .timeline:
-                    TimelineView(selectedEntry: $selectedEntry) {
-                        withAnimation(DesignSystem.Animation.cozySettle) {
-                            isComposingNewEntry = true
+            case .entries:
+                if navigationModel.showingEditor {
+                    FloatingComposeView(entry: .constant(navigationModel.editingEntry), onSave: {
+                        navigationModel.closeEditor()
+                        Task {
+                            await journalStore.refreshEntries()
                         }
+                    }, onCancel: {
+                        navigationModel.closeEditor()
+                    })
+                    .padding(32)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .offset(y: -20)),
+                        removal: .opacity.combined(with: .offset(y: 20))
+                    ))
+                } else {
+                    TimelineView(selectedEntry: $selectedEntry) {
+                        navigationModel.openNewEntry()
                     }
                     .padding(32)
                     .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .offset(x: 30)),
-                        removal: .opacity.combined(with: .offset(x: -30))
+                        insertion: .opacity.combined(with: .move(edge: .trailing)),
+                        removal: .opacity.combined(with: .move(edge: .leading))
                     ))
-                case .chat:
-                    emptyChatView
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .offset(x: 30)),
-                            removal: .opacity.combined(with: .offset(x: -30))
-                        ))
-                case .memories:
-                    memoriesView
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .offset(x: 30)),
-                            removal: .opacity.combined(with: .offset(x: -30))
-                        ))
-                case .insights:
-                    insightsView
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .offset(x: 30)),
-                            removal: .opacity.combined(with: .offset(x: -30))
-                        ))
                 }
-            }
-        }
-        .animation(reduceMotion ? .linear(duration: 0.1) : DesignSystem.Animation.standard, value: sidebarSelection)
-        .animation(reduceMotion ? .linear(duration: 0.1) : DesignSystem.Animation.cozySettle, value: isComposingNewEntry)
-    }
-    
-    // MARK: - Content Views
-    
-    @ViewBuilder
-    private var emptyChatView: some View {
-        VStack(spacing: 32) {
-            Spacer()
-            
-            Image(systemName: "message.circle.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.36, green: 0.61, blue: 0.84).opacity(0.8),
-                            Color(red: 0.48, green: 0.70, blue: 0.90).opacity(0.8)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-            
-            VStack(spacing: 12) {
-                Text("Start a conversation")
-                    .font(.system(size: 32, weight: .semibold, design: .serif))
-                    .foregroundStyle(.primary)
                 
-                Text("Chat with Gemi about your thoughts and feelings")
-                    .font(.system(size: 16))
-                    .foregroundStyle(.secondary)
-            }
-            
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(32)
-    }
-    
-    @ViewBuilder
-    private var memoriesView: some View {
-        VStack(spacing: 32) {
-            Spacer()
-            
-            Image(systemName: "brain.head.profile")
-                .font(.system(size: 64))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.36, green: 0.61, blue: 0.84).opacity(0.8),
-                            Color(red: 0.48, green: 0.70, blue: 0.90).opacity(0.8)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-            
-            VStack(spacing: 12) {
-                Text("Your memories")
-                    .font(.system(size: 32, weight: .semibold, design: .serif))
-                    .foregroundStyle(.primary)
+            case .insights:
+                InsightsView()
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .move(edge: .trailing)),
+                        removal: .opacity.combined(with: .move(edge: .leading))
+                    ))
                 
-                Text("Manage what Gemi remembers about your journey")
-                    .font(.system(size: 16))
-                    .foregroundStyle(.secondary)
+            case .settings:
+                SettingsView(isPresented: .constant(true))
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .move(edge: .trailing)),
+                        removal: .opacity.combined(with: .move(edge: .leading))
+                    ))
             }
-            
-            Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(32)
-    }
-    
-    @ViewBuilder
-    private var insightsView: some View {
-        VStack(spacing: 32) {
-            Spacer()
-            
-            Image(systemName: "chart.line.uptrend.xyaxis")
-                .font(.system(size: 64))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.36, green: 0.61, blue: 0.84).opacity(0.8),
-                            Color(red: 0.48, green: 0.70, blue: 0.90).opacity(0.8)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-            
-            VStack(spacing: 12) {
-                Text("Discover patterns")
-                    .font(.system(size: 32, weight: .semibold, design: .serif))
-                    .foregroundStyle(.primary)
-                
-                Text("See how your thoughts and feelings evolve over time")
-                    .font(.system(size: 16))
-                    .foregroundStyle(.secondary)
-            }
-            
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(32)
-    }
-}
-
-// MARK: - Navigation Item
-
-enum NavigationItem: String, CaseIterable {
-    case timeline
-    case chat
-    case memories
-    case insights
-    
-    var title: String {
-        switch self {
-        case .timeline: return "Timeline"
-        case .chat: return "Chat"
-        case .memories: return "Memories"
-        case .insights: return "Insights"
-        }
-    }
-    
-    var icon: String {
-        switch self {
-        case .timeline: return "book.pages.fill"
-        case .chat: return "message.fill"
-        case .memories: return "brain.head.profile"
-        case .insights: return "chart.line.uptrend.xyaxis"
-        }
-    }
-    
-    var subtitle: String? {
-        switch self {
-        case .timeline: return "Browse your journal entries"
-        case .chat: return "Talk with your AI companion"
-        case .memories: return "What Gemi remembers"
-        case .insights: return "Analyze your patterns"
-        }
-    }
-}
-
-// MARK: - Components
-
-struct NavigationButton: View {
-    let item: NavigationItem
-    let isSelected: Bool
-    let action: () -> Void
-    
-    @State private var isHovered = false
-    @State private var isPressed = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: item.icon)
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(isSelected ? Color.white : Color.primary.opacity(0.8))
-                    .frame(width: 24)
-                
-                Text(item.title)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(isSelected ? Color.white : Color.primary.opacity(0.8))
-                
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(
-                        isSelected ? 
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.36, green: 0.61, blue: 0.84),
-                                Color(red: 0.42, green: 0.67, blue: 0.88)
-                            ],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        ) :
-                        LinearGradient(
-                            colors: [
-                                isHovered ? Color.primary.opacity(0.08) : Color.clear,
-                                isHovered ? Color.primary.opacity(0.05) : Color.clear
-                            ],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-            )
-            .scaleEffect(isPressed ? 0.98 : (isHovered ? 1.02 : 1.0))
-            .animation(reduceMotion ? .linear(duration: 0.1) : DesignSystem.Animation.quick, value: isPressed)
-            .animation(reduceMotion ? .linear(duration: 0.1) : DesignSystem.Animation.encouragingSpring, value: isHovered)
-        }
-        .buttonStyle(PlainButtonStyle())
-        .onHover { hovering in
-            isHovered = hovering
-        }
-    }
-}
-
-struct QuickActionButton: View {
-    let icon: String
-    let label: String
-    let color: Color
-    let action: () -> Void
-    
-    @State private var isHovered = false
-    @State private var isPulsing = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundStyle(isHovered ? .white : color)
-                
-                Text(label)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(isHovered ? .white : .secondary)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 60)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(
-                        isHovered ?
-                        LinearGradient(
-                            colors: [color, color.opacity(0.8)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ) :
-                        LinearGradient(
-                            colors: [Color.primary.opacity(0.05), Color.primary.opacity(0.08)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-            )
-            .scaleEffect(isHovered ? 1.05 : 1.0)
-            .shadow(
-                color: isHovered ? color.opacity(0.3) : Color.clear,
-                radius: isHovered ? 8 : 0,
-                x: 0,
-                y: 4
-            )
-            .animation(reduceMotion ? .linear(duration: 0.1) : DesignSystem.Animation.playfulBounce, value: isHovered)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(color.opacity(isPulsing ? 0 : 0.3), lineWidth: 1.5)
-                    .scaleEffect(isPulsing ? 1.1 : 1)
-                    .opacity(isPulsing ? 0 : 1)
-                    .animation(
-                        isPulsing ? DesignSystem.Animation.standard : nil,
-                        value: isPulsing
-                    )
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
-        .onHover { hovering in
-            isHovered = hovering
-            if hovering {
-                isPulsing = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    isPulsing = false
-                }
+        .animation(reduceMotion ? .linear(duration: 0.1) : DesignSystem.Animation.standard, value: navigationModel.selectedSection)
+        .animation(reduceMotion ? .linear(duration: 0.1) : DesignSystem.Animation.cozySettle, value: navigationModel.showingEditor)
+        .overlay {
+            // AI Assistant overlay when requested from editor
+            if showingAIAssistant {
+                ChatView(isPresented: $showingAIAssistant)
+                    .transition(.opacity.combined(with: .scale))
             }
         }
     }
-}
-
-// MARK: - Visual Effect View
-
-struct VisualEffectBlur: NSViewRepresentable {
-    var material: NSVisualEffectView.Material
-    var blendingMode: NSVisualEffectView.BlendingMode
     
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let visualEffectView = NSVisualEffectView()
-        visualEffectView.material = material
-        visualEffectView.blendingMode = blendingMode
-        visualEffectView.state = .active
-        return visualEffectView
-    }
+    // MARK: - Helper Methods
     
-    func updateNSView(_ visualEffectView: NSVisualEffectView, context: Context) {
-        visualEffectView.material = material
-        visualEffectView.blendingMode = blendingMode
+    private func updateWritingStreak() {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let hasEntryToday = journalStore.entries.contains { entry in
+            calendar.isDate(entry.createdAt, inSameDayAs: today)
+        }
+        
+        // Simple streak calculation (can be enhanced)
+        navigationModel.updateWritingStreak(hasEntryToday ? 1 : 0)
     }
 }
 
@@ -721,7 +161,10 @@ struct VisualEffectBlur: NSViewRepresentable {
         }
     }()
     
-    return ContentView()
+    ContentView()
         .environment(store)
+        .environment(PerformanceOptimizer())
+        .environment(AccessibilityManager())
+        .environment(KeyboardNavigationState())
         .frame(width: 1400, height: 900)
 }

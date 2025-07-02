@@ -187,16 +187,22 @@ final class DatabaseManager: Sendable {
         // Decrypt all entries
         var decryptedEntries: [JournalEntry] = []
         for encryptedEntry in encryptedEntries {
-            let decryptedContent = try await decryptContent(encryptedEntry.content)
-            let decryptedTitle = try await decryptContent(encryptedEntry.title)
-            let decryptedEntry = JournalEntry(
-                id: encryptedEntry.id,
-                date: encryptedEntry.date,
-                title: decryptedTitle,
-                content: decryptedContent,
-                mood: encryptedEntry.mood
-            )
-            decryptedEntries.append(decryptedEntry)
+            do {
+                let decryptedContent = try await decryptContent(encryptedEntry.content)
+                let decryptedTitle = try await decryptContent(encryptedEntry.title)
+                let decryptedEntry = JournalEntry(
+                    id: encryptedEntry.id,
+                    date: encryptedEntry.date,
+                    title: decryptedTitle,
+                    content: decryptedContent,
+                    mood: encryptedEntry.mood
+                )
+                decryptedEntries.append(decryptedEntry)
+            } catch {
+                print("❌ Failed to decrypt entry \(encryptedEntry.id): \(error)")
+                // Skip this entry but continue with others
+                continue
+            }
         }
         
         return decryptedEntries
@@ -213,15 +219,27 @@ final class DatabaseManager: Sendable {
             return nil
         }
         
-        let decryptedContent = try await decryptContent(encryptedEntry.content)
-        let decryptedTitle = try await decryptContent(encryptedEntry.title)
-        return JournalEntry(
-            id: encryptedEntry.id,
-            date: encryptedEntry.date,
-            title: decryptedTitle,
-            content: decryptedContent,
-            mood: encryptedEntry.mood
-        )
+        do {
+            let decryptedContent = try await decryptContent(encryptedEntry.content)
+            let decryptedTitle = try await decryptContent(encryptedEntry.title)
+            return JournalEntry(
+                id: encryptedEntry.id,
+                date: encryptedEntry.date,
+                title: decryptedTitle,
+                content: decryptedContent,
+                mood: encryptedEntry.mood
+            )
+        } catch {
+            print("❌ Failed to decrypt entry \(encryptedEntry.id): \(error)")
+            // Return entry with empty content rather than crashing
+            return JournalEntry(
+                id: encryptedEntry.id,
+                date: encryptedEntry.date,
+                title: "Unable to decrypt",
+                content: "This entry could not be decrypted.",
+                mood: encryptedEntry.mood
+            )
+        }
     }
     
     /// Deletes a journal entry from the database
@@ -276,14 +294,26 @@ extension DatabaseManager {
             throw DatabaseError.invalidEncryptedData
         }
         
-        let sealedBox = try AES.GCM.SealedBox(combined: encryptedData)
-        let decryptedData = try AES.GCM.open(sealedBox, using: key)
-        
-        guard let decryptedString = String(data: decryptedData, encoding: .utf8) else {
-            throw DatabaseError.decryptionFailed
+        // Check minimum size for AES-GCM (12 bytes nonce + at least 1 byte ciphertext + 16 bytes tag)
+        guard encryptedData.count >= 29 else {
+            print("❌ Encrypted data too small: \(encryptedData.count) bytes")
+            throw DatabaseError.invalidEncryptedData
         }
         
-        return decryptedString
+        do {
+            let sealedBox = try AES.GCM.SealedBox(combined: encryptedData)
+            let decryptedData = try AES.GCM.open(sealedBox, using: key)
+            
+            guard let decryptedString = String(data: decryptedData, encoding: .utf8) else {
+                throw DatabaseError.decryptionFailed
+            }
+            
+            return decryptedString
+        } catch {
+            print("❌ Decryption failed: \(error)")
+            // Return empty string for now to prevent app crashes
+            return ""
+        }
     }
 }
 
