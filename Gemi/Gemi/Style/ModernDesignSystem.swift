@@ -788,12 +788,18 @@ struct MoodIndicator: View {
     let mood: Mood
     let size: Size
     
-    enum Mood {
+    enum Mood: String {
         case energetic
         case calm
         case reflective
         case happy
         case focused
+        case anxious
+        case melancholic
+        case frustrated
+        case grateful
+        case hopeful
+        case excited
         
         var color: Color {
             switch self {
@@ -802,6 +808,12 @@ struct MoodIndicator: View {
             case .reflective: return ModernDesignSystem.Colors.moodReflective
             case .happy: return ModernDesignSystem.Colors.moodHappy
             case .focused: return ModernDesignSystem.Colors.moodFocused
+            case .anxious: return ModernDesignSystem.Colors.warning
+            case .melancholic: return ModernDesignSystem.Colors.moodReflective.opacity(0.7)
+            case .frustrated: return ModernDesignSystem.Colors.error.opacity(0.8)
+            case .grateful: return ModernDesignSystem.Colors.success
+            case .hopeful: return ModernDesignSystem.Colors.info
+            case .excited: return ModernDesignSystem.Colors.moodEnergetic.opacity(0.9)
             }
         }
         
@@ -812,7 +824,17 @@ struct MoodIndicator: View {
             case .reflective: return "moon.stars.fill"
             case .happy: return "sun.max.fill"
             case .focused: return "target"
+            case .anxious: return "exclamationmark.triangle.fill"
+            case .melancholic: return "cloud.rain.fill"
+            case .frustrated: return "bolt.fill"
+            case .grateful: return "heart.fill"
+            case .hopeful: return "star.fill"
+            case .excited: return "sparkles"
             }
+        }
+        
+        func toString() -> String {
+            return self.rawValue
         }
     }
     

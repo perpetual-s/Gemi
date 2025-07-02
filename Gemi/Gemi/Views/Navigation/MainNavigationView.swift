@@ -10,6 +10,8 @@ import SwiftUI
 struct MainNavigationView: View {
     @State private var navigation = NavigationModel()
     @State private var columnVisibility = NavigationSplitViewVisibility.all
+    @FocusState private var isSearchFocused: Bool
+    @State private var showComposeView = false
     
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
@@ -21,7 +23,13 @@ struct MainNavigationView: View {
         } detail: {
             // Main content with toolbar
             VStack(spacing: 0) {
-                TopToolbar()
+                TopToolbar(
+                    navigationModel: navigation,
+                    isSearchFocused: $isSearchFocused,
+                    onNewEntry: {
+                        showComposeView = true
+                    }
+                )
                 
                 // Content based on selected section
                 ZStack {
@@ -33,7 +41,7 @@ struct MainNavigationView: View {
                     case .insights:
                         InsightsView()
                     case .settings:
-                        SettingsView()
+                        SettingsView(isPresented: .constant(true))
                     }
                 }
                 .transition(.asymmetric(
@@ -47,6 +55,15 @@ struct MainNavigationView: View {
         .environment(navigation)
         .onAppear {
             setupKeyboardShortcuts()
+        }
+        .sheet(isPresented: $showComposeView) {
+            EnhancedJournalEditor(
+                entry: .constant(nil),
+                isPresented: $showComposeView,
+                onSave: { entry in
+                    // Handle save
+                }
+            )
         }
     }
     
@@ -129,7 +146,7 @@ struct EntriesView: View {
     }
 }
 
-struct InsightsView: View {
+struct PlaceholderInsightsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: ModernDesignSystem.Spacing.xl) {
@@ -147,21 +164,21 @@ struct InsightsView: View {
                 
                 // Insights cards
                 VStack(spacing: ModernDesignSystem.Spacing.md) {
-                    InsightCard(
+                    PlaceholderInsightCard(
                         icon: "brain.head.profile",
                         title: "Emotional Patterns",
                         description: "You've been feeling more positive this week",
                         color: ModernDesignSystem.Colors.moodReflective
                     )
                     
-                    InsightCard(
+                    PlaceholderInsightCard(
                         icon: "chart.line.uptrend.xyaxis",
                         title: "Writing Consistency",
                         description: "You've maintained a 7-day streak!",
                         color: ModernDesignSystem.Colors.moodEnergetic
                     )
                     
-                    InsightCard(
+                    PlaceholderInsightCard(
                         icon: "sparkles",
                         title: "Recurring Themes",
                         description: "Growth, gratitude, and family appear frequently",
@@ -177,7 +194,7 @@ struct InsightsView: View {
     }
 }
 
-struct InsightCard: View {
+struct PlaceholderInsightCard: View {
     let icon: String
     let title: String
     let description: String
