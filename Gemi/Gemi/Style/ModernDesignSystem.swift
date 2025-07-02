@@ -788,7 +788,7 @@ struct MoodIndicator: View {
     let mood: Mood
     let size: Size
     
-    enum Mood: String {
+    enum Mood: String, CaseIterable {
         case energetic
         case calm
         case reflective

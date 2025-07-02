@@ -37,7 +37,7 @@ struct MainNavigationView: View {
                     case .today:
                         TodayView()
                     case .entries:
-                        EntriesView()
+                        JournalTimelineView()
                     case .insights:
                         InsightsView()
                     case .settings:
@@ -75,76 +75,6 @@ struct MainNavigationView: View {
 }
 
 // MARK: - Placeholder Views
-
-struct EntriesView: View {
-    @Environment(NavigationModel.self) private var navigation
-    @State private var searchText = ""
-    @State private var selectedEntry: JournalEntry?
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            // Entries header
-            HStack {
-                Text("All Entries")
-                    .font(ModernDesignSystem.Typography.title1)
-                    .foregroundColor(ModernDesignSystem.Colors.textPrimary)
-                
-                Spacer()
-                
-                // Filter options
-                Menu {
-                    Button("All Entries") {}
-                    Button("This Week") {}
-                    Button("This Month") {}
-                    Button("This Year") {}
-                } label: {
-                    Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
-                        .font(ModernDesignSystem.Typography.callout)
-                }
-                .menuStyle(.borderlessButton)
-            }
-            .padding(ModernDesignSystem.Spacing.lg)
-            
-            // Search bar
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(ModernDesignSystem.Colors.textSecondary)
-                
-                TextField("Search entries...", text: $searchText)
-                    .textFieldStyle(.plain)
-                    .font(ModernDesignSystem.Typography.body)
-            }
-            .padding(ModernDesignSystem.Spacing.sm)
-            .background(
-                RoundedRectangle(cornerRadius: ModernDesignSystem.Components.radiusSM)
-                    .fill(ModernDesignSystem.Colors.backgroundTertiary)
-            )
-            .padding(.horizontal, ModernDesignSystem.Spacing.lg)
-            .padding(.bottom, ModernDesignSystem.Spacing.md)
-            
-            Divider()
-            
-            // Entries list
-            ScrollView {
-                LazyVStack(spacing: ModernDesignSystem.Spacing.sm) {
-                    ForEach(0..<10) { index in
-                        TimelineCard(
-                            date: Date().addingTimeInterval(TimeInterval(-86400 * index)),
-                            title: "Journal Entry \(index + 1)",
-                            preview: "This is a preview of the journal entry content. It shows the first few lines of what was written...",
-                            mood: [MoodIndicator.Mood.happy, .calm, .focused, .reflective].randomElement(),
-                            wordCount: Int.random(in: 100...500),
-                            isSelected: false,
-                            action: {}
-                        )
-                    }
-                }
-                .padding(ModernDesignSystem.Spacing.lg)
-            }
-        }
-        .background(ModernDesignSystem.Colors.backgroundPrimary)
-    }
-}
 
 struct PlaceholderInsightsView: View {
     var body: some View {
