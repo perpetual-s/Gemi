@@ -86,7 +86,7 @@ struct ContentView: View {
                 
             case .entries:
                 if navigationModel.showingEditor {
-                    FloatingComposeView(entry: .constant(navigationModel.editingEntry), onSave: {
+                    FullComposeView(entry: .constant(navigationModel.editingEntry), onSave: {
                         navigationModel.closeEditor()
                         Task {
                             await journalStore.refreshEntries()
@@ -94,7 +94,6 @@ struct ContentView: View {
                     }, onCancel: {
                         navigationModel.closeEditor()
                     })
-                    .padding(32)
                     .transition(.asymmetric(
                         insertion: .opacity.combined(with: .offset(y: -20)),
                         removal: .opacity.combined(with: .offset(y: 20))

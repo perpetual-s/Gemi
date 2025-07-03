@@ -47,7 +47,7 @@ struct GemiApp: App {
             Group {
                 if let journalStore = journalStore {
                     // Main application interface - no authentication or onboarding required
-                    ContentView()
+                    MainWindowView()
                         .environment(authenticationManager)
                         .environment(journalStore)
                         .environment(onboardingState)
@@ -57,7 +57,8 @@ struct GemiApp: App {
                         .environment(accessibilityManager)
                         .environment(keyboardNavigation)
                         .preferredColorScheme(nil) // Respect system appearance
-                    .frame(minWidth: 1000, minHeight: 600)
+                    .frame(minWidth: 1200, idealWidth: 1200, maxWidth: .infinity, 
+                           minHeight: 800, idealHeight: 800, maxHeight: .infinity)
                     .background(DesignSystem.Colors.backgroundPrimary)
                     .premiumWindowStyle()
                     .task {
@@ -155,21 +156,3 @@ extension GemiApp {
 // MARK: - Placeholder Views
 
 // Settings view is now defined in Views/Settings/SettingsView.swift
-
-// MARK: - Menu Commands
-
-struct GemiCommands: Commands {
-    var body: some Commands {
-        CommandGroup(after: .newItem) {
-            Button("New Entry") {
-                // Handle new entry command
-            }
-            .keyboardShortcut("n", modifiers: .command)
-            
-            Button("Talk to Gemi") {
-                // Handle chat command
-            }
-            .keyboardShortcut("t", modifiers: .command)
-        }
-    }
-}
