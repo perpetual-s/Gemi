@@ -92,8 +92,12 @@ struct MainWindowView: View {
                 await journalStore.refreshEntries()
             }
         }
-        .sheet(isPresented: .constant(!onboardingState.hasCompletedOnboarding)) {
+        .sheet(isPresented: Binding(
+            get: { !onboardingState.hasCompletedOnboarding },
+            set: { _ in }
+        )) {
             OnboardingView()
+                .interactiveDismissDisabled(true)
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView(isPresented: $showingSettings)

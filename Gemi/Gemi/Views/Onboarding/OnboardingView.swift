@@ -20,7 +20,7 @@ struct OnboardingView: View {
             VStack(spacing: 0) {
                 // Progress indicator
                 progressBar
-                    .padding(.top, 20)
+                    .padding(.top, 16)
                     .padding(.horizontal, 40)
                 
                 // Content
@@ -46,10 +46,10 @@ struct OnboardingView: View {
                 // Navigation
                 navigationButtons
                     .padding(.horizontal, 40)
-                    .padding(.bottom, 40)
+                    .padding(.bottom, 30)
             }
         }
-        .frame(width: 800, height: 600)
+        .frame(width: 800, height: 750)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .shadow(
@@ -210,7 +210,8 @@ struct WelcomeStepView: View {
                     .foregroundStyle(DesignSystem.Colors.textSecondary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 500)
-                    .lineSpacing(6)
+                    .lineSpacing(4)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             
             Spacer()
@@ -436,7 +437,8 @@ struct ReadyStepView: View {
                     .foregroundStyle(DesignSystem.Colors.textSecondary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 500)
-                    .lineSpacing(6)
+                    .lineSpacing(4)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             
             Spacer()
