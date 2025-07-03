@@ -121,7 +121,7 @@ struct GemiApp: App {
             width: 1000,
             height: 700
         )
-        .windowToolbarStyle(.unified(showsTitle: true))
+        .windowToolbarStyle(.unified(showsTitle: false))
         .commands {
             GemiKeyboardCommands()
         }

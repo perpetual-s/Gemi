@@ -74,7 +74,6 @@ struct TimelineView: View {
                     errorOverlay(message: errorMessage)
                 }
             }
-            .navigationTitle("Gemi")
         }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
@@ -166,7 +165,7 @@ struct TimelineView: View {
             }
         }
         .padding(.horizontal, 24)
-        .padding(.bottom, 16)
+        .padding(.bottom, 32)
     }
     
     @ViewBuilder
@@ -218,7 +217,7 @@ struct TimelineView: View {
                 .foregroundStyle(.tertiary)
         }
         .padding(.horizontal, 24)
-        .padding(.vertical, 12)
+        .padding(.vertical, 20)
         .background(
             Rectangle()
                 .fill(.ultraThinMaterial)

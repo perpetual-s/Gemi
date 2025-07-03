@@ -161,16 +161,23 @@ struct GemiKeyboardCommands: Commands {
                 // Handle insights view
             }
             .keyboardShortcut("I", modifiers: [.command, .shift])
+            
+            Divider()
+            
+            Button("Voice Input") {
+                // Handle voice input
+            }
+            .keyboardShortcut(.space, modifiers: [.command, .shift])
         }
         
-        // View Menu
-        CommandMenu("View") {
+        // View Menu - Add to system View menu instead of creating new one
+        CommandGroup(after: .sidebar) {
+            Divider()
+            
             Button("Toggle Sidebar") {
                 // Handle sidebar toggle
             }
             .keyboardShortcut("S", modifiers: [.command, .option])
-            
-            Divider()
             
             Button("Go to Today") {
                 // Handle go to today
@@ -188,26 +195,6 @@ struct GemiKeyboardCommands: Commands {
                 // Handle text size
             }
             .keyboardShortcut("-", modifiers: .command)
-        }
-        
-        // Gemi Menu
-        CommandMenu("Gemi") {
-            Button("Talk to Gemi") {
-                showChat? = true
-            }
-            .keyboardShortcut("T", modifiers: .command)
-            
-            Button("Show Memories") {
-                // Handle show memories
-            }
-            .keyboardShortcut("M", modifiers: [.command, .shift])
-            
-            Divider()
-            
-            Button("Voice Input") {
-                // Handle voice input
-            }
-            .keyboardShortcut(.space, modifiers: [.command, .shift])
         }
     }
 }

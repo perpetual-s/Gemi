@@ -37,46 +37,50 @@ struct MainWindowView: View {
     var body: some View {
         GeometryReader { geometry in
             let availableWidth = geometry.size.width - (DesignSystem.Spacing.base * 2) // Account for container padding
-            let minSidebarWidth: CGFloat = 240
-            let minContentWidth: CGFloat = 480
+            let minSidebarWidth: CGFloat = 200
+            let minContentWidth: CGFloat = 400
+            let idealSidebarRatio: CGFloat = 0.3
             
-            // Calculate responsive widths with minimums
-            let calculatedSidebarWidth = max(minSidebarWidth, availableWidth * 0.3)
-            let calculatedContentWidth = availableWidth - calculatedSidebarWidth - DesignSystem.Spacing.panelGap
+            // Calculate proportional widths that shrink together
+            let totalMinWidth = minSidebarWidth + minContentWidth + DesignSystem.Spacing.panelGap
             
-            // Use scroll view for small windows
-            let needsScrolling = availableWidth < (minSidebarWidth + minContentWidth + DesignSystem.Spacing.panelGap)
-            
-            if needsScrolling {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: DesignSystem.Spacing.panelGap) {
-                        // Left Sidebar with minimum width
-                        modernSidebar
-                            .frame(width: minSidebarWidth)
-                            .accessibilityElement(children: .contain)
-                            .accessibilityLabel(AccessibilityLabels.timelineTitle)
-                        
-                        // Right Content Area with minimum width
-                        floatingContentArea
-                            .frame(width: max(minContentWidth, calculatedContentWidth))
-                            .optimizedAnimation()
-                    }
-                    .padding(DesignSystem.Spacing.base)
-                }
-            } else {
+            if availableWidth >= totalMinWidth {
+                // Normal layout with proportional sizing
+                let sidebarWidth = max(minSidebarWidth, availableWidth * idealSidebarRatio)
+                let contentWidth = availableWidth - sidebarWidth - DesignSystem.Spacing.panelGap
+                
                 HStack(spacing: DesignSystem.Spacing.panelGap) {
-                    // Left Sidebar (30% with minimum)
+                    // Left Sidebar - responsive width
                     modernSidebar
-                        .frame(width: calculatedSidebarWidth)
+                        .frame(width: sidebarWidth)
                         .accessibilityElement(children: .contain)
                         .accessibilityLabel(AccessibilityLabels.timelineTitle)
                     
-                    // Right Content Area (remaining space)
+                    // Right Content Area - remaining space
                     floatingContentArea
-                        .frame(width: calculatedContentWidth)
+                        .frame(width: contentWidth)
                         .optimizedAnimation()
                 }
                 .padding(DesignSystem.Spacing.base)
+            } else {
+                // Compact layout - both shrink proportionally
+                let shrinkFactor = availableWidth / totalMinWidth
+                let sidebarWidth = minSidebarWidth * shrinkFactor
+                let contentWidth = minContentWidth * shrinkFactor
+                
+                HStack(spacing: DesignSystem.Spacing.panelGap * shrinkFactor) {
+                    // Left Sidebar - proportionally shrunk
+                    modernSidebar
+                        .frame(width: sidebarWidth)
+                        .accessibilityElement(children: .contain)
+                        .accessibilityLabel(AccessibilityLabels.timelineTitle)
+                    
+                    // Right Content Area - proportionally shrunk
+                    floatingContentArea
+                        .frame(width: contentWidth)
+                        .optimizedAnimation()
+                }
+                .padding(DesignSystem.Spacing.base * shrinkFactor)
             }
         }
         .gemiCanvas()
@@ -112,19 +116,22 @@ struct MainWindowView: View {
     
     @ViewBuilder
     private var modernSidebar: some View {
-        VStack(spacing: DesignSystem.Spacing.sectionSpacing) {
-            // Header with breathing room
-            sidebarHeader
-            
-            // Navigation with generous spacing
-            sidebarNavigation
-            
-            Spacer(minLength: DesignSystem.Spacing.large)
-            
-            // Footer with clear separation
-            sidebarFooter
+        ScrollView {
+            VStack(spacing: DesignSystem.Spacing.sectionSpacing) {
+                // Header with breathing room
+                sidebarHeader
+                
+                // Navigation with generous spacing
+                sidebarNavigation
+                
+                Spacer(minLength: DesignSystem.Spacing.large)
+                
+                // Footer with clear separation
+                sidebarFooter
+            }
+            .padding(DesignSystem.Spacing.panelPadding)
         }
-        .padding(DesignSystem.Spacing.panelPadding)
+        .scrollIndicators(.never)
         .gemiSidebarPanel()
     }
     
