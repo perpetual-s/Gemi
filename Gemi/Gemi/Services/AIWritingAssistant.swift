@@ -202,7 +202,7 @@ final class AIWritingAssistant {
     }
     
     func checkGrammar(for text: String) async -> [GrammarSuggestion] {
-        var suggestions: [GrammarSuggestion] = []
+        let suggestions: [GrammarSuggestion] = []
         return suggestions
     }
     

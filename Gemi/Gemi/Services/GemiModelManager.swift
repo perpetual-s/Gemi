@@ -195,7 +195,7 @@ final class GemiModelManager {
             if modelStatus == .ready {
                 logger.info("Removing existing custom model...")
                 for variation in ModelNameHelper.possibleVariations(modelName) {
-                    _ = try? await runCommand("ollama", arguments: ["rm", variation])
+                    try? await runCommand("ollama", arguments: ["rm", variation])
                 }
             }
             
@@ -232,7 +232,7 @@ final class GemiModelManager {
         do {
             // Try to delete all variations of the model
             for variation in ModelNameHelper.possibleVariations(modelName) {
-                _ = try? await runCommand("ollama", arguments: ["rm", variation])
+                try? await runCommand("ollama", arguments: ["rm", variation])
             }
             modelStatus = .notCreated
             logger.info("Successfully deleted Gemi custom model")

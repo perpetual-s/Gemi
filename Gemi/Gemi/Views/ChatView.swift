@@ -37,7 +37,7 @@ struct ChatView: View {
     init(isPresented: Binding<Bool>, presentationStyle: PresentationStyle = .modal, ollamaService: OllamaService? = nil) {
         self._isPresented = isPresented
         self.presentationStyle = presentationStyle
-        let service = ollamaService ?? OllamaService()
+        let service = ollamaService ?? OllamaService.shared
         self._ollamaService = State(initialValue: service)
         self._chatViewModel = State(initialValue: ChatViewModel(ollamaService: service))
     }
@@ -148,6 +148,11 @@ struct ChatView: View {
             Divider()
                 .opacity(0.1)
             
+            // Ollama status banner if needed
+            if OllamaLauncher.shared.status != .running {
+                ollamaStatusBanner
+            }
+            
             // Memory indicator
             memoryIndicator
             
@@ -161,6 +166,7 @@ struct ChatView: View {
                 onVoice: startVoiceInput
             )
             .focused($isInputFocused)
+            .disabled(OllamaLauncher.shared.status != .running)
         }
     }
     
@@ -405,6 +411,68 @@ struct ChatView: View {
         }
     }
     
+    // MARK: - Ollama Status Banner
+    
+    @ViewBuilder
+    private var ollamaStatusBanner: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                Image(systemName: OllamaLauncher.shared.status.icon)
+                    .font(.system(size: 14))
+                    .foregroundStyle(OllamaLauncher.shared.status.color)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("AI Service \(OllamaLauncher.shared.status.rawValue)")
+                        .font(.system(size: 13, weight: .medium))
+                    
+                    if let error = OllamaLauncher.shared.errorMessage {
+                        Text(error)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                }
+                
+                Spacer()
+                
+                if OllamaLauncher.shared.status == .launching {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                } else if OllamaLauncher.shared.status == .failed {
+                    Button("Retry") {
+                        Task {
+                            await OllamaLauncher.shared.restartOllama()
+                        }
+                    }
+                    .buttonStyle(.borderless)
+                    .font(.system(size: 11))
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(OllamaLauncher.shared.status.color.opacity(0.1))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .strokeBorder(OllamaLauncher.shared.status.color.opacity(0.2), lineWidth: 1)
+                    )
+            )
+            
+            if OllamaLauncher.shared.status == .notInstalled {
+                Link("Download Ollama", destination: URL(string: "https://ollama.ai")!)
+                    .buttonStyle(.borderedProminent)
+                    .font(.system(size: 12))
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 8)
+        .transition(.asymmetric(
+            insertion: .push(from: .top).combined(with: .opacity),
+            removal: .push(from: .bottom).combined(with: .opacity)
+        ))
+    }
+    
     // MARK: - Methods
     
     private func dismissChat() {
@@ -642,6 +710,9 @@ struct ChatInputView: View {
                     isFocused: $isFocused
                 )
                 .frame(height: min(textEditorHeight, 120))
+                .background(Color(NSColor.textBackgroundColor)) // CRITICAL: Ensure opaque background
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .zIndex(1) // Ensure text editor is above background layers
                 
                 // Voice input button
                 Button(action: onVoice) {
@@ -661,12 +732,14 @@ struct ChatInputView: View {
             .padding(.vertical, 4)
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(NSColor.controlBackgroundColor))
+                    .fill(Color(NSColor.textBackgroundColor)) // CRITICAL: Use opaque text background
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .strokeBorder(Color.primary.opacity(0.2), lineWidth: 1)
+                            .strokeBorder(DesignSystem.Colors.divider, lineWidth: 1) // Remove opacity
                     )
             )
+            // REMOVED: Forcing light color scheme conflicts with text visibility
+            // Let the system handle color scheme naturally
             
             // Send button
             Button(action: {
@@ -708,10 +781,10 @@ struct ChatInputView: View {
         .padding(16)
         .background(
             Rectangle()
-                .fill(.ultraThinMaterial)
+                .fill(DesignSystem.Colors.background)
                 .overlay(alignment: .top) {
                     Divider()
-                        .opacity(0.1)
+                        .foregroundStyle(DesignSystem.Colors.divider)
                 }
         )
     }
@@ -732,28 +805,58 @@ struct ResizableTextEditor: NSViewRepresentable {
         scrollView.hasVerticalScroller = false
         scrollView.hasHorizontalScroller = false
         scrollView.borderType = .noBorder
-        scrollView.drawsBackground = false
+        // CRITICAL FIX: Enable background drawing for scrollView
+        scrollView.drawsBackground = true
+        scrollView.backgroundColor = NSColor.white
         
         textView.delegate = context.coordinator
         textView.isRichText = false
         textView.allowsUndo = true
-        textView.backgroundColor = .clear
-        textView.drawsBackground = false
+        // CRITICAL FIX: Set opaque white background for text visibility
+        textView.backgroundColor = NSColor.white
+        textView.drawsBackground = true
+        
+        // Ensure proper text rendering
+        textView.isAutomaticTextCompletionEnabled = false
+        textView.isAutomaticTextReplacementEnabled = false
         textView.font = .systemFont(ofSize: 15)
         textView.textContainerInset = NSSize(width: 8, height: 8)
         
-        // Fix: Set text color explicitly for dark mode support
-        textView.textColor = NSColor.labelColor
+        // CRITICAL FIX: Force black text on white background for guaranteed visibility
+        // Parent view forces light mode, so we need explicit colors
+        textView.textColor = NSColor.black
         
         // Fix: Configure text container properly
         textView.textContainer?.widthTracksTextView = true
         textView.textContainer?.containerSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        
+        // Fix: Ensure insertion point is visible
+        textView.insertionPointColor = NSColor.black
+        
+        // Fix: Configure text view for proper rendering
+        textView.isAutomaticQuoteSubstitutionEnabled = false
+        textView.isAutomaticSpellingCorrectionEnabled = false
+        
+        // CRITICAL FIX: Set typing attributes with explicit black text
+        textView.typingAttributes = [
+            .font: NSFont.systemFont(ofSize: 15),
+            .foregroundColor: NSColor.black,
+            .backgroundColor: NSColor.white
+        ]
         
         return scrollView
     }
     
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? NSTextView else { return }
+        
+        // CRITICAL FIX: Force black text on white background
+        textView.textColor = NSColor.black
+        textView.insertionPointColor = NSColor.black
+        
+        // Ensure background is opaque white
+        textView.backgroundColor = NSColor.white
+        textView.drawsBackground = true
         
         if textView.string != text {
             textView.string = text
@@ -764,8 +867,18 @@ struct ResizableTextEditor: NSViewRepresentable {
             textView.window?.makeFirstResponder(textView)
         }
         
-        // Fix: Ensure text color remains set for dark mode
-        textView.textColor = NSColor.labelColor
+        // CRITICAL FIX: Ensure text is always black
+        if let textStorage = textView.textStorage {
+            let range = NSRange(location: 0, length: textStorage.length)
+            textStorage.addAttribute(.foregroundColor, value: NSColor.black, range: range)
+            textStorage.addAttribute(.font, value: NSFont.systemFont(ofSize: 15), range: range)
+        }
+        
+        // Maintain typing attributes
+        textView.typingAttributes = [
+            .font: NSFont.systemFont(ofSize: 15),
+            .foregroundColor: NSColor.black
+        ]
     }
     
     func makeCoordinator() -> Coordinator {
@@ -804,6 +917,21 @@ struct ResizableTextEditor: NSViewRepresentable {
             guard let textView = notification.object as? NSTextView else { return }
             parent.text = textView.string
             parent.updateHeight(textView)
+            
+            // CRITICAL FIX: Force black text during typing
+            textView.textColor = NSColor.black
+            
+            // Apply text attributes to maintain visibility
+            if let textStorage = textView.textStorage {
+                let range = NSRange(location: 0, length: textStorage.length)
+                textStorage.addAttribute(.foregroundColor, value: NSColor.black, range: range)
+            }
+            
+            // Ensure typing attributes are set for new text
+            textView.typingAttributes = [
+                .font: NSFont.systemFont(ofSize: 15),
+                .foregroundColor: NSColor.black
+            ]
         }
     }
 }

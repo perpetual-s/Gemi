@@ -19,13 +19,22 @@ fi
 echo "✅ Ollama service is running"
 echo ""
 
-# Check for gemma3n model
-echo "Checking for gemma3n model..."
-if ollama list | grep -q "gemma3n"; then
-    echo "✅ gemma3n model is already installed"
+# Check for gemma model
+echo "Checking for gemma:2b model..."
+if ollama list | grep -q "gemma:2b"; then
+    echo "✅ gemma:2b model is already installed"
 else
-    echo "📥 Installing gemma3n model (this may take a while)..."
-    ollama pull gemma3n:latest
+    echo "📥 Installing gemma:2b model (this may take a while)..."
+    ollama pull gemma:2b
+fi
+
+# Check for embedding model
+echo "Checking for nomic-embed-text model..."
+if ollama list | grep -q "nomic-embed-text"; then
+    echo "✅ nomic-embed-text model is already installed"
+else
+    echo "📥 Installing nomic-embed-text model..."
+    ollama pull nomic-embed-text
 fi
 
 echo ""
@@ -36,7 +45,7 @@ echo ""
 curl -X POST http://localhost:11434/api/generate \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "gemma3n:latest",
+    "model": "gemma:2b",
     "prompt": "Analyze the sentiment of this journal entry and respond with JSON only: \"Today was amazing! I finally finished my project and celebrated with friends. Feeling grateful and accomplished.\"",
     "stream": false,
     "options": {
@@ -48,6 +57,6 @@ echo ""
 echo "✅ Ollama setup complete and working!"
 echo ""
 echo "To use custom models with Gemi:"
-echo "1. Get the modelfile: ollama show gemma3n --modelfile > gemma3n.modelfile"
+echo "1. Get the modelfile: ollama show gemma:2b --modelfile > gemma2b.modelfile"
 echo "2. Edit the modelfile as needed"
-echo "3. Create custom model: ollama create gemi-custom -f gemma3n.modelfile"
+echo "3. Create custom model: ollama create gemi-custom -f gemma2b.modelfile"

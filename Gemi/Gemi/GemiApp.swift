@@ -40,6 +40,9 @@ struct GemiApp: App {
     /// Keyboard navigation state
     @State private var keyboardNavigation = KeyboardNavigationState()
     
+    /// Ollama launcher for AI service
+    @State private var ollamaLauncher = OllamaLauncher.shared
+    
     // MARK: - Body
     
     var body: some Scene {
@@ -56,17 +59,22 @@ struct GemiApp: App {
                         .environment(performanceOptimizer)
                         .environment(accessibilityManager)
                         .environment(keyboardNavigation)
+                        .environment(ollamaLauncher)
                         .preferredColorScheme(nil) // Respect system appearance
                     .frame(minWidth: 800, idealWidth: 1200, maxWidth: .infinity, 
                            minHeight: 600, idealHeight: 800, maxHeight: .infinity)
                     .background(DesignSystem.Colors.backgroundPrimary)
                     .premiumWindowStyle()
+                    .ollamaStatusBanner() // Show Ollama status when needed
                     .task {
                         // Initialize premium features
                         performanceOptimizer.startMonitoring()
                         
                         // Load initial data on app launch
                         await journalStore.loadEntries()
+                        
+                        // Ensure Ollama is running for AI features
+                        await ollamaLauncher.checkAndLaunchOllama()
                     }
                 } else {
                     // Error state UI

@@ -29,6 +29,31 @@ struct OllamaChatRequest: Codable {
     let context: [Int]?
 }
 
+struct OllamaChatMessage: Codable {
+    let role: String
+    let content: String
+}
+
+struct OllamaChatRequestV2: Codable {
+    let model: String
+    let messages: [OllamaChatMessage]
+    let stream: Bool
+    let options: OllamaOptions?
+}
+
+struct OllamaChatResponseV2: Codable {
+    let model: String
+    let created_at: String
+    let message: OllamaChatMessage
+    let done: Bool
+    let total_duration: Int?
+    let load_duration: Int?
+    let prompt_eval_count: Int?
+    let prompt_eval_duration: Int?
+    let eval_count: Int?
+    let eval_duration: Int?
+}
+
 struct OllamaOptions: Codable {
     let temperature: Double?
     let top_p: Double?
@@ -139,8 +164,8 @@ final class OllamaService {
     // MARK: - Private Properties
     
     private let baseURL = "http://localhost:11434"
-    private let modelName = ModelNameHelper.normalize("gemma3n")  // Using Gemma 3n latest for hackathon
-    private let embeddingModelName = ModelNameHelper.normalize("nomic-embed-text")  // Specialized embedding model
+    private let modelName = "gemma3n:latest"  // Using Gemma 3n latest for hackathon
+    private let embeddingModelName = "nomic-embed-text:latest"  // Specialized embedding model
     
     private let session: URLSession
     private let logger = Logger(subsystem: "com.gemi.app", category: "OllamaService")
@@ -168,9 +193,18 @@ final class OllamaService {
         configuration.timeoutIntervalForResource = 300 // 5 minutes for model downloads
         self.session = URLSession(configuration: configuration)
         
-        // Check model status on initialization
+        // Delay initial check to allow app to fully initialize
         Task {
-            await checkModelStatus()
+            // Wait for OllamaLauncher to do its work first
+            try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+            
+            // Check if Ollama is running
+            if OllamaLauncher.shared.status == .running {
+                await checkModelStatus()
+            } else {
+                // Subscribe to launcher status changes
+                logger.info("Waiting for Ollama to be ready")
+            }
         }
     }
     
@@ -181,17 +215,32 @@ final class OllamaService {
     func checkOllamaStatus() async -> Bool {
         logger.info("Checking Ollama server status")
         
-        do {
-            let url = URL(string: "\(baseURL)/api/tags")!
-            let (_, response) = try await session.data(from: url)
-            
-            if let httpResponse = response as? HTTPURLResponse,
-               httpResponse.statusCode == 200 {
-                logger.info("Ollama server is running")
-                return true
+        // Try multiple times with short delay
+        for attempt in 1...3 {
+            do {
+                guard let url = URL(string: "\(baseURL)/api/tags") else {
+                    logger.error("Invalid URL for Ollama status check")
+                    return false
+                }
+                
+                var request = URLRequest(url: url)
+                request.timeoutInterval = 5.0 // Quick timeout for status check
+                
+                let (_, response) = try await session.data(for: request)
+                
+                if let httpResponse = response as? HTTPURLResponse,
+                   httpResponse.statusCode == 200 {
+                    logger.info("Ollama server is running")
+                    return true
+                }
+            } catch {
+                logger.error("Ollama server check attempt \(attempt) failed: \(error.localizedDescription)")
+                
+                // Wait before retry, except on last attempt
+                if attempt < 3 {
+                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                }
             }
-        } catch {
-            logger.error("Ollama server check failed: \(error.localizedDescription)")
         }
         
         return false
@@ -209,18 +258,27 @@ final class OllamaService {
         }
         
         do {
-            let url = URL(string: "\(baseURL)/api/tags")!
+            guard let url = URL(string: "\(baseURL)/api/tags") else {
+                currentError = .invalidURL
+                isModelInstalled = false
+                return
+            }
+            
             let (data, _) = try await session.data(from: url)
             let modelList = try JSONDecoder().decode(OllamaModelList.self, from: data)
             
             // Check if our required models are installed
             let installedModelNames = modelList.models.map { $0.name }
-            let hasMainModel = installedModelNames.contains(where: { modelName in
-                ModelNameHelper.matchesAny(self.modelName, in: [modelName]) ||
-                modelName.hasPrefix("gemma3n")
+            logger.info("Installed models: \(installedModelNames.joined(separator: ", "))")
+            
+            // Check for main model (gemma3n variants)
+            let hasMainModel = installedModelNames.contains(where: { name in
+                name.hasPrefix("gemma3n") || name == self.modelName
             })
-            let hasEmbeddingModel = installedModelNames.contains(where: { modelName in
-                ModelNameHelper.matches(modelName, self.embeddingModelName)
+            
+            // Check for embedding model
+            let hasEmbeddingModel = installedModelNames.contains(where: { name in
+                name.hasPrefix("nomic-embed-text") || name == self.embeddingModelName
             })
             
             isModelInstalled = hasMainModel && hasEmbeddingModel
@@ -245,7 +303,7 @@ final class OllamaService {
     func chatCompletion(prompt: String, context: [Int]? = nil) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
             Task {
-                await self.performChatCompletion(prompt: prompt, context: context, continuation: continuation)
+                await self.performChatCompletionV2(prompt: prompt, continuation: continuation)
             }
         }
     }
@@ -268,7 +326,7 @@ final class OllamaService {
         }
         
         let url = URL(string: "\(baseURL)/api/embeddings")!
-        let request = OllamaEmbeddingRequest(model: ModelNameHelper.normalize(embeddingModelName), prompt: text)
+        let request = OllamaEmbeddingRequest(model: embeddingModelName, prompt: text)
         
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
@@ -297,7 +355,7 @@ final class OllamaService {
     /// Pull (download) a model from Ollama
     @MainActor
     func pullModel(modelName: String) async throws {
-        let normalizedModelName = ModelNameHelper.normalize(modelName)
+        let normalizedModelName = modelName
         logger.info("Starting model download: \(normalizedModelName)")
         
         guard await checkOllamaStatus() else {
@@ -360,6 +418,73 @@ final class OllamaService {
     // MARK: - Private Methods
     
     @MainActor
+    private func performChatCompletionV2(prompt: String, continuation: AsyncThrowingStream<String, Error>.Continuation) async {
+        logger.info("Starting chat completion with /api/chat endpoint")
+        
+        guard await checkOllamaStatus() else {
+            continuation.finish(throwing: OllamaError.serverNotRunning)
+            return
+        }
+        
+        isProcessing = true
+        statusMessage = "Thinking..."
+        
+        defer {
+            isProcessing = false
+            statusMessage = ""
+        }
+        
+        let url = URL(string: "\(baseURL)/api/chat")!
+        let chatRequest = OllamaChatRequestV2(
+            model: modelName,
+            messages: [
+                OllamaChatMessage(role: "user", content: prompt)
+            ],
+            stream: true,
+            options: defaultOptions
+        )
+        
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            urlRequest.httpBody = try JSONEncoder().encode(chatRequest)
+            let (bytes, response) = try await session.bytes(for: urlRequest)
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                throw OllamaError.invalidResponse
+            }
+            
+            var fullResponse = ""
+            
+            for try await line in bytes.lines {
+                guard let data = line.data(using: .utf8),
+                      let chatResponse = try? JSONDecoder().decode(OllamaChatResponseV2.self, from: data) else {
+                    continue
+                }
+                
+                if !chatResponse.message.content.isEmpty {
+                    fullResponse += chatResponse.message.content
+                    continuation.yield(chatResponse.message.content)
+                }
+                
+                if chatResponse.done {
+                    logger.info("Chat completion finished. Total tokens: \(chatResponse.eval_count ?? 0)")
+                    break
+                }
+            }
+            
+            continuation.finish()
+            
+        } catch {
+            logger.error("Chat completion error: \(error.localizedDescription)")
+            continuation.finish(throwing: error)
+        }
+    }
+    
+    @MainActor
     private func performChatCompletion(prompt: String, context: [Int]?, continuation: AsyncThrowingStream<String, Error>.Continuation) async {
         logger.info("Starting chat completion")
         
@@ -378,7 +503,7 @@ final class OllamaService {
         
         let url = URL(string: "\(baseURL)/api/generate")!
         let chatRequest = OllamaChatRequest(
-            model: ModelNameHelper.normalize(modelName),
+            model: modelName,
             prompt: prompt,
             stream: true,
             options: defaultOptions,
@@ -506,8 +631,8 @@ extension OllamaService {
             return """
             The AI model needs to be installed. Please:
             1. Open Terminal
-            2. Run: ollama pull \(ModelNameHelper.normalize("gemma3n"))
-            3. Run: ollama pull \(ModelNameHelper.normalize("nomic-embed-text"))
+            2. Run: ollama pull gemma3n:latest
+            3. Run: ollama pull nomic-embed-text:latest
             4. Wait for downloads to complete
             5. Restart Gemi
             
@@ -527,7 +652,7 @@ extension OllamaService {
         
         let url = URL(string: "\(baseURL)/api/generate")!
         let chatRequest = OllamaChatRequest(
-            model: ModelNameHelper.normalize(model ?? modelName),
+            model: model ?? modelName,
             prompt: prompt,
             stream: false,
             options: defaultOptions,
@@ -572,7 +697,7 @@ extension OllamaService {
         }
         
         let url = URL(string: "\(baseURL)/api/embeddings")!
-        let request = OllamaEmbeddingRequest(model: ModelNameHelper.normalize(model), prompt: prompt)
+        let request = OllamaEmbeddingRequest(model: model, prompt: prompt)
         
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
@@ -605,7 +730,9 @@ extension OllamaService {
     /// Check if a specific model is installed (handles name variations)
     func isModelInstalled(_ modelName: String) async throws -> Bool {
         let models = try await listModels()
-        return ModelNameHelper.matchesAny(modelName, in: models)
+        return models.contains(where: { name in
+            name == modelName || name.hasPrefix(modelName.split(separator: ":").first ?? "")
+        })
     }
     
     /// Create a custom model from a Modelfile
@@ -616,7 +743,7 @@ extension OllamaService {
             throw OllamaError.serverNotRunning
         }
         
-        let normalizedName = ModelNameHelper.normalize(name)
+        let normalizedName = name
         let url = URL(string: "\(baseURL)/api/create")!
         
         var request = URLRequest(url: url)

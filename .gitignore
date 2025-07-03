@@ -48,6 +48,9 @@ Models/
 # Log files
 *.log
 
+# Diagnostic documentation files (temporary/status files)
+Gemi/Scripts/Diagnostics/*.md
+
 # Other
 .swiftpm/
 *.hmap

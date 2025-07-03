@@ -84,6 +84,19 @@ final class ChatViewModel {
         let userMessage = currentInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !userMessage.isEmpty else { return }
         
+        // Check Ollama status before sending
+        let isConnected = await ollamaService.checkOllamaStatus()
+        if !isConnected {
+            messages.append(ChatMessage(content: userMessage, isUser: true))
+            currentInput = ""
+            messages.append(ChatMessage(
+                content: "I'm sorry, I can't respond right now. The Ollama service isn't running. Please start it by opening Terminal and running 'ollama serve', then try again.",
+                isUser: false,
+                isError: true
+            ))
+            return
+        }
+        
         // Add user message
         messages.append(ChatMessage(content: userMessage, isUser: true))
         currentInput = ""
@@ -180,6 +193,21 @@ final class ChatViewModel {
     }
     
     // MARK: - Private Methods
+    
+    /// Check Ollama connection and show appropriate message
+    @MainActor
+    private func checkOllamaConnection() async {
+        let isConnected = await ollamaService.checkOllamaStatus()
+        
+        if !isConnected {
+            // Add an error message if Ollama is not running
+            messages.append(ChatMessage(
+                content: "⚠️ I'm having trouble connecting to the Ollama service. Please make sure Ollama is running on your Mac. You can start it by opening Terminal and running 'ollama serve'.",
+                isUser: false,
+                isError: true
+            ))
+        }
+    }
     
     private func fetchRelevantMemories(for query: String) async -> [String] {
         guard let memoryService = memoryService else { return [] }

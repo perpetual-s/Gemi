@@ -29,7 +29,7 @@ struct MainWindowView: View {
     @State private var hasShownOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
     @FocusState private var focusedField: FocusableField?
     @State private var isComposingNewEntry = false
-    @State private var chatViewModel = ChatViewModel(ollamaService: OllamaService())
+    @State private var chatViewModel = ChatViewModel(ollamaService: OllamaService.shared)
     @State private var sortOrder: SortOrder = .dateDescending
     
     // MARK: - Body
@@ -145,7 +145,8 @@ struct MainWindowView: View {
                     .padding(.vertical, DesignSystem.Spacing.medium)
             }
             .background(
-                .ultraThinMaterial.opacity(0.5)
+                // CRITICAL FIX: Removed transparent material that could interfere with text visibility
+                DesignSystem.Colors.backgroundSecondary
             )
         }
         .gemiSidebarPanel()
