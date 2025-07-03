@@ -25,10 +25,18 @@ struct ChatView: View {
     @State private var chatViewModel: ChatViewModel
     @State private var ollamaService: OllamaService
     
+    // Presentation style
+    enum PresentationStyle {
+        case modal      // Presented as sheet/modal with fixed width
+        case fullWidth  // Presented in content area with full width
+    }
+    var presentationStyle: PresentationStyle
+    
     // MARK: - Initialization
     
-    init(isPresented: Binding<Bool>, ollamaService: OllamaService? = nil) {
+    init(isPresented: Binding<Bool>, presentationStyle: PresentationStyle = .modal, ollamaService: OllamaService? = nil) {
         self._isPresented = isPresented
+        self.presentationStyle = presentationStyle
         let service = ollamaService ?? OllamaService()
         self._ollamaService = State(initialValue: service)
         self._chatViewModel = State(initialValue: ChatViewModel(ollamaService: service))
@@ -37,6 +45,18 @@ struct ChatView: View {
     // MARK: - Body
     
     var body: some View {
+        switch presentationStyle {
+        case .modal:
+            modalPresentation
+        case .fullWidth:
+            fullWidthPresentation
+        }
+    }
+    
+    // MARK: - Modal Presentation (original sidebar style)
+    
+    @ViewBuilder
+    private var modalPresentation: some View {
         ZStack {
             // Backdrop blur
             if isPresented {
@@ -90,6 +110,21 @@ struct ChatView: View {
                 }
                 chatViewModel.isChatVisible = false
             }
+        }
+    }
+    
+    // MARK: - Full Width Presentation (for sidebar selection)
+    
+    @ViewBuilder
+    private var fullWidthPresentation: some View {
+        GeometryReader { geometry in
+            chatPanelContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(DesignSystem.Colors.backgroundPrimary)
+        }
+        .onAppear {
+            isInputFocused = true
+            chatViewModel.isChatVisible = true
         }
     }
     

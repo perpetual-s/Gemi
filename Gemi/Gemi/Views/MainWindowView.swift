@@ -501,7 +501,7 @@ struct MainWindowView: View {
                     .environment(navigationModel)
                     
                 case .chat:
-                    ChatView(isPresented: .constant(true))
+                    ChatView(isPresented: .constant(true), presentationStyle: .fullWidth)
                         .environment(chatViewModel)
                     
                 case .memories:

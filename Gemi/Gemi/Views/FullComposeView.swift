@@ -26,6 +26,10 @@ struct FullComposeView: View {
     @State private var showSuccessAnimation = false
     @State private var wordCountPulse = false
     
+    // AI Assistant state
+    @State private var showAIAssistant = false
+    @State private var aiPanelProgress: Double = 0.0
+    
     // Callbacks
     var onSave: (() -> Void)?
     var onCancel: (() -> Void)?
@@ -39,53 +43,87 @@ struct FullComposeView: View {
     // MARK: - Body
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Title input
-            TextField("Add a title (optional)", text: $title)
-                .font(ModernDesignSystem.Typography.title1)
-                .foregroundStyle(ModernDesignSystem.Colors.adaptiveTextPrimary)
-                .textFieldStyle(.plain)
-                .padding(.horizontal, DesignSystem.Spacing.extraLarge)
-                .padding(.top, DesignSystem.Spacing.large)
-                .padding(.bottom, DesignSystem.Spacing.medium)
-            
-            Divider()
-                .padding(.horizontal, DesignSystem.Spacing.extraLarge)
-            
-            // Content editor
-            ZStack(alignment: .topLeading) {
-                // Text editor with encouraging typography
-                TextEditor(text: $content)
-                    .focused($isTextEditorFocused)
-                    .font(ModernDesignSystem.Typography.journal)
-                    .scrollContentBackground(.hidden)
-                    .padding(DesignSystem.Spacing.extraLarge)
-                    .onChange(of: content) { oldValue, newValue in
-                        handleContentChange(oldValue: oldValue, newValue: newValue)
-                    }
-                
-                // Warm placeholder
-                if content.isEmpty {
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
-                        Text("What's on your mind today?")
-                            .font(ModernDesignSystem.Typography.title3)
-                            .foregroundStyle(ModernDesignSystem.Colors.primary.opacity(0.7))
+        GeometryReader { geometry in
+            HStack(spacing: 0) {
+                // Main compose area
+                VStack(spacing: 0) {
+                    // Title input
+                    TextField("Add a title (optional)", text: $title)
+                        .font(ModernDesignSystem.Typography.title1)
+                        .foregroundStyle(ModernDesignSystem.Colors.adaptiveTextPrimary)
+                        .textFieldStyle(.plain)
+                        .padding(.horizontal, DesignSystem.Spacing.extraLarge)
+                        .padding(.top, DesignSystem.Spacing.large)
+                        .padding(.bottom, DesignSystem.Spacing.medium)
+                    
+                    Divider()
+                        .padding(.horizontal, DesignSystem.Spacing.extraLarge)
+                    
+                    // Content editor
+                    ZStack(alignment: .topLeading) {
+                        // Text editor with encouraging typography
+                        TextEditor(text: $content)
+                            .focused($isTextEditorFocused)
+                            .font(ModernDesignSystem.Typography.journal)
+                            .scrollContentBackground(.hidden)
+                            .padding(DesignSystem.Spacing.extraLarge)
+                            .onChange(of: content) { oldValue, newValue in
+                                handleContentChange(oldValue: oldValue, newValue: newValue)
+                            }
                         
-                        Text("Share your thoughts, feelings, or experiences.\nThis is your private space to reflect and express yourself freely.")
-                            .font(ModernDesignSystem.Typography.body)
-                            .foregroundStyle(ModernDesignSystem.Colors.textPlaceholder)
-                            .multilineTextAlignment(.leading)
+                        // Warm placeholder
+                        if content.isEmpty {
+                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
+                                Text("What's on your mind today?")
+                                    .font(ModernDesignSystem.Typography.title3)
+                                    .foregroundStyle(ModernDesignSystem.Colors.primary.opacity(0.7))
+                                
+                                Text("Share your thoughts, feelings, or experiences.\nThis is your private space to reflect and express yourself freely.")
+                                    .font(ModernDesignSystem.Typography.body)
+                                    .foregroundStyle(ModernDesignSystem.Colors.textPlaceholder)
+                                    .multilineTextAlignment(.leading)
+                            }
+                            .padding(DesignSystem.Spacing.extraLarge)
+                            .allowsHitTesting(false)
+                            .opacity(isTextEditorFocused ? 0.6 : 1.0)
+                            .animation(DesignSystem.Animation.smooth, value: isTextEditorFocused)
+                        }
                     }
-                    .padding(DesignSystem.Spacing.extraLarge)
-                    .allowsHitTesting(false)
-                    .opacity(isTextEditorFocused ? 0.6 : 1.0)
-                    .animation(DesignSystem.Animation.smooth, value: isTextEditorFocused)
+                    .frame(maxHeight: .infinity)
+                    
+                    // Bottom toolbar
+                    bottomToolbar
+                }
+                .frame(width: calculateComposeWidth(totalWidth: geometry.size.width))
+                .background(DesignSystem.Colors.backgroundPrimary)
+                .animation(.interpolatingSpring(stiffness: 160, damping: 20), value: showAIAssistant)
+                
+                // AI Assistant Panel
+                if geometry.size.width > 1000 && showAIAssistant {
+                    Spacer()
+                        .frame(width: 20) // Gap between panels
+                    
+                    ChatView(
+                        isPresented: .constant(true),
+                        presentationStyle: .fullWidth
+                    )
+                    .frame(width: 420)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(DesignSystem.Colors.backgroundSecondary)
+                            .shadow(
+                                color: DesignSystem.Colors.shadowMedium.opacity(0.1),
+                                radius: 20,
+                                x: -5
+                            )
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .move(edge: .trailing).combined(with: .opacity)
+                    ))
                 }
             }
-            .frame(maxHeight: .infinity)
-            
-            // Bottom toolbar
-            bottomToolbar
         }
         .background(DesignSystem.Colors.backgroundPrimary)
         .onAppear {
@@ -129,6 +167,34 @@ struct FullComposeView: View {
             }
             
             Spacer()
+            
+            // AI Assistant toggle button
+            Button {
+                withAnimation(.interpolatingSpring(stiffness: 160, damping: 20)) {
+                    showAIAssistant.toggle()
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 14, weight: .medium))
+                    Text("AI Assistant")
+                        .font(DesignSystem.Typography.subheadline)
+                }
+                .foregroundStyle(showAIAssistant ? .white : DesignSystem.Colors.primary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule()
+                        .fill(
+                            showAIAssistant ? 
+                            DesignSystem.Colors.primary : 
+                            DesignSystem.Colors.primary.opacity(0.1)
+                        )
+                )
+            }
+            .buttonStyle(.plain)
+            .help("Toggle AI writing assistant")
+            .keyboardShortcut("i", modifiers: [.command, .shift])
             
             // Save button
             Button {
@@ -249,6 +315,16 @@ struct FullComposeView: View {
                     wordCountPulse = false
                 }
             }
+        }
+    }
+    
+    private func calculateComposeWidth(totalWidth: CGFloat) -> CGFloat {
+        if showAIAssistant && totalWidth > 1000 {
+            // When AI panel is visible, compose takes remaining space
+            return totalWidth - 420 - 20 // AI panel width + gap
+        } else {
+            // Full width when AI is hidden or window is too small
+            return totalWidth
         }
     }
     

@@ -95,18 +95,6 @@ struct TimelineView: View {
                 .keyboardShortcut("n", modifiers: .command)
             }
             
-            ToolbarItemGroup(placement: .secondaryAction) {
-                // Refresh button
-                Button {
-                    Task {
-                        await journalStore.refreshEntries()
-                    }
-                } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
-                }
-                .help(journalStore.isLoading ? "Refreshing entries..." : "Refresh journal entries")
-                .disabled(journalStore.isLoading)
-            }
         }
         .onAppear {
             Task {
