@@ -21,6 +21,7 @@ struct MainWindowView: View {
     
     // MARK: - State
     
+    @State private var navigationModel = NavigationModel()
     @State private var selectedEntry: JournalEntry?
     @State private var showingChat = false
     @State private var showingSettings = false
@@ -452,6 +453,7 @@ struct MainWindowView: View {
                         }
                     }
                     .padding(DesignSystem.Spacing.contentPadding)
+                    .environment(navigationModel)
                     
                 case .chat:
                     ChatView(isPresented: .constant(true))
