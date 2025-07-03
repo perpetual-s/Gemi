@@ -281,8 +281,8 @@ struct OllamaSetupView: View {
                     title: "Install Required Models",
                     steps: [
                         "Open Terminal app",
-                        "Run: ollama pull gemma2:2b",
-                        "Run: ollama pull nomic-embed-text",
+                        "Run: ollama pull \(ModelNameHelper.normalize("gemma3n"))",
+                        "Run: ollama pull \(ModelNameHelper.normalize("nomic-embed-text"))",
                         "Wait for downloads to complete"
                     ]
                 )
@@ -401,8 +401,8 @@ struct OllamaSetupView: View {
     
     private func copyCommands() {
         let commands = """
-        ollama pull gemma2:2b
-        ollama pull nomic-embed-text
+        ollama pull \(ModelNameHelper.normalize("gemma3n"))
+        ollama pull \(ModelNameHelper.normalize("nomic-embed-text"))
         """
         
         NSPasteboard.general.clearContents()

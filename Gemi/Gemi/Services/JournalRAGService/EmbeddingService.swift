@@ -22,7 +22,7 @@ final class EmbeddingService {
         }
     }
     
-    private let embeddingModel = "nomic-embed-text"
+    private let embeddingModel = ModelNameHelper.normalize("nomic-embed-text")
     private let maxBatchSize = 10
     
     // MARK: - Embedding Generation

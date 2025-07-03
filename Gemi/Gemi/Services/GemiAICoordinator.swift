@@ -117,7 +117,7 @@ final class GemiAICoordinator {
         // Get response stream
         let stream = ollamaService.generateChatStream(
             prompt: context,
-            model: currentModel?.name ?? "gemma2:latest"
+            model: currentModel?.name ?? ModelNameHelper.normalize("gemma3n")
         )
         
         // Update metrics
@@ -154,7 +154,10 @@ final class GemiAICoordinator {
             let models = try await ollamaService.listModels()
             
             // Find base and custom models
-            let baseModel = models.first { $0.contains("gemma") && !$0.contains("gemi-custom") }
+            let baseModel = models.first { modelName in
+                ModelNameHelper.baseName(modelName).contains("gemma") && 
+                !ModelNameHelper.baseName(modelName).contains("gemi-custom")
+            }
             let customModel = models.first { $0.contains("gemi-custom") }
             
             guard baseModel != nil else {
@@ -212,7 +215,7 @@ final class GemiAICoordinator {
         
         aiStatus = .degraded("Using base model")
         currentModel = ModelInfo(
-            name: "gemma2:latest",
+            name: ModelNameHelper.normalize("gemma3n"),
             version: "base",
             createdAt: Date()
         )

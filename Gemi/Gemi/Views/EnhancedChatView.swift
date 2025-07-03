@@ -348,7 +348,7 @@ final class EnhancedChatViewModel {
                 
                 for try await chunk in ollamaService.generateChatStream(
                     prompt: context.prompt,
-                    model: "gemi-custom"
+                    model: modelManager.activeModelName
                 ) {
                     guard !Task.isCancelled else { break }
                     
@@ -520,7 +520,7 @@ final class EnhancedChatViewModel {
             
             let facts = try await ollamaService.generateChat(
                 prompt: extractionPrompt,
-                model: "gemi-custom"
+                model: modelManager.activeModelName
             )
             
             // Parse and store facts

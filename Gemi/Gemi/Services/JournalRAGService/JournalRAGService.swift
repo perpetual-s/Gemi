@@ -174,8 +174,10 @@ final class JournalRAGService {
             let ollamaService = OllamaService.shared
             let models = try await ollamaService.listModels()
             
-            guard models.contains(where: { $0.contains("nomic-embed-text") }) else {
-                return (false, "Embedding model not found. Please install nomic-embed-text.")
+            guard models.contains(where: { modelName in
+                ModelNameHelper.matches(modelName, "nomic-embed-text")
+            }) else {
+                return (false, "Embedding model not found. Please install \(ModelNameHelper.normalize("nomic-embed-text")).")
             }
             
             // Check if we have any processed entries

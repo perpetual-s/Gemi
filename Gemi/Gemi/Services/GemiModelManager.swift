@@ -14,8 +14,8 @@ final class GemiModelManager {
     private let logger = Logger(subsystem: "com.chaehoshin.Gemi", category: "GemiModelManager")
     private let fileManager = FileManager.default
     
-    private let modelName = "gemi-custom"
-    private let baseModel = "gemma3n:latest"
+    private let modelName = ModelNameHelper.normalize("gemi-custom")
+    private let baseModel = ModelNameHelper.normalize("gemma3n")
     
     private var isCreatingModel = false
     var modelStatus: ModelStatus = .notCreated
@@ -54,7 +54,9 @@ final class GemiModelManager {
     private func checkModelExists() async {
         do {
             let output = try await runCommand("ollama", arguments: ["list"])
-            if output.contains(modelName) {
+            // Check if any variation of the model name exists
+            let modelVariations = ModelNameHelper.possibleVariations(modelName)
+            if modelVariations.contains(where: { output.contains($0) }) {
                 modelStatus = .ready
                 logger.info("Gemi custom model already exists")
             } else {
@@ -69,9 +71,19 @@ final class GemiModelManager {
         logger.info("Retrieving base modelfile for \(self.baseModel)")
         
         do {
-            let output = try await runCommand("ollama", arguments: ["show", baseModel, "--modelfile"])
-            logger.info("Successfully retrieved base modelfile")
-            return output
+            // Try with the normalized name first
+            let normalizedBase = ModelNameHelper.normalize(baseModel)
+            do {
+                let output = try await runCommand("ollama", arguments: ["show", normalizedBase, "--modelfile"])
+                logger.info("Successfully retrieved base modelfile")
+                return output
+            } catch {
+                // If that fails, try without the tag
+                let baseName = ModelNameHelper.baseName(baseModel)
+                let output = try await runCommand("ollama", arguments: ["show", baseName, "--modelfile"])
+                logger.info("Successfully retrieved base modelfile using base name")
+                return output
+            }
         } catch {
             logger.error("Failed to retrieve base modelfile: \(error.localizedDescription)")
             throw ModelError.failedToRetrieveBase(error.localizedDescription)
@@ -123,7 +135,7 @@ final class GemiModelManager {
         
         // Use the Gemma 3n template format from the documentation
         let customModelfile = """
-        FROM \(baseModel)
+        FROM \(ModelNameHelper.normalize(baseModel))
         
         TEMPLATE \"\"\"{{- range $i, $_ := .Messages }}
         {{- $last := eq (len (slice $.Messages $i)) 1 }}
@@ -179,15 +191,18 @@ final class GemiModelManager {
             try customModelfile.write(to: modelfilePath, atomically: true, encoding: .utf8)
             logger.info("Wrote custom modelfile to: \(modelfilePath.path)")
             
-            // Delete existing model if it exists
+            // Delete existing model if it exists (try all variations)
             if modelStatus == .ready {
                 logger.info("Removing existing custom model...")
-                _ = try? await runCommand("ollama", arguments: ["rm", modelName])
+                for variation in ModelNameHelper.possibleVariations(modelName) {
+                    _ = try? await runCommand("ollama", arguments: ["rm", variation])
+                }
             }
             
-            // Create the custom model
+            // Create the custom model with normalized name
+            let normalizedModelName = ModelNameHelper.normalize(modelName)
             logger.info("Creating custom Gemi model with \(memories.count) memories...")
-            let output = try await runCommand("ollama", arguments: ["create", modelName, "-f", modelfilePath.path])
+            let output = try await runCommand("ollama", arguments: ["create", normalizedModelName, "-f", modelfilePath.path])
             
             // Clean up temporary file
             try? fileManager.removeItem(at: modelfilePath)
@@ -215,7 +230,10 @@ final class GemiModelManager {
         logger.info("Deleting custom Gemi model")
         
         do {
-            _ = try await runCommand("ollama", arguments: ["rm", modelName])
+            // Try to delete all variations of the model
+            for variation in ModelNameHelper.possibleVariations(modelName) {
+                _ = try? await runCommand("ollama", arguments: ["rm", variation])
+            }
             modelStatus = .notCreated
             logger.info("Successfully deleted Gemi custom model")
         } catch {

@@ -139,8 +139,8 @@ final class OllamaService {
     // MARK: - Private Properties
     
     private let baseURL = "http://localhost:11434"
-    private let modelName = "gemma3n:latest"  // Using Gemma 3n latest for hackathon
-    private let embeddingModelName = "nomic-embed-text"  // Specialized embedding model
+    private let modelName = ModelNameHelper.normalize("gemma3n")  // Using Gemma 3n latest for hackathon
+    private let embeddingModelName = ModelNameHelper.normalize("nomic-embed-text")  // Specialized embedding model
     
     private let session: URLSession
     private let logger = Logger(subsystem: "com.gemi.app", category: "OllamaService")
@@ -215,8 +215,13 @@ final class OllamaService {
             
             // Check if our required models are installed
             let installedModelNames = modelList.models.map { $0.name }
-            let hasMainModel = installedModelNames.contains(where: { $0.hasPrefix("gemma3n") || $0 == modelName })
-            let hasEmbeddingModel = installedModelNames.contains(embeddingModelName)
+            let hasMainModel = installedModelNames.contains(where: { modelName in
+                ModelNameHelper.matchesAny(self.modelName, in: [modelName]) ||
+                modelName.hasPrefix("gemma3n")
+            })
+            let hasEmbeddingModel = installedModelNames.contains(where: { modelName in
+                ModelNameHelper.matches(modelName, self.embeddingModelName)
+            })
             
             isModelInstalled = hasMainModel && hasEmbeddingModel
             
@@ -263,7 +268,7 @@ final class OllamaService {
         }
         
         let url = URL(string: "\(baseURL)/api/embeddings")!
-        let request = OllamaEmbeddingRequest(model: embeddingModelName, prompt: text)
+        let request = OllamaEmbeddingRequest(model: ModelNameHelper.normalize(embeddingModelName), prompt: text)
         
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
@@ -292,14 +297,15 @@ final class OllamaService {
     /// Pull (download) a model from Ollama
     @MainActor
     func pullModel(modelName: String) async throws {
-        logger.info("Starting model download: \(modelName)")
+        let normalizedModelName = ModelNameHelper.normalize(modelName)
+        logger.info("Starting model download: \(normalizedModelName)")
         
         guard await checkOllamaStatus() else {
             throw OllamaError.serverNotRunning
         }
         
         isProcessing = true
-        statusMessage = "Downloading \(modelName)..."
+        statusMessage = "Downloading \(normalizedModelName)..."
         downloadProgress = 0.0
         
         defer {
@@ -309,7 +315,7 @@ final class OllamaService {
         }
         
         let url = URL(string: "\(baseURL)/api/pull")!
-        let request = OllamaPullRequest(name: modelName, stream: true)
+        let request = OllamaPullRequest(name: normalizedModelName, stream: true)
         
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
@@ -339,7 +345,7 @@ final class OllamaService {
             logger.debug("Pull status: \(pullResponse.status)")
         }
         
-        logger.info("Model download completed: \(modelName)")
+        logger.info("Model download completed: \(normalizedModelName)")
         await checkModelStatus()
     }
     
@@ -372,7 +378,7 @@ final class OllamaService {
         
         let url = URL(string: "\(baseURL)/api/generate")!
         let chatRequest = OllamaChatRequest(
-            model: modelName,
+            model: ModelNameHelper.normalize(modelName),
             prompt: prompt,
             stream: true,
             options: defaultOptions,
@@ -500,8 +506,8 @@ extension OllamaService {
             return """
             The AI model needs to be installed. Please:
             1. Open Terminal
-            2. Run: ollama pull gemma3n:latest
-            3. Run: ollama pull nomic-embed-text
+            2. Run: ollama pull \(ModelNameHelper.normalize("gemma3n"))
+            3. Run: ollama pull \(ModelNameHelper.normalize("nomic-embed-text"))
             4. Wait for downloads to complete
             5. Restart Gemi
             
@@ -521,7 +527,7 @@ extension OllamaService {
         
         let url = URL(string: "\(baseURL)/api/generate")!
         let chatRequest = OllamaChatRequest(
-            model: model ?? modelName,
+            model: ModelNameHelper.normalize(model ?? modelName),
             prompt: prompt,
             stream: false,
             options: defaultOptions,
@@ -566,7 +572,7 @@ extension OllamaService {
         }
         
         let url = URL(string: "\(baseURL)/api/embeddings")!
-        let request = OllamaEmbeddingRequest(model: model, prompt: prompt)
+        let request = OllamaEmbeddingRequest(model: ModelNameHelper.normalize(model), prompt: prompt)
         
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
@@ -594,6 +600,44 @@ extension OllamaService {
         let modelList = try JSONDecoder().decode(OllamaModelList.self, from: data)
         
         return modelList.models.map { $0.name }
+    }
+    
+    /// Check if a specific model is installed (handles name variations)
+    func isModelInstalled(_ modelName: String) async throws -> Bool {
+        let models = try await listModels()
+        return ModelNameHelper.matchesAny(modelName, in: models)
+    }
+    
+    /// Create a custom model from a Modelfile
+    func createModel(name: String, modelfileContent: String) async throws {
+        logger.info("Creating custom model: \(name)")
+        
+        guard await checkOllamaStatus() else {
+            throw OllamaError.serverNotRunning
+        }
+        
+        let normalizedName = ModelNameHelper.normalize(name)
+        let url = URL(string: "\(baseURL)/api/create")!
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let body = [
+            "name": normalizedName,
+            "modelfile": modelfileContent
+        ]
+        
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        
+        let (_, response) = try await session.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw OllamaError.unknownError("Failed to create custom model")
+        }
+        
+        logger.info("Successfully created custom model: \(normalizedName)")
     }
     
     // MARK: - Specialized Analysis Methods for Insights
