@@ -57,8 +57,8 @@ struct GemiApp: App {
                         .environment(accessibilityManager)
                         .environment(keyboardNavigation)
                         .preferredColorScheme(nil) // Respect system appearance
-                    .frame(minWidth: 1200, idealWidth: 1200, maxWidth: .infinity, 
-                           minHeight: 800, idealHeight: 800, maxHeight: .infinity)
+                    .frame(minWidth: 800, idealWidth: 1200, maxWidth: .infinity, 
+                           minHeight: 600, idealHeight: 800, maxHeight: .infinity)
                     .background(DesignSystem.Colors.backgroundPrimary)
                     .premiumWindowStyle()
                     .task {
@@ -116,12 +116,12 @@ struct GemiApp: App {
                 windowStateManager.setFullScreen(false)
             }
         }
-        .windowResizability(.contentSize)
+        .windowResizability(.contentMinSize)
         .defaultSize(
-            width: 1200,
-            height: 800
+            width: 1000,
+            height: 700
         )
-        .windowToolbarStyle(.unified(showsTitle: false))
+        .windowToolbarStyle(.unified(showsTitle: true))
         .commands {
             GemiKeyboardCommands()
         }

@@ -52,13 +52,13 @@ struct TimelineCardView: View {
             .offset(y: cardOffset)
             .opacity(cardOpacity)
             .shadow(
-                color: Color.black.opacity(isHovered ? 0.08 : 0.04),
+                color: DesignSystem.Colors.shadowMedium.opacity(isHovered ? 0.5 : 0.3),
                 radius: isHovered ? 16 : 8,
                 x: 0,
                 y: isHovered ? 8 : 4
             )
             .shadow(
-                color: Color.black.opacity(isHovered ? 0.06 : 0.03),
+                color: DesignSystem.Colors.shadowLight.opacity(isHovered ? 0.3 : 0.2),
                 radius: isHovered ? 32 : 16,
                 x: 0,
                 y: isHovered ? 16 : 8
@@ -215,7 +215,7 @@ struct TimelineCardView: View {
         .padding(.vertical, 14)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color(red: 0.98, green: 0.97, blue: 0.96))
+                .fill(Color(NSColor.separatorColor).opacity(0.1))
                 .padding(.bottom, -1)
         )
     }
@@ -228,8 +228,8 @@ struct TimelineCardView: View {
             .fill(
                 LinearGradient(
                     colors: [
-                        Color.white,
-                        Color(red: 0.99, green: 0.99, blue: 0.98)
+                        Color(NSColor.controlBackgroundColor),
+                        Color(NSColor.controlBackgroundColor).opacity(0.95)
                     ],
                     startPoint: .top,
                     endPoint: .bottom
@@ -340,7 +340,7 @@ struct CompactTimelineCardView: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isHovered ? Color(red: 0.98, green: 0.97, blue: 0.96) : Color.white)
+                    .fill(isHovered ? Color(NSColor.separatorColor).opacity(0.1) : Color(NSColor.controlBackgroundColor))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)

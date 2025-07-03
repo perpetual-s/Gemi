@@ -37,22 +37,47 @@ struct MainWindowView: View {
     var body: some View {
         GeometryReader { geometry in
             let availableWidth = geometry.size.width - (DesignSystem.Spacing.base * 2) // Account for container padding
-            let sidebarWidth = availableWidth * 0.3
-            let contentWidth = availableWidth * 0.7 - DesignSystem.Spacing.panelGap
+            let minSidebarWidth: CGFloat = 240
+            let minContentWidth: CGFloat = 480
             
-            HStack(spacing: DesignSystem.Spacing.panelGap) {
-                // Left Sidebar (30% - substantial and breathing)
-                modernSidebar
-                    .frame(width: sidebarWidth)
-                    .accessibilityElement(children: .contain)
-                    .accessibilityLabel(AccessibilityLabels.timelineTitle)
-                
-                // Right Content Area (70% - spacious content focus with proper breathing room)
-                floatingContentArea
-                    .frame(width: contentWidth)
-                    .optimizedAnimation()
+            // Calculate responsive widths with minimums
+            let calculatedSidebarWidth = max(minSidebarWidth, availableWidth * 0.3)
+            let calculatedContentWidth = availableWidth - calculatedSidebarWidth - DesignSystem.Spacing.panelGap
+            
+            // Use scroll view for small windows
+            let needsScrolling = availableWidth < (minSidebarWidth + minContentWidth + DesignSystem.Spacing.panelGap)
+            
+            if needsScrolling {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: DesignSystem.Spacing.panelGap) {
+                        // Left Sidebar with minimum width
+                        modernSidebar
+                            .frame(width: minSidebarWidth)
+                            .accessibilityElement(children: .contain)
+                            .accessibilityLabel(AccessibilityLabels.timelineTitle)
+                        
+                        // Right Content Area with minimum width
+                        floatingContentArea
+                            .frame(width: max(minContentWidth, calculatedContentWidth))
+                            .optimizedAnimation()
+                    }
+                    .padding(DesignSystem.Spacing.base)
+                }
+            } else {
+                HStack(spacing: DesignSystem.Spacing.panelGap) {
+                    // Left Sidebar (30% with minimum)
+                    modernSidebar
+                        .frame(width: calculatedSidebarWidth)
+                        .accessibilityElement(children: .contain)
+                        .accessibilityLabel(AccessibilityLabels.timelineTitle)
+                    
+                    // Right Content Area (remaining space)
+                    floatingContentArea
+                        .frame(width: calculatedContentWidth)
+                        .optimizedAnimation()
+                }
+                .padding(DesignSystem.Spacing.base)
             }
-            .padding(DesignSystem.Spacing.base)
         }
         .gemiCanvas()
         .sheet(isPresented: $showingChat) {
