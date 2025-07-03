@@ -116,22 +116,36 @@ struct MainWindowView: View {
     
     @ViewBuilder
     private var modernSidebar: some View {
-        ScrollView {
-            VStack(spacing: DesignSystem.Spacing.sectionSpacing) {
-                // Header with breathing room
-                sidebarHeader
-                
-                // Navigation with generous spacing
-                sidebarNavigation
-                
-                Spacer(minLength: DesignSystem.Spacing.large)
-                
-                // Footer with clear separation
-                sidebarFooter
+        VStack(spacing: 0) {
+            // Scrollable content area
+            ScrollView {
+                VStack(spacing: DesignSystem.Spacing.sectionSpacing) {
+                    // Header with breathing room
+                    sidebarHeader
+                    
+                    // Navigation with generous spacing
+                    sidebarNavigation
+                }
+                .padding(.horizontal, DesignSystem.Spacing.panelPadding)
+                .padding(.top, DesignSystem.Spacing.panelPadding)
+                .padding(.bottom, DesignSystem.Spacing.medium)
             }
-            .padding(DesignSystem.Spacing.panelPadding)
+            .scrollIndicators(.never)
+            
+            // Fixed footer at bottom
+            VStack(spacing: 0) {
+                // Subtle separator
+                Rectangle()
+                    .fill(DesignSystem.Colors.divider.opacity(0.6))
+                    .frame(height: 1)
+                
+                // Footer content
+                sidebarFooter
+                    .padding(.horizontal, DesignSystem.Spacing.panelPadding)
+                    .padding(.vertical, DesignSystem.Spacing.medium)
+                    .background(.ultraThinMaterial)
+            }
         }
-        .scrollIndicators(.never)
         .gemiSidebarPanel()
     }
     
@@ -333,9 +347,8 @@ struct MainWindowView: View {
     
     @ViewBuilder
     private var floatingContentArea: some View {
-        // Main floating panel with generous breathing room on ALL sides
+        // Main floating panel aligned with sidebar
         mainFloatingPanel
-            .padding(.all, DesignSystem.Spacing.base)
     }
     
     @ViewBuilder
@@ -1457,12 +1470,7 @@ extension MainWindowView {
 
 // MARK: - Supporting Types
 
-enum SortOrder {
-    case dateDescending
-    case dateAscending
-    case lengthDescending
-    case lengthAscending
-}
+// SortOrder enum is already defined above in the file
 
 // MARK: - Previews
 

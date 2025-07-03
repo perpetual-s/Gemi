@@ -165,6 +165,7 @@ struct TimelineView: View {
             }
         }
         .padding(.horizontal, 24)
+        .padding(.top, DesignSystem.Spacing.medium) // Add breathing room after header
         .padding(.bottom, 32)
     }
     
