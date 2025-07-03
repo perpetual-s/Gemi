@@ -603,7 +603,7 @@ extension DatabaseManager {
             readableEntries: result.entries.filter { !$0.title.contains("🔒") }.count,
             encryptedEntries: result.decryptionFailures,
             encryptionKeyValid: keyValid,
-            databasePath: dbQueue.path ?? "Unknown"
+            databasePath: dbQueue.path
         )
     }
 }

@@ -80,19 +80,13 @@ struct InsightsView: View {
                 Spacer()
                 
                 // Time range picker
-                HStack(spacing: DesignSystem.Spacing.tiny) {
-                    Text("Time Range:")
-                        .font(DesignSystem.Typography.caption1)
-                        .foregroundStyle(DesignSystem.Colors.textSecondary)
-                    
-                    Picker("Time Range", selection: $selectedTimeRange) {
-                        ForEach(TimeRange.allCases, id: \.self) { range in
-                            Text(range.rawValue).tag(range)
-                        }
+                Picker("", selection: $selectedTimeRange) {
+                    ForEach(TimeRange.allCases, id: \.self) { range in
+                        Text(range.rawValue).tag(range)
                     }
-                    .pickerStyle(.segmented)
-                    .frame(width: 320)
                 }
+                .pickerStyle(.segmented)
+                .frame(width: 320)
             }
             
             Divider()

@@ -83,9 +83,11 @@ class DatabaseTest {
         
         // Fetch all entries (should decrypt content automatically)
         print("\nFetching all entries (content will be decrypted)...")
-        let fetchedEntries = try await databaseManager.fetchAllEntries()
+        let result = try await databaseManager.fetchAllEntries()
+        let fetchedEntries = result.entries
+        let decryptionFailures = result.decryptionFailures
         
-        print("Retrieved \(fetchedEntries.count) entries")
+        print("Retrieved \(fetchedEntries.count) entries (\(decryptionFailures) decryption failures)")
         
         // Verify the content matches
         guard let retrievedEntry = fetchedEntries.first else {
@@ -126,8 +128,9 @@ class DatabaseTest {
         }
         
         // Fetch all entries and verify ordering
-        let allEntries = try await databaseManager.fetchAllEntries()
-        print("\nRetrieved \(allEntries.count) total entries")
+        let result = try await databaseManager.fetchAllEntries()
+        let allEntries = result.entries
+        print("\nRetrieved \(allEntries.count) total entries (\(result.decryptionFailures) decryption failures)")
         print("Entries ordered by date (newest first):")
         
         for (index, entry) in allEntries.enumerated() {

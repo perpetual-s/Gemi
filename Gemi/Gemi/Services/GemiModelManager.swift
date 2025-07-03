@@ -20,7 +20,7 @@ final class GemiModelManager {
     private var isCreatingModel = false
     var modelStatus: ModelStatus = .notCreated
     
-    enum ModelStatus {
+    enum ModelStatus: Equatable {
         case notCreated
         case creating
         case ready
@@ -182,7 +182,7 @@ final class GemiModelManager {
             // Delete existing model if it exists
             if modelStatus == .ready {
                 logger.info("Removing existing custom model...")
-                try? await runCommand("ollama", arguments: ["rm", modelName])
+                _ = try? await runCommand("ollama", arguments: ["rm", modelName])
             }
             
             // Create the custom model
@@ -229,7 +229,8 @@ final class GemiModelManager {
         logger.info("Creating personalized model from memory store")
         
         // Extract key memories as strings
-        let memories = memoryStore.memories.prefix(20).map { memory in
+        let allMemories = try await memoryStore.getAllMemories(offset: 0, limit: 20)
+        let memories = allMemories.map { memory in
             memory.content
         }
         

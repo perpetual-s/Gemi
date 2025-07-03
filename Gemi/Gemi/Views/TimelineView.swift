@@ -43,6 +43,9 @@ struct TimelineView: View {
     @State private var searchText = ""
     @FocusState private var isSearchFocused: Bool
     
+    /// Entry being viewed in floating window
+    @State private var viewingEntry: JournalEntry?
+    
     private var groupedEntries: [Date: [JournalEntry]] {
         Dictionary(grouping: journalStore.entries) { entry in
             Calendar.current.startOfDay(for: entry.date)
@@ -115,6 +118,9 @@ struct TimelineView: View {
             // TODO: Replace with actual ChatOverlay when implemented
             chatPlaceholder
         }
+        .sheet(item: $viewingEntry) { entry in
+            FloatingEntryView(entry: entry)
+        }
         .alert("Delete Entry", isPresented: $showingDeleteAlert) {
             Button("Delete", role: .destructive) {
                 if let entry = entryToDelete {
@@ -171,7 +177,7 @@ struct TimelineView: View {
             action: {
                 withAnimation(DesignSystem.Animation.encouragingSpring) {
                     selectedEntry = entry
-                    navigationModel.openEntry(entry)
+                    viewingEntry = entry
                 }
             },
             onEdit: {

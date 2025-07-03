@@ -17,6 +17,7 @@ struct MainNavigationView: View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             // Sidebar
             SimplifiedSidebar()
+                .environment(navigation)
                 .navigationSplitViewColumnWidth(
                     ideal: navigation.isSidebarCollapsed ? 64 : 240
                 )

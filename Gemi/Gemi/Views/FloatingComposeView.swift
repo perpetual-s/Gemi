@@ -168,6 +168,7 @@ struct FloatingComposeView: View {
                     )
             }
             .buttonStyle(.plain)
+            .keyboardShortcut(.escape)
             .help("Close editor (Esc)")
         }
         .padding(DesignSystem.Spacing.large)
@@ -259,17 +260,7 @@ struct FloatingComposeView: View {
             
             // Action buttons
             HStack(spacing: DesignSystem.Spacing.base) {
-                Button("Cancel") {
-                    withAnimation(DesignSystem.Animation.cozySettle) {
-                        if let onCancel = onCancel {
-                            onCancel()
-                        } else {
-                            dismiss()
-                        }
-                    }
-                }
-                .gemiSecondaryButton()
-                .keyboardShortcut(.escape)
+                Spacer()
                 
                 Button {
                     Task {

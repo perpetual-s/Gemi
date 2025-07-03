@@ -143,6 +143,26 @@ struct GemiKeyboardCommands: Commands {
             .keyboardShortcut("U", modifiers: .command)
         }
         
+        // Gemi Menu
+        CommandMenu("Gemi") {
+            Button("Chat with Gemma 3n") {
+                showChat? = true
+            }
+            .keyboardShortcut("T", modifiers: .command)
+            
+            Divider()
+            
+            Button("Show Memories") {
+                // Handle show memories
+            }
+            .keyboardShortcut("M", modifiers: [.command, .shift])
+            
+            Button("View Insights") {
+                // Handle insights view
+            }
+            .keyboardShortcut("I", modifiers: [.command, .shift])
+        }
+        
         // View Menu
         CommandMenu("View") {
             Button("Toggle Sidebar") {

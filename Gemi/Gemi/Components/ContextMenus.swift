@@ -65,11 +65,11 @@ struct JournalEntryContextMenu: View {
     private func exportAsMarkdown() {
         let savePanel = NSSavePanel()
         savePanel.allowedContentTypes = [.text]
-        savePanel.nameFieldStringValue = "\(entry.title ?? "Journal Entry").md"
+        savePanel.nameFieldStringValue = "\(entry.title.isEmpty ? "Journal Entry" : entry.title).md"
         
         if savePanel.runModal() == .OK, let url = savePanel.url {
             let markdown = """
-            # \(entry.title ?? "Journal Entry")
+            # \(entry.title.isEmpty ? "Journal Entry" : entry.title)
             
             **Date:** \(entry.date.formatted(date: .complete, time: .shortened))
             **Mood:** \(entry.mood ?? "No mood")
@@ -91,11 +91,11 @@ struct JournalEntryContextMenu: View {
     private func exportAsPlainText() {
         let savePanel = NSSavePanel()
         savePanel.allowedContentTypes = [.plainText]
-        savePanel.nameFieldStringValue = "\(entry.title ?? "Journal Entry").txt"
+        savePanel.nameFieldStringValue = "\(entry.title.isEmpty ? "Journal Entry" : entry.title).txt"
         
         if savePanel.runModal() == .OK, let url = savePanel.url {
             let plainText = """
-            \(entry.title ?? "Journal Entry")
+            \(entry.title.isEmpty ? "Journal Entry" : entry.title)
             Date: \(entry.date.formatted(date: .complete, time: .shortened))
             Mood: \(entry.mood ?? "No mood")
             
@@ -352,7 +352,7 @@ struct PDFExportView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text(entry.title ?? "Journal Entry")
+            Text(entry.title.isEmpty ? "Journal Entry" : entry.title)
                 .font(.largeTitle)
                 .fontWeight(.bold)
             

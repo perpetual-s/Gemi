@@ -335,8 +335,28 @@ struct MainWindowView: View {
             
             Spacer()
             
-            // Panel actions with substantial presence
-            panelHeaderActions
+            // Close button when composing
+            if isComposingNewEntry {
+                Button {
+                    withAnimation(DesignSystem.Animation.cozySettle) {
+                        isComposingNewEntry = false
+                    }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(DesignSystem.Colors.textTertiary)
+                        .background(
+                            Circle()
+                                .fill(DesignSystem.Colors.hover.opacity(0.5))
+                        )
+                }
+                .buttonStyle(.plain)
+                .keyboardShortcut(.escape)
+                .help("Cancel new entry (Esc)")
+            } else {
+                // Panel actions with substantial presence
+                panelHeaderActions
+            }
         }
         .padding(.horizontal, DesignSystem.Spacing.panelPadding)
         .padding(.vertical, DesignSystem.Spacing.contentPadding)
@@ -408,10 +428,11 @@ struct MainWindowView: View {
     private var panelContent: some View {
         Group {
             if isComposingNewEntry {
-                FloatingComposeView(entry: .constant(nil), onSave: {
+                FullComposeView(entry: .constant(nil), onSave: {
                     // On save callback
                     withAnimation(DesignSystem.Animation.cozySettle) {
                         isComposingNewEntry = false
+                        sidebarSelection = .timeline
                     }
                     Task {
                         await journalStore.refreshEntries()
@@ -422,7 +443,6 @@ struct MainWindowView: View {
                         isComposingNewEntry = false
                     }
                 })
-                .padding(DesignSystem.Spacing.contentPadding)
             } else {
                 switch sidebarSelection {
                 case .timeline:
