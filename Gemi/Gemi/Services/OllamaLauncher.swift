@@ -332,9 +332,9 @@ final class OllamaLauncher {
     // MARK: - Cleanup
     
     deinit {
-        Task { @MainActor in
-            stopOllama()
-        }
+        // Note: Cannot access @MainActor properties from deinit
+        // The process will be cleaned up automatically when the app terminates
+        // or can be manually stopped via stopOllama() before deinitialization
     }
 }
 
