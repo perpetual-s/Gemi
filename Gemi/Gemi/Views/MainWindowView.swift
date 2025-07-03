@@ -143,8 +143,10 @@ struct MainWindowView: View {
                 sidebarFooter
                     .padding(.horizontal, DesignSystem.Spacing.panelPadding)
                     .padding(.vertical, DesignSystem.Spacing.medium)
-                    .background(.ultraThinMaterial)
             }
+            .background(
+                .ultraThinMaterial.opacity(0.5)
+            )
         }
         .gemiSidebarPanel()
     }

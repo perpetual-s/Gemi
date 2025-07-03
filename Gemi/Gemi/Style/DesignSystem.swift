@@ -1179,6 +1179,7 @@ struct GemiFloatingPanelStyle: ViewModifier {
 struct GemiSidebarPanelStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
+            .clipShape(RoundedRectangle(cornerRadius: 16))
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(DesignSystem.Colors.sidebarBackground)

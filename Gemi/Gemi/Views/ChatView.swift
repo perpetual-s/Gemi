@@ -661,10 +661,10 @@ struct ChatInputView: View {
             .padding(.vertical, 4)
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color.primary.opacity(0.05))
+                    .fill(Color(NSColor.controlBackgroundColor))
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5)
+                            .strokeBorder(Color.primary.opacity(0.2), lineWidth: 1)
                     )
             )
             
@@ -742,6 +742,13 @@ struct ResizableTextEditor: NSViewRepresentable {
         textView.font = .systemFont(ofSize: 15)
         textView.textContainerInset = NSSize(width: 8, height: 8)
         
+        // Fix: Set text color explicitly for dark mode support
+        textView.textColor = NSColor.labelColor
+        
+        // Fix: Configure text container properly
+        textView.textContainer?.widthTracksTextView = true
+        textView.textContainer?.containerSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        
         return scrollView
     }
     
@@ -756,6 +763,9 @@ struct ResizableTextEditor: NSViewRepresentable {
         if isFocused && textView.window?.firstResponder != textView {
             textView.window?.makeFirstResponder(textView)
         }
+        
+        // Fix: Ensure text color remains set for dark mode
+        textView.textColor = NSColor.labelColor
     }
     
     func makeCoordinator() -> Coordinator {
@@ -763,11 +773,23 @@ struct ResizableTextEditor: NSViewRepresentable {
     }
     
     private func updateHeight(_ textView: NSTextView) {
-        textView.textContainer?.containerSize = CGSize(width: textView.frame.width, height: .greatestFiniteMagnitude)
-        textView.sizeToFit()
-        let newHeight = textView.frame.height
+        // Fix: Properly calculate height based on text content
+        guard let textContainer = textView.textContainer,
+              let layoutManager = textView.layoutManager else { return }
+        
+        // Force layout to get accurate measurements
+        layoutManager.ensureLayout(for: textContainer)
+        
+        // Get the used rect for the text
+        let usedRect = layoutManager.usedRect(for: textContainer)
+        let textHeight = usedRect.height
+        
+        // Add padding for text container inset
+        let totalHeight = textHeight + textView.textContainerInset.height * 2
+        
         DispatchQueue.main.async {
-            height = max(40, min(newHeight + 16, 120))
+            // Set height with min/max constraints
+            height = max(40, min(totalHeight, 120))
         }
     }
     

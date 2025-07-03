@@ -75,27 +75,6 @@ struct TimelineView: View {
                 }
             }
         }
-        .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                // Talk to Gemi button
-                Button {
-                    showingChat = true
-                } label: {
-                    Label("Talk to Gemi", systemImage: "message.circle")
-                }
-                .help("Start a conversation with your AI journal companion")
-                
-                // New Entry button
-                Button {
-                    onNewEntry?()
-                } label: {
-                    Label("New Entry", systemImage: "square.and.pencil")
-                }
-                .help("Create a new journal entry")
-                .keyboardShortcut("n", modifiers: .command)
-            }
-            
-        }
         .onAppear {
             Task {
                 await journalStore.refreshEntries()
