@@ -139,7 +139,7 @@ final class OllamaService {
     // MARK: - Private Properties
     
     private let baseURL = "http://localhost:11434"
-    private let modelName = "gemma3n:e2b"  // Using Gemma 3n 2B effective params for hackathon - optimized for everyday devices
+    private let modelName = "gemma3n:latest"  // Using Gemma 3n latest for hackathon
     private let embeddingModelName = "nomic-embed-text"  // Specialized embedding model
     
     private let session: URLSession
@@ -500,7 +500,7 @@ extension OllamaService {
             return """
             The AI model needs to be installed. Please:
             1. Open Terminal
-            2. Run: ollama pull gemma3n:e2b
+            2. Run: ollama pull gemma3n:latest
             3. Run: ollama pull nomic-embed-text
             4. Wait for downloads to complete
             5. Restart Gemi

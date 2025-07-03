@@ -102,7 +102,7 @@ struct TimelineView: View {
                 } label: {
                     Label("Refresh", systemImage: "arrow.clockwise")
                 }
-                .help("Refresh journal entries")
+                .help(journalStore.isLoading ? "Refreshing entries..." : "Refresh journal entries")
                 .disabled(journalStore.isLoading)
             }
         }
@@ -154,13 +154,13 @@ struct TimelineView: View {
     
     @ViewBuilder
     private func timelineSection(for date: Date) -> some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 24) {
             ForEach(Array(groupedEntries[date]!.enumerated()), id: \.element.id) { index, entry in
                 timelineCard(entry: entry, index: index)
             }
         }
         .padding(.horizontal, 24)
-        .padding(.bottom, 8)
+        .padding(.bottom, 16)
     }
     
     @ViewBuilder
@@ -193,7 +193,7 @@ struct TimelineView: View {
         )
         .id(entry.id)
         .transition(entryTransition)
-        .scaleIn(delay: reduceMotion ? 0 : Double(index) * 0.05, from: reduceMotion ? 1 : 0.85)
+        .scaleIn(delay: reduceMotion ? 0 : Double(index) * 0.05, from: reduceMotion ? 1 : 0.95)
     }
     
     @ViewBuilder
@@ -244,30 +244,48 @@ struct TimelineView: View {
     private var loadingView: some View {
         ScrollView {
             VStack(spacing: 24) {
-                // Title skeleton
-                HStack {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(width: 120, height: 24)
-                        .overlay(shimmeringOverlay)
-                    Spacer()
+                // Warm loading message
+                VStack(spacing: DesignSystem.Spacing.small) {
+                    DotsLoadingIndicator()
+                        .frame(height: 30)
+                    
+                    Text("Loading your memories...")
+                        .font(DesignSystem.Typography.callout)
+                        .foregroundStyle(DesignSystem.Colors.textSecondary)
+                        .transition(.opacity)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 20)
+                .padding(.top, 40)
                 
-                // Card skeletons
-                VStack(spacing: 16) {
+                // Card skeletons with warm styling
+                VStack(spacing: 20) {
                     ForEach(0..<3, id: \.self) { index in
-                        LoadingCardPlaceholder()
-                            .transition(.opacity)
-                            .animation(.easeOut(duration: 0.3).delay(Double(index) * 0.1), value: journalStore.isLoading)
+                        CardSkeletonView()
+                            .frame(height: 140)
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .scale(scale: 0.95)).combined(with: .offset(y: 20)),
+                                removal: .opacity
+                            ))
+                            .animation(
+                                DesignSystem.Animation.encouragingSpring.delay(Double(index) * 0.15),
+                                value: journalStore.isLoading
+                            )
                     }
                 }
                 .padding(.horizontal, 24)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(DesignSystem.Colors.backgroundPrimary)
+        .background(
+            LinearGradient(
+                colors: [
+                    DesignSystem.Colors.backgroundPrimary,
+                    DesignSystem.Colors.backgroundSecondary.opacity(0.3),
+                    DesignSystem.Colors.backgroundPrimary
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
     }
     
     // MARK: - Empty State

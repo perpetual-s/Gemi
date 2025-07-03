@@ -29,6 +29,7 @@ struct FloatingComposeView: View {
     @State private var isWriting = false
     @State private var wordCountPulse = false
     @State private var editorGlow = false
+    @State private var showSuccessAnimation = false
     
     // Callbacks
     var onSave: (() -> Void)?
@@ -91,6 +92,44 @@ struct FloatingComposeView: View {
         } message: {
             Text(errorMessage ?? "An unknown error occurred while saving your journal entry.")
         }
+        .overlay(
+            // Success animation overlay
+            Group {
+                if showSuccessAnimation {
+                    ZStack {
+                        // Background blur
+                        Rectangle()
+                            .fill(.ultraThinMaterial)
+                            .ignoresSafeArea()
+                        
+                        // Success checkmark animation
+                        VStack(spacing: DesignSystem.Spacing.medium) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 80))
+                                .foregroundStyle(DesignSystem.Colors.success)
+                                .scaleEffect(showSuccessAnimation ? 1.0 : 0.5)
+                                .animation(
+                                    DesignSystem.Animation.playfulBounce.delay(0.1),
+                                    value: showSuccessAnimation
+                                )
+                            
+                            Text("Entry Saved!")
+                                .font(DesignSystem.Typography.title2)
+                                .foregroundStyle(DesignSystem.Colors.textPrimary)
+                                .opacity(showSuccessAnimation ? 1.0 : 0.0)
+                                .animation(
+                                    DesignSystem.Animation.standard.delay(0.2),
+                                    value: showSuccessAnimation
+                                )
+                        }
+                    }
+                    .transition(.asymmetric(
+                        insertion: .opacity,
+                        removal: .opacity
+                    ))
+                }
+            }
+        )
     }
     
     // MARK: - Floating Header
@@ -250,6 +289,7 @@ struct FloatingComposeView: View {
                 }
                 .gemiPrimaryButton(isLoading: isSaving)
                 .disabled(isSaving || content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .help(content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Add content to save your entry" : "Save your journal entry")
                 .keyboardShortcut("s", modifiers: .command)
             }
         }
@@ -347,6 +387,17 @@ struct FloatingComposeView: View {
             }
             
             print("Journal entry saved successfully")
+            
+            // Show success animation
+            withAnimation(DesignSystem.Animation.playfulBounce) {
+                showSuccessAnimation = true
+            }
+            
+            // Haptic feedback
+            NSSound.beep()
+            
+            // Delay before dismissing to show animation
+            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
             
             if let onSave = onSave {
                 onSave()

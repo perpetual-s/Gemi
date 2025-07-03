@@ -67,7 +67,6 @@ struct MainWindowView: View {
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView(isPresented: $showingSettings)
-                .interactiveDismissDisabled()
         }
         .focusedValue(\.selectedEntry, selectedEntry)
         .focusedValue(\.showSettings, $showingSettings)
@@ -435,13 +434,24 @@ struct MainWindowView: View {
                     .padding(DesignSystem.Spacing.contentPadding)
                     
                 case .chat:
-                    chatPlaceholder
+                    ChatView(isPresented: .constant(true))
+                        .environment(chatViewModel)
                     
                 case .memories:
                     memoriesPlaceholder
                     
                 case .insights:
                     insightsPlaceholder
+                    
+                case .search:
+                    searchPlaceholder
+                    
+                case .export:
+                    exportPlaceholder
+                    
+                case .help:
+                    HelpView()
+                        .padding(DesignSystem.Spacing.contentPadding)
                 }
             }
         }
@@ -1008,6 +1018,100 @@ struct MainWindowView: View {
     // Animation state for insights
     @State private var insightGrow = false
     
+    // MARK: - Search Placeholder
+    
+    @ViewBuilder
+    private var searchPlaceholder: some View {
+        ScrollView {
+            VStack(spacing: DesignSystem.Spacing.extraLarge) {
+                Spacer(minLength: DesignSystem.Spacing.extraLarge)
+                
+                // Search illustration
+                Image(systemName: "magnifyingglass.circle.fill")
+                    .font(.system(size: 80))
+                    .foregroundStyle(DesignSystem.Colors.primary.opacity(0.3))
+                
+                // Search content
+                VStack(spacing: DesignSystem.Spacing.large) {
+                    Text("Search Everything")
+                        .font(ModernDesignSystem.Typography.display)
+                        .foregroundStyle(ModernDesignSystem.Colors.primary)
+                    
+                    Text("Find entries, memories, and insights instantly")
+                        .font(ModernDesignSystem.Typography.title3)
+                        .foregroundStyle(ModernDesignSystem.Colors.adaptiveTextSecondary)
+                    
+                    // Search bar placeholder
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundStyle(DesignSystem.Colors.textTertiary)
+                        Text("Search your journal...")
+                            .foregroundStyle(DesignSystem.Colors.textTertiary)
+                        Spacer()
+                    }
+                    .padding(DesignSystem.Spacing.medium)
+                    .background(
+                        RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
+                            .fill(DesignSystem.Colors.backgroundSecondary)
+                    )
+                    .frame(maxWidth: 500)
+                    
+                    Text("Coming soon: Full-text search across all your entries")
+                        .font(DesignSystem.Typography.caption1)
+                        .foregroundStyle(DesignSystem.Colors.textTertiary)
+                }
+                
+                Spacer(minLength: DesignSystem.Spacing.extraLarge)
+            }
+            .padding(.horizontal, DesignSystem.Spacing.panelPadding)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    // MARK: - Export Placeholder
+    
+    @ViewBuilder
+    private var exportPlaceholder: some View {
+        ScrollView {
+            VStack(spacing: DesignSystem.Spacing.extraLarge) {
+                Spacer(minLength: DesignSystem.Spacing.extraLarge)
+                
+                // Export illustration
+                Image(systemName: "square.and.arrow.up.circle.fill")
+                    .font(.system(size: 80))
+                    .foregroundStyle(DesignSystem.Colors.primary.opacity(0.3))
+                
+                // Export content
+                VStack(spacing: DesignSystem.Spacing.large) {
+                    Text("Export Your Journal")
+                        .font(ModernDesignSystem.Typography.display)
+                        .foregroundStyle(ModernDesignSystem.Colors.primary)
+                    
+                    Text("Save your entries in various formats")
+                        .font(ModernDesignSystem.Typography.title3)
+                        .foregroundStyle(ModernDesignSystem.Colors.adaptiveTextSecondary)
+                    
+                    // Export options
+                    VStack(spacing: DesignSystem.Spacing.medium) {
+                        ExportOptionRow(icon: "doc.text", title: "Markdown", description: "Perfect for developers")
+                        ExportOptionRow(icon: "doc.plaintext", title: "Plain Text", description: "Universal format")
+                        ExportOptionRow(icon: "doc.richtext", title: "PDF", description: "Print-ready format")
+                        ExportOptionRow(icon: "archivebox", title: "Full Backup", description: "Complete encrypted backup")
+                    }
+                    .frame(maxWidth: 500)
+                    
+                    Text("Export individual entries from the context menu")
+                        .font(DesignSystem.Typography.caption1)
+                        .foregroundStyle(DesignSystem.Colors.textTertiary)
+                }
+                
+                Spacer(minLength: DesignSystem.Spacing.extraLarge)
+            }
+            .padding(.horizontal, DesignSystem.Spacing.panelPadding)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
     // MARK: - Types
     
     enum SortOrder {
@@ -1081,13 +1185,19 @@ enum SidebarItem: String, CaseIterable {
     case chat = "chat"
     case memories = "memories"
     case insights = "insights"
+    case search = "search"
+    case export = "export"
+    case help = "help"
     
     var title: String {
         switch self {
         case .timeline: return "Timeline"
-        case .chat: return "Chat"
+        case .chat: return "Chat with Gemi"
         case .memories: return "Memories"
         case .insights: return "Insights"
+        case .search: return "Search"
+        case .export: return "Export"
+        case .help: return "Help"
         }
     }
     
@@ -1097,6 +1207,9 @@ enum SidebarItem: String, CaseIterable {
         case .chat: return "message.circle"
         case .memories: return "brain.head.profile"
         case .insights: return "chart.line.uptrend.xyaxis"
+        case .search: return "magnifyingglass"
+        case .export: return "square.and.arrow.up"
+        case .help: return "questionmark.circle"
         }
     }
     
@@ -1106,6 +1219,9 @@ enum SidebarItem: String, CaseIterable {
         case .chat: return "Talk to Gemi"
         case .memories: return "What Gemi remembers"
         case .insights: return "Discover patterns"
+        case .search: return "Find anything"
+        case .export: return "Save your journal"
+        case .help: return "Get assistance"
         }
     }
     
@@ -1115,6 +1231,9 @@ enum SidebarItem: String, CaseIterable {
         case .chat: return "Have a conversation with your AI companion"
         case .memories: return "Manage what Gemi remembers about your life"
         case .insights: return "Analyze your journaling patterns and growth"
+        case .search: return "Search through your entries, memories, and insights"
+        case .export: return "Export your journal in various formats"
+        case .help: return "Get help using Gemi and learn about features"
         }
     }
     
@@ -1123,6 +1242,44 @@ enum SidebarItem: String, CaseIterable {
     private func showCoachMarksIfNeeded() {
         // Coach marks are handled by the OnboardingState
         // They will show automatically based on user progress
+    }
+}
+
+// MARK: - Supporting Views
+
+struct ExportOptionRow: View {
+    let icon: String
+    let title: String
+    let description: String
+    
+    var body: some View {
+        HStack(spacing: DesignSystem.Spacing.medium) {
+            Image(systemName: icon)
+                .font(.system(size: 24))
+                .foregroundStyle(DesignSystem.Colors.primary)
+                .frame(width: 32)
+            
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.tiny) {
+                Text(title)
+                    .font(DesignSystem.Typography.headline)
+                    .foregroundStyle(DesignSystem.Colors.textPrimary)
+                
+                Text(description)
+                    .font(DesignSystem.Typography.caption1)
+                    .foregroundStyle(DesignSystem.Colors.textSecondary)
+            }
+            
+            Spacer()
+            
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14))
+                .foregroundStyle(DesignSystem.Colors.textTertiary)
+        }
+        .padding(DesignSystem.Spacing.medium)
+        .background(
+            RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
+                .fill(DesignSystem.Colors.backgroundSecondary)
+        )
     }
 }
 

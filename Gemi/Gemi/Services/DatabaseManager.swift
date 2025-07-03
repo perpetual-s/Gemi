@@ -187,9 +187,9 @@ final class DatabaseManager: Sendable {
     }
     
     /// Fetches all journal entries from the database with decrypted content
-    /// - Returns: Array of decrypted journal entries, ordered by date (newest first)
-    /// - Throws: DatabaseError or DecryptionError
-    func fetchAllEntries() async throws -> [JournalEntry] {
+    /// - Returns: A tuple containing the decrypted entries and any decryption errors
+    /// - Throws: DatabaseError if database operations fail
+    func fetchAllEntries() async throws -> (entries: [JournalEntry], decryptionFailures: Int) {
         let encryptedEntries = try await dbQueue.read { db in
             try JournalEntry.fetchAllOrderedByDate(db)
         }
@@ -197,6 +197,7 @@ final class DatabaseManager: Sendable {
         // Decrypt all entries
         var decryptedEntries: [JournalEntry] = []
         var decryptionErrors = 0
+        var failedEntryIds: [UUID] = []
         
         for encryptedEntry in encryptedEntries {
             do {
@@ -212,24 +213,27 @@ final class DatabaseManager: Sendable {
                 decryptedEntries.append(decryptedEntry)
             } catch {
                 decryptionErrors += 1
+                failedEntryIds.append(encryptedEntry.id)
                 print("❌ Failed to decrypt entry \(encryptedEntry.id): \(error)")
-                // Include entry with placeholder content to maintain user's data
-                let placeholderEntry = JournalEntry(
+                
+                // Include entry with error indicator but preserve metadata
+                let errorEntry = JournalEntry(
                     id: encryptedEntry.id,
                     date: encryptedEntry.date,
-                    title: "[Decryption Error]",
-                    content: "This entry could not be decrypted. The encryption key may have changed.",
+                    title: "🔒 Encrypted Entry",
+                    content: "This entry could not be decrypted. This might happen if:\n\n• The app was reinstalled\n• The encryption key was reset\n• The keychain was cleared\n\nDate: \(encryptedEntry.date.formatted(date: .complete, time: .shortened))",
                     mood: encryptedEntry.mood
                 )
-                decryptedEntries.append(placeholderEntry)
+                decryptedEntries.append(errorEntry)
             }
         }
         
         if decryptionErrors > 0 {
             print("⚠️ Failed to decrypt \(decryptionErrors) out of \(encryptedEntries.count) entries")
+            print("Failed entry IDs: \(failedEntryIds)")
         }
         
-        return decryptedEntries
+        return (decryptedEntries, decryptionErrors)
     }
     
     /// Fetches a specific journal entry by ID with decrypted content
@@ -552,6 +556,56 @@ extension DatabaseManager {
             try JournalEntry.fetchOne(db, key: id)
         }
     }
+    
+    /// Attempts to re-encrypt an entry with a new key
+    /// This can be used to recover entries after key changes
+    func attemptEntryRecovery(entryId: UUID, with content: String, title: String) async throws {
+        // Encrypt the content with the current key
+        let encryptedContent = try await encryptContent(content)
+        let encryptedTitle = try await encryptContent(title)
+        
+        // Update the entry in the database
+        try await dbQueue.write { db in
+            try db.execute(
+                sql: "UPDATE entries SET content = ?, title = ? WHERE id = ?",
+                arguments: [encryptedContent, encryptedTitle, entryId]
+            )
+        }
+        
+        print("✅ Successfully re-encrypted entry \(entryId)")
+    }
+    
+    /// Checks if the encryption key is valid by attempting to decrypt a test value
+    func validateEncryptionKey() async -> Bool {
+        do {
+            // Try to encrypt and decrypt a test string
+            let testString = "Gemi encryption test"
+            let encrypted = try await encryptContent(testString)
+            let decrypted = try await decryptContent(encrypted)
+            return decrypted == testString
+        } catch {
+            print("❌ Encryption key validation failed: \(error)")
+            return false
+        }
+    }
+    
+    /// Creates a diagnostic report about the database state
+    func getDatabaseDiagnostics() async throws -> DatabaseDiagnostics {
+        let totalEntries = try await dbQueue.read { db in
+            try JournalEntry.fetchCount(db)
+        }
+        
+        let result = try await fetchAllEntries()
+        let keyValid = await validateEncryptionKey()
+        
+        return DatabaseDiagnostics(
+            totalEntries: totalEntries,
+            readableEntries: result.entries.filter { !$0.title.contains("🔒") }.count,
+            encryptedEntries: result.decryptionFailures,
+            encryptionKeyValid: keyValid,
+            databasePath: dbQueue.path ?? "Unknown"
+        )
+    }
 }
 
 // MARK: - Error Types
@@ -580,5 +634,25 @@ enum DatabaseError: Error, LocalizedError {
         case .initializationFailed(let message):
             return message
         }
+    }
+}
+
+/// Database diagnostic information
+struct DatabaseDiagnostics {
+    let totalEntries: Int
+    let readableEntries: Int
+    let encryptedEntries: Int
+    let encryptionKeyValid: Bool
+    let databasePath: String
+    
+    var summary: String {
+        """
+        Database Diagnostics:
+        • Total entries: \(totalEntries)
+        • Readable entries: \(readableEntries)
+        • Encrypted/unreadable entries: \(encryptedEntries)
+        • Encryption key valid: \(encryptionKeyValid ? "Yes" : "No")
+        • Database location: \(databasePath)
+        """
     }
 } 

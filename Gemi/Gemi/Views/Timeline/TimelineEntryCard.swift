@@ -128,7 +128,8 @@ struct TimelineEntryCard: View {
                     .foregroundColor(ModernDesignSystem.Colors.textSecondary)
                     .lineLimit(3)
                     .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(minHeight: 60)
+                    .padding(.vertical, ModernDesignSystem.Spacing.xs)
                 
                 // Photos preview (if any)
                 if hasPhotos {

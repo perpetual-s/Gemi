@@ -15,7 +15,7 @@ final class GemiModelManager {
     private let fileManager = FileManager.default
     
     private let modelName = "gemi-custom"
-    private let baseModel = "gemma2:latest"
+    private let baseModel = "gemma3n:latest"
     
     private var isCreatingModel = false
     var modelStatus: ModelStatus = .notCreated
@@ -25,6 +25,24 @@ final class GemiModelManager {
         case creating
         case ready
         case error(String)
+    }
+    
+    /// Returns the model name to use for chat operations
+    var activeModelName: String {
+        switch modelStatus {
+        case .ready:
+            return modelName
+        default:
+            return baseModel
+        }
+    }
+    
+    /// Check if the custom model is available
+    var isCustomModelReady: Bool {
+        if case .ready = modelStatus {
+            return true
+        }
+        return false
     }
     
     init() {
@@ -60,7 +78,7 @@ final class GemiModelManager {
         }
     }
     
-    func createGemiModelfile(from baseModelfile: String) -> String {
+    func createGemiModelfile(from baseModelfile: String, userMemories: [String] = []) -> String {
         logger.info("Creating custom Gemi modelfile")
         
         let systemPrompt = """
@@ -72,34 +90,68 @@ final class GemiModelManager {
         - You celebrate growth and self-discovery, no matter how small
         - You maintain absolute privacy - everything shared with you stays completely local on this device
         - You remember past conversations to provide continuity and deeper understanding over time
+        - You have a gentle sense of humor and can find lightness even in difficult moments
+        - You're curious about the user's inner world and ask questions that help them discover insights
         
         When responding:
         - Be conversational and natural, avoiding clinical or overly formal language
+        - Use warm, encouraging language like you're chatting with a close friend over coffee
         - Ask thoughtful follow-up questions that encourage deeper reflection
         - Validate feelings while gently challenging unhelpful thought patterns
         - Suggest journaling prompts or reflection exercises when appropriate
-        - Reference past entries when relevant to show you remember and care
+        - Reference past entries naturally when relevant to show you remember and care
+        - Celebrate small victories and progress, no matter how minor they may seem
+        - Help identify patterns in thoughts, feelings, and behaviors over time
+        
+        Communication style:
+        - Keep responses concise but meaningful (2-4 paragraphs typically)
+        - Use a warm, conversational tone with occasional light humor
+        - Mirror the user's emotional state while gently guiding toward reflection
+        - End responses with an open-ended question or gentle prompt for further exploration
         
         Remember: You are not a therapist, but a supportive companion for personal reflection and growth through journaling.
         """
         
+        // Add user memories to the system prompt if available
+        var fullSystemPrompt = systemPrompt
+        if !userMemories.isEmpty {
+            fullSystemPrompt += "\n\nImportant things to remember about your friend:\n"
+            for memory in userMemories.prefix(10) { // Limit to 10 most relevant memories
+                fullSystemPrompt += "- \(memory)\n"
+            }
+        }
+        
+        // Use the Gemma 3n template format from the documentation
         let customModelfile = """
         FROM \(baseModel)
+        
+        TEMPLATE \"\"\"{{- range $i, $_ := .Messages }}
+        {{- $last := eq (len (slice $.Messages $i)) 1 }}
+        {{- if or (eq .Role "user") (eq .Role "system") }}<start_of_turn>user
+        {{ .Content }}<end_of_turn>
+        {{ if $last }}<start_of_turn>model
+        {{ end }}
+        {{- else if eq .Role "assistant" }}<start_of_turn>model
+        {{ .Content }}{{ if not $last }}<end_of_turn>
+        {{ end }}
+        {{- end }}
+        {{- end }}\"\"\"
         
         PARAMETER temperature 0.8
         PARAMETER num_ctx 8192
         PARAMETER repeat_penalty 1.1
         PARAMETER top_p 0.9
         PARAMETER top_k 40
+        PARAMETER seed 42
         
-        SYSTEM "\(systemPrompt)"
+        SYSTEM \"\"\"\(fullSystemPrompt)\"\"\"
         """
         
-        logger.info("Custom modelfile created with Gemi personality")
+        logger.info("Custom modelfile created with Gemi personality and \(userMemories.count) memories")
         return customModelfile
     }
     
-    func updateGemiModel() async throws {
+    func updateGemiModel(with memories: [String] = []) async throws {
         guard !isCreatingModel else {
             logger.warning("Model creation already in progress")
             return
@@ -117,24 +169,30 @@ final class GemiModelManager {
             let tempDir = fileManager.temporaryDirectory
             let modelfilePath = tempDir.appendingPathComponent("gemi.modelfile")
             
-            // Retrieve base modelfile
+            // Retrieve base modelfile (though we won't use it directly)
             let baseModelfile = try await retrieveBaseModelfile()
             
-            // Create custom modelfile
-            let customModelfile = createGemiModelfile(from: baseModelfile)
+            // Create custom modelfile with user memories
+            let customModelfile = createGemiModelfile(from: baseModelfile, userMemories: memories)
             
             // Write modelfile to disk
             try customModelfile.write(to: modelfilePath, atomically: true, encoding: .utf8)
             logger.info("Wrote custom modelfile to: \(modelfilePath.path)")
             
+            // Delete existing model if it exists
+            if modelStatus == .ready {
+                logger.info("Removing existing custom model...")
+                try? await runCommand("ollama", arguments: ["rm", modelName])
+            }
+            
             // Create the custom model
-            logger.info("Creating custom Gemi model...")
+            logger.info("Creating custom Gemi model with \(memories.count) memories...")
             let output = try await runCommand("ollama", arguments: ["create", modelName, "-f", modelfilePath.path])
             
             // Clean up temporary file
             try? fileManager.removeItem(at: modelfilePath)
             
-            if output.contains("success") || output.contains("created") {
+            if output.contains("success") || output.contains("created") || output.contains("success") {
                 modelStatus = .ready
                 logger.info("Successfully created Gemi custom model")
             } else {
@@ -163,6 +221,32 @@ final class GemiModelManager {
         } catch {
             logger.error("Failed to delete custom model: \(error.localizedDescription)")
             throw ModelError.deletionFailed(error.localizedDescription)
+        }
+    }
+    
+    /// Convenience method to create a personalized model from memory store
+    func createPersonalizedModel(from memoryStore: MemoryStore) async throws {
+        logger.info("Creating personalized model from memory store")
+        
+        // Extract key memories as strings
+        let memories = memoryStore.memories.prefix(20).map { memory in
+            memory.content
+        }
+        
+        try await updateGemiModel(with: Array(memories))
+    }
+    
+    /// Get a status message for UI display
+    var statusMessage: String {
+        switch modelStatus {
+        case .notCreated:
+            return "Personalized model not created"
+        case .creating:
+            return "Creating personalized model..."
+        case .ready:
+            return "Personalized model ready"
+        case .error(let message):
+            return "Error: \(message)"
         }
     }
     

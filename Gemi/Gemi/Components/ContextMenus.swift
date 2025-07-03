@@ -6,6 +6,10 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
+#if os(macOS)
+import AppKit
+#endif
 
 // MARK: - Journal Entry Context Menu
 
@@ -59,18 +63,78 @@ struct JournalEntryContextMenu: View {
     }
     
     private func exportAsMarkdown() {
-        // Implementation for markdown export
-        onExport()
+        let savePanel = NSSavePanel()
+        savePanel.allowedContentTypes = [.text]
+        savePanel.nameFieldStringValue = "\(entry.title ?? "Journal Entry").md"
+        
+        if savePanel.runModal() == .OK, let url = savePanel.url {
+            let markdown = """
+            # \(entry.title ?? "Journal Entry")
+            
+            **Date:** \(entry.date.formatted(date: .complete, time: .shortened))
+            **Mood:** \(entry.mood ?? "No mood")
+            
+            ---
+            
+            \(entry.content)
+            """
+            
+            do {
+                try markdown.write(to: url, atomically: true, encoding: .utf8)
+                NSSound.beep()
+            } catch {
+                print("Failed to export markdown: \(error)")
+            }
+        }
     }
     
     private func exportAsPlainText() {
-        // Implementation for plain text export
-        onExport()
+        let savePanel = NSSavePanel()
+        savePanel.allowedContentTypes = [.plainText]
+        savePanel.nameFieldStringValue = "\(entry.title ?? "Journal Entry").txt"
+        
+        if savePanel.runModal() == .OK, let url = savePanel.url {
+            let plainText = """
+            \(entry.title ?? "Journal Entry")
+            Date: \(entry.date.formatted(date: .complete, time: .shortened))
+            Mood: \(entry.mood ?? "No mood")
+            
+            \(entry.content)
+            """
+            
+            do {
+                try plainText.write(to: url, atomically: true, encoding: .utf8)
+                NSSound.beep()
+            } catch {
+                print("Failed to export plain text: \(error)")
+            }
+        }
     }
     
     private func exportAsPDF() {
-        // Implementation for PDF export
-        onExport()
+        #if os(macOS)
+        let printInfo = NSPrintInfo.shared
+        printInfo.topMargin = 72.0
+        printInfo.bottomMargin = 72.0
+        printInfo.leftMargin = 72.0
+        printInfo.rightMargin = 72.0
+        
+        let printOperation = NSPrintOperation(
+            view: NSHostingView(
+                rootView: PDFExportView(entry: entry)
+            ),
+            printInfo: printInfo
+        )
+        
+        printOperation.printPanel.options.insert(.showsPaperSize)
+        printOperation.printPanel.options.insert(.showsOrientation)
+        printOperation.runModal(
+            for: NSApp.keyWindow!,
+            delegate: nil,
+            didRun: nil,
+            contextInfo: nil
+        )
+        #endif
     }
 }
 
@@ -278,6 +342,49 @@ struct ContextMenuLabelStyle: LabelStyle {
             configuration.title
                 .font(.system(size: 13))
         }
+    }
+}
+
+// MARK: - PDF Export View
+
+struct PDFExportView: View {
+    let entry: JournalEntry
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text(entry.title ?? "Journal Entry")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+            
+            HStack {
+                Text("Date:")
+                    .fontWeight(.semibold)
+                Text(entry.date.formatted(date: .complete, time: .shortened))
+            }
+            .font(.subheadline)
+            .foregroundColor(.secondary)
+            
+            if let mood = entry.mood {
+                HStack {
+                    Text("Mood:")
+                        .fontWeight(.semibold)
+                    Text(mood)
+                }
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+            }
+            
+            Divider()
+            
+            Text(entry.content)
+                .font(.body)
+                .multilineTextAlignment(.leading)
+            
+            Spacer()
+        }
+        .padding(40)
+        .frame(width: 595, height: 842) // A4 size in points
+        .background(Color.white)
     }
 }
 

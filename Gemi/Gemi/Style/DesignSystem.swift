@@ -811,6 +811,7 @@ struct GemiPrimaryButtonStyle: ButtonStyle {
     let isLoading: Bool
     @State private var isHovered = false
     @State private var pulsePhase = 0.0
+    @Environment(\.isEnabled) private var isEnabled
     
     init(isLoading: Bool = false) {
         self.isLoading = isLoading
@@ -820,7 +821,7 @@ struct GemiPrimaryButtonStyle: ButtonStyle {
         configuration.label
             .font(DesignSystem.Typography.headline)
             .handwrittenStyle()
-            .foregroundStyle(.white)
+            .foregroundStyle(isEnabled ? .white : .white.opacity(0.7))
             .frame(height: DesignSystem.Components.buttonHeight)
             .frame(maxWidth: .infinity)
             .background(
@@ -829,9 +830,12 @@ struct GemiPrimaryButtonStyle: ButtonStyle {
                     RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
                         .fill(
                             LinearGradient(
-                                colors: [
+                                colors: isEnabled ? [
                                     DesignSystem.Colors.primary,
                                     DesignSystem.Colors.primary.opacity(0.85)
+                                ] : [
+                                    DesignSystem.Colors.primary.opacity(0.5),
+                                    DesignSystem.Colors.primary.opacity(0.4)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -839,8 +843,8 @@ struct GemiPrimaryButtonStyle: ButtonStyle {
                         )
                         .brightness(configuration.isPressed ? -0.1 : 0)
                     
-                    // Warm encouraging glow on hover
-                    if isHovered {
+                    // Warm encouraging glow on hover (only when enabled)
+                    if isHovered && isEnabled {
                         RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
                             .fill(
                                 RadialGradient(
@@ -856,28 +860,32 @@ struct GemiPrimaryButtonStyle: ButtonStyle {
                             .scaleEffect(1.2)
                     }
                     
-                    // Subtle heartbeat pulse for important actions
-                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
-                        .stroke(
-                            Color.white.opacity(0.4 + 0.2 * sin(pulsePhase)),
-                            lineWidth: 1.5
-                        )
-                        .onAppear {
-                            withAnimation(DesignSystem.Animation.breathing) {
-                                pulsePhase = 2 * .pi
+                    // Subtle heartbeat pulse for important actions (only when enabled)
+                    if isEnabled {
+                        RoundedRectangle(cornerRadius: DesignSystem.Components.radiusMedium)
+                            .stroke(
+                                Color.white.opacity(0.4 + 0.2 * sin(pulsePhase)),
+                                lineWidth: 1.5
+                            )
+                            .onAppear {
+                                withAnimation(DesignSystem.Animation.breathing) {
+                                    pulsePhase = 2 * .pi
+                                }
                             }
-                        }
+                    }
                 }
             )
             .scaleEffect(
-                configuration.isPressed ? 0.94 : 
-                isHovered ? 1.05 : 1.0
+                configuration.isPressed && isEnabled ? 0.94 : 
+                isHovered && isEnabled ? 1.05 : 1.0
             )
             .opacity(isLoading ? 0.6 : 1.0)
-            .interactiveButtonShadow(isPressed: configuration.isPressed, isHovered: isHovered)
+            .interactiveButtonShadow(isPressed: configuration.isPressed && isEnabled, isHovered: isHovered && isEnabled)
             .onHover { hovering in
-                withAnimation(DesignSystem.Animation.gentleFloat) {
-                    isHovered = hovering
+                if isEnabled {
+                    withAnimation(DesignSystem.Animation.gentleFloat) {
+                        isHovered = hovering
+                    }
                 }
             }
             .animation(DesignSystem.Animation.playfulBounce, value: configuration.isPressed)
