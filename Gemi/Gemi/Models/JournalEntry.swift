@@ -123,6 +123,20 @@ extension JournalEntry {
             .fetchAll(db)
     }
     
+    /// Fetches journal entries with pagination support
+    /// - Parameters:
+    ///   - db: Database connection
+    ///   - limit: Maximum number of entries to fetch
+    ///   - offset: Number of entries to skip
+    /// - Returns: Array of journal entries sorted by date descending
+    /// - Throws: Database errors during fetch
+    static func fetchWithPagination(_ db: Database, limit: Int, offset: Int) throws -> [JournalEntry] {
+        return try JournalEntry
+            .order(Columns.date.desc)
+            .limit(limit, offset: offset)
+            .fetchAll(db)
+    }
+    
     /// Fetches journal entries within a date range
     /// - Parameters:
     ///   - db: Database connection

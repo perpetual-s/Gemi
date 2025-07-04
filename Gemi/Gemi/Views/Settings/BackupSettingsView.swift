@@ -171,7 +171,7 @@ struct FrequencyButton: View {
     
     var body: some View {
         Button(action: action) {
-            Text(frequency.rawValue)
+            Text(frequency.displayName)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(isSelected ? .white : .primary)
                 .padding(.horizontal, 16)

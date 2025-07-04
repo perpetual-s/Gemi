@@ -10,12 +10,7 @@ import SwiftUI
 struct JournalTimelineView: View {
     @Environment(JournalStore.self) private var journalStore
     @Environment(NavigationModel.self) private var navigationModel
-    @State private var entries: [JournalEntry] = []
     @State private var filteredEntries: [JournalEntry] = []
-    @State private var isLoading = false
-    @State private var hasMoreToLoad = true
-    @State private var currentPage = 0
-    private let pageSize = 20
     
     // View options
     @State private var groupingMode: GroupingMode = .day
@@ -95,9 +90,17 @@ struct JournalTimelineView: View {
                         .font(ModernDesignSystem.Typography.title2)
                         .foregroundColor(ModernDesignSystem.Colors.textPrimary)
                     
-                    Text("\(filteredEntries.count) entries")
-                        .font(ModernDesignSystem.Typography.caption)
-                        .foregroundColor(ModernDesignSystem.Colors.textSecondary)
+                    HStack(spacing: 4) {
+                        Text("\(filteredEntries.count) entries")
+                            .font(ModernDesignSystem.Typography.caption)
+                            .foregroundColor(ModernDesignSystem.Colors.textSecondary)
+                        
+                        if journalStore.hasMore {
+                            Text("• More available")
+                                .font(ModernDesignSystem.Typography.caption)
+                                .foregroundColor(ModernDesignSystem.Colors.textTertiary)
+                        }
+                    }
                 }
                 
                 Spacer()
@@ -242,11 +245,12 @@ struct JournalTimelineView: View {
                     }
                     
                     // Load more indicator
-                    if hasMoreToLoad {
+                    if journalStore.hasMore && !journalStore.entries.isEmpty {
                         loadMoreIndicator
                             .onAppear {
                                 Task {
-                                    await loadMoreEntries()
+                                    await journalStore.loadMoreEntries()
+                                    applyFilters()
                                 }
                             }
                     }
@@ -312,12 +316,13 @@ struct JournalTimelineView: View {
                         }
                     }
                     
-                    if hasMoreToLoad {
+                    if journalStore.hasMore && !journalStore.entries.isEmpty {
                         loadMoreIndicator
                             .padding(.leading, 60)
                             .onAppear {
                                 Task {
-                                    await loadMoreEntries()
+                                    await journalStore.loadMoreEntries()
+                                    applyFilters()
                                 }
                             }
                     }
@@ -405,13 +410,14 @@ struct JournalTimelineView: View {
         HStack {
             Spacer()
             
-            if isLoading {
+            if journalStore.isLoadingMore {
                 ProgressView()
                     .scaleEffect(0.8)
             } else {
                 Button("Load More") {
                     Task {
-                        await loadMoreEntries()
+                        await journalStore.loadMoreEntries()
+                        applyFilters()
                     }
                 }
                 .font(ModernDesignSystem.Typography.callout)
@@ -426,38 +432,15 @@ struct JournalTimelineView: View {
     // MARK: - Data Management
     
     private func loadEntries() async {
-        isLoading = true
-        
         // Load initial entries
         await journalStore.loadEntries()
-        entries = journalStore.entries
         
         // Apply filters
         applyFilters()
-        
-        isLoading = false
-    }
-    
-    private func loadMoreEntries() async {
-        guard !isLoading && hasMoreToLoad else { return }
-        
-        isLoading = true
-        currentPage += 1
-        
-        // Simulate loading more entries
-        // In real app, this would fetch from database with pagination
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            isLoading = false
-            
-            // Check if we've loaded all entries
-            if entries.count >= 100 { // Example limit
-                hasMoreToLoad = false
-            }
-        }
     }
     
     private func applyFilters() {
-        filteredEntries = entries
+        filteredEntries = journalStore.entries
         
         // Search filter
         if !searchQuery.isEmpty {
@@ -542,7 +525,7 @@ struct JournalTimelineView: View {
     // MARK: - Helpers
     
     private func groupEntriesByDate() -> [Date: Int] {
-        Dictionary(grouping: entries) { entry in
+        Dictionary(grouping: journalStore.entries) { entry in
             Calendar.current.startOfDay(for: entry.date)
         }.mapValues { $0.count }
     }
@@ -561,7 +544,7 @@ struct JournalTimelineView: View {
     }
     
     private func extractAllTags() -> Set<String> {
-        Set(entries.flatMap { extractTags(from: $0.content) })
+        Set(journalStore.entries.flatMap { extractTags(from: $0.content) })
     }
     
     private func moodColor(for entry: JournalEntry) -> Color {

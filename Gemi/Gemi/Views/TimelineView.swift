@@ -1,4 +1,6 @@
 import SwiftUI
+import AppKit
+import UniformTypeIdentifiers
 
 /// TimelineView serves as the main interface for displaying journal entries in Gemi.
 /// This view provides a chronological list of all journal entries with native macOS styling
@@ -46,8 +48,15 @@ struct TimelineView: View {
     /// Entry being viewed in floating window
     @State private var viewingEntry: JournalEntry?
     
+    private var filteredEntries: [JournalEntry] {
+        if searchText.isEmpty {
+            return journalStore.entries
+        }
+        return journalStore.searchEntries(searchText)
+    }
+    
     private var groupedEntries: [Date: [JournalEntry]] {
-        Dictionary(grouping: journalStore.entries) { entry in
+        Dictionary(grouping: filteredEntries) { entry in
             Calendar.current.startOfDay(for: entry.date)
         }
     }
@@ -64,6 +73,9 @@ struct TimelineView: View {
                 } else if journalStore.entries.isEmpty {
                     // Empty state when no entries exist
                     emptyStateView
+                } else if !searchText.isEmpty && filteredEntries.isEmpty {
+                    // No search results
+                    noSearchResultsView
                 } else {
                     // Main timeline list
                     timelineList
@@ -107,16 +119,35 @@ struct TimelineView: View {
     @ViewBuilder
     private var timelineList: some View {
         ScrollView {
-            LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
-                ForEach(groupedEntries.keys.sorted(by: >), id: \.self) { date in
-                    Section {
-                        timelineSection(for: date)
-                    } header: {
-                        timelineSectionHeader(for: date)
+            VStack(spacing: 0) {
+                // Search bar
+                searchBar
+                    .padding(.horizontal, 24)
+                    .padding(.top, 20)
+                    .padding(.bottom, 16)
+                
+                // Timeline content
+                LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
+                    ForEach(groupedEntries.keys.sorted(by: >), id: \.self) { date in
+                        Section {
+                            timelineSection(for: date)
+                        } header: {
+                            timelineSectionHeader(for: date)
+                        }
+                    }
+                    
+                    // Load more indicator
+                    if journalStore.hasMore && !journalStore.entries.isEmpty {
+                        loadMoreIndicator
+                            .onAppear {
+                                Task {
+                                    await journalStore.loadMoreEntries()
+                                }
+                            }
                     }
                 }
+                .padding(.bottom, 20)
             }
-            .padding(.vertical, 20)
         }
         .scrollIndicators(.hidden)
         .refreshable {
@@ -155,13 +186,51 @@ struct TimelineView: View {
                 showingDeleteAlert = true
             },
             onDuplicate: {
-                // TODO: Duplicate functionality
+                Task {
+                    let duplicateTitle = entry.title.isEmpty ? "Copy" : "\(entry.title) (Copy)"
+                    let duplicate = JournalEntry(
+                        title: duplicateTitle,
+                        content: entry.content,
+                        mood: entry.mood
+                    )
+                    try? await journalStore.addEntry(duplicate)
+                }
             },
             onExport: {
-                // TODO: Export functionality
+                Task {
+                    let markdown = """
+                    # \(entry.title.isEmpty ? "Journal Entry" : entry.title)
+                    
+                    **Date:** \(entry.date.formatted(date: .complete, time: .shortened))
+                    **Mood:** \(entry.mood ?? "No mood")
+                    
+                    ---
+                    
+                    \(entry.content)
+                    """
+                    
+                    let panel = NSSavePanel()
+                    panel.allowedContentTypes = [.plainText]
+                    panel.nameFieldStringValue = "\(entry.title.isEmpty ? "Journal Entry" : entry.title).md"
+                    
+                    if panel.runModal() == .OK, let url = panel.url {
+                        try? markdown.write(to: url, atomically: true, encoding: .utf8)
+                    }
+                }
             },
             onShare: {
-                // TODO: Share functionality
+                let text = """
+                \(entry.title.isEmpty ? "Journal Entry" : entry.title)
+                \(entry.date.formatted(date: .complete, time: .shortened))
+                
+                \(entry.content)
+                """
+                
+                let picker = NSSharingServicePicker(items: [text])
+                if let contentView = NSApp.keyWindow?.contentView,
+                   let view = contentView.subviews.first {
+                    picker.show(relativeTo: .zero, of: view, preferredEdge: .minY)
+                }
             }
         )
         .id(entry.id)
@@ -209,6 +278,116 @@ struct TimelineView: View {
         } else {
             return date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
         }
+    }
+    
+    // MARK: - Load More Indicator
+    
+    @ViewBuilder
+    private var loadMoreIndicator: some View {
+        HStack {
+            Spacer()
+            
+            if journalStore.isLoadingMore {
+                ProgressView()
+                    .scaleEffect(0.8)
+                    .padding(.vertical, 20)
+            } else {
+                Button("Load More Entries") {
+                    Task {
+                        await journalStore.loadMoreEntries()
+                    }
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
+                .padding(.vertical, 20)
+            }
+            
+            Spacer()
+        }
+    }
+    
+    // MARK: - Search Bar
+    
+    @ViewBuilder
+    private var searchBar: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(DesignSystem.Colors.textSecondary)
+            
+            TextField("Search entries...", text: $searchText)
+                .textFieldStyle(.plain)
+                .font(DesignSystem.Typography.body)
+                .foregroundStyle(DesignSystem.Colors.textPrimary)
+                .focused($isSearchFocused)
+                .submitLabel(.search)
+            
+            if !searchText.isEmpty {
+                Button {
+                    withAnimation(DesignSystem.Animation.standard) {
+                        searchText = ""
+                    }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(DesignSystem.Colors.textTertiary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(DesignSystem.Colors.backgroundSecondary)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(isSearchFocused ? DesignSystem.Colors.primary.opacity(0.3) : Color.clear, lineWidth: 1)
+                )
+        )
+        .animation(DesignSystem.Animation.standard, value: isSearchFocused)
+    }
+    
+    // MARK: - No Search Results
+    
+    @ViewBuilder
+    private var noSearchResultsView: some View {
+        ScrollView {
+            VStack(spacing: DesignSystem.Spacing.large) {
+                Spacer(minLength: DesignSystem.Spacing.huge)
+                
+                // Search illustration
+                Image(systemName: "magnifyingglass.circle")
+                    .font(.system(size: 64))
+                    .foregroundStyle(DesignSystem.Colors.textTertiary)
+                
+                // Message
+                VStack(spacing: DesignSystem.Spacing.small) {
+                    Text("No results found")
+                        .font(DesignSystem.Typography.title2)
+                        .foregroundStyle(DesignSystem.Colors.textPrimary)
+                    
+                    Text("Try searching with different keywords")
+                        .font(DesignSystem.Typography.body)
+                        .foregroundStyle(DesignSystem.Colors.textSecondary)
+                }
+                
+                // Clear search button
+                Button {
+                    withAnimation(DesignSystem.Animation.standard) {
+                        searchText = ""
+                    }
+                } label: {
+                    Text("Clear Search")
+                        .font(DesignSystem.Typography.callout)
+                }
+                .gemiSecondaryButton()
+                
+                Spacer(minLength: DesignSystem.Spacing.huge)
+            }
+            .padding(.horizontal, DesignSystem.Spacing.large)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
     // MARK: - Loading State

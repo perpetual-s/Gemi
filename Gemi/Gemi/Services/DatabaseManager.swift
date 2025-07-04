@@ -236,6 +236,59 @@ final class DatabaseManager: Sendable {
         return (decryptedEntries, decryptionErrors)
     }
     
+    /// Fetches journal entries with pagination support
+    /// - Parameters:
+    ///   - limit: Maximum number of entries to fetch
+    ///   - offset: Number of entries to skip
+    /// - Returns: A tuple containing the decrypted entries and any decryption errors
+    /// - Throws: DatabaseError if database operations fail
+    func fetchEntries(limit: Int, offset: Int) async throws -> (entries: [JournalEntry], decryptionFailures: Int) {
+        let encryptedEntries = try await dbQueue.read { db in
+            try JournalEntry.fetchWithPagination(db, limit: limit, offset: offset)
+        }
+        
+        // Decrypt all entries
+        var decryptedEntries: [JournalEntry] = []
+        var decryptionErrors = 0
+        var failedEntryIds: [UUID] = []
+        
+        for encryptedEntry in encryptedEntries {
+            do {
+                let decryptedContent = try await decryptContent(encryptedEntry.content)
+                let decryptedTitle = try await decryptContent(encryptedEntry.title)
+                let decryptedEntry = JournalEntry(
+                    id: encryptedEntry.id,
+                    date: encryptedEntry.date,
+                    title: decryptedTitle,
+                    content: decryptedContent,
+                    mood: encryptedEntry.mood
+                )
+                decryptedEntries.append(decryptedEntry)
+            } catch {
+                decryptionErrors += 1
+                failedEntryIds.append(encryptedEntry.id)
+                print("❌ Failed to decrypt entry \(encryptedEntry.id): \(error)")
+                
+                // Include entry with error indicator but preserve metadata
+                let errorEntry = JournalEntry(
+                    id: encryptedEntry.id,
+                    date: encryptedEntry.date,
+                    title: "🔒 Encrypted Entry",
+                    content: "This entry could not be decrypted. This might happen if:\n\n• The app was reinstalled\n• The encryption key was reset\n• The keychain was cleared\n\nDate: \(encryptedEntry.date.formatted(date: .complete, time: .shortened))",
+                    mood: encryptedEntry.mood
+                )
+                decryptedEntries.append(errorEntry)
+            }
+        }
+        
+        if decryptionErrors > 0 {
+            print("⚠️ Failed to decrypt \(decryptionErrors) out of \(encryptedEntries.count) entries")
+            print("Failed entry IDs: \(failedEntryIds)")
+        }
+        
+        return (decryptedEntries, decryptionErrors)
+    }
+    
     /// Fetches a specific journal entry by ID with decrypted content
     /// - Parameter id: The UUID of the entry to fetch
     /// - Returns: The decrypted journal entry if found, nil otherwise
@@ -514,6 +567,27 @@ extension DatabaseManager {
             }
             
             return orphanedMemories.count
+        }
+    }
+    
+    /// Delete a specific memory
+    func deleteMemory(_ id: UUID) async throws {
+        _ = try await dbWriter.write { db in
+            try Memory.deleteOne(db, key: id)
+        }
+    }
+    
+    /// Fetch oldest memories for archiving
+    func fetchOldestMemories(limit: Int) async throws -> [Memory] {
+        try await dbReader.read { db in
+            try Memory
+                .filter(Memory.Columns.isPinned == false)
+                .order(
+                    Memory.Columns.importance,
+                    Memory.Columns.lastAccessedAt
+                )
+                .limit(limit)
+                .fetchAll(db)
         }
     }
     

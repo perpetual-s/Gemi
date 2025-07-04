@@ -10,12 +10,20 @@ import SwiftUI
 /// MemoryManagementView allows users to view and manage what Gemi remembers
 struct MemoryManagementView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var memories: [MemoryDisplayItem] = []
+    @State private var memories: [Memory] = []
     @State private var searchText = ""
     @State private var showingDeleteConfirmation = false
-    @State private var memoryToDelete: MemoryDisplayItem?
+    @State private var memoryToDelete: Memory?
+    @State private var isLoading = true
+    @State private var memoryStats: MemoryStats?
+    @State private var archiveStats: ArchiveStats?
+    @State private var memoryLimit = MemoryStore.defaultMemoryLimit
+    @State private var showingExportAlert = false
+    @State private var exportURL: URL?
+    @State private var showingArchiveWarning = false
+    @State private var selectedTab = 0  // 0: Active, 1: Settings
     
-    var filteredMemories: [MemoryDisplayItem] {
+    var filteredMemories: [Memory] {
         if searchText.isEmpty {
             return memories
         }
@@ -29,27 +37,69 @@ struct MemoryManagementView: View {
             
             Divider()
             
+            // Tab selection
+            Picker("", selection: $selectedTab) {
+                Text("Active Memories").tag(0)
+                Text("Settings & Archives").tag(1)
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, DesignSystem.Spacing.large)
+            .padding(.bottom, DesignSystem.Spacing.medium)
+            
             // Content
-            if memories.isEmpty {
-                emptyStateView
+            if selectedTab == 0 {
+                if isLoading {
+                    ProgressView("Loading memories...")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if memories.isEmpty {
+                    emptyStateView
+                } else {
+                    memoryListView
+                }
             } else {
-                memoryListView
+                settingsView
             }
         }
         .frame(width: 800, height: 600)
         .background(DesignSystem.Colors.backgroundPrimary)
-        .onAppear {
-            loadMemories()
+        .task {
+            await loadMemories()
+            await loadStats()
+            memoryLimit = UserDefaults.standard.integer(forKey: MemoryStore.memoryLimitKey)
+            if memoryLimit == 0 {
+                memoryLimit = MemoryStore.defaultMemoryLimit
+            }
         }
         .alert("Delete Memory", isPresented: $showingDeleteConfirmation) {
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive) {
                 if let memory = memoryToDelete {
-                    deleteMemory(memory)
+                    Task {
+                        await deleteMemory(memory)
+                    }
                 }
             }
         } message: {
             Text("Are you sure you want to delete this memory? This action cannot be undone.")
+        }
+        .alert("Memory Export", isPresented: $showingExportAlert) {
+            Button("OK") { }
+        } message: {
+            if let url = exportURL {
+                Text("Memories exported successfully to: \(url.lastPathComponent)")
+            } else {
+                Text("Failed to export memories")
+            }
+        }
+        .alert("Memory Limit Reached", isPresented: $showingArchiveWarning) {
+            Button("Archive Old Memories", role: .destructive) {
+                Task {
+                    await archiveOldMemories()
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("You have reached the memory limit of \(memoryLimit). Older, less important memories will be archived to make room for new ones. Archived memories can be exported but won't be used in conversations.")
         }
     }
     
@@ -124,18 +174,34 @@ struct MemoryManagementView: View {
         VStack(spacing: 0) {
             // Stats bar
             HStack {
-                Text("\(filteredMemories.count) memories")
-                    .font(DesignSystem.Typography.caption1)
-                    .foregroundStyle(DesignSystem.Colors.textSecondary)
+                HStack(spacing: DesignSystem.Spacing.small) {
+                    Text("\(filteredMemories.count) memories")
+                        .font(DesignSystem.Typography.caption1)
+                        .foregroundStyle(DesignSystem.Colors.textSecondary)
+                    
+                    if let stats = memoryStats {
+                        Text("• \(stats.pinnedCount) pinned")
+                            .font(DesignSystem.Typography.caption1)
+                            .foregroundStyle(DesignSystem.Colors.textTertiary)
+                    }
+                }
                 
                 Spacer()
                 
-                Button(action: clearAllMemories) {
-                    Label("Clear All", systemImage: "trash")
-                        .font(DesignSystem.Typography.caption1)
-                        .foregroundStyle(.red)
+                HStack(spacing: DesignSystem.Spacing.medium) {
+                    Button(action: { Task { await exportMemories() } }) {
+                        Label("Export", systemImage: "square.and.arrow.up")
+                            .font(DesignSystem.Typography.caption1)
+                    }
+                    .buttonStyle(.plain)
+                    
+                    Button(action: { Task { await clearAllMemories() } }) {
+                        Label("Clear All", systemImage: "trash")
+                            .font(DesignSystem.Typography.caption1)
+                            .foregroundStyle(.red)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
             .padding(.horizontal, DesignSystem.Spacing.large)
             .padding(.vertical, DesignSystem.Spacing.small)
@@ -147,6 +213,10 @@ struct MemoryManagementView: View {
                         MemoryRow(memory: memory) {
                             memoryToDelete = memory
                             showingDeleteConfirmation = true
+                        } onTogglePin: {
+                            Task {
+                                await togglePin(memory)
+                            }
                         }
                     }
                 }
@@ -155,101 +225,286 @@ struct MemoryManagementView: View {
         }
     }
     
+    private var settingsView: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.large) {
+                // Memory Limit Settings
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
+                    Text("Memory Limit")
+                        .font(DesignSystem.Typography.title3)
+                        .foregroundStyle(DesignSystem.Colors.textPrimary)
+                    
+                    Text("Set the maximum number of active memories Gemi will keep. Older memories will be archived when this limit is reached.")
+                        .font(DesignSystem.Typography.body)
+                        .foregroundStyle(DesignSystem.Colors.textSecondary)
+                    
+                    HStack {
+                        TextField("Memory limit", value: $memoryLimit, format: .number)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 100)
+                            .onChange(of: memoryLimit) { _, newValue in
+                                UserDefaults.standard.set(newValue, forKey: MemoryStore.memoryLimitKey)
+                            }
+                        
+                        Text("memories")
+                            .font(DesignSystem.Typography.body)
+                            .foregroundStyle(DesignSystem.Colors.textSecondary)
+                        
+                        Spacer()
+                        
+                        if let stats = memoryStats {
+                            Text("Current: \(stats.totalCount)")
+                                .font(DesignSystem.Typography.caption1)
+                                .foregroundStyle(stats.totalCount > memoryLimit ? .red : DesignSystem.Colors.textTertiary)
+                        }
+                    }
+                }
+                
+                Divider()
+                
+                // Archive Statistics
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
+                    Text("Archive Statistics")
+                        .font(DesignSystem.Typography.title3)
+                        .foregroundStyle(DesignSystem.Colors.textPrimary)
+                    
+                    if let archiveStats = archiveStats {
+                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.small) {
+                            HStack {
+                                Label("Total Archives:", systemImage: "archivebox")
+                                    .font(DesignSystem.Typography.body)
+                                    .foregroundStyle(DesignSystem.Colors.textSecondary)
+                                Spacer()
+                                Text("\(archiveStats.totalArchives)")
+                                    .font(DesignSystem.Typography.body)
+                                    .foregroundStyle(DesignSystem.Colors.textPrimary)
+                            }
+                            
+                            HStack {
+                                Label("Archived Memories:", systemImage: "doc.on.doc")
+                                    .font(DesignSystem.Typography.body)
+                                    .foregroundStyle(DesignSystem.Colors.textSecondary)
+                                Spacer()
+                                Text("\(archiveStats.totalArchivedMemories)")
+                                    .font(DesignSystem.Typography.body)
+                                    .foregroundStyle(DesignSystem.Colors.textPrimary)
+                            }
+                            
+                            if let oldest = archiveStats.oldestArchive {
+                                HStack {
+                                    Label("Oldest Archive:", systemImage: "calendar")
+                                        .font(DesignSystem.Typography.body)
+                                        .foregroundStyle(DesignSystem.Colors.textSecondary)
+                                    Spacer()
+                                    Text(oldest, style: .date)
+                                        .font(DesignSystem.Typography.body)
+                                        .foregroundStyle(DesignSystem.Colors.textPrimary)
+                                }
+                            }
+                        }
+                    } else {
+                        Text("No archives yet")
+                            .font(DesignSystem.Typography.body)
+                            .foregroundStyle(DesignSystem.Colors.textTertiary)
+                    }
+                    
+                    HStack {
+                        Button("Export All (with Archives)") {
+                            Task {
+                                await exportMemories(includeArchived: true)
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        
+                        Spacer()
+                    }
+                }
+                
+                Divider()
+                
+                // Memory Statistics
+                if let stats = memoryStats {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
+                        Text("Memory Breakdown")
+                            .font(DesignSystem.Typography.title3)
+                            .foregroundStyle(DesignSystem.Colors.textPrimary)
+                        
+                        ForEach(MemoryType.allCases, id: \.self) { type in
+                            if let count = stats.typeCounts[type], count > 0 {
+                                HStack {
+                                    Label(type.displayName, systemImage: type.icon)
+                                        .font(DesignSystem.Typography.body)
+                                        .foregroundStyle(DesignSystem.Colors.textSecondary)
+                                    Spacer()
+                                    Text("\(count)")
+                                        .font(DesignSystem.Typography.body)
+                                        .foregroundStyle(DesignSystem.Colors.textPrimary)
+                                }
+                            }
+                        }
+                        
+                        if stats.totalCount > 0 {
+                            HStack {
+                                Text("Average per day:")
+                                    .font(DesignSystem.Typography.body)
+                                    .foregroundStyle(DesignSystem.Colors.textSecondary)
+                                Spacer()
+                                Text(String(format: "%.1f", stats.averageMemoriesPerDay))
+                                    .font(DesignSystem.Typography.body)
+                                    .foregroundStyle(DesignSystem.Colors.textPrimary)
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(DesignSystem.Spacing.large)
+        }
+    }
+    
     // MARK: - Methods
     
-    private func loadMemories() {
-        // Sample memories for now
-        memories = [
-            MemoryDisplayItem(id: UUID(), content: "Enjoys morning journaling sessions with coffee", category: .preference, createdAt: Date().addingTimeInterval(-86400 * 7)),
-            MemoryDisplayItem(id: UUID(), content: "Working on improving work-life balance", category: .goal, createdAt: Date().addingTimeInterval(-86400 * 3)),
-            MemoryDisplayItem(id: UUID(), content: "Finds writing therapeutic during stressful times", category: .insight, createdAt: Date().addingTimeInterval(-86400 * 1)),
-            MemoryDisplayItem(id: UUID(), content: "Prefers bullet journaling format for daily entries", category: .preference, createdAt: Date())
-        ]
+    private func loadMemories() async {
+        isLoading = true
+        do {
+            memories = try await MemoryStore.shared.getAllMemories(limit: 100)
+        } catch {
+            print("Failed to load memories: \(error)")
+        }
+        isLoading = false
     }
     
-    private func deleteMemory(_ memory: MemoryDisplayItem) {
-        withAnimation(DesignSystem.Animation.standard) {
-            memories.removeAll { $0.id == memory.id }
+    private func loadStats() async {
+        do {
+            memoryStats = try await MemoryStore.shared.getMemoryStats()
+            archiveStats = try await MemoryStore.shared.getArchiveStats()
+            
+            // Check if we should show archive warning
+            if let stats = memoryStats, stats.totalCount >= memoryLimit {
+                showingArchiveWarning = true
+            }
+        } catch {
+            print("Failed to load stats: \(error)")
         }
     }
     
-    private func clearAllMemories() {
-        // Show confirmation alert
-        memories.removeAll()
-    }
-}
-
-// MARK: - Memory Model
-
-struct MemoryDisplayItem: Identifiable {
-    let id: UUID
-    let content: String
-    let category: MemoryCategory
-    let createdAt: Date
-}
-
-enum MemoryCategory {
-    case preference
-    case goal
-    case insight
-    case fact
-    
-    var icon: String {
-        switch self {
-        case .preference: return "heart.fill"
-        case .goal: return "target"
-        case .insight: return "lightbulb.fill"
-        case .fact: return "info.circle.fill"
+    private func deleteMemory(_ memory: Memory) async {
+        do {
+            try await MemoryStore.shared.deleteMemory(id: memory.id)
+            await loadMemories()
+            await loadStats()
+        } catch {
+            print("Failed to delete memory: \(error)")
         }
     }
     
-    var color: Color {
-        switch self {
-        case .preference: return .pink
-        case .goal: return .orange
-        case .insight: return .purple
-        case .fact: return .blue
+    private func togglePin(_ memory: Memory) async {
+        do {
+            try await MemoryStore.shared.toggleMemoryPin(id: memory.id)
+            await loadMemories()
+            await loadStats()
+        } catch {
+            print("Failed to toggle pin: \(error)")
         }
     }
+    
+    private func clearAllMemories() async {
+        do {
+            try await MemoryStore.shared.clearAllMemories()
+            await loadMemories()
+            await loadStats()
+        } catch {
+            print("Failed to clear memories: \(error)")
+        }
+    }
+    
+    private func exportMemories(includeArchived: Bool = false) async {
+        do {
+            exportURL = try await MemoryStore.shared.exportMemories(includeArchived: includeArchived)
+            showingExportAlert = true
+        } catch {
+            print("Failed to export memories: \(error)")
+            showingExportAlert = true
+        }
+    }
+    
+    private func archiveOldMemories() async {
+        // This will be triggered automatically when adding new memories
+        await loadMemories()
+        await loadStats()
+    }
 }
+
 
 // MARK: - Memory Row
 
 struct MemoryRow: View {
-    let memory: MemoryDisplayItem
+    let memory: Memory
     let onDelete: () -> Void
+    let onTogglePin: () -> Void
     
     @State private var isHovered = false
     
     var body: some View {
         HStack(spacing: DesignSystem.Spacing.medium) {
-            // Category icon
-            Image(systemName: memory.category.icon)
+            // Type icon
+            Image(systemName: memory.memoryType.icon)
                 .font(.system(size: 16))
-                .foregroundStyle(memory.category.color)
+                .foregroundStyle(memoryTypeColor(memory.memoryType))
                 .frame(width: 24, height: 24)
             
             // Content
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.tiny) {
-                Text(memory.content)
-                    .font(DesignSystem.Typography.body)
-                    .foregroundStyle(DesignSystem.Colors.textPrimary)
+                HStack {
+                    Text(memory.content)
+                        .font(DesignSystem.Typography.body)
+                        .foregroundStyle(DesignSystem.Colors.textPrimary)
+                        .lineLimit(2)
+                    
+                    if memory.isPinned {
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.orange)
+                    }
+                }
                 
-                Text(memory.createdAt, style: .relative)
-                    .font(DesignSystem.Typography.caption1)
-                    .foregroundStyle(DesignSystem.Colors.textTertiary)
+                HStack(spacing: DesignSystem.Spacing.small) {
+                    Text(memory.createdAt, style: .relative)
+                        .font(DesignSystem.Typography.caption1)
+                        .foregroundStyle(DesignSystem.Colors.textTertiary)
+                    
+                    Text("• Importance: \(String(format: "%.1f", memory.importance))")
+                        .font(DesignSystem.Typography.caption1)
+                        .foregroundStyle(DesignSystem.Colors.textTertiary)
+                    
+                    if !memory.tags.isEmpty {
+                        Text("• \(memory.tags.joined(separator: ", "))")
+                            .font(DesignSystem.Typography.caption1)
+                            .foregroundStyle(DesignSystem.Colors.textTertiary)
+                            .lineLimit(1)
+                    }
+                }
             }
             
             Spacer()
             
-            // Delete button
-            Button(action: onDelete) {
-                Image(systemName: "trash")
-                    .font(.system(size: 14))
-                    .foregroundStyle(.red)
-                    .opacity(isHovered ? 1 : 0)
+            // Action buttons
+            HStack(spacing: DesignSystem.Spacing.small) {
+                Button(action: onTogglePin) {
+                    Image(systemName: memory.isPinned ? "pin.slash" : "pin")
+                        .font(.system(size: 14))
+                        .foregroundStyle(memory.isPinned ? .orange : DesignSystem.Colors.textSecondary)
+                }
+                .buttonStyle(.plain)
+                .opacity(isHovered ? 1 : 0)
+                
+                Button(action: onDelete) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.red)
+                }
+                .buttonStyle(.plain)
+                .opacity(isHovered ? 1 : 0)
             }
-            .buttonStyle(.plain)
         }
         .padding(DesignSystem.Spacing.medium)
         .background(
@@ -260,6 +515,16 @@ struct MemoryRow: View {
             withAnimation(DesignSystem.Animation.quick) {
                 isHovered = hovering
             }
+        }
+    }
+    
+    private func memoryTypeColor(_ type: MemoryType) -> Color {
+        switch type {
+        case .conversation: return .blue
+        case .journalFact: return .purple
+        case .userProvided: return .pink
+        case .reflection: return .orange
+        case .conversationFact: return .green
         }
     }
 }

@@ -805,15 +805,15 @@ struct ResizableTextEditor: NSViewRepresentable {
         scrollView.hasVerticalScroller = false
         scrollView.hasHorizontalScroller = false
         scrollView.borderType = .noBorder
-        // CRITICAL FIX: Enable background drawing for scrollView
+        // Enable background drawing for scrollView with adaptive colors
         scrollView.drawsBackground = true
-        scrollView.backgroundColor = NSColor.white
+        scrollView.backgroundColor = NSColor.textBackgroundColor
         
         textView.delegate = context.coordinator
         textView.isRichText = false
         textView.allowsUndo = true
-        // CRITICAL FIX: Set opaque white background for text visibility
-        textView.backgroundColor = NSColor.white
+        // Set adaptive background color that respects system appearance
+        textView.backgroundColor = NSColor.textBackgroundColor
         textView.drawsBackground = true
         
         // Ensure proper text rendering
@@ -822,26 +822,25 @@ struct ResizableTextEditor: NSViewRepresentable {
         textView.font = .systemFont(ofSize: 15)
         textView.textContainerInset = NSSize(width: 8, height: 8)
         
-        // CRITICAL FIX: Force black text on white background for guaranteed visibility
-        // Parent view forces light mode, so we need explicit colors
-        textView.textColor = NSColor.black
+        // Use adaptive text color that automatically adjusts for light/dark mode
+        textView.textColor = NSColor.textColor
         
         // Fix: Configure text container properly
         textView.textContainer?.widthTracksTextView = true
         textView.textContainer?.containerSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
         
-        // Fix: Ensure insertion point is visible
-        textView.insertionPointColor = NSColor.black
+        // Fix: Ensure insertion point is visible with adaptive color
+        textView.insertionPointColor = NSColor.textColor
         
         // Fix: Configure text view for proper rendering
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticSpellingCorrectionEnabled = false
         
-        // CRITICAL FIX: Set typing attributes with explicit black text
+        // Set typing attributes with adaptive colors
         textView.typingAttributes = [
             .font: NSFont.systemFont(ofSize: 15),
-            .foregroundColor: NSColor.black,
-            .backgroundColor: NSColor.white
+            .foregroundColor: NSColor.textColor,
+            .backgroundColor: NSColor.textBackgroundColor
         ]
         
         return scrollView
@@ -850,12 +849,12 @@ struct ResizableTextEditor: NSViewRepresentable {
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? NSTextView else { return }
         
-        // CRITICAL FIX: Force black text on white background
-        textView.textColor = NSColor.black
-        textView.insertionPointColor = NSColor.black
+        // Use adaptive colors that respect system appearance
+        textView.textColor = NSColor.textColor
+        textView.insertionPointColor = NSColor.textColor
         
-        // Ensure background is opaque white
-        textView.backgroundColor = NSColor.white
+        // Ensure adaptive background
+        textView.backgroundColor = NSColor.textBackgroundColor
         textView.drawsBackground = true
         
         if textView.string != text {
@@ -867,17 +866,17 @@ struct ResizableTextEditor: NSViewRepresentable {
             textView.window?.makeFirstResponder(textView)
         }
         
-        // CRITICAL FIX: Ensure text is always black
+        // Ensure text uses adaptive color
         if let textStorage = textView.textStorage {
             let range = NSRange(location: 0, length: textStorage.length)
-            textStorage.addAttribute(.foregroundColor, value: NSColor.black, range: range)
+            textStorage.addAttribute(.foregroundColor, value: NSColor.textColor, range: range)
             textStorage.addAttribute(.font, value: NSFont.systemFont(ofSize: 15), range: range)
         }
         
-        // Maintain typing attributes
+        // Maintain typing attributes with adaptive colors
         textView.typingAttributes = [
             .font: NSFont.systemFont(ofSize: 15),
-            .foregroundColor: NSColor.black
+            .foregroundColor: NSColor.textColor
         ]
     }
     
@@ -918,19 +917,19 @@ struct ResizableTextEditor: NSViewRepresentable {
             parent.text = textView.string
             parent.updateHeight(textView)
             
-            // CRITICAL FIX: Force black text during typing
-            textView.textColor = NSColor.black
+            // Use adaptive text color during typing
+            textView.textColor = NSColor.textColor
             
-            // Apply text attributes to maintain visibility
+            // Apply text attributes to maintain visibility with adaptive colors
             if let textStorage = textView.textStorage {
                 let range = NSRange(location: 0, length: textStorage.length)
-                textStorage.addAttribute(.foregroundColor, value: NSColor.black, range: range)
+                textStorage.addAttribute(.foregroundColor, value: NSColor.textColor, range: range)
             }
             
-            // Ensure typing attributes are set for new text
+            // Ensure typing attributes are set for new text with adaptive colors
             textView.typingAttributes = [
                 .font: NSFont.systemFont(ofSize: 15),
-                .foregroundColor: NSColor.black
+                .foregroundColor: NSColor.textColor
             ]
         }
     }

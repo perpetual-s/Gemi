@@ -518,7 +518,8 @@ struct MainWindowView: View {
                     insightsPlaceholder
                     
                 case .search:
-                    searchPlaceholder
+                    SearchView()
+                        .padding(DesignSystem.Spacing.contentPadding)
                     
                 case .export:
                     exportPlaceholder

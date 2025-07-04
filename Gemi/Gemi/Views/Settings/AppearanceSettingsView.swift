@@ -173,7 +173,7 @@ struct ThemeCard: View {
                         )
                 )
                 
-                Text(theme.rawValue)
+                Text(theme.displayName)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(isSelected ? .primary : .secondary)
             }
@@ -309,7 +309,7 @@ struct FontSizeButton: View {
                             )
                     )
                 
-                Text(fontSize.rawValue)
+                Text(fontSize.displayName)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(isSelected ? .primary : .secondary)
             }

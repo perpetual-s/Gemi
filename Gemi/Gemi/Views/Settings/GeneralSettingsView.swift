@@ -24,7 +24,7 @@ struct GeneralSettingsView: View {
                     
                     ForEach(StartupBehavior.allCases, id: \.self) { behavior in
                         RadioButton(
-                            title: behavior.rawValue,
+                            title: behavior.displayName,
                             isSelected: settings.startupBehavior == behavior
                         ) {
                             withAnimation(DesignSystem.Animation.quick) {

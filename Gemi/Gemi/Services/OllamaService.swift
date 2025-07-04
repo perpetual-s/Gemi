@@ -334,10 +334,30 @@ final class OllamaService {
         urlRequest.httpBody = try JSONEncoder().encode(request)
         
         do {
-            let (data, response) = try await session.data(for: urlRequest)
+            // Use retry logic for the network request
+            let (data, response) = try await performWithRetry {
+                try await session.data(for: urlRequest)
+            }
             
-            guard let httpResponse = response as? HTTPURLResponse,
-                  httpResponse.statusCode == 200 else {
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw OllamaError.embeddingGenerationFailed
+            }
+            
+            // Check for specific HTTP status codes
+            switch httpResponse.statusCode {
+            case 200:
+                // Success, continue processing
+                break
+            case 404:
+                // Model not found - don't retry this
+                logger.error("Embedding model not found: \(embeddingModelName)")
+                throw OllamaError.modelNotInstalled
+            case 500...599:
+                // Server error - worth retrying
+                logger.error("Server error: HTTP \(httpResponse.statusCode)")
+                throw OllamaError.connectionFailed
+            default:
+                logger.error("Unexpected HTTP status: \(httpResponse.statusCode)")
                 throw OllamaError.embeddingGenerationFailed
             }
             
@@ -417,6 +437,46 @@ final class OllamaService {
     
     // MARK: - Private Methods
     
+    /// Perform an operation with exponential backoff retry logic
+    private func performWithRetry<T>(
+        maxAttempts: Int = 3,
+        operation: () async throws -> T
+    ) async throws -> T {
+        var lastError: Error?
+        
+        for attempt in 1...maxAttempts {
+            do {
+                return try await operation()
+            } catch {
+                lastError = error
+                
+                // Check if it's a model not found error - no point retrying
+                if let urlError = error as? URLError,
+                   urlError.code == .badServerResponse {
+                    // This might be a model not found error, don't retry
+                    throw OllamaError.modelNotInstalled
+                }
+                
+                if attempt < maxAttempts {
+                    // Exponential backoff: 1s, 2s, 4s
+                    let delay = UInt64(pow(2.0, Double(attempt - 1))) * 1_000_000_000
+                    
+                    // Update status message to show retry attempt
+                    await MainActor.run {
+                        self.statusMessage = "Retrying connection (attempt \(attempt + 1)/\(maxAttempts))..."
+                    }
+                    
+                    try? await Task.sleep(nanoseconds: delay)
+                    
+                    logger.info("Retrying operation after \(pow(2.0, Double(attempt - 1)))s delay (attempt \(attempt + 1)/\(maxAttempts))")
+                }
+            }
+        }
+        
+        // All attempts failed
+        throw lastError ?? OllamaError.connectionFailed
+    }
+    
     @MainActor
     private func performChatCompletionV2(prompt: String, continuation: AsyncThrowingStream<String, Error>.Continuation) async {
         logger.info("Starting chat completion with /api/chat endpoint")
@@ -450,10 +510,31 @@ final class OllamaService {
         
         do {
             urlRequest.httpBody = try JSONEncoder().encode(chatRequest)
-            let (bytes, response) = try await session.bytes(for: urlRequest)
             
-            guard let httpResponse = response as? HTTPURLResponse,
-                  httpResponse.statusCode == 200 else {
+            // Use retry logic for the network request
+            let (bytes, response) = try await performWithRetry {
+                try await session.bytes(for: urlRequest)
+            }
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw OllamaError.invalidResponse
+            }
+            
+            // Check for specific HTTP status codes
+            switch httpResponse.statusCode {
+            case 200:
+                // Success, continue processing
+                break
+            case 404:
+                // Model not found - don't retry this
+                logger.error("Model not found: \(modelName)")
+                throw OllamaError.modelNotInstalled
+            case 500...599:
+                // Server error - worth retrying
+                logger.error("Server error: HTTP \(httpResponse.statusCode)")
+                throw OllamaError.connectionFailed
+            default:
+                logger.error("Unexpected HTTP status: \(httpResponse.statusCode)")
                 throw OllamaError.invalidResponse
             }
             
@@ -516,10 +597,31 @@ final class OllamaService {
         
         do {
             urlRequest.httpBody = try JSONEncoder().encode(chatRequest)
-            let (bytes, response) = try await session.bytes(for: urlRequest)
             
-            guard let httpResponse = response as? HTTPURLResponse,
-                  httpResponse.statusCode == 200 else {
+            // Use retry logic for the network request
+            let (bytes, response) = try await performWithRetry {
+                try await session.bytes(for: urlRequest)
+            }
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw OllamaError.invalidResponse
+            }
+            
+            // Check for specific HTTP status codes
+            switch httpResponse.statusCode {
+            case 200:
+                // Success, continue processing
+                break
+            case 404:
+                // Model not found - don't retry this
+                logger.error("Model not found: \(modelName)")
+                throw OllamaError.modelNotInstalled
+            case 500...599:
+                // Server error - worth retrying
+                logger.error("Server error: HTTP \(httpResponse.statusCode)")
+                throw OllamaError.connectionFailed
+            default:
+                logger.error("Unexpected HTTP status: \(httpResponse.statusCode)")
                 throw OllamaError.invalidResponse
             }
             
@@ -664,10 +766,30 @@ extension OllamaService {
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         urlRequest.httpBody = try JSONEncoder().encode(chatRequest)
         
-        let (data, response) = try await session.data(for: urlRequest)
+        // Use retry logic for the network request
+        let (data, response) = try await performWithRetry {
+            try await session.data(for: urlRequest)
+        }
         
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw OllamaError.invalidResponse
+        }
+        
+        // Check for specific HTTP status codes
+        switch httpResponse.statusCode {
+        case 200:
+            // Success, continue processing
+            break
+        case 404:
+            // Model not found - don't retry this
+            logger.error("Model not found: \(model ?? modelName)")
+            throw OllamaError.modelNotInstalled
+        case 500...599:
+            // Server error - worth retrying
+            logger.error("Server error: HTTP \(httpResponse.statusCode)")
+            throw OllamaError.connectionFailed
+        default:
+            logger.error("Unexpected HTTP status: \(httpResponse.statusCode)")
             throw OllamaError.invalidResponse
         }
         
@@ -704,10 +826,30 @@ extension OllamaService {
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         urlRequest.httpBody = try JSONEncoder().encode(request)
         
-        let (data, response) = try await session.data(for: urlRequest)
+        // Use retry logic for the network request
+        let (data, response) = try await performWithRetry {
+            try await session.data(for: urlRequest)
+        }
         
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw OllamaError.embeddingGenerationFailed
+        }
+        
+        // Check for specific HTTP status codes
+        switch httpResponse.statusCode {
+        case 200:
+            // Success, continue processing
+            break
+        case 404:
+            // Model not found - don't retry this
+            logger.error("Embedding model not found: \(model)")
+            throw OllamaError.modelNotInstalled
+        case 500...599:
+            // Server error - worth retrying
+            logger.error("Server error: HTTP \(httpResponse.statusCode)")
+            throw OllamaError.connectionFailed
+        default:
+            logger.error("Unexpected HTTP status: \(httpResponse.statusCode)")
             throw OllamaError.embeddingGenerationFailed
         }
         

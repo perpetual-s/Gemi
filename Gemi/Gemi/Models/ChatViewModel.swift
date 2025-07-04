@@ -62,6 +62,7 @@ final class ChatViewModel {
     private let ollamaService: OllamaService
     private let memoryService: MemoryService?
     private var streamTask: Task<Void, Never>?
+    private let messageQueue = DispatchQueue(label: "com.gemi.chat.messages", attributes: .concurrent)
     
     // MARK: - Initialization
     
@@ -70,10 +71,14 @@ final class ChatViewModel {
         self.memoryService = memoryService
         
         // Add welcome message
-        messages.append(ChatMessage(
+        addMessage(ChatMessage(
             content: "Hello! I'm Gemi, your private diary companion. I'm here to help you reflect, write, and explore your thoughts. Everything we discuss stays on your device. How can I help you today?",
             isUser: false
         ))
+    }
+    
+    deinit {
+        streamTask?.cancel()
     }
     
     // MARK: - Public Methods
@@ -87,9 +92,9 @@ final class ChatViewModel {
         // Check Ollama status before sending
         let isConnected = await ollamaService.checkOllamaStatus()
         if !isConnected {
-            messages.append(ChatMessage(content: userMessage, isUser: true))
+            addMessage(ChatMessage(content: userMessage, isUser: true))
             currentInput = ""
-            messages.append(ChatMessage(
+            addMessage(ChatMessage(
                 content: "I'm sorry, I can't respond right now. The Ollama service isn't running. Please start it by opening Terminal and running 'ollama serve', then try again.",
                 isUser: false,
                 isError: true
@@ -98,20 +103,22 @@ final class ChatViewModel {
         }
         
         // Add user message
-        messages.append(ChatMessage(content: userMessage, isUser: true))
+        addMessage(ChatMessage(content: userMessage, isUser: true))
         currentInput = ""
         errorMessage = nil
         
         // Cancel any existing stream
         streamTask?.cancel()
+        streamTask = nil
         
         // Start generating response
         isGenerating = true
         streamingResponse = ""
         
         // Add placeholder for AI response
-        let responseIndex = messages.count
-        messages.append(ChatMessage(content: "", isUser: false))
+        let responseMessage = ChatMessage(content: "", isUser: false)
+        let responseId = responseMessage.id
+        addMessage(responseMessage)
         
         // Get relevant memories if available
         let memories = await Task {
@@ -127,17 +134,14 @@ final class ChatViewModel {
                     
                     await MainActor.run {
                         streamingResponse += chunk
-                        messages[responseIndex] = ChatMessage(
-                            content: streamingResponse,
-                            isUser: false
-                        )
+                        updateStreamingMessage(id: responseId, content: streamingResponse)
                     }
                 }
             } catch {
                 await MainActor.run {
-                    messages[responseIndex] = ChatMessage(
+                    updateStreamingMessage(
+                        id: responseId,
                         content: "I'm sorry, I encountered an error: \(error.localizedDescription)",
-                        isUser: false,
                         isError: true
                     )
                     errorMessage = error.localizedDescription
@@ -147,13 +151,15 @@ final class ChatViewModel {
             await MainActor.run {
                 isGenerating = false
                 streamingResponse = ""
+                streamTask = nil
                 
                 // Store this conversation in memory if service is available
                 if let memoryService = memoryService {
+                    let finalResponse = getFinalMessageContent(id: responseId)
                     Task {
                         await memoryService.storeConversationMemory(
                             userMessage: userMessage,
-                            aiResponse: messages[responseIndex].content
+                            aiResponse: finalResponse
                         )
                     }
                 }
@@ -170,10 +176,11 @@ final class ChatViewModel {
     /// Clear the current conversation
     @MainActor
     func clearConversation() {
-        messages = [ChatMessage(
+        clearAllMessages()
+        addMessage(ChatMessage(
             content: "Let's start fresh. What would you like to talk about?",
             isUser: false
-        )]
+        ))
         streamingResponse = ""
         errorMessage = nil
         ollamaService.clearContext()
@@ -186,13 +193,51 @@ final class ChatViewModel {
     }
     
     /// Cancel current generation
+    @MainActor
     func cancelGeneration() {
         streamTask?.cancel()
+        streamTask = nil
         isGenerating = false
         streamingResponse = ""
     }
     
     // MARK: - Private Methods
+    
+    /// Thread-safe method to add a message
+    private func addMessage(_ message: ChatMessage) {
+        messageQueue.async(flags: .barrier) { [weak self] in
+            Task { @MainActor in
+                self?.messages.append(message)
+            }
+        }
+    }
+    
+    /// Thread-safe method to update a streaming message
+    @MainActor
+    private func updateStreamingMessage(id: UUID, content: String, isError: Bool = false) {
+        if let index = messages.firstIndex(where: { $0.id == id }) {
+            messages[index] = ChatMessage(
+                content: content,
+                isUser: false,
+                isError: isError
+            )
+        }
+    }
+    
+    /// Thread-safe method to get final message content
+    @MainActor
+    private func getFinalMessageContent(id: UUID) -> String {
+        messages.first(where: { $0.id == id })?.content ?? ""
+    }
+    
+    /// Thread-safe method to clear all messages
+    private func clearAllMessages() {
+        messageQueue.async(flags: .barrier) { [weak self] in
+            Task { @MainActor in
+                self?.messages.removeAll()
+            }
+        }
+    }
     
     /// Check Ollama connection and show appropriate message
     @MainActor
@@ -201,7 +246,7 @@ final class ChatViewModel {
         
         if !isConnected {
             // Add an error message if Ollama is not running
-            messages.append(ChatMessage(
+            addMessage(ChatMessage(
                 content: "⚠️ I'm having trouble connecting to the Ollama service. Please make sure Ollama is running on your Mac. You can start it by opening Terminal and running 'ollama serve'.",
                 isUser: false,
                 isError: true
@@ -240,12 +285,14 @@ final class ChatViewModel {
     }
     
     /// Clear all chat messages and reset to welcome state
+    @MainActor
     func clearChat() {
         // Cancel any ongoing generation
         streamTask?.cancel()
+        streamTask = nil
         
         // Clear messages
-        messages.removeAll()
+        clearAllMessages()
         
         // Reset state
         currentInput = ""
@@ -254,7 +301,7 @@ final class ChatViewModel {
         errorMessage = nil
         
         // Add welcome message back
-        messages.append(ChatMessage(
+        addMessage(ChatMessage(
             content: "Hello! I'm Gemi, your private diary companion. I'm here to help you reflect, write, and explore your thoughts. Everything we discuss stays on your device. How can I help you today?",
             isUser: false
         ))

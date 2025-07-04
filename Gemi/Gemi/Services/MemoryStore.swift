@@ -24,11 +24,25 @@ actor MemoryStore {
     /// Cache for frequently accessed memories
     private var memoryCache: [UUID: Memory] = [:]
     
-    /// Maximum number of memories to keep (older, less important ones are pruned)
-    private let maxMemoryCount = 1000
+    /// User defaults keys
+    static let defaultMemoryLimit = 1000
+    static let memoryLimitKey = "memoryLimit"
+    static let archiveDirectoryName = "MemoryArchives"
+    
+    /// Maximum number of memories to keep (older, less important ones are archived)
+    var memoryLimit: Int {
+        UserDefaults.standard.integer(forKey: Self.memoryLimitKey) != 0 ? 
+        UserDefaults.standard.integer(forKey: Self.memoryLimitKey) : Self.defaultMemoryLimit
+    }
     
     /// Minimum importance threshold for keeping memories
     private let minImportanceThreshold: Float = 0.1
+    
+    /// Archive directory URL
+    private var archiveDirectoryURL: URL? {
+        guard let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return nil }
+        return documentsURL.appendingPathComponent(Self.archiveDirectoryName)
+    }
     
     // MARK: - Initialization
     
@@ -51,7 +65,7 @@ actor MemoryStore {
     func addMemory(_ memory: Memory) async throws {
         logger.info("Adding memory: \(memory.id)")
         try await saveMemory(memory)
-        try await pruneMemoriesIfNeeded()
+        try await archiveMemoriesIfNeeded()
     }
     
     /// Add a new memory from a conversation
@@ -83,8 +97,8 @@ actor MemoryStore {
         // Save to database
         try await saveMemory(memory)
         
-        // Prune old memories if needed
-        try await pruneMemoriesIfNeeded()
+        // Archive old memories if needed
+        try await archiveMemoriesIfNeeded()
     }
     
     /// Add a new memory from a journal entry
@@ -112,8 +126,8 @@ actor MemoryStore {
             try await saveMemory(memory)
         }
         
-        // Prune old memories if needed
-        try await pruneMemoriesIfNeeded()
+        // Archive old memories if needed
+        try await archiveMemoriesIfNeeded()
     }
     
     /// Search memories using vector similarity
@@ -446,40 +460,163 @@ actor MemoryStore {
     
     private let commonWords = Set(["the", "and", "but", "for", "with", "this", "that", "these", "those", "today", "yesterday", "tomorrow"])
     
-    private func pruneMemoriesIfNeeded() async throws {
+    /// Check if memory archival is needed
+    func shouldArchiveMemories() async throws -> Bool {
+        let count = try await databaseManager.getMemoryCount()
+        return count > memoryLimit
+    }
+    
+    /// Get archive statistics
+    func getArchiveStats() async throws -> ArchiveStats {
+        guard let archiveDir = archiveDirectoryURL else {
+            return ArchiveStats(totalArchives: 0, totalArchivedMemories: 0, oldestArchive: nil, newestArchive: nil)
+        }
+        
+        let fileManager = FileManager.default
+        
+        // Create archive directory if it doesn't exist
+        if !fileManager.fileExists(atPath: archiveDir.path) {
+            try fileManager.createDirectory(at: archiveDir, withIntermediateDirectories: true)
+        }
+        
+        let archiveFiles = try fileManager.contentsOfDirectory(at: archiveDir, includingPropertiesForKeys: [.creationDateKey])
+            .filter { $0.pathExtension == "json" }
+        
+        var totalMemories = 0
+        var oldestDate: Date?
+        var newestDate: Date?
+        
+        for file in archiveFiles {
+            if let data = try? Data(contentsOf: file),
+               let memories = try? JSONDecoder().decode([Memory].self, from: data) {
+                totalMemories += memories.count
+            }
+            
+            if let creationDate = try? file.resourceValues(forKeys: [.creationDateKey]).creationDate {
+                if oldestDate == nil || creationDate < oldestDate! {
+                    oldestDate = creationDate
+                }
+                if newestDate == nil || creationDate > newestDate! {
+                    newestDate = creationDate
+                }
+            }
+        }
+        
+        return ArchiveStats(
+            totalArchives: archiveFiles.count,
+            totalArchivedMemories: totalMemories,
+            oldestArchive: oldestDate,
+            newestArchive: newestDate
+        )
+    }
+    
+    /// Export all memories to a file
+    func exportMemories(includeArchived: Bool = false) async throws -> URL {
+        // Fetch all current memories
+        let currentMemories = try await databaseManager.database.read { db in
+            try Memory.fetchAll(db)
+        }
+        
+        var allMemories = currentMemories
+        
+        // Include archived memories if requested
+        if includeArchived, let archiveDir = archiveDirectoryURL {
+            let fileManager = FileManager.default
+            if fileManager.fileExists(atPath: archiveDir.path) {
+                let archiveFiles = try fileManager.contentsOfDirectory(at: archiveDir, includingPropertiesForKeys: nil)
+                    .filter { $0.pathExtension == "json" }
+                
+                for file in archiveFiles {
+                    if let data = try? Data(contentsOf: file),
+                       let archivedMemories = try? JSONDecoder().decode([Memory].self, from: data) {
+                        allMemories.append(contentsOf: archivedMemories)
+                    }
+                }
+            }
+        }
+        
+        // Create export data
+        let exportData = MemoryExport(
+            exportDate: Date(),
+            totalMemories: allMemories.count,
+            memories: allMemories
+        )
+        
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .prettyPrinted
+        encoder.dateEncodingStrategy = .iso8601
+        let data = try encoder.encode(exportData)
+        
+        // Save to file
+        let exportURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("gemi_memories_export_\(Date().timeIntervalSince1970).json")
+        try data.write(to: exportURL)
+        
+        logger.info("Exported \(allMemories.count) memories to \(exportURL.path)")
+        return exportURL
+    }
+    
+    /// Archive old memories instead of deleting them
+    private func archiveMemoriesIfNeeded() async throws {
         let count = try await databaseManager.database.read { db in
             try Memory.fetchCount(db)
         }
         
-        guard count > self.maxMemoryCount else { return }
+        guard count > self.memoryLimit else { return }
         
-        logger.info("Pruning memories: \(count) > \(self.maxMemoryCount)")
+        logger.info("Archiving memories: \(count) > \(self.memoryLimit)")
         
-        // Get memories to prune (oldest, least important, not pinned)
-        let memoriesToDelete = try await databaseManager.database.read { db in
+        // Get memories to archive (oldest, least important, not pinned)
+        let memoriesToArchive = try await databaseManager.database.read { db in
             try Memory
                 .filter(Memory.Columns.isPinned == false)
                 .order(
                     Memory.Columns.importance,
                     Memory.Columns.lastAccessedAt
                 )
-                .limit(count - self.maxMemoryCount)
+                .limit(count - self.memoryLimit)
                 .fetchAll(db)
         }
         
-        // Delete them
+        // Archive them
+        try await archiveMemories(memoriesToArchive)
+        
+        // Delete from active storage
         _ = try await databaseManager.database.write { db in
-            for memory in memoriesToDelete {
+            for memory in memoriesToArchive {
                 try memory.delete(db)
             }
         }
         
         // Remove from cache
-        for memory in memoriesToDelete {
+        for memory in memoriesToArchive {
             memoryCache.removeValue(forKey: memory.id)
         }
         
-        logger.info("Pruned \(memoriesToDelete.count) memories")
+        logger.info("Archived \(memoriesToArchive.count) memories")
+    }
+    
+    /// Archive memories to a JSON file
+    private func archiveMemories(_ memories: [Memory]) async throws {
+        guard !memories.isEmpty else { return }
+        guard let archiveDir = archiveDirectoryURL else {
+            throw MemoryArchiveError.unableToCreateArchiveDirectory
+        }
+        
+        let fileManager = FileManager.default
+        
+        // Create archive directory if it doesn't exist
+        if !fileManager.fileExists(atPath: archiveDir.path) {
+            try fileManager.createDirectory(at: archiveDir, withIntermediateDirectories: true)
+        }
+        
+        // Create archive file
+        let archiveData = try JSONEncoder().encode(memories)
+        let timestamp = Date().timeIntervalSince1970
+        let archiveURL = archiveDir.appendingPathComponent("memory_archive_\(timestamp).json")
+        
+        try archiveData.write(to: archiveURL)
+        logger.info("Archived \(memories.count) memories to \(archiveURL.lastPathComponent)")
     }
 }
 
@@ -499,5 +636,41 @@ struct MemoryStats {
         
         let days = Calendar.current.dateComponents([.day], from: oldest, to: newest).day ?? 1
         return Double(totalCount) / Double(max(days, 1))
+    }
+}
+
+// MARK: - Archive Statistics
+
+struct ArchiveStats {
+    let totalArchives: Int
+    let totalArchivedMemories: Int
+    let oldestArchive: Date?
+    let newestArchive: Date?
+}
+
+// MARK: - Memory Export
+
+struct MemoryExport: Codable {
+    let exportDate: Date
+    let totalMemories: Int
+    let memories: [Memory]
+}
+
+// MARK: - Memory Archive Error
+
+enum MemoryArchiveError: Error, LocalizedError {
+    case unableToCreateArchiveDirectory
+    case archiveDecodingFailed
+    case exportFailed(String)
+    
+    var errorDescription: String? {
+        switch self {
+        case .unableToCreateArchiveDirectory:
+            return "Unable to create memory archive directory"
+        case .archiveDecodingFailed:
+            return "Failed to decode archived memories"
+        case .exportFailed(let reason):
+            return "Failed to export memories: \(reason)"
+        }
     }
 }
