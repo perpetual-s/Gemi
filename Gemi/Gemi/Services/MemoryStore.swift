@@ -562,9 +562,10 @@ actor MemoryStore {
             try Memory.fetchCount(db)
         }
         
-        guard count > self.memoryLimit else { return }
+        let currentMemoryLimit = self.memoryLimit
+        guard count > currentMemoryLimit else { return }
         
-        logger.info("Archiving memories: \(count) > \(self.memoryLimit)")
+        logger.info("Archiving memories: \(count) > \(currentMemoryLimit)")
         
         // Get memories to archive (oldest, least important, not pinned)
         let memoriesToArchive = try await databaseManager.database.read { db in
@@ -574,7 +575,7 @@ actor MemoryStore {
                     Memory.Columns.importance,
                     Memory.Columns.lastAccessedAt
                 )
-                .limit(count - self.memoryLimit)
+                .limit(count - currentMemoryLimit)
                 .fetchAll(db)
         }
         

@@ -350,7 +350,7 @@ final class OllamaService {
                 break
             case 404:
                 // Model not found - don't retry this
-                logger.error("Embedding model not found: \(embeddingModelName)")
+                logger.error("Embedding model not found: \(self.embeddingModelName)")
                 throw OllamaError.modelNotInstalled
             case 500...599:
                 // Server error - worth retrying
@@ -438,7 +438,7 @@ final class OllamaService {
     // MARK: - Private Methods
     
     /// Perform an operation with exponential backoff retry logic
-    private func performWithRetry<T>(
+    private func performWithRetry<T: Sendable>(
         maxAttempts: Int = 3,
         operation: () async throws -> T
     ) async throws -> T {
@@ -527,7 +527,7 @@ final class OllamaService {
                 break
             case 404:
                 // Model not found - don't retry this
-                logger.error("Model not found: \(modelName)")
+                logger.error("Model not found: \(self.modelName)")
                 throw OllamaError.modelNotInstalled
             case 500...599:
                 // Server error - worth retrying
@@ -614,7 +614,7 @@ final class OllamaService {
                 break
             case 404:
                 // Model not found - don't retry this
-                logger.error("Model not found: \(modelName)")
+                logger.error("Model not found: \(self.modelName)")
                 throw OllamaError.modelNotInstalled
             case 500...599:
                 // Server error - worth retrying
