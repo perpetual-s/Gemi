@@ -124,12 +124,11 @@ final class ChatViewModel {
         let memories = await Task {
             await fetchRelevantMemories(for: userMessage)
         }.value
-        let prompt = ollamaService.createPromptWithMemory(userMessage: userMessage, memories: memories)
         
         // Create streaming task
         streamTask = Task {
             do {
-                for try await chunk in ollamaService.chatCompletion(prompt: prompt) {
+                for try await chunk in ollamaService.gemiChatCompletion(userMessage: userMessage, memories: memories) {
                     guard !Task.isCancelled else { break }
                     
                     await MainActor.run {

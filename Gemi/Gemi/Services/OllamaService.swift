@@ -308,6 +308,16 @@ final class OllamaService {
         }
     }
     
+    /// Stream chat completion for Gemi with proper message structure
+    func gemiChatCompletion(userMessage: String, memories: [String]) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            Task {
+                let messages = createChatMessages(userMessage: userMessage, memories: memories)
+                await self.performChatCompletionV2(prompt: userMessage, messages: messages, continuation: continuation)
+            }
+        }
+    }
+    
     /// Generate embeddings for a text
     @MainActor
     func generateEmbedding(for text: String) async throws -> [Double] {
@@ -478,7 +488,7 @@ final class OllamaService {
     }
     
     @MainActor
-    private func performChatCompletionV2(prompt: String, continuation: AsyncThrowingStream<String, Error>.Continuation) async {
+    private func performChatCompletionV2(prompt: String, messages: [OllamaChatMessage]? = nil, continuation: AsyncThrowingStream<String, Error>.Continuation) async {
         logger.info("Starting chat completion with /api/chat endpoint")
         
         guard await checkOllamaStatus() else {
@@ -495,11 +505,13 @@ final class OllamaService {
         }
         
         let url = URL(string: "\(baseURL)/api/chat")!
+        
+        // Use provided messages or fall back to simple user message
+        let chatMessages = messages ?? [OllamaChatMessage(role: "user", content: prompt)]
+        
         let chatRequest = OllamaChatRequestV2(
             model: modelName,
-            messages: [
-                OllamaChatMessage(role: "user", content: prompt)
-            ],
+            messages: chatMessages,
             stream: true,
             options: defaultOptions
         )
@@ -709,6 +721,39 @@ final class OllamaService {
         prompt += "Respond as Gemi with warmth and empathy, keeping the conversation natural and supportive."
         
         return prompt
+    }
+    
+    /// Create structured messages for chat API
+    func createChatMessages(userMessage: String, memories: [String]) -> [OllamaChatMessage] {
+        var systemPrompt = """
+        You are Gemi, a warm and empathetic AI diary companion. You're having a private conversation with your user in their personal journal app. Everything shared stays completely private on their device.
+        
+        Your personality:
+        - Warm, supportive, and encouraging like a trusted friend
+        - Reflective and thoughtful, helping users explore their feelings
+        - Non-judgmental and accepting of all emotions and experiences
+        - Gently curious, asking follow-up questions to help users reflect deeper
+        - Celebrating small victories and providing comfort during difficult times
+        
+        Remember to:
+        - Keep responses conversational and personal, not clinical
+        - Use warm, friendly language that feels like chatting with a close friend
+        - Acknowledge emotions and validate feelings
+        - Offer gentle prompts for deeper reflection when appropriate
+        - Reference past conversations naturally when relevant
+        """
+        
+        if !memories.isEmpty {
+            systemPrompt += "\n\nContext from your previous conversations together:\n"
+            for memory in memories.prefix(5) {
+                systemPrompt += "- \(memory)\n"
+            }
+        }
+        
+        return [
+            OllamaChatMessage(role: "system", content: systemPrompt),
+            OllamaChatMessage(role: "user", content: userMessage)
+        ]
     }
 }
 
