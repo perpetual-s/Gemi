@@ -3,7 +3,7 @@ import SQLite3
 import CryptoKit
 import Security
 
-final class DatabaseManager: Sendable {
+final class DatabaseManager: @unchecked Sendable {
     static let shared = DatabaseManager()
     
     private let databaseName = "gemi.db"
