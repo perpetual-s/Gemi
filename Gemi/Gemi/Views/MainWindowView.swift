@@ -28,7 +28,7 @@ struct MainWindowView: View {
     @State private var sidebarSelection: SidebarItem = .timeline
     @State private var hasShownOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
     @FocusState private var focusedField: FocusableField?
-    @State private var isComposingNewEntry = false
+    // Note: Using navigationModel.showingEditor instead of local state
     @State private var chatViewModel = ChatViewModel(ollamaService: OllamaService.shared)
     @State private var sortOrder: SortOrder = .dateDescending
     
@@ -106,9 +106,9 @@ struct MainWindowView: View {
         .focusedValue(\.showSettings, $showingSettings)
         .focusedValue(\.showChat, $showingChat)
         .onKeyPress(.escape) {
-            if isComposingNewEntry {
+            if navigationModel.showingEditor {
                 withAnimation(DesignSystem.Animation.cozySettle) {
-                    isComposingNewEntry = false
+                    navigationModel.closeEditor()
                 }
                 return .handled
             }
@@ -185,7 +185,7 @@ struct MainWindowView: View {
                     help: "Create new journal entry",
                     isLoading: false
                 ) {
-                    isComposingNewEntry = true
+                    navigationModel.openNewEntry()
                     sidebarSelection = .timeline
                 }
                 .keyboardShortcut("n", modifiers: .command)
@@ -375,11 +375,11 @@ struct MainWindowView: View {
     private var panelHeader: some View {
         HStack(spacing: DesignSystem.Spacing.large) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.small) {
-                Text(isComposingNewEntry ? "New Entry" : sidebarSelection.title)
+                Text(navigationModel.showingEditor ? "New Entry" : sidebarSelection.title)
                     .font(ModernDesignSystem.Typography.title1)
                     .foregroundStyle(ModernDesignSystem.Colors.adaptiveTextPrimary)
                 
-                if let description = isComposingNewEntry ? "Share your thoughts in this private, safe space" : sidebarSelection.description {
+                if let description = navigationModel.showingEditor ? "Share your thoughts in this private, safe space" : sidebarSelection.description {
                     Text(description)
                         .font(ModernDesignSystem.Typography.body)
                         .foregroundStyle(ModernDesignSystem.Colors.adaptiveTextSecondary)
@@ -389,10 +389,10 @@ struct MainWindowView: View {
             Spacer()
             
             // Close button when composing
-            if isComposingNewEntry {
+            if navigationModel.showingEditor {
                 Button {
                     withAnimation(DesignSystem.Animation.cozySettle) {
-                        isComposingNewEntry = false
+                        navigationModel.closeEditor()
                     }
                 } label: {
                     Image(systemName: "xmark.circle.fill")
@@ -480,11 +480,11 @@ struct MainWindowView: View {
     @ViewBuilder
     private var panelContent: some View {
         Group {
-            if isComposingNewEntry {
-                FullComposeView(entry: .constant(nil), onSave: {
+            if navigationModel.showingEditor {
+                FullComposeView(entry: .constant(navigationModel.editingEntry), onSave: {
                     // On save callback
                     withAnimation(DesignSystem.Animation.cozySettle) {
-                        isComposingNewEntry = false
+                        navigationModel.closeEditor()
                         sidebarSelection = .timeline
                     }
                     Task {
@@ -493,7 +493,7 @@ struct MainWindowView: View {
                 }, onCancel: {
                     // On cancel callback
                     withAnimation(DesignSystem.Animation.cozySettle) {
-                        isComposingNewEntry = false
+                        navigationModel.closeEditor()
                     }
                 })
             } else {
@@ -501,7 +501,7 @@ struct MainWindowView: View {
                 case .timeline:
                     TimelineView(selectedEntry: $selectedEntry) {
                         withAnimation(DesignSystem.Animation.cozySettle) {
-                            isComposingNewEntry = true
+                            navigationModel.openNewEntry()
                         }
                     }
                     .padding(DesignSystem.Spacing.contentPadding)
@@ -520,6 +520,7 @@ struct MainWindowView: View {
                 case .search:
                     SearchView()
                         .padding(DesignSystem.Spacing.contentPadding)
+                        .environment(navigationModel)
                     
                 case .export:
                     exportPlaceholder

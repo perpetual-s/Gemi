@@ -10,13 +10,14 @@ import SwiftUI
 
 /// Represents a single message in the chat
 struct ChatMessage: Identifiable {
-    let id = UUID()
+    let id: UUID
     let content: String
     let isUser: Bool
     let timestamp: Date
     let isError: Bool
     
-    init(content: String, isUser: Bool, timestamp: Date = Date(), isError: Bool = false) {
+    init(id: UUID = UUID(), content: String, isUser: Bool, timestamp: Date = Date(), isError: Bool = false) {
+        self.id = id
         self.content = content
         self.isUser = isUser
         self.timestamp = timestamp
@@ -215,9 +216,13 @@ final class ChatViewModel {
     @MainActor
     private func updateStreamingMessage(id: UUID, content: String, isError: Bool = false) {
         if let index = messages.firstIndex(where: { $0.id == id }) {
+            // Preserve the original message's properties while updating content
+            let originalMessage = messages[index]
             messages[index] = ChatMessage(
+                id: originalMessage.id,
                 content: content,
-                isUser: false,
+                isUser: originalMessage.isUser,
+                timestamp: originalMessage.timestamp,
                 isError: isError
             )
         }
