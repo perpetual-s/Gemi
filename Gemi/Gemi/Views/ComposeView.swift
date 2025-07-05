@@ -1,619 +1,423 @@
 import SwiftUI
-import UniformTypeIdentifiers
+import Combine
 
-/// ComposeView provides the journal entry creation and editing interface for Gemi.
-/// This view offers a clean, distraction-free writing environment with multimodal input support.
-///
-/// Features:
-/// - Rich text editing with TextEditor
-/// - Speech-to-text functionality with local processing
-/// - Image attachment button (placeholder for future multimodal support)
-/// - Native macOS styling and keyboard shortcuts
-/// - Privacy-first design with local-only processing
 struct ComposeView: View {
+    let entry: JournalEntry?
+    let onSave: (JournalEntry) -> Void
+    let onCancel: () -> Void
     
-    // MARK: - Dependencies
+    @State private var title = ""
+    @State private var content = ""
+    @State private var tags: [String] = []
+    @State private var tagInput = ""
+    @State private var mood = ""
+    @State private var isSaving = false
+    @State private var wordCount = 0
+    @State private var lastSaved = Date()
     
-    /// The journal store for saving entries (injected via @Environment)
-    @Environment(JournalStore.self) private var journalStore
+    @StateObject private var autoSaveTimer = AutoSaveTimer()
+    @FocusState private var isContentFocused: Bool
     
-    /// Dismissal action for closing the compose view
-    @Environment(\.dismiss) private var dismiss
-    
-    // MARK: - State
-    
-    /// The entry to be edited (if any)
-    @Binding var entry: JournalEntry?
-    
-    /// Local editable content
-    @State private var content: String = ""
-    
-    /// Optional callback when entry is saved (for parent state management)
-    var onSave: (() -> Void)?
-    
-    /// Loading state for save operation
-    @State private var isSaving: Bool = false
-    
-    // MARK: - Initialization
-    
-    /// Callback when user cancels the compose view
-    var onCancel: (() -> Void)?
-    
-    init(entry: Binding<JournalEntry?>, onSave: (() -> Void)? = nil, onCancel: (() -> Void)? = nil) {
-        self._entry = entry
-        self.onSave = onSave
-        self.onCancel = onCancel
-    }
-    
-    /// Error state for displaying save errors
-    @State private var errorMessage: String?
-    
-    /// Controls the presentation of error alerts
-    @State private var showingError: Bool = false
-    
-    /// Focus state for the text editor
-    @FocusState private var isTextEditorFocused: Bool
-    
-    /// Speech recognition service for voice dictation
-    @State private var speechService = SpeechRecognitionService()
-    
-    /// Controls the presentation of permission request alerts
-    @State private var showingPermissionAlert: Bool = false
-    
-    /// Controls the presentation of file importer for image selection
-    @State private var showingImageImporter: Bool = false
-    
-    /// Currently selected image file (if any)
-    @State private var selectedImageURL: URL?
-    
-    @State private var isFocusMode = false
-    
-    // MARK: - Encouraging Animation State
-    
-    /// Writing encouragement state
-    @State private var isWriting = false
-    @State private var wordCountPulse = false
-    @State private var editorGlow = false
-    @State private var welcomePulse = 1.0
-    
-    // MARK: - Constants
-    
-    private let placeholderText = "What's on your mind today?\n\nShare your thoughts, feelings, or experiences. This is your private space to reflect and express yourself freely."
-    private let minimumContentLength = 1
-    
-    // MARK: - Body
+    private let moodOptions = ["happy", "peaceful", "excited", "grateful", "thoughtful", "sad", "anxious", "frustrated", "neutral"]
     
     var body: some View {
         VStack(spacing: 0) {
-            // Main text editor
-            textEditorSection
+            header
             
-            // Bottom toolbar with actions
-            if !isFocusMode {
-                bottomToolbar
-            }
-        }
-        .alert("Error Saving Entry", isPresented: $showingError) {
-            Button("OK") { }
-        } message: {
-            Text(errorMessage ?? "An unknown error occurred while saving your journal entry.")
-        }
-        .onAppear {
-                // Initialize content from entry if editing, otherwise start fresh
-                if let existingEntry = entry {
-                    content = existingEntry.content
-                } else {
-                    content = ""
-                }
-                
-                // Focus the text editor when the view appears
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    isTextEditorFocused = true
-                }
-            }
-            .onDisappear {
-                // Clean up speech recognition when view disappears
-                if speechService.isRecording {
-                    speechService.stopRecording()
-                }
-            }
-            .onChange(of: speechService.currentTranscription) { oldValue, newValue in
-                // Live transcription preview (optional - for real-time feedback)
-                // For now, we'll just wait for the user to stop recording
-            }
-            .onChange(of: speechService.errorMessage) { oldValue, newValue in
-                if let error = newValue {
-                    errorMessage = error
-                    showingError = true
-                    speechService.clearError()
-                }
-            }
-            .fileImporter(
-                isPresented: $showingImageImporter,
-                allowedContentTypes: [.image],
-                allowsMultipleSelection: false
-            ) { result in
-                handleImageSelection(result)
-            }
-    }
-    
-    // MARK: - Text Editor Section
-    
-    @ViewBuilder
-    private var textEditorSection: some View {
-        ZStack(alignment: .topLeading) {
-            // Encouraging writing environment background
-            RoundedRectangle(cornerRadius: DesignSystem.Components.radiusLarge)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            DesignSystem.Colors.backgroundPrimary,
-                            DesignSystem.Colors.backgroundPrimary.opacity(0.98)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.Components.radiusLarge)
-                        .stroke(
-                            DesignSystem.Colors.primary.opacity(
-                                isTextEditorFocused ? 0.3 : 
-                                editorGlow ? 0.2 : 0.1
-                            ),
-                            lineWidth: 2
-                        )
-                )
-                .animation(DesignSystem.Animation.encouragingSpring, value: isTextEditorFocused)
-                .animation(DesignSystem.Animation.breathing, value: editorGlow)
+            Divider()
             
-            // Text editor with encouraging typography
-            TextEditor(text: $content)
-                .focused($isTextEditorFocused)
-                .font(DesignSystem.Typography.diaryBody)
-                .relaxedReadingStyle()
-                .scrollContentBackground(.hidden)
-                .padding(DesignSystem.Spacing.large + 8)
-                .onChange(of: content) { oldValue, newValue in
-                    handleContentChange(oldValue: oldValue, newValue: newValue)
-                }
-                .onTapGesture {
-                    withAnimation(DesignSystem.Animation.warmWelcome) {
-                        isTextEditorFocused = true
-                        editorGlow = true
-                    }
-                }
-            
-            // Warm, encouraging placeholder
-            if content.isEmpty {
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.medium) {
-                    Text("What's on your mind today?")
-                        .font(DesignSystem.Typography.title3)
-                        .elegantSerifStyle()
-                        .foregroundStyle(DesignSystem.Colors.primary.opacity(0.7))
-                        .scaleEffect(welcomePulse)
+            ScrollView {
+                VStack(alignment: .leading, spacing: Theme.spacing) {
+                    titleField
                     
-                    Text("Share your thoughts, feelings, or experiences.\nThis is your private space to reflect and express yourself freely.")
-                        .font(DesignSystem.Typography.body)
-                        .diaryTypography()
-                        .foregroundStyle(DesignSystem.Colors.textPlaceholder)
-                        .multilineTextAlignment(.leading)
+                    moodSelector
+                    
+                    tagsSection
+                    
+                    contentEditor
                 }
-                .padding(DesignSystem.Spacing.large + 8)
-                .allowsHitTesting(false)
-                .opacity(isTextEditorFocused ? 0.6 : 1.0)
-                .animation(DesignSystem.Animation.smooth, value: isTextEditorFocused)
-                .onAppear {
-                    withAnimation(DesignSystem.Animation.breathing) {
-                        welcomePulse = 1.05
-                    }
-                }
+                .padding()
             }
+            
+            Divider()
+            
+            footer
         }
-        .padding(DesignSystem.Spacing.medium)
-        .background(Color.clear)
+        .background(Theme.Colors.windowBackground)
+        .onAppear {
+            loadEntry()
+            startAutoSave()
+            isContentFocused = true
+        }
+        .onDisappear {
+            autoSaveTimer.stop()
+        }
     }
     
-    // MARK: - Bottom Toolbar
-    
-    @ViewBuilder
-    private var bottomToolbar: some View {
-        HStack(spacing: DesignSystem.Spacing.base) {
-            // Multimodal input buttons (left side)
-            HStack(spacing: DesignSystem.Spacing.medium) {
-                // Microphone button for speech-to-text
-                Button {
-                    Task {
-                        await handleMicrophoneButtonTap()
-                    }
-                } label: {
-                    Label("Dictate", systemImage: microphoneButtonIcon)
-                        .labelStyle(.iconOnly)
-                        .foregroundStyle(speechService.isRecording ? DesignSystem.Colors.error : DesignSystem.Colors.textSecondary)
-                }
-                .gemiSubtleButton()
-                .help(speechService.isRecording ? "Stop dictation" : "Start voice dictation")
-                .disabled(isSaving)
+    private var header: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(entry == nil ? "New Entry" : "Edit Entry")
+                    .font(Theme.Typography.title)
                 
-                // Image attachment button
-                Button {
-                    showingImageImporter = true
-                } label: {
-                    Label("Add Image", systemImage: "photo.circle.fill")
-                        .labelStyle(.iconOnly)
-                        .foregroundStyle(DesignSystem.Colors.textSecondary)
-                }
-                .gemiSubtleButton()
-                .help("Attach image")
-                .disabled(isSaving)
+                Text(currentDateString)
+                    .font(Theme.Typography.caption)
+                    .foregroundColor(Theme.Colors.secondaryText)
             }
             
             Spacer()
             
-            // Entry info and actions (right side)
-            HStack(spacing: DesignSystem.Spacing.base) {
-                // Cancel button
-                Button("Cancel") {
-                    if let onCancel = onCancel {
-                        onCancel()
-                    } else {
-                        dismiss()
+            if isSaving {
+                HStack(spacing: 4) {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                    Text("Saving...")
+                        .font(Theme.Typography.caption)
+                        .foregroundColor(Theme.Colors.secondaryText)
+                }
+            } else {
+                Text("Last saved \(lastSavedString)")
+                    .font(Theme.Typography.caption)
+                    .foregroundColor(Theme.Colors.tertiaryText)
+            }
+            
+            Button("Cancel", action: onCancel)
+                .buttonStyle(.plain)
+            
+            Button("Save", action: saveEntry)
+                .buttonStyle(.borderedProminent)
+                .disabled(content.isEmpty)
+        }
+        .padding()
+    }
+    
+    private var titleField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Title (optional)")
+                .font(Theme.Typography.caption)
+                .foregroundColor(Theme.Colors.secondaryText)
+            
+            TextField("Give your entry a title...", text: $title)
+                .textFieldStyle(.plain)
+                .font(Theme.Typography.headline)
+                .padding(12)
+                .background(Theme.Colors.cardBackground)
+                .cornerRadius(Theme.smallCornerRadius)
+        }
+    }
+    
+    private var moodSelector: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("How are you feeling?")
+                .font(Theme.Typography.caption)
+                .foregroundColor(Theme.Colors.secondaryText)
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(moodOptions, id: \.self) { moodOption in
+                        MoodButton(
+                            mood: moodOption,
+                            isSelected: mood == moodOption,
+                            action: { mood = mood == moodOption ? "" : moodOption }
+                        )
                     }
                 }
-                .gemiSecondaryButton()
-                .keyboardShortcut(.escape)
-                
-                // Encouraging recording indicator
-                if speechService.isRecording {
-                    HStack(spacing: DesignSystem.Spacing.small) {
-                        ZStack {
-                            // Outer pulse ring
-                            Circle()
-                                .stroke(DesignSystem.Colors.primary.opacity(0.3), lineWidth: 3)
-                                .frame(width: 20, height: 20)
-                                .scaleEffect(speechService.isRecording ? 1.5 : 1.0)
-                                .opacity(speechService.isRecording ? 0.0 : 1.0)
-                                .animation(DesignSystem.Animation.breathing, value: speechService.isRecording)
-                            
-                            // Inner recording dot
-                            Circle()
-                                .fill(DesignSystem.Colors.primary)
-                                .frame(width: 8, height: 8)
-                                .scaleEffect(speechService.isRecording ? 1.3 : 1.0)
-                                .animation(DesignSystem.Animation.heartbeat, value: speechService.isRecording)
-                        }
-                        
-                        Text("Listening to your voice...")
-                            .font(DesignSystem.Typography.caption1)
-                            .diaryTypography()
-                            .foregroundStyle(DesignSystem.Colors.primary)
-                    }
-                    .transition(.scale.combined(with: .opacity))
-                }
-                
-                // Encouraging word count
-                HStack(spacing: DesignSystem.Spacing.tiny) {
-                    Text(entryWordCount)
-                        .font(DesignSystem.Typography.caption1)
-                        .handwrittenStyle()
-                        .foregroundStyle(wordCountColor)
-                        .scaleEffect(wordCountPulse ? 1.2 : 1.0)
-                        .animation(DesignSystem.Animation.supportiveEmphasis, value: wordCountPulse)
-                    
-                    if wordCount > 0 {
-                        Image(systemName: "heart.fill")
-                            .font(.system(size: 8))
-                            .foregroundStyle(DesignSystem.Colors.primary.opacity(0.6))
-                            .scaleEffect(wordCountPulse ? 1.3 : 1.0)
-                            .animation(DesignSystem.Animation.playfulBounce, value: wordCountPulse)
-                    }
-                }
-                
-                // Save button
-                Button {
-                    Task {
-                        await saveEntry()
-                    }
-                } label: {
-                    if isSaving {
-                        HStack(spacing: DesignSystem.Spacing.small) {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                            Text("Saving...")
-                        }
-                    } else {
-                        Label("Save Entry", systemImage: "checkmark.circle.fill")
-                            .labelStyle(.titleAndIcon)
-                    }
-                }
-                .gemiPrimaryButton(isLoading: isSaving)
-                .disabled(isSaving || !canSave)
-                .keyboardShortcut("s", modifiers: .command)
-                .frame(maxWidth: 140)
             }
         }
-        .padding(.horizontal, DesignSystem.Spacing.large)
-        .padding(.vertical, DesignSystem.Spacing.base)
-        .background(
-            Rectangle()
-                .fill(DesignSystem.Colors.backgroundSecondary.opacity(0.8))
-                .overlay(alignment: .top) {
-                    Rectangle()
-                        .fill(DesignSystem.Colors.divider.opacity(0.3))
-                        .frame(height: 1)
+    }
+    
+    private var tagsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Tags")
+                .font(Theme.Typography.caption)
+                .foregroundColor(Theme.Colors.secondaryText)
+            
+            HStack {
+                Image(systemName: "tag")
+                    .foregroundColor(Theme.Colors.secondaryText)
+                
+                TextField("Add tags...", text: $tagInput)
+                    .textFieldStyle(.plain)
+                    .onSubmit {
+                        addTag()
+                    }
+                
+                if !tagInput.isEmpty {
+                    Button("Add", action: addTag)
+                        .buttonStyle(.borderless)
                 }
-        )
-    }
-    
-    // MARK: - Computed Properties
-    
-    /// Returns the current word count of the entry
-    private var entryWordCount: String {
-        return "\(wordCount) \(wordCount == 1 ? "word" : "words")"
-    }
-    
-    /// Returns the numerical word count
-    private var wordCount: Int {
-        content
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .components(separatedBy: .whitespacesAndNewlines)
-            .filter { !$0.isEmpty }
-            .count
-    }
-    
-    /// Returns encouraging color for word count based on progress
-    private var wordCountColor: Color {
-        switch wordCount {
-        case 0:
-            return DesignSystem.Colors.textTertiary
-        case 1...10:
-            return DesignSystem.Colors.primary.opacity(0.7)
-        case 11...50:
-            return DesignSystem.Colors.primary
-        case 51...100:
-            return DesignSystem.Colors.success.opacity(0.8)
-        default:
-            return DesignSystem.Colors.success
+            }
+            .padding(12)
+            .background(Theme.Colors.cardBackground)
+            .cornerRadius(Theme.smallCornerRadius)
+            
+            if !tags.isEmpty {
+                FlowLayout(spacing: 8) {
+                    ForEach(tags, id: \.self) { tag in
+                        TagChip(tag: tag, onRemove: { removeTag(tag) })
+                    }
+                }
+            }
         }
     }
     
-    /// Returns true if the entry can be saved
-    private var canSave: Bool {
-        content.trimmingCharacters(in: .whitespacesAndNewlines).count >= minimumContentLength
+    private var contentEditor: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Content")
+                    .font(Theme.Typography.caption)
+                    .foregroundColor(Theme.Colors.secondaryText)
+                
+                Spacer()
+                
+                Text("\(wordCount) words")
+                    .font(Theme.Typography.caption)
+                    .foregroundColor(Theme.Colors.tertiaryText)
+            }
+            
+            TextEditor(text: $content)
+                .font(Theme.Typography.body)
+                .scrollContentBackground(.hidden)
+                .padding(12)
+                .background(Theme.Colors.cardBackground)
+                .cornerRadius(Theme.smallCornerRadius)
+                .frame(minHeight: 300)
+                .focused($isContentFocused)
+                .onChange(of: content) { _ in
+                    updateWordCount()
+                    autoSaveTimer.trigger()
+                }
+        }
     }
     
-    /// Returns the appropriate icon for the microphone button based on recording state
-    private var microphoneButtonIcon: String {
-        if speechService.isRecording {
-            return "mic.fill"
+    private var footer: some View {
+        HStack {
+            Text("⌘S to save • ⌘Enter to save and close")
+                .font(Theme.Typography.caption)
+                .foregroundColor(Theme.Colors.tertiaryText)
+            
+            Spacer()
+        }
+        .padding()
+    }
+    
+    private var currentDateString: String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .full
+        formatter.timeStyle = .short
+        return formatter.string(from: Date())
+    }
+    
+    private var lastSavedString: String {
+        let interval = Date().timeIntervalSince(lastSaved)
+        if interval < 60 {
+            return "just now"
+        } else if interval < 3600 {
+            let minutes = Int(interval / 60)
+            return "\(minutes) min ago"
         } else {
-            return "mic.circle.fill"
+            let hours = Int(interval / 3600)
+            return "\(hours) hr ago"
         }
     }
     
-    // MARK: - Encouraging Interaction Handlers
+    private func loadEntry() {
+        guard let entry = entry else { return }
+        title = entry.title
+        content = entry.content
+        tags = entry.tags
+        mood = entry.mood ?? ""
+        updateWordCount()
+    }
     
-    /// Handles content changes with encouraging feedback
-    @MainActor
-    private func handleContentChange(oldValue: String, newValue: String) {
-        let oldWordCount = oldValue
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .components(separatedBy: .whitespacesAndNewlines)
-            .filter { !$0.isEmpty }
-            .count
-        
-        let newWordCount = wordCount
-        
-        // Trigger encouraging animations on word milestones
-        if newWordCount > oldWordCount {
-            withAnimation(DesignSystem.Animation.supportiveEmphasis) {
-                wordCountPulse = true
-            }
-            
-            // Reset pulse after brief moment
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                withAnimation(DesignSystem.Animation.writingFlow) {
-                    wordCountPulse = false
-                }
-            }
-            
-            // Special encouragement at milestones
-            if newWordCount == 10 || newWordCount == 25 || newWordCount == 50 || newWordCount == 100 {
-                withAnimation(DesignSystem.Animation.playfulBounce) {
-                    // Could add special celebration here
-                }
-            }
-        }
-        
-        // Update writing state
-        isWriting = !newValue.isEmpty
-        
-        // Maintain editor glow while actively writing
-        if !newValue.isEmpty && !editorGlow {
-            withAnimation(DesignSystem.Animation.encouragingSpring) {
-                editorGlow = true
-            }
-        } else if newValue.isEmpty && editorGlow {
-            withAnimation(DesignSystem.Animation.cozySettle) {
-                editorGlow = false
+    private func startAutoSave() {
+        autoSaveTimer.onTrigger = { [self] in
+            Task { @MainActor in
+                await performAutoSave()
             }
         }
     }
     
-    // MARK: - Actions
-    
-    /// Saves the journal entry to the database
-    @MainActor
-    private func saveEntry() async {
-        guard canSave else { return }
+    private func performAutoSave() async {
+        guard !content.isEmpty else { return }
         
         isSaving = true
         
-        do {
-            if let existingEntry = entry {
-                // Update existing entry
-                try await journalStore.updateEntry(existingEntry, content: content)
+        let updatedEntry = JournalEntry(
+            id: entry?.id ?? UUID(),
+            createdAt: entry?.createdAt ?? Date(),
+            modifiedAt: Date(),
+            title: title,
+            content: content,
+            tags: tags,
+            mood: mood.isEmpty ? nil : mood
+        )
+        
+        onSave(updatedEntry)
+        
+        await MainActor.run {
+            isSaving = false
+            lastSaved = Date()
+        }
+    }
+    
+    private func saveEntry() {
+        let newEntry = JournalEntry(
+            id: entry?.id ?? UUID(),
+            createdAt: entry?.createdAt ?? Date(),
+            modifiedAt: Date(),
+            title: title,
+            content: content,
+            tags: tags,
+            mood: mood.isEmpty ? nil : mood
+        )
+        
+        onSave(newEntry)
+    }
+    
+    private func addTag() {
+        let trimmedTag = tagInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTag.isEmpty, !tags.contains(trimmedTag) else { return }
+        
+        tags.append(trimmedTag)
+        tagInput = ""
+    }
+    
+    private func removeTag(_ tag: String) {
+        tags.removeAll { $0 == tag }
+    }
+    
+    private func updateWordCount() {
+        wordCount = content.split(whereSeparator: { $0.isWhitespace || $0.isNewline }).count
+    }
+}
+
+struct MoodButton: View {
+    let mood: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    private var emoji: String {
+        switch mood {
+        case "happy": return "😊"
+        case "peaceful": return "😌"
+        case "excited": return "🤩"
+        case "grateful": return "🙏"
+        case "thoughtful": return "🤔"
+        case "sad": return "😢"
+        case "anxious": return "😰"
+        case "frustrated": return "😤"
+        case "neutral": return "😐"
+        default: return "😊"
+        }
+    }
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Text(emoji)
+                    .font(.title2)
                 
-                // Update the binding to reflect changes
-                entry?.content = content
-            } else {
-                // Create new entry
-                try await journalStore.addEntry(content: content)
+                Text(mood)
+                    .font(Theme.Typography.caption)
             }
-            
-            print("Journal entry saved successfully")
-            
-            // Call onSave callback if provided
-            if let onSave = onSave {
-                onSave()
-            } else {
-                // Only dismiss if we're in a sheet context (no custom onSave)
-                dismiss()
-            }
-        } catch {
-            print("Failed to save journal entry: \(error)")
-            
-            errorMessage = error.localizedDescription
-            showingError = true
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: Theme.smallCornerRadius)
+                    .fill(isSelected ? Theme.Colors.selectedBackground : Theme.Colors.cardBackground)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.smallCornerRadius)
+                    .strokeBorder(isSelected ? Theme.Colors.primaryAccent : Color.clear, lineWidth: 2)
+            )
         }
-        
-        isSaving = false
-    }
-    
-    /// Handles microphone button tap for speech-to-text
-    @MainActor
-    private func handleMicrophoneButtonTap() async {
-        if speechService.isRecording {
-            // Stop recording and append transcription
-            speechService.stopRecording()
-            
-            // Give a moment for final transcription to process
-            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
-            
-            let transcription = speechService.consumeTranscription()
-            if !transcription.isEmpty {
-                appendTranscriptionToContent(transcription)
-            }
-        } else {
-            // Check permissions and start recording
-            await startSpeechRecognition()
-        }
-    }
-    
-    /// Starts speech recognition with permission handling
-    @MainActor
-    private func startSpeechRecognition() async {
-        // Check if permissions are already granted
-        if speechService.isAvailable {
-            await startRecording()
-            return
-        }
-        
-        // Request permissions if not available
-        if speechService.authorizationStatus == .notDetermined || 
-           speechService.microphoneAuthorizationStatus == false {
-            await speechService.requestPermissions()
-        }
-        
-        // Check permissions after request
-        if speechService.isAvailable {
-            await startRecording()
-        } else {
-            showPermissionAlert()
-        }
-    }
-    
-    /// Starts the actual recording process
-    @MainActor
-    private func startRecording() async {
-        do {
-            try await speechService.startRecording()
-        } catch {
-            print("Failed to start recording: \(error)")
-            errorMessage = error.localizedDescription
-            showingError = true
-        }
-    }
-    
-    /// Shows permission alert for speech recognition
-    @MainActor
-    private func showPermissionAlert() {
-        errorMessage = "Speech recognition requires microphone and speech recognition permissions. Please enable them in System Preferences > Privacy & Security."
-        showingError = true
-    }
-    
-    /// Appends transcribed text to the entry content
-    @MainActor
-    private func appendTranscriptionToContent(_ transcription: String) {
-        let trimmedTranscription = transcription.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedTranscription.isEmpty else { return }
-        
-        // Add appropriate spacing
-        if !content.isEmpty && !content.hasSuffix(" ") && !content.hasSuffix("\n") {
-            content += " "
-        }
-        
-        content += trimmedTranscription
-        
-        print("Appended transcription: \(trimmedTranscription)")
-    }
-    
-    /// Handles image file selection from the file importer
-    @MainActor
-    private func handleImageSelection(_ result: Result<[URL], Error>) {
-        switch result {
-        case .success(let urls):
-            guard let imageURL = urls.first else { return }
-            selectedImageURL = imageURL
-            insertImagePlaceholder(for: imageURL)
-            
-        case .failure(let error):
-            print("Image selection failed: \(error.localizedDescription)")
-            errorMessage = "Failed to select image: \(error.localizedDescription)"
-            showingError = true
-        }
-    }
-    
-    /// Inserts a markdown-style image placeholder into the entry content
-    @MainActor
-    private func insertImagePlaceholder(for imageURL: URL) {
-        let fileName = imageURL.lastPathComponent
-        let imagePlaceholder = "[Image: \(fileName)]"
-        
-        // Add appropriate spacing before the image placeholder
-        if !content.isEmpty && !content.hasSuffix("\n") && !content.hasSuffix(" ") {
-            content += "\n\n"
-        } else if !content.isEmpty && content.hasSuffix("\n") && !content.hasSuffix("\n\n") {
-            content += "\n"
-        }
-        
-        content += imagePlaceholder
-        
-        // Add spacing after the placeholder for continued writing
-        if !content.hasSuffix("\n") {
-            content += "\n\n"
-        }
-        
-        print("Inserted image placeholder: \(imagePlaceholder)")
+        .buttonStyle(.plain)
     }
 }
 
-// MARK: - Previews
-
-#Preview("Empty Compose View") {
-    // For preview, we'll use a mock store if initialization fails
-    let store = (try? JournalStore()) ?? JournalStore.preview
+struct TagChip: View {
+    let tag: String
+    let onRemove: () -> Void
     
-    return ComposeView(entry: .constant(nil))
-        .environment(store)
-        .frame(width: 700, height: 500)
+    var body: some View {
+        HStack(spacing: 4) {
+            Text("#\(tag)")
+                .font(Theme.Typography.caption)
+            
+            Button(action: onRemove) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.caption2)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Theme.Colors.primaryAccent.opacity(0.1))
+        .foregroundColor(Theme.Colors.primaryAccent)
+        .cornerRadius(Theme.smallCornerRadius)
+    }
 }
 
-#Preview("Compose View with Content") {
-    // For preview, we'll use a mock store if initialization fails
-    let store = (try? JournalStore()) ?? JournalStore.preview
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
     
-    return ComposeView(entry: .constant(JournalEntry(title: "Test Entry", content: "This is a test entry.")))
-        .environment(store)
-        .frame(width: 700, height: 500)
-} 
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let result = FlowResult(in: proposal.replacingUnspecifiedDimensions().width, subviews: subviews, spacing: spacing)
+        return result.size
+    }
+    
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let result = FlowResult(in: bounds.width, subviews: subviews, spacing: spacing)
+        for (index, subview) in subviews.enumerated() {
+            subview.place(at: CGPoint(x: result.positions[index].x + bounds.minX,
+                                     y: result.positions[index].y + bounds.minY),
+                         proposal: .unspecified)
+        }
+    }
+    
+    struct FlowResult {
+        var size: CGSize = .zero
+        var positions: [CGPoint] = []
+        
+        init(in maxWidth: CGFloat, subviews: Subviews, spacing: CGFloat) {
+            var x: CGFloat = 0
+            var y: CGFloat = 0
+            var lineHeight: CGFloat = 0
+            
+            for subview in subviews {
+                let dimensions = subview.dimensions(in: .unspecified)
+                
+                if x + dimensions.width > maxWidth, x > 0 {
+                    x = 0
+                    y += lineHeight + spacing
+                    lineHeight = 0
+                }
+                
+                positions.append(CGPoint(x: x, y: y))
+                
+                x += dimensions.width + spacing
+                lineHeight = max(lineHeight, dimensions.height)
+            }
+            
+            size = CGSize(width: maxWidth, height: y + lineHeight)
+        }
+    }
+}
+
+class AutoSaveTimer: ObservableObject {
+    private var timer: Timer?
+    var onTrigger: (() -> Void)?
+    
+    func trigger() {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
+            self.onTrigger?()
+        }
+    }
+    
+    func stop() {
+        timer?.invalidate()
+        timer = nil
+    }
+}
