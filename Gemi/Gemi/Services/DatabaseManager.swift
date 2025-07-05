@@ -1,732 +1,465 @@
 import Foundation
-import GRDB
+import SQLite3
 import CryptoKit
 import Security
 
-/// DatabaseManager handles all encrypted local storage operations for Gemi journal entries.
-/// 
-/// Privacy & Security Features:
-/// - AES-256-GCM encryption for all journal content
-/// - Encryption keys stored securely in macOS Keychain
-/// - SQLite database stored in Application Support directory
-/// - All operations occur locally - no cloud sync or external communication
-/// 
-/// Thread Safety: This class is designed to be used with Swift concurrency (async/await).
-@Observable
 final class DatabaseManager: Sendable {
+    static let shared = DatabaseManager()
     
-    // MARK: - Singleton
+    private let databaseName = "gemi.db"
+    private let encryptionKeyTag = "com.gemi.encryptionKey"
+    private var database: OpaquePointer?
+    private let queue = DispatchQueue(label: "com.gemi.database", attributes: .concurrent)
     
-    private static let _shared: DatabaseManager? = {
-        do {
-            return try DatabaseManager()
-        } catch {
-            print("❌ Failed to initialize DatabaseManager singleton: \(error)")
-            return nil
+    private init() {}
+    
+    func initialize() async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            queue.async(flags: .barrier) {
+                do {
+                    try self.setupDatabase()
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
         }
-    }()
-    
-    /// Thread-safe access to the shared DatabaseManager instance
-    /// - Throws: DatabaseError if initialization fails
-    static func shared() throws -> DatabaseManager {
-        guard let manager = _shared else {
-            throw DatabaseError.initializationFailed("Failed to initialize DatabaseManager singleton")
-        }
-        return manager
     }
     
-    // MARK: - Properties
-    
-    /// The GRDB database queue for thread-safe operations
-    private let dbQueue: DatabaseQueue
-    
-    /// Database writer for write operations
-    var dbWriter: DatabaseWriter { dbQueue }
-    
-    /// Database reader for read operations
-    var dbReader: DatabaseReader { dbQueue }
-    
-    /// Keychain service identifier for storing encryption keys
-    private static let keychainService = "dev.perpetual-s.Gemi"
-    private static let keychainAccount = "journal-encryption-key"
-    
-    /// Database file name
-    private static let databaseFileName = "Gemi.sqlite"
-    
-    // MARK: - Initialization
-    
-    /// Initializes the DatabaseManager with encrypted SQLite database
-    /// - Throws: DatabaseError if initialization fails
-    init() throws {
-        // Get Application Support directory
-        let applicationSupportURL = try Self.getApplicationSupportDirectory()
-        let databaseURL = applicationSupportURL.appendingPathComponent(Self.databaseFileName)
-        
-        // Initialize database queue
-        self.dbQueue = try DatabaseQueue(path: databaseURL.path)
-        
-        // Setup database schema
-        try setupDatabase()
-        
-        print("DatabaseManager initialized successfully")
-        print("Database location: \(databaseURL.path)")
-    }
-    
-    // MARK: - Database Setup
-    
-    /// Sets up the database schema and ensures all tables exist
-    /// - Throws: Database errors during setup
     private func setupDatabase() throws {
-        // Configure database pragmas outside of any transaction
-        try dbQueue.inDatabase { db in
-            // Enable WAL mode for better concurrency
-            try db.execute(sql: "PRAGMA journal_mode = WAL")
-            
-            // Enable foreign key constraints
-            try db.execute(sql: "PRAGMA foreign_keys = ON")
-            
-            // Set a reasonable timeout for busy connections
-            try db.execute(sql: "PRAGMA busy_timeout = 5000")
-        }
-        
-        // Create tables and handle migrations in a separate transaction
-        try dbQueue.write { db in
-            // Check if the entries table exists
-            let tableExists = try db.tableExists("entries")
-            
-            if tableExists {
-                // Table exists, check if we need to migrate
-                try migrateDatabase(db)
-            } else {
-                // Create the journal entries table fresh
-                try JournalEntry.createTable(db)
-            }
-            
-            // Create memories table
-            try Memory.createTable(in: db)
-            
-            print("Database schema initialized")
-        }
-    }
-    
-    /// Migrates the database schema to add missing columns
-    /// - Parameter db: Database connection
-    /// - Throws: Database errors during migration
-    private func migrateDatabase(_ db: Database) throws {
-        // Check if title column exists
-        let columns = try db.columns(in: "entries")
-        let columnNames = columns.map { $0.name }
-        
-        if !columnNames.contains("title") {
-            print("Migrating database: Adding 'title' column")
-            try db.alter(table: "entries") { table in
-                table.add(column: "title", .text).defaults(to: "")
-            }
-            print("Database migration completed: 'title' column added")
-        }
-        
-        if !columnNames.contains("mood") {
-            print("Migrating database: Adding 'mood' column")
-            try db.alter(table: "entries") { table in
-                table.add(column: "mood", .text)
-            }
-            print("Database migration completed: 'mood' column added")
-        }
-        
-        // Add any future migrations here
-    }
-    
-    // MARK: - Journal Entry Operations
-    
-    /// Adds a new journal entry to the database with encrypted content
-    /// - Parameter entry: The journal entry to save
-    /// - Throws: DatabaseError or EncryptionError
-    func addEntry(_ entry: JournalEntry) async throws {
-        // Encrypt the content and title before storing
-        let encryptedContent = try await encryptContent(entry.content)
-        let encryptedTitle = try await encryptContent(entry.title)
-        
-        // Create encrypted entry for storage
-        let encryptedEntry = JournalEntry(
-            id: entry.id,
-            date: entry.date,
-            title: encryptedTitle,
-            content: encryptedContent,
-            mood: entry.mood
+        // Use application support directory for sandboxed apps
+        let appSupportURL = try FileManager.default.url(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
         )
         
-        try await dbQueue.write { db in
-            try encryptedEntry.insert(db)
-        }
+        // Create app-specific directory
+        let bundleID = Bundle.main.bundleIdentifier ?? "com.gemi.app"
+        let appDirectory = appSupportURL.appendingPathComponent(bundleID)
         
-        print("Journal entry saved with ID: \(entry.id)")
-    }
-    
-    /// Updates an existing journal entry in the database with encrypted content
-    /// - Parameter entry: The journal entry to update
-    /// - Throws: DatabaseError or EncryptionError
-    func updateEntry(_ entry: JournalEntry) async throws {
-        // Encrypt the content and title before storing
-        let encryptedContent = try await encryptContent(entry.content)
-        let encryptedTitle = try await encryptContent(entry.title)
-        
-        // Create encrypted entry for storage
-        let encryptedEntry = JournalEntry(
-            id: entry.id,
-            date: entry.date,
-            title: encryptedTitle,
-            content: encryptedContent,
-            mood: entry.mood
+        try FileManager.default.createDirectory(
+            at: appDirectory,
+            withIntermediateDirectories: true,
+            attributes: nil
         )
         
-        try await dbQueue.write { db in
-            try encryptedEntry.update(db)
+        let databaseURL = appDirectory.appendingPathComponent(databaseName)
+        
+        print("Database path: \(databaseURL.path)")
+        
+        if sqlite3_open_v2(databaseURL.path, &database, SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX, nil) != SQLITE_OK {
+            let errorMessage = String(cString: sqlite3_errmsg(database))
+            print("Failed to open database: \(errorMessage)")
+            throw DatabaseError.failedToOpen
         }
         
-        print("Journal entry updated with ID: \(entry.id)")
+        // Enable Write-Ahead Logging for better performance
+        try executeSQL("PRAGMA journal_mode=WAL")
+        
+        try createTables()
     }
     
-    /// Fetches all journal entries from the database with decrypted content
-    /// - Returns: A tuple containing the decrypted entries and any decryption errors
-    /// - Throws: DatabaseError if database operations fail
-    func fetchAllEntries() async throws -> (entries: [JournalEntry], decryptionFailures: Int) {
-        let encryptedEntries = try await dbQueue.read { db in
-            try JournalEntry.fetchAllOrderedByDate(db)
-        }
-        
-        // Decrypt all entries
-        var decryptedEntries: [JournalEntry] = []
-        var decryptionErrors = 0
-        var failedEntryIds: [UUID] = []
-        
-        for encryptedEntry in encryptedEntries {
-            do {
-                let decryptedContent = try await decryptContent(encryptedEntry.content)
-                let decryptedTitle = try await decryptContent(encryptedEntry.title)
-                let decryptedEntry = JournalEntry(
-                    id: encryptedEntry.id,
-                    date: encryptedEntry.date,
-                    title: decryptedTitle,
-                    content: decryptedContent,
-                    mood: encryptedEntry.mood
-                )
-                decryptedEntries.append(decryptedEntry)
-            } catch {
-                decryptionErrors += 1
-                failedEntryIds.append(encryptedEntry.id)
-                print("❌ Failed to decrypt entry \(encryptedEntry.id): \(error)")
-                
-                // Include entry with error indicator but preserve metadata
-                let errorEntry = JournalEntry(
-                    id: encryptedEntry.id,
-                    date: encryptedEntry.date,
-                    title: "🔒 Encrypted Entry",
-                    content: "This entry could not be decrypted. This might happen if:\n\n• The app was reinstalled\n• The encryption key was reset\n• The keychain was cleared\n\nDate: \(encryptedEntry.date.formatted(date: .complete, time: .shortened))",
-                    mood: encryptedEntry.mood
-                )
-                decryptedEntries.append(errorEntry)
-            }
-        }
-        
-        if decryptionErrors > 0 {
-            print("⚠️ Failed to decrypt \(decryptionErrors) out of \(encryptedEntries.count) entries")
-            print("Failed entry IDs: \(failedEntryIds)")
-        }
-        
-        return (decryptedEntries, decryptionErrors)
-    }
-    
-    /// Fetches journal entries with pagination support
-    /// - Parameters:
-    ///   - limit: Maximum number of entries to fetch
-    ///   - offset: Number of entries to skip
-    /// - Returns: A tuple containing the decrypted entries and any decryption errors
-    /// - Throws: DatabaseError if database operations fail
-    func fetchEntries(limit: Int, offset: Int) async throws -> (entries: [JournalEntry], decryptionFailures: Int) {
-        let encryptedEntries = try await dbQueue.read { db in
-            try JournalEntry.fetchWithPagination(db, limit: limit, offset: offset)
-        }
-        
-        // Decrypt all entries
-        var decryptedEntries: [JournalEntry] = []
-        var decryptionErrors = 0
-        var failedEntryIds: [UUID] = []
-        
-        for encryptedEntry in encryptedEntries {
-            do {
-                let decryptedContent = try await decryptContent(encryptedEntry.content)
-                let decryptedTitle = try await decryptContent(encryptedEntry.title)
-                let decryptedEntry = JournalEntry(
-                    id: encryptedEntry.id,
-                    date: encryptedEntry.date,
-                    title: decryptedTitle,
-                    content: decryptedContent,
-                    mood: encryptedEntry.mood
-                )
-                decryptedEntries.append(decryptedEntry)
-            } catch {
-                decryptionErrors += 1
-                failedEntryIds.append(encryptedEntry.id)
-                print("❌ Failed to decrypt entry \(encryptedEntry.id): \(error)")
-                
-                // Include entry with error indicator but preserve metadata
-                let errorEntry = JournalEntry(
-                    id: encryptedEntry.id,
-                    date: encryptedEntry.date,
-                    title: "🔒 Encrypted Entry",
-                    content: "This entry could not be decrypted. This might happen if:\n\n• The app was reinstalled\n• The encryption key was reset\n• The keychain was cleared\n\nDate: \(encryptedEntry.date.formatted(date: .complete, time: .shortened))",
-                    mood: encryptedEntry.mood
-                )
-                decryptedEntries.append(errorEntry)
-            }
-        }
-        
-        if decryptionErrors > 0 {
-            print("⚠️ Failed to decrypt \(decryptionErrors) out of \(encryptedEntries.count) entries")
-            print("Failed entry IDs: \(failedEntryIds)")
-        }
-        
-        return (decryptedEntries, decryptionErrors)
-    }
-    
-    /// Fetches a specific journal entry by ID with decrypted content
-    /// - Parameter id: The UUID of the entry to fetch
-    /// - Returns: The decrypted journal entry if found, nil otherwise
-    /// - Throws: DatabaseError or DecryptionError
-    func fetchEntry(id: UUID) async throws -> JournalEntry? {
-        guard let encryptedEntry = try await dbQueue.read({ db in
-            try JournalEntry.fetchEntry(db, id: id)
-        }) else {
-            return nil
-        }
-        
-        do {
-            let decryptedContent = try await decryptContent(encryptedEntry.content)
-            let decryptedTitle = try await decryptContent(encryptedEntry.title)
-            return JournalEntry(
-                id: encryptedEntry.id,
-                date: encryptedEntry.date,
-                title: decryptedTitle,
-                content: decryptedContent,
-                mood: encryptedEntry.mood
+    private func createTables() throws {
+        let createEntriesTable = """
+            CREATE TABLE IF NOT EXISTS journal_entries (
+                id TEXT PRIMARY KEY NOT NULL,
+                created_at REAL NOT NULL,
+                modified_at REAL NOT NULL,
+                title TEXT,
+                content TEXT,
+                encrypted_content BLOB,
+                tags TEXT,
+                mood TEXT,
+                weather TEXT,
+                location TEXT,
+                attachments TEXT,
+                is_encrypted INTEGER NOT NULL DEFAULT 1,
+                is_favorite INTEGER NOT NULL DEFAULT 0,
+                is_deleted INTEGER NOT NULL DEFAULT 0
             )
-        } catch {
-            print("❌ Failed to decrypt entry \(encryptedEntry.id): \(error)")
-            // Return entry with placeholder content to maintain data integrity
-            return JournalEntry(
-                id: encryptedEntry.id,
-                date: encryptedEntry.date,
-                title: "[Decryption Error]",
-                content: "This entry could not be decrypted. The encryption key may have changed.",
-                mood: encryptedEntry.mood
+        """
+        
+        let createUsersTable = """
+            CREATE TABLE IF NOT EXISTS users (
+                id TEXT PRIMARY KEY NOT NULL,
+                name TEXT NOT NULL,
+                email TEXT,
+                created_at REAL NOT NULL,
+                last_login_at REAL NOT NULL,
+                preferences BLOB
             )
-        }
-    }
-    
-    /// Deletes a journal entry from the database
-    /// - Parameter id: The UUID of the entry to delete
-    /// - Returns: True if the entry was deleted, false if not found
-    /// - Throws: DatabaseError
-    func deleteEntry(id: UUID) async throws -> Bool {
-        let deleted = try await dbQueue.write { db in
-            try JournalEntry.filter(JournalEntry.Columns.id == id).deleteAll(db)
-        }
+        """
         
-        print("Journal entry \(deleted > 0 ? "deleted" : "not found"): \(id)")
-        return deleted > 0
-    }
-    
-    /// Gets the total count of journal entries
-    /// - Returns: Number of entries in the database
-    /// - Throws: DatabaseError
-    func getEntryCount() async throws -> Int {
-        return try await dbQueue.read { db in
-            try JournalEntry.fetchCount(db)
-        }
-    }
-}
-
-// MARK: - Encryption Operations
-
-extension DatabaseManager {
-    
-    /// Encrypts journal content using AES-256-GCM
-    /// - Parameter content: Plain text content to encrypt
-    /// - Returns: Base64-encoded encrypted content with nonce
-    /// - Throws: EncryptionError
-    private func encryptContent(_ content: String) async throws -> String {
-        // Handle empty content gracefully
-        if content.isEmpty {
-            return ""
-        }
-        
-        let key = try await getOrCreateEncryptionKey()
-        let data = Data(content.utf8)
-        
-        let sealedBox = try AES.GCM.seal(data, using: key)
-        
-        guard let encryptedData = sealedBox.combined else {
-            throw DatabaseError.encryptionFailed
-        }
-        
-        return encryptedData.base64EncodedString()
-    }
-    
-    /// Decrypts journal content using AES-256-GCM
-    /// - Parameter encryptedContent: Base64-encoded encrypted content
-    /// - Returns: Decrypted plain text content
-    /// - Throws: DecryptionError
-    private func decryptContent(_ encryptedContent: String) async throws -> String {
-        // Handle empty content gracefully
-        if encryptedContent.isEmpty {
-            return ""
-        }
-        
-        let key = try await getOrCreateEncryptionKey()
-        
-        guard let encryptedData = Data(base64Encoded: encryptedContent) else {
-            throw DatabaseError.invalidEncryptedData
-        }
-        
-        // Check minimum size for AES-GCM (12 bytes nonce + at least 1 byte ciphertext + 16 bytes tag)
-        guard encryptedData.count >= 29 else {
-            print("❌ Encrypted data too small: \(encryptedData.count) bytes")
-            throw DatabaseError.invalidEncryptedData
-        }
-        
-        let sealedBox = try AES.GCM.SealedBox(combined: encryptedData)
-        let decryptedData = try AES.GCM.open(sealedBox, using: key)
-        
-        guard let decryptedString = String(data: decryptedData, encoding: .utf8) else {
-            throw DatabaseError.decryptionFailed
-        }
-        
-        return decryptedString
-    }
-}
-
-// MARK: - Keychain Operations
-
-extension DatabaseManager {
-    
-    /// Gets the encryption key from Keychain or creates a new one
-    /// - Returns: AES-256 symmetric encryption key
-    /// - Throws: KeychainError
-    private func getOrCreateEncryptionKey() async throws -> SymmetricKey {
-        // Try to get existing key from Keychain
-        if let existingKeyData = try getKeyFromKeychain() {
-            return SymmetricKey(data: existingKeyData)
-        }
-        
-        // Create new key and store in Keychain
-        let newKey = SymmetricKey(size: .bits256)
-        try storeKeyInKeychain(newKey.withUnsafeBytes { Data($0) })
-        
-        print("New encryption key created and stored in Keychain")
-        return newKey
-    }
-    
-    /// Retrieves encryption key from macOS Keychain
-    /// - Returns: Key data if found, nil otherwise
-    /// - Throws: KeychainError
-    private func getKeyFromKeychain() throws -> Data? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: Self.keychainService,
-            kSecAttrAccount as String: Self.keychainAccount,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
+        let createIndices = [
+            "CREATE INDEX IF NOT EXISTS idx_entries_created_at ON journal_entries(created_at)",
+            "CREATE INDEX IF NOT EXISTS idx_entries_is_deleted ON journal_entries(is_deleted)",
+            "CREATE INDEX IF NOT EXISTS idx_entries_is_favorite ON journal_entries(is_favorite)"
         ]
         
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        try executeSQL(createEntriesTable)
+        try executeSQL(createUsersTable)
         
-        switch status {
-        case errSecSuccess:
-            return result as? Data
-        case errSecItemNotFound:
-            return nil
-        default:
-            throw DatabaseError.keychainError(status)
+        for index in createIndices {
+            try executeSQL(index)
         }
     }
     
-    /// Stores encryption key in macOS Keychain
-    /// - Parameter keyData: The encryption key data to store
-    /// - Throws: KeychainError
-    private func storeKeyInKeychain(_ keyData: Data) throws {
+    private func executeSQL(_ sql: String) throws {
+        var statement: OpaquePointer?
+        
+        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else {
+            throw DatabaseError.failedToPrepare(sql)
+        }
+        
+        defer { sqlite3_finalize(statement) }
+        
+        guard sqlite3_step(statement) == SQLITE_DONE else {
+            throw DatabaseError.failedToExecute(sql)
+        }
+    }
+    
+    // MARK: - Encryption
+    
+    private func getOrCreateEncryptionKey() throws -> SymmetricKey {
+        if let existingKey = try? loadEncryptionKey() {
+            return existingKey
+        }
+        
+        let key = SymmetricKey(size: .bits256)
+        try saveEncryptionKey(key)
+        return key
+    }
+    
+    private func saveEncryptionKey(_ key: SymmetricKey) throws {
+        let keyData = key.withUnsafeBytes { Data($0) }
+        
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: Self.keychainService,
-            kSecAttrAccount as String: Self.keychainAccount,
+            kSecAttrAccount as String: encryptionKeyTag,
             kSecValueData as String: keyData,
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly // Device-specific security
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         ]
         
         let status = SecItemAdd(query as CFDictionary, nil)
         guard status == errSecSuccess else {
-            throw DatabaseError.keychainError(status)
+            throw DatabaseError.failedToSaveKey
         }
     }
-}
-
-// MARK: - Utility Methods
-
-extension DatabaseManager {
     
-    /// Provides access to the database for actors like MemoryStore
-    var database: DatabaseQueue {
-        dbQueue
-    }
-    
-    /// Gets the Application Support directory for storing the database
-    /// - Returns: URL to the app's Application Support directory
-    /// - Throws: FileSystemError if directory cannot be accessed or created
-    private static func getApplicationSupportDirectory() throws -> URL {
-        let fileManager = FileManager.default
+    private func loadEncryptionKey() throws -> SymmetricKey {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: encryptionKeyTag,
+            kSecReturnData as String: true
+        ]
         
-        guard let applicationSupportURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
-            throw DatabaseError.applicationSupportDirectoryNotFound
+        var item: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
+        
+        guard status == errSecSuccess,
+              let keyData = item as? Data else {
+            throw DatabaseError.keyNotFound
         }
         
-        let appDirectory = applicationSupportURL.appendingPathComponent("Gemi")
-        
-        // Create directory if it doesn't exist
-        if !fileManager.fileExists(atPath: appDirectory.path) {
-            try fileManager.createDirectory(at: appDirectory, withIntermediateDirectories: true)
-            print("Created Application Support directory: \(appDirectory.path)")
-        }
-        
-        return appDirectory
-    }
-}
-
-// MARK: - Memory Management Extensions
-
-extension DatabaseManager {
-    
-    /// Save a memory to the database
-    func saveMemory(_ memory: Memory) async throws {
-        try await dbWriter.write { db in
-            try memory.save(db)
-        }
+        return SymmetricKey(data: keyData)
     }
     
-    /// Get total memory count
-    func getMemoryCount() async throws -> Int {
-        try await dbReader.read { db in
-            try Memory.fetchCount(db)
-        }
+    private func encrypt(_ data: Data) throws -> Data {
+        let key = try getOrCreateEncryptionKey()
+        let nonce = AES.GCM.Nonce()
+        let sealedBox = try AES.GCM.seal(data, using: key, nonce: nonce)
+        return sealedBox.combined ?? Data()
     }
     
-    /// Search memories by query
-    func searchMemories(query: String, limit: Int) async throws -> [Memory] {
-        try await dbReader.read { db in
-            let pattern = FTS5Pattern(matchingAllTokensIn: query)
-            return try Memory
-                .matching(pattern)
-                .order(Column("importance").desc)
-                .limit(limit)
-                .fetchAll(db)
-        }
+    private func decrypt(_ data: Data) throws -> Data {
+        let key = try getOrCreateEncryptionKey()
+        let sealedBox = try AES.GCM.SealedBox(combined: data)
+        return try AES.GCM.open(sealedBox, using: key)
     }
     
-    /// Update memory access time
-    func updateMemoryAccessTime(_ id: UUID) async throws {
-        try await dbWriter.write { db in
-            try db.execute(
-                sql: "UPDATE memories SET lastAccessedAt = ? WHERE id = ?",
-                arguments: [Date(), id]
-            )
-        }
-    }
+    // MARK: - Journal Entry Operations
     
-    /// Delete memories for a specific entry
-    func deleteMemoriesForEntry(_ entryId: UUID) async throws {
-        _ = try await dbWriter.write { db in
-            try Memory
-                .filter(Column("sourceEntryId") == entryId)
-                .deleteAll(db)
-        }
-    }
-    
-    /// Delete orphaned memories
-    func deleteOrphanedMemories() async throws -> Int {
-        try await dbWriter.write { db in
-            // Find memories with sourceEntryId that don't have corresponding entries
-            let orphanedMemories = try Memory
-                .filter(sql: """
-                    sourceEntryId IS NOT NULL AND 
-                    sourceEntryId NOT IN (SELECT id FROM entries)
-                """)
-                .fetchAll(db)
-            
-            // Delete them
-            for memory in orphanedMemories {
-                try memory.delete(db)
+    func saveEntry(_ entry: JournalEntry) async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            queue.async(flags: .barrier) {
+                do {
+                    try self.saveEntrySync(entry)
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
             }
-            
-            return orphanedMemories.count
         }
     }
     
-    /// Delete a specific memory
-    func deleteMemory(_ id: UUID) async throws {
-        _ = try await dbWriter.write { db in
-            try Memory.deleteOne(db, key: id)
-        }
-    }
-    
-    /// Fetch oldest memories for archiving
-    func fetchOldestMemories(limit: Int) async throws -> [Memory] {
-        try await dbReader.read { db in
-            try Memory
-                .filter(Memory.Columns.isPinned == false)
-                .order(
-                    Memory.Columns.importance,
-                    Memory.Columns.lastAccessedAt
-                )
-                .limit(limit)
-                .fetchAll(db)
-        }
-    }
-    
-
-    
-    /// Get entries with embeddings count
-    func getEntriesWithEmbeddingsCount() async throws -> Int {
-        try await dbReader.read { db in
-            let entriesWithEmbeddings = try JournalEntry
-                .filter(sql: "id IN (SELECT DISTINCT sourceEntryId FROM memories WHERE sourceEntryId IS NOT NULL)")
-                .fetchCount(db)
-            return entriesWithEmbeddings
-        }
-    }
-    
-    /// Fetch entries without embeddings
-    func fetchEntriesWithoutEmbeddings() async throws -> [JournalEntry] {
-        try await dbReader.read { db in
-            try JournalEntry
-                .filter(sql: "id NOT IN (SELECT DISTINCT sourceEntryId FROM memories WHERE sourceEntryId IS NOT NULL)")
-                .fetchAll(db)
-        }
-    }
-    
-    /// Search memories by similarity (placeholder - needs vector search implementation)
-    func searchMemoriesBySimilarity(embedding: [Float], limit: Int) async throws -> [Memory] {
-        // For now, return recent memories as a placeholder
-        // In a real implementation, this would use vector similarity search
-        try await dbReader.read { db in
-            try Memory
-                .order(Column("lastAccessedAt").desc)
-                .limit(limit)
-                .fetchAll(db)
-        }
-    }
-    
-    /// Fetch entry by ID
-    func fetchEntry(by id: UUID) async throws -> JournalEntry? {
-        try await dbReader.read { db in
-            try JournalEntry.fetchOne(db, key: id)
-        }
-    }
-    
-    /// Attempts to re-encrypt an entry with a new key
-    /// This can be used to recover entries after key changes
-    func attemptEntryRecovery(entryId: UUID, with content: String, title: String) async throws {
-        // Encrypt the content with the current key
-        let encryptedContent = try await encryptContent(content)
-        let encryptedTitle = try await encryptContent(title)
+    private func saveEntrySync(_ entry: JournalEntry) throws {
+        let sql = """
+            INSERT OR REPLACE INTO journal_entries 
+            (id, created_at, modified_at, title, content, encrypted_content, tags, mood, weather, location, attachments, is_encrypted, is_favorite, is_deleted)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
         
-        // Update the entry in the database
-        try await dbQueue.write { db in
-            try db.execute(
-                sql: "UPDATE entries SET content = ?, title = ? WHERE id = ?",
-                arguments: [encryptedContent, encryptedTitle, entryId]
-            )
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else {
+            throw DatabaseError.failedToPrepare(sql)
         }
         
-        print("✅ Successfully re-encrypted entry \(entryId)")
-    }
-    
-    /// Checks if the encryption key is valid by attempting to decrypt a test value
-    func validateEncryptionKey() async -> Bool {
-        do {
-            // Try to encrypt and decrypt a test string
-            let testString = "Gemi encryption test"
-            let encrypted = try await encryptContent(testString)
-            let decrypted = try await decryptContent(encrypted)
-            return decrypted == testString
-        } catch {
-            print("❌ Encryption key validation failed: \(error)")
-            return false
+        defer { sqlite3_finalize(statement) }
+        
+        sqlite3_bind_text(statement, 1, entry.id.uuidString, -1, nil)
+        sqlite3_bind_double(statement, 2, entry.createdAt.timeIntervalSince1970)
+        sqlite3_bind_double(statement, 3, entry.modifiedAt.timeIntervalSince1970)
+        sqlite3_bind_text(statement, 4, entry.title, -1, nil)
+        
+        if entry.isEncrypted {
+            let contentData = entry.content.data(using: .utf8) ?? Data()
+            let encryptedData = try encrypt(contentData)
+            sqlite3_bind_blob(statement, 6, [UInt8](encryptedData), Int32(encryptedData.count), nil)
+            sqlite3_bind_null(statement, 5)
+        } else {
+            sqlite3_bind_text(statement, 5, entry.content, -1, nil)
+            sqlite3_bind_null(statement, 6)
+        }
+        
+        let tagsJson = try JSONEncoder().encode(entry.tags)
+        sqlite3_bind_text(statement, 7, String(data: tagsJson, encoding: .utf8), -1, nil)
+        
+        if let mood = entry.mood {
+            sqlite3_bind_text(statement, 8, mood, -1, nil)
+        } else {
+            sqlite3_bind_null(statement, 8)
+        }
+        
+        if let weather = entry.weather {
+            sqlite3_bind_text(statement, 9, weather, -1, nil)
+        } else {
+            sqlite3_bind_null(statement, 9)
+        }
+        
+        if let location = entry.location {
+            sqlite3_bind_text(statement, 10, location, -1, nil)
+        } else {
+            sqlite3_bind_null(statement, 10)
+        }
+        
+        let attachmentsJson = try JSONEncoder().encode(entry.attachments)
+        sqlite3_bind_text(statement, 11, String(data: attachmentsJson, encoding: .utf8), -1, nil)
+        
+        sqlite3_bind_int(statement, 12, entry.isEncrypted ? 1 : 0)
+        sqlite3_bind_int(statement, 13, entry.isFavorite ? 1 : 0)
+        sqlite3_bind_int(statement, 14, entry.isDeleted ? 1 : 0)
+        
+        guard sqlite3_step(statement) == SQLITE_DONE else {
+            throw DatabaseError.failedToExecute(sql)
         }
     }
     
-    /// Creates a diagnostic report about the database state
-    func getDatabaseDiagnostics() async throws -> DatabaseDiagnostics {
-        let totalEntries = try await dbQueue.read { db in
-            try JournalEntry.fetchCount(db)
+    func loadEntries(includeDeleted: Bool = false) async throws -> [JournalEntry] {
+        try await withCheckedThrowingContinuation { continuation in
+            queue.async {
+                do {
+                    let entries = try self.loadEntriesSync(includeDeleted: includeDeleted)
+                    continuation.resume(returning: entries)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+    
+    private func loadEntriesSync(includeDeleted: Bool = false) throws -> [JournalEntry] {
+        let sql = includeDeleted
+            ? "SELECT * FROM journal_entries ORDER BY created_at DESC"
+            : "SELECT * FROM journal_entries WHERE is_deleted = 0 ORDER BY created_at DESC"
+        
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else {
+            throw DatabaseError.failedToPrepare(sql)
         }
         
-        let result = try await fetchAllEntries()
-        let keyValid = await validateEncryptionKey()
+        defer { sqlite3_finalize(statement) }
         
-        return DatabaseDiagnostics(
-            totalEntries: totalEntries,
-            readableEntries: result.entries.filter { !$0.title.contains("🔒") }.count,
-            encryptedEntries: result.decryptionFailures,
-            encryptionKeyValid: keyValid,
-            databasePath: dbQueue.path
+        var entries: [JournalEntry] = []
+        
+        while sqlite3_step(statement) == SQLITE_ROW {
+            let entry = try parseEntry(from: statement)
+            entries.append(entry)
+        }
+        
+        return entries
+    }
+    
+    private func parseEntry(from statement: OpaquePointer?) throws -> JournalEntry {
+        // Column indices based on CREATE TABLE structure:
+        // 0: id, 1: created_at, 2: modified_at, 3: title, 4: content
+        // 5: encrypted_content, 6: tags, 7: mood, 8: weather, 9: location
+        // 10: attachments, 11: is_encrypted, 12: is_favorite, 13: is_deleted
+        
+        let id = UUID(uuidString: String(cString: sqlite3_column_text(statement, 0))) ?? UUID()
+        let createdAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 1))
+        let modifiedAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 2))
+        
+        let title = sqlite3_column_text(statement, 3).map { String(cString: $0) } ?? ""
+        
+        let isEncrypted = sqlite3_column_int(statement, 11) == 1
+        var content = ""
+        
+        if isEncrypted {
+            if let encryptedBlob = sqlite3_column_blob(statement, 5) {
+                let encryptedSize = Int(sqlite3_column_bytes(statement, 5))
+                let encryptedData = Data(bytes: encryptedBlob, count: encryptedSize)
+                do {
+                    let decryptedData = try decrypt(encryptedData)
+                    content = String(data: decryptedData, encoding: .utf8) ?? ""
+                } catch {
+                    print("Failed to decrypt content: \(error)")
+                    content = "[Encrypted content - unable to decrypt]"
+                }
+            }
+        } else {
+            content = sqlite3_column_text(statement, 4).map { String(cString: $0) } ?? ""
+        }
+        
+        let tagsJson = sqlite3_column_text(statement, 6).map { String(cString: $0) } ?? "[]"
+        let tags = (try? JSONDecoder().decode([String].self, from: tagsJson.data(using: .utf8) ?? Data())) ?? []
+        
+        let mood = sqlite3_column_text(statement, 7).map { String(cString: $0) }
+        let weather = sqlite3_column_text(statement, 8).map { String(cString: $0) }
+        let location = sqlite3_column_text(statement, 9).map { String(cString: $0) }
+        
+        let attachmentsJson = sqlite3_column_text(statement, 10).map { String(cString: $0) } ?? "[]"
+        let attachments = (try? JSONDecoder().decode([String].self, from: attachmentsJson.data(using: .utf8) ?? Data())) ?? []
+        
+        let isFavorite = sqlite3_column_int(statement, 12) == 1
+        let isDeleted = sqlite3_column_int(statement, 13) == 1
+        
+        return JournalEntry(
+            id: id,
+            createdAt: createdAt,
+            modifiedAt: modifiedAt,
+            title: title,
+            content: content,
+            tags: tags,
+            mood: mood,
+            weather: weather,
+            location: location,
+            attachments: attachments,
+            isEncrypted: isEncrypted,
+            isFavorite: isFavorite,
+            isDeleted: isDeleted
         )
     }
+    
+    func deleteEntry(_ id: UUID, permanently: Bool = false) async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            queue.async(flags: .barrier) {
+                do {
+                    if permanently {
+                        let sql = "DELETE FROM journal_entries WHERE id = ?"
+                        var statement: OpaquePointer?
+                        guard sqlite3_prepare_v2(self.database, sql, -1, &statement, nil) == SQLITE_OK else {
+                            throw DatabaseError.failedToPrepare(sql)
+                        }
+                        defer { sqlite3_finalize(statement) }
+                        
+                        sqlite3_bind_text(statement, 1, id.uuidString, -1, nil)
+                        
+                        guard sqlite3_step(statement) == SQLITE_DONE else {
+                            throw DatabaseError.failedToExecute(sql)
+                        }
+                    } else {
+                        let sql = "UPDATE journal_entries SET is_deleted = 1 WHERE id = ?"
+                        var statement: OpaquePointer?
+                        guard sqlite3_prepare_v2(self.database, sql, -1, &statement, nil) == SQLITE_OK else {
+                            throw DatabaseError.failedToPrepare(sql)
+                        }
+                        defer { sqlite3_finalize(statement) }
+                        
+                        sqlite3_bind_text(statement, 1, id.uuidString, -1, nil)
+                        
+                        guard sqlite3_step(statement) == SQLITE_DONE else {
+                            throw DatabaseError.failedToExecute(sql)
+                        }
+                    }
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+    
+    func searchEntries(query: String) async throws -> [JournalEntry] {
+        try await withCheckedThrowingContinuation { continuation in
+            queue.async {
+                do {
+                    let sql = """
+                        SELECT * FROM journal_entries 
+                        WHERE is_deleted = 0 AND (
+                            title LIKE ? OR 
+                            content LIKE ? OR 
+                            tags LIKE ? OR
+                            mood LIKE ? OR
+                            location LIKE ?
+                        )
+                        ORDER BY created_at DESC
+                    """
+                    
+                    var statement: OpaquePointer?
+                    guard sqlite3_prepare_v2(self.database, sql, -1, &statement, nil) == SQLITE_OK else {
+                        throw DatabaseError.failedToPrepare(sql)
+                    }
+                    
+                    defer { sqlite3_finalize(statement) }
+                    
+                    let searchPattern = "%\(query)%"
+                    for i in 1...5 {
+                        sqlite3_bind_text(statement, Int32(i), searchPattern, -1, nil)
+                    }
+                    
+                    var entries: [JournalEntry] = []
+                    
+                    while sqlite3_step(statement) == SQLITE_ROW {
+                        let entry = try self.parseEntry(from: statement)
+                        entries.append(entry)
+                    }
+                    
+                    continuation.resume(returning: entries)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
 }
 
-// MARK: - Error Types
-
-/// Errors that can occur during database operations
-enum DatabaseError: Error, LocalizedError {
-    case applicationSupportDirectoryNotFound
-    case invalidEncryptedData
-    case decryptionFailed
+enum DatabaseError: LocalizedError {
+    case failedToOpen
+    case failedToPrepare(String)
+    case failedToExecute(String)
+    case failedToSaveKey
+    case keyNotFound
     case encryptionFailed
-    case keychainError(OSStatus)
-    case initializationFailed(String)
+    case decryptionFailed
     
     var errorDescription: String? {
         switch self {
-        case .applicationSupportDirectoryNotFound:
-            return "Could not access Application Support directory"
-        case .invalidEncryptedData:
-            return "Invalid encrypted data format"
-        case .decryptionFailed:
-            return "Failed to decrypt journal content"
+        case .failedToOpen:
+            return "Failed to open database"
+        case .failedToPrepare(let sql):
+            return "Failed to prepare SQL: \(sql)"
+        case .failedToExecute(let sql):
+            return "Failed to execute SQL: \(sql)"
+        case .failedToSaveKey:
+            return "Failed to save encryption key"
+        case .keyNotFound:
+            return "Encryption key not found"
         case .encryptionFailed:
-            return "Failed to encrypt journal content"
-        case .keychainError(let status):
-            return "Keychain error: \(status)"
-        case .initializationFailed(let message):
-            return message
+            return "Failed to encrypt data"
+        case .decryptionFailed:
+            return "Failed to decrypt data"
         }
     }
 }
-
-/// Database diagnostic information
-struct DatabaseDiagnostics {
-    let totalEntries: Int
-    let readableEntries: Int
-    let encryptedEntries: Int
-    let encryptionKeyValid: Bool
-    let databasePath: String
-    
-    var summary: String {
-        """
-        Database Diagnostics:
-        • Total entries: \(totalEntries)
-        • Readable entries: \(readableEntries)
-        • Encrypted/unreadable entries: \(encryptedEntries)
-        • Encryption key valid: \(encryptionKeyValid ? "Yes" : "No")
-        • Database location: \(databasePath)
-        """
-    }
-} 
