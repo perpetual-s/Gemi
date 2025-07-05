@@ -28,7 +28,7 @@ enum Mood: String, Codable, CaseIterable, Sendable {
     }
 }
 
-final class JournalEntry: Identifiable, Codable, Hashable {
+final class JournalEntry: Identifiable, Codable, Hashable, @unchecked Sendable {
     let id: UUID
     let createdAt: Date
     var modifiedAt: Date
