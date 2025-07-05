@@ -1,10 +1,12 @@
 import SwiftUI
+import Combine
 
 struct SearchView: View {
     @ObservedObject var journalStore: JournalStore
     @State private var searchQuery = ""
     @State private var searchResults: [JournalEntry] = []
     @State private var isSearching = false
+    @State private var searchTask: Task<Void, Never>?
     
     var body: some View {
         VStack(spacing: 0) {
@@ -38,12 +40,16 @@ struct SearchView: View {
                 
                 TextField("Search entries, tags, moods...", text: $searchQuery)
                     .textFieldStyle(.plain)
-                    .onSubmit {
-                        performSearch()
+                    .onChange(of: searchQuery) { newValue in
+                        performRealtimeSearch(newValue)
                     }
                 
                 if !searchQuery.isEmpty {
-                    Button(action: { searchQuery = "" }) {
+                    Button(action: { 
+                        searchQuery = ""
+                        searchResults = []
+                        searchTask?.cancel()
+                    }) {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(Theme.Colors.secondaryText)
                     }
@@ -110,14 +116,40 @@ struct SearchView: View {
         }
     }
     
-    private func performSearch() {
-        guard !searchQuery.isEmpty else { return }
+    private func performRealtimeSearch(_ query: String) {
+        // Cancel any existing search task
+        searchTask?.cancel()
+        
+        guard !query.isEmpty else {
+            searchResults = []
+            isSearching = false
+            return
+        }
         
         isSearching = true
         
-        Task {
-            searchResults = await journalStore.searchEntries(query: searchQuery)
-            isSearching = false
+        // Create a new search task with debouncing
+        searchTask = Task {
+            // Debounce: wait 300ms before searching
+            do {
+                try await Task.sleep(nanoseconds: 300_000_000) // 300ms
+            } catch {
+                return // Task was cancelled
+            }
+            
+            // Check if task is still valid (not cancelled)
+            guard !Task.isCancelled else { return }
+            
+            // Perform the search
+            let results = await journalStore.searchEntries(query: query)
+            
+            // Update results on main thread if task hasn't been cancelled
+            if !Task.isCancelled {
+                await MainActor.run {
+                    searchResults = results
+                    isSearching = false
+                }
+            }
         }
     }
 }

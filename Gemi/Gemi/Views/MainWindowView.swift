@@ -20,6 +20,12 @@ struct MainWindowView: View {
                 await journalStore.loadEntries()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .newEntry)) { _ in
+            selectedView = .compose
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .search)) { _ in
+            selectedView = .search
+        }
     }
     
     @ViewBuilder
@@ -27,7 +33,7 @@ struct MainWindowView: View {
         switch selectedView {
         case .timeline:
             TimelineView(
-                entries: journalStore.entries,
+                journalStore: journalStore,
                 selectedEntry: $selectedEntry,
                 onNewEntry: {
                     selectedView = .compose
@@ -40,7 +46,8 @@ struct MainWindowView: View {
                     Task {
                         await journalStore.saveEntry(entry)
                         selectedView = .timeline
-                        selectedEntry = entry
+                        // Find the saved entry from the refreshed entries array
+                        selectedEntry = journalStore.entries.first { $0.id == entry.id }
                     }
                 },
                 onCancel: {

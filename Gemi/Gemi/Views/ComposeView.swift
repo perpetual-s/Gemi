@@ -10,7 +10,7 @@ struct ComposeView: View {
     @State private var content = ""
     @State private var tags: [String] = []
     @State private var tagInput = ""
-    @State private var mood = ""
+    @State private var mood: Mood? = nil
     @State private var isSaving = false
     @State private var wordCount = 0
     @State private var lastSaved = Date()
@@ -18,7 +18,7 @@ struct ComposeView: View {
     @StateObject private var autoSaveTimer = AutoSaveTimer()
     @FocusState private var isContentFocused: Bool
     
-    private let moodOptions = ["happy", "peaceful", "excited", "grateful", "thoughtful", "sad", "anxious", "frustrated", "neutral"]
+    private let moodOptions = Mood.allCases
     
     var body: some View {
         VStack(spacing: 0) {
@@ -87,6 +87,14 @@ struct ComposeView: View {
             Button("Save", action: saveEntry)
                 .buttonStyle(.borderedProminent)
                 .disabled(content.isEmpty)
+                .keyboardShortcut("s", modifiers: .command)
+            
+            Button("Save & Close", action: saveAndClose)
+                .buttonStyle(.borderedProminent)
+                .disabled(content.isEmpty)
+                .keyboardShortcut(.return, modifiers: .command)
+                .opacity(0) // Hidden button for keyboard shortcut only
+                .frame(width: 0, height: 0)
         }
         .padding()
     }
@@ -118,7 +126,7 @@ struct ComposeView: View {
                         MoodButton(
                             mood: moodOption,
                             isSelected: mood == moodOption,
-                            action: { mood = mood == moodOption ? "" : moodOption }
+                            action: { mood = mood == moodOption ? nil : moodOption }
                         )
                     }
                 }
@@ -226,7 +234,7 @@ struct ComposeView: View {
         title = entry.title
         content = entry.content
         tags = entry.tags
-        mood = entry.mood ?? ""
+        mood = entry.mood
         updateWordCount()
     }
     
@@ -250,7 +258,7 @@ struct ComposeView: View {
             title: title,
             content: content,
             tags: tags,
-            mood: mood.isEmpty ? nil : mood
+            mood: mood
         )
         
         onSave(updatedEntry)
@@ -269,10 +277,15 @@ struct ComposeView: View {
             title: title,
             content: content,
             tags: tags,
-            mood: mood.isEmpty ? nil : mood
+            mood: mood
         )
         
         onSave(newEntry)
+    }
+    
+    private func saveAndClose() {
+        saveEntry()
+        onCancel()
     }
     
     private func addTag() {
@@ -293,32 +306,17 @@ struct ComposeView: View {
 }
 
 struct MoodButton: View {
-    let mood: String
+    let mood: Mood
     let isSelected: Bool
     let action: () -> Void
-    
-    private var emoji: String {
-        switch mood {
-        case "happy": return "😊"
-        case "peaceful": return "😌"
-        case "excited": return "🤩"
-        case "grateful": return "🙏"
-        case "thoughtful": return "🤔"
-        case "sad": return "😢"
-        case "anxious": return "😰"
-        case "frustrated": return "😤"
-        case "neutral": return "😐"
-        default: return "😊"
-        }
-    }
     
     var body: some View {
         Button(action: action) {
             VStack(spacing: 4) {
-                Text(emoji)
+                Text(mood.emoji)
                     .font(.title2)
                 
-                Text(mood)
+                Text(mood.rawValue)
                     .font(Theme.Typography.caption)
             }
             .padding(.horizontal, 12)

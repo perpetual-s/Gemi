@@ -9,9 +9,21 @@ import SwiftUI
 
 @main
 struct GemiApp: App {
+    @StateObject private var authManager = AuthenticationManager.shared
+    
     var body: some Scene {
         WindowGroup {
-            MainWindowView()
+            Group {
+                if authManager.requiresInitialSetup {
+                    InitialSetupView()
+                } else if authManager.isAuthenticated {
+                    MainWindowView()
+                } else {
+                    AuthenticationView()
+                }
+            }
+            .animation(.easeInOut(duration: 0.3), value: authManager.isAuthenticated)
+            .animation(.easeInOut(duration: 0.3), value: authManager.requiresInitialSetup)
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified(showsTitle: true))
@@ -21,6 +33,7 @@ struct GemiApp: App {
                     NotificationCenter.default.post(name: .newEntry, object: nil)
                 }
                 .keyboardShortcut("n", modifiers: .command)
+                .disabled(!authManager.isAuthenticated)
             }
             
             CommandGroup(after: .newItem) {
@@ -28,6 +41,15 @@ struct GemiApp: App {
                     NotificationCenter.default.post(name: .search, object: nil)
                 }
                 .keyboardShortcut("f", modifiers: .command)
+                .disabled(!authManager.isAuthenticated)
+            }
+            
+            CommandGroup(after: .appSettings) {
+                Button("Lock Gemi") {
+                    authManager.logout()
+                }
+                .keyboardShortcut("l", modifiers: [.command, .control])
+                .disabled(!authManager.isAuthenticated)
             }
         }
     }

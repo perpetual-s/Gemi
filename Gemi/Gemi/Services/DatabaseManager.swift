@@ -213,12 +213,19 @@ final class DatabaseManager: Sendable {
         sqlite3_bind_double(statement, 3, entry.modifiedAt.timeIntervalSince1970)
         sqlite3_bind_text(statement, 4, entry.title, -1, nil)
         
-        if entry.isEncrypted {
+        // Handle content and encrypted content properly
+        if entry.isEncrypted, let encryptedData = entry.encryptedContent {
+            // Entry is already encrypted, store the encrypted data
+            sqlite3_bind_null(statement, 5) // content is null
+            sqlite3_bind_blob(statement, 6, [UInt8](encryptedData), Int32(encryptedData.count), nil)
+        } else if entry.isEncrypted && !entry.content.isEmpty {
+            // Entry needs to be encrypted
             let contentData = entry.content.data(using: .utf8) ?? Data()
             let encryptedData = try encrypt(contentData)
+            sqlite3_bind_null(statement, 5) // content is null
             sqlite3_bind_blob(statement, 6, [UInt8](encryptedData), Int32(encryptedData.count), nil)
-            sqlite3_bind_null(statement, 5)
         } else {
+            // Entry is not encrypted
             sqlite3_bind_text(statement, 5, entry.content, -1, nil)
             sqlite3_bind_null(statement, 6)
         }
@@ -227,7 +234,7 @@ final class DatabaseManager: Sendable {
         sqlite3_bind_text(statement, 7, String(data: tagsJson, encoding: .utf8), -1, nil)
         
         if let mood = entry.mood {
-            sqlite3_bind_text(statement, 8, mood, -1, nil)
+            sqlite3_bind_text(statement, 8, mood.rawValue, -1, nil)
         } else {
             sqlite3_bind_null(statement, 8)
         }
@@ -305,27 +312,26 @@ final class DatabaseManager: Sendable {
         
         let isEncrypted = sqlite3_column_int(statement, 11) == 1
         var content = ""
+        var encryptedContent: Data? = nil
         
         if isEncrypted {
+            // For encrypted entries, store the encrypted data
             if let encryptedBlob = sqlite3_column_blob(statement, 5) {
                 let encryptedSize = Int(sqlite3_column_bytes(statement, 5))
-                let encryptedData = Data(bytes: encryptedBlob, count: encryptedSize)
-                do {
-                    let decryptedData = try decrypt(encryptedData)
-                    content = String(data: decryptedData, encoding: .utf8) ?? ""
-                } catch {
-                    print("Failed to decrypt content: \(error)")
-                    content = "[Encrypted content - unable to decrypt]"
-                }
+                encryptedContent = Data(bytes: encryptedBlob, count: encryptedSize)
+                // Leave content empty for encrypted entries
+                content = ""
             }
         } else {
+            // For non-encrypted entries, get the plain content
             content = sqlite3_column_text(statement, 4).map { String(cString: $0) } ?? ""
         }
         
         let tagsJson = sqlite3_column_text(statement, 6).map { String(cString: $0) } ?? "[]"
         let tags = (try? JSONDecoder().decode([String].self, from: tagsJson.data(using: .utf8) ?? Data())) ?? []
         
-        let mood = sqlite3_column_text(statement, 7).map { String(cString: $0) }
+        let moodString = sqlite3_column_text(statement, 7).map { String(cString: $0) }
+        let mood = moodString.flatMap { Mood(rawValue: $0) }
         let weather = sqlite3_column_text(statement, 8).map { String(cString: $0) }
         let location = sqlite3_column_text(statement, 9).map { String(cString: $0) }
         
@@ -341,6 +347,7 @@ final class DatabaseManager: Sendable {
             modifiedAt: modifiedAt,
             title: title,
             content: content,
+            encryptedContent: encryptedContent,
             tags: tags,
             mood: mood,
             weather: weather,
