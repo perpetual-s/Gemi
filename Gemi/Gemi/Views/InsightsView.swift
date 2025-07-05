@@ -71,7 +71,7 @@ struct InsightsView: View {
             VStack(spacing: 8) {
                 ForEach(moodStats.sorted(by: { $0.value > $1.value }), id: \.key) { mood, count in
                     HStack {
-                        Text(mood.capitalized)
+                        Text("\(mood.emoji) \(mood.rawValue.capitalized)")
                             .font(Theme.Typography.body)
                             .frame(width: 100, alignment: .leading)
                         
@@ -156,8 +156,8 @@ struct InsightsView: View {
         return streak
     }
     
-    private var moodStats: [String: Int] {
-        var stats: [String: Int] = [:]
+    private var moodStats: [Mood: Int] {
+        var stats: [Mood: Int] = [:]
         for entry in entries {
             if let mood = entry.mood {
                 stats[mood, default: 0] += 1

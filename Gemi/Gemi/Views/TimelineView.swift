@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct TimelineView: View {
-    let entries: [JournalEntry]
+    @ObservedObject var journalStore: JournalStore
     @Binding var selectedEntry: JournalEntry?
     let onNewEntry: () -> Void
     
@@ -13,7 +13,7 @@ struct TimelineView: View {
             
             Divider()
             
-            if entries.isEmpty {
+            if journalStore.entries.isEmpty {
                 emptyState
             } else {
                 ScrollView {
@@ -30,7 +30,7 @@ struct TimelineView: View {
         .onAppear {
             groupEntriesByDate()
         }
-        .onChange(of: entries) { _ in
+        .onChange(of: journalStore.entries) { _ in
             groupEntriesByDate()
         }
     }
@@ -41,7 +41,7 @@ struct TimelineView: View {
                 Text("Journal Timeline")
                     .font(Theme.Typography.largeTitle)
                 
-                Text("\(entries.count) entries")
+                Text("\(journalStore.entries.count) entries")
                     .font(Theme.Typography.caption)
                     .foregroundColor(Theme.Colors.secondaryText)
             }
@@ -102,7 +102,7 @@ struct TimelineView: View {
     
     private func groupEntriesByDate() {
         let calendar = Calendar.current
-        groupedEntries = Dictionary(grouping: entries) { entry in
+        groupedEntries = Dictionary(grouping: journalStore.entries) { entry in
             calendar.startOfDay(for: entry.createdAt)
         }
     }
@@ -170,7 +170,7 @@ struct EntryCard: View {
                 
                 HStack {
                     if let mood = entry.mood {
-                        Label(mood, systemImage: "face.smiling")
+                        Label("\(mood.emoji) \(mood.rawValue)", systemImage: "face.smiling")
                             .font(Theme.Typography.caption)
                             .foregroundColor(Theme.Colors.tertiaryText)
                     }
@@ -244,10 +244,14 @@ struct TagView: View {
 
 struct TimelineView_Previews: PreviewProvider {
     static var previews: some View {
+        let store = JournalStore()
         TimelineView(
-            entries: JournalEntry.mockEntries(),
+            journalStore: store,
             selectedEntry: .constant(nil),
             onNewEntry: {}
         )
+        .onAppear {
+            store.entries = JournalEntry.mockEntries()
+        }
     }
 }
