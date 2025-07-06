@@ -48,6 +48,12 @@ struct GemiApp: App {
                 }
                 .keyboardShortcut("f", modifiers: .command)
                 .disabled(!authManager.isAuthenticated)
+                
+                Button("Chat with Gemi") {
+                    NotificationCenter.default.post(name: .openChat, object: nil)
+                }
+                .keyboardShortcut("t", modifiers: .command)
+                .disabled(!authManager.isAuthenticated)
             }
             
             CommandGroup(after: .appSettings) {
@@ -64,4 +70,5 @@ struct GemiApp: App {
 extension Notification.Name {
     static let newEntry = Notification.Name("newEntry")
     static let search = Notification.Name("search")
+    static let openChat = Notification.Name("openChat")
 }

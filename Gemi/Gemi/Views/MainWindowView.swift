@@ -26,13 +26,16 @@ struct MainWindowView: View {
         .onReceive(NotificationCenter.default.publisher(for: .search)) { _ in
             selectedView = .search
         }
+        .onReceive(NotificationCenter.default.publisher(for: .openChat)) { _ in
+            selectedView = .chat
+        }
     }
     
     @ViewBuilder
     private var contentView: some View {
         switch selectedView {
         case .timeline:
-            TimelineView(
+            EnhancedTimelineView(
                 journalStore: journalStore,
                 selectedEntry: $selectedEntry,
                 onNewEntry: {
@@ -40,7 +43,7 @@ struct MainWindowView: View {
                 }
             )
         case .compose:
-            ComposeView(
+            EnhancedComposeView(
                 entry: nil,
                 onSave: { entry in
                     Task {
@@ -54,6 +57,8 @@ struct MainWindowView: View {
                     selectedView = .timeline
                 }
             )
+        case .chat:
+            GemiChatView()
         case .favorites:
             FavoritesView(entries: journalStore.favoriteEntries)
         case .search:
