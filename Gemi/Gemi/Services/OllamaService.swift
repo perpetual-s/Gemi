@@ -57,8 +57,9 @@ actor OllamaService {
             let models = try JSONDecoder().decode(ModelsResponse.self, from: data)
             let availableModels = models.models.map { $0.name }
             
-            print("Available models: \(availableModels.joined(separator: ", "))")
-            print("Looking for: \(modelName)")
+            // Debug logging removed to reduce console noise
+            // print("Available models: \(availableModels.joined(separator: ", "))")
+            // print("Looking for: \(modelName)")
             
             // Check if our model is available
             let hasModel = availableModels.contains { model in
