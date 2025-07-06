@@ -30,7 +30,7 @@ struct TimelineView: View {
         .onAppear {
             groupEntriesByDate()
         }
-        .onChange(of: journalStore.entries) { _ in
+        .onChange(of: journalStore.entries) {
             groupEntriesByDate()
         }
     }

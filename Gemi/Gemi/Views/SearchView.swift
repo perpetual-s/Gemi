@@ -40,7 +40,7 @@ struct SearchView: View {
                 
                 TextField("Search entries, tags, moods...", text: $searchQuery)
                     .textFieldStyle(.plain)
-                    .onChange(of: searchQuery) { newValue in
+                    .onChange(of: searchQuery) { _, newValue in
                         performRealtimeSearch(newValue)
                     }
                 

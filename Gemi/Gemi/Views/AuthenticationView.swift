@@ -75,8 +75,8 @@ struct AuthenticationView: View {
         } message: {
             Text(authManager.authenticationError?.localizedDescription ?? "Unknown error")
         }
-        .onChange(of: authManager.authenticationError) { error in
-            showingError = error != nil
+        .onChange(of: authManager.authenticationError) { _, newError in
+            showingError = newError != nil
         }
     }
     
