@@ -60,7 +60,7 @@ struct MainWindowView: View {
         case .chat:
             GemiChatView()
         case .favorites:
-            FavoritesView(entries: journalStore.favoriteEntries)
+            FavoritesView(journalStore: journalStore)
         case .search:
             SearchView(journalStore: journalStore)
         case .memories:
@@ -144,6 +144,17 @@ final class JournalStore: ObservableObject {
         } catch {
             self.error = error
             print("Failed to delete entry: \(error)")
+        }
+    }
+    
+    func updateEntry(_ entry: JournalEntry) async {
+        do {
+            // Use saveEntry for updates as well
+            try await databaseManager.saveEntry(entry)
+            await loadEntries()
+        } catch {
+            self.error = error
+            print("Failed to update entry: \(error)")
         }
     }
     

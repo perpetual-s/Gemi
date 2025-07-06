@@ -8,6 +8,12 @@ struct GemiChatView: View {
     @FocusState private var isInputFocused: Bool
     @Namespace private var bottomID
     
+    let contextEntry: JournalEntry?
+    
+    init(contextEntry: JournalEntry? = nil) {
+        self.contextEntry = contextEntry
+    }
+    
     var body: some View {
         ZStack {
             // Main chat interface
@@ -31,6 +37,25 @@ struct GemiChatView: View {
         .onAppear {
             viewModel.loadMessages()
             viewModel.startConnectionMonitoring()
+            
+            // If we have a context entry, start the conversation about it
+            if let entry = contextEntry {
+                let contextMessage = """
+                I'd like to discuss this journal entry with you:
+                
+                **\(entry.displayTitle)**
+                
+                \(entry.content)
+                
+                Written on: \(entry.createdAt.formatted(date: .long, time: .shortened))
+                \(entry.mood != nil ? "Mood: \(entry.mood!.emoji) \(entry.mood!.rawValue)" : "")
+                """
+                
+                Task {
+                    await viewModel.sendMessage(contextMessage)
+                }
+            }
+            
             // Focus input field on appear
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 isInputFocused = true
@@ -233,79 +258,168 @@ struct GemiChatView: View {
     private var messageInputArea: some View {
         VStack(spacing: 0) {
             Divider()
+                .opacity(0.5)
             
-            HStack(alignment: .center, spacing: 12) {
-                // Text input
-                inputField
-                
-                // Send button
-                sendButton
+            HStack(spacing: 8) {
+                // Refined Apple-style input field with integrated elements
+                HStack(spacing: 6) {
+                    // Plus button for attachments
+                    Button {
+                        // Future: Add attachment functionality
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 22, weight: .regular))
+                            .foregroundColor(Theme.Colors.secondaryText)
+                            .symbolRenderingMode(.hierarchical)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Add attachment")
+                    
+                    // Compact text field
+                    ZStack(alignment: .leading) {
+                        // Subtle placeholder
+                        if messageText.isEmpty && !isInputFocused {
+                            Text("Message")
+                                .font(.system(size: 14))
+                                .foregroundColor(Theme.Colors.tertiaryText.opacity(0.6))
+                                .allowsHitTesting(false)
+                        }
+                        
+                        // Minimal text field
+                        TextField("", text: $messageText, axis: .vertical)
+                            .font(.system(size: 14))
+                            .focused($isInputFocused)
+                            .textFieldStyle(.plain)
+                            .lineLimit(1...5)
+                            .frame(minHeight: 20)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .onSubmit {
+                                if canSendMessage {
+                                    sendMessage()
+                                }
+                            }
+                    }
+                    .padding(.vertical, 7)
+                    
+                    // Send button appears when there's text
+                    if !messageText.isEmpty {
+                        sendButtonCompact
+                            .transition(.asymmetric(
+                                insertion: .scale(scale: 0.8).combined(with: .opacity),
+                                removal: .scale(scale: 0.8).combined(with: .opacity)
+                            ))
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: 18)
+                        .fill(Theme.Colors.cardBackground.opacity(0.5))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18)
+                                .strokeBorder(
+                                    isInputFocused ? 
+                                    Theme.Colors.primaryAccent.opacity(0.4) : 
+                                    Theme.Colors.divider.opacity(0.3), 
+                                    lineWidth: 1
+                                )
+                        )
+                )
+                .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.8), value: isInputFocused)
+                .animation(.interactiveSpring(response: 0.25, dampingFraction: 0.85), value: !messageText.isEmpty)
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(.ultraThinMaterial)
+            .padding(.vertical, 8)
+            .background(
+                VisualEffectView(material: .sidebar, blendingMode: .behindWindow)
+                    .opacity(0.98)
+            )
         }
     }
     
-    private var inputField: some View {
-        // Text field container with proper vertical alignment
-        TextField("Message Gemi...", text: $messageText, axis: .vertical)
-            .font(.system(size: 14))
-            .focused($isInputFocused)
-            .textFieldStyle(.plain)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .lineLimit(1...5)
-            .frame(minHeight: 32)  // Minimum height matching send button
-            .frame(maxHeight: 100)  // Allow expansion for multi-line
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Theme.Colors.cardBackground)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Theme.Colors.divider, lineWidth: 1)
-                    )
-            )
-            .animation(.easeInOut(duration: 0.1), value: messageText.contains("\n"))
-    }
-    
-    private var sendButton: some View {
+    private var sendButtonRefined: some View {
         Button {
             sendMessage()
         } label: {
             ZStack {
-                if canSendMessage {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Theme.Colors.primaryAccent, Theme.Colors.primaryAccent.opacity(0.8)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
+                // Background circle with gradient
+                Circle()
+                    .fill(
+                        canSendMessage ?
+                        LinearGradient(
+                            colors: [
+                                Theme.Colors.primaryAccent,
+                                Theme.Colors.primaryAccent.opacity(0.85)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ) :
+                        LinearGradient(
+                            colors: [
+                                Color.gray.opacity(0.2),
+                                Color.gray.opacity(0.15)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
                         )
-                        .frame(width: 32, height: 32)
+                    )
+                    .frame(width: 28, height: 28)
+                    .shadow(
+                        color: canSendMessage ? 
+                            Theme.Colors.primaryAccent.opacity(0.3) : 
+                            .clear,
+                        radius: canSendMessage ? 4 : 0,
+                        x: 0,
+                        y: 2
+                    )
+                
+                // Icon or loading indicator
+                if viewModel.isStreaming {
+                    ProgressView()
+                        .controlSize(.mini)
+                        .tint(.white)
+                        .scaleEffect(0.7)
                 } else {
-                    Circle()
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(width: 32, height: 32)
+                    Image(systemName: "arrow.up")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                        .rotationEffect(.degrees(canSendMessage ? 0 : -90))
+                        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: canSendMessage)
                 }
+            }
+            .scaleEffect(canSendMessage ? 1 : 0.85)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: canSendMessage)
+        }
+        .buttonStyle(.plain)
+        .disabled(!canSendMessage)
+        .opacity(messageText.isEmpty ? 0.6 : 1)
+        .animation(.easeInOut(duration: 0.15), value: messageText.isEmpty)
+    }
+    
+    private var sendButtonCompact: some View {
+        Button {
+            sendMessage()
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(canSendMessage ? Theme.Colors.primaryAccent : Color.gray.opacity(0.3))
+                    .frame(width: 28, height: 28)
                 
                 if viewModel.isStreaming {
                     ProgressView()
-                        .controlSize(.small)
+                        .controlSize(.mini)
                         .tint(.white)
-                        .scaleEffect(0.8)
+                        .scaleEffect(0.6)
                 } else {
                     Image(systemName: "arrow.up")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.white)
                 }
             }
         }
         .buttonStyle(.plain)
         .disabled(!canSendMessage)
-        .scaleEffect(canSendMessage ? 1 : 0.9)
-        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: canSendMessage)
+        .keyboardShortcut(.return, modifiers: [])
     }
     
     private var canSendMessage: Bool {
@@ -501,6 +615,26 @@ struct TypingIndicator: View {
         .onAppear {
             animationOffset = -4
         }
+    }
+}
+
+// MARK: - Visual Effect View
+
+struct VisualEffectView: NSViewRepresentable {
+    let material: NSVisualEffectView.Material
+    let blendingMode: NSVisualEffectView.BlendingMode
+    
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = material
+        view.blendingMode = blendingMode
+        view.state = .active
+        return view
+    }
+    
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        nsView.material = material
+        nsView.blendingMode = blendingMode
     }
 }
 
