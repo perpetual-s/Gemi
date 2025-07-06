@@ -134,43 +134,60 @@ struct GemiChatView: View {
     }
     
     private var emptyStateView: some View {
-        VStack(spacing: Theme.largeSpacing) {
-            Image(systemName: "bubble.left.and.bubble.right.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [Theme.Colors.primaryAccent, Theme.Colors.primaryAccent.opacity(0.6)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+        VStack(spacing: Theme.largeSpacing * 1.5) {
+            // Icon with background
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Theme.Colors.primaryAccent.opacity(0.1), Theme.Colors.primaryAccent.opacity(0.05)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                     )
-                )
+                    .frame(width: 120, height: 120)
+                
+                Image(systemName: "bubble.left.and.bubble.right.fill")
+                    .font(.system(size: 56))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Theme.Colors.primaryAccent, Theme.Colors.primaryAccent.opacity(0.7)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            }
             
-            VStack(spacing: Theme.smallSpacing) {
-                Text("Welcome to Gemi")
-                    .font(Theme.Typography.largeTitle)
+            VStack(spacing: Theme.spacing) {
+                Text("Welcome to Gemi Chat")
+                    .font(.system(size: 32, weight: .semibold, design: .rounded))
                 
                 Text("Your private AI companion for thoughtful journaling")
                     .font(Theme.Typography.body)
                     .foregroundColor(Theme.Colors.secondaryText)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 400)
             }
             
             // Suggested prompts
-            VStack(spacing: Theme.smallSpacing) {
-                Text("Try asking:")
-                    .font(Theme.Typography.caption)
-                    .foregroundColor(Theme.Colors.tertiaryText)
+            VStack(spacing: Theme.spacing) {
+                Text("Start a conversation")
+                    .font(Theme.Typography.headline)
+                    .foregroundColor(.primary)
                 
-                ForEach(viewModel.suggestedPrompts, id: \.self) { prompt in
-                    SuggestedPromptButton(prompt: prompt) {
-                        messageText = prompt
-                        sendMessage()
+                VStack(spacing: Theme.smallSpacing) {
+                    ForEach(viewModel.suggestedPrompts, id: \.self) { prompt in
+                        SuggestedPromptButton(prompt: prompt) {
+                            messageText = prompt
+                            sendMessage()
+                        }
                     }
                 }
             }
-            .padding(.top, Theme.largeSpacing)
+            .padding(.top, Theme.spacing)
         }
-        .frame(maxWidth: 600)
-        .padding(.vertical, 60)
+        .frame(maxWidth: 700)
+        .padding(.vertical, 80)
     }
     
     private var enhancedInputArea: some View {
@@ -192,15 +209,19 @@ struct GemiChatView: View {
             
             HStack(alignment: .bottom, spacing: Theme.spacing) {
                 // Attachment button (future)
-                Button {
-                    // Future: Add image/file attachment
-                } label: {
-                    Image(systemName: "paperclip")
-                        .font(.system(size: 20))
+                VStack {
+                    Spacer()
+                    Button {
+                        // Future: Add image/file attachment
+                    } label: {
+                        Image(systemName: "paperclip")
+                            .font(.system(size: 20))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(true)
+                    .opacity(0.5)
+                    .padding(.bottom, 8)
                 }
-                .buttonStyle(.plain)
-                .disabled(true)
-                .opacity(0.5)
                 
                 // Input field
                 VStack(alignment: .trailing, spacing: 4) {
@@ -209,10 +230,14 @@ struct GemiChatView: View {
                         placeholder: "Message Gemi...",
                         isFirstResponder: isTextFieldFocused
                     )
-                    .frame(minHeight: 24, maxHeight: 150)
-                    .padding(Theme.smallSpacing)
+                    .frame(minHeight: 60, maxHeight: 200)
+                    .padding(Theme.spacing)
                     .background(Theme.Colors.cardBackground)
                     .cornerRadius(Theme.cornerRadius)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Theme.cornerRadius)
+                            .stroke(Theme.Colors.divider, lineWidth: 1)
+                    )
                     .onChange(of: messageText) { _, newValue in
                         isComposingLongMessage = newValue.count > 100
                     }
@@ -225,11 +250,15 @@ struct GemiChatView: View {
                 }
                 
                 // Send button
-                SendButton(
-                    isEnabled: !messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !viewModel.isStreaming,
-                    isLoading: viewModel.isStreaming
-                ) {
-                    sendMessage()
+                VStack {
+                    Spacer()
+                    SendButton(
+                        isEnabled: !messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !viewModel.isStreaming,
+                        isLoading: viewModel.isStreaming
+                    ) {
+                        sendMessage()
+                    }
+                    .padding(.bottom, 8)
                 }
             }
             .padding(Theme.spacing)
@@ -323,19 +352,38 @@ struct SuggestedPromptButton: View {
     
     var body: some View {
         Button(action: action) {
-            Text(prompt)
-                .font(Theme.Typography.body)
-                .padding(.horizontal, Theme.spacing)
-                .padding(.vertical, Theme.smallSpacing)
-                .background(
-                    RoundedRectangle(cornerRadius: Theme.cornerRadius)
-                        .fill(isHovered ? Theme.Colors.primaryAccent.opacity(0.1) : Theme.Colors.cardBackground)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: Theme.cornerRadius)
-                                .strokeBorder(Theme.Colors.primaryAccent.opacity(0.3), lineWidth: 1)
-                        )
-                )
-                .scaleEffect(isHovered ? 1.02 : 1)
+            HStack(spacing: Theme.spacing) {
+                Image(systemName: "sparkle")
+                    .font(.system(size: 14))
+                    .foregroundColor(Theme.Colors.primaryAccent)
+                
+                Text(prompt)
+                    .font(Theme.Typography.body)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                
+                Spacer()
+                
+                Image(systemName: "arrow.right.circle")
+                    .font(.system(size: 16))
+                    .foregroundColor(Theme.Colors.primaryAccent.opacity(isHovered ? 1 : 0.5))
+            }
+            .padding(.horizontal, Theme.spacing)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: Theme.cornerRadius)
+                    .fill(isHovered ? Theme.Colors.primaryAccent.opacity(0.08) : Theme.Colors.cardBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Theme.cornerRadius)
+                            .strokeBorder(
+                                isHovered ? Theme.Colors.primaryAccent.opacity(0.5) : Theme.Colors.divider,
+                                lineWidth: 1
+                            )
+                    )
+            )
+            .shadow(color: Color.black.opacity(isHovered ? 0.05 : 0), radius: 4, y: 2)
+            .scaleEffect(isHovered ? 1.01 : 1)
         }
         .buttonStyle(.plain)
         .onHover { hovering in
@@ -350,29 +398,49 @@ struct SendButton: View {
     let isEnabled: Bool
     let isLoading: Bool
     let action: () -> Void
+    @State private var isPressed = false
     
     var body: some View {
         Button(action: action) {
             ZStack {
                 Circle()
-                    .fill(isEnabled ? Theme.Colors.primaryAccent : Color.secondary.opacity(0.3))
-                    .frame(width: 36, height: 36)
+                    .fill(
+                        LinearGradient(
+                            colors: isEnabled ? 
+                                [Theme.Colors.primaryAccent, Theme.Colors.primaryAccent.opacity(0.8)] :
+                                [Color.secondary.opacity(0.3), Color.secondary.opacity(0.2)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 44, height: 44)
+                    .shadow(
+                        color: isEnabled ? Theme.Colors.primaryAccent.opacity(0.3) : Color.clear,
+                        radius: isPressed ? 2 : 6,
+                        y: isPressed ? 1 : 3
+                    )
                 
                 if isLoading {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle())
-                        .scaleEffect(0.6)
+                        .scaleEffect(0.7)
+                        .tint(.white)
                 } else {
                     Image(systemName: "arrow.up")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.white)
+                        .rotationEffect(.degrees(isPressed ? 5 : 0))
                 }
             }
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
-        .scaleEffect(isEnabled ? 1 : 0.9)
+        .scaleEffect(isPressed ? 0.95 : (isEnabled ? 1 : 0.9))
         .animation(.easeInOut(duration: 0.1), value: isEnabled)
+        .animation(.easeInOut(duration: 0.1), value: isPressed)
+        .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
+            isPressed = pressing
+        }, perform: {})
     }
 }
 
