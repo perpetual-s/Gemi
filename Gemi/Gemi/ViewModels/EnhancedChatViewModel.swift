@@ -61,8 +61,8 @@ final class EnhancedChatViewModel: ObservableObject {
                     self.checkOllamaConnectionSilently()
                 }
                 
-                // Wait 10 seconds between checks
-                try? await Task.sleep(nanoseconds: 10_000_000_000)
+                // Wait 30 seconds between checks to reduce frequency
+                try? await Task.sleep(nanoseconds: 30_000_000_000)
             }
         }
         
