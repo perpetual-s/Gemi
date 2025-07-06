@@ -1,505 +1,391 @@
 import Foundation
 import SwiftUI
 
-/// Enhanced chat view model with streaming, memory integration, and connection management
+/// Enhanced chat view model with clean architecture and proper state management
 @MainActor
 final class EnhancedChatViewModel: ObservableObject {
+    // MARK: - Published Properties
+    
     @Published var messages: [ChatHistoryMessage] = []
-    @Published var currentConversation: ChatConversation?
-    @Published var conversations: [ChatConversation] = []
     @Published var isStreaming = false
     @Published var isTyping = false
-    @Published var error: Error?
     @Published var connectionStatus: ConnectionStatus = .disconnected
-    @Published var showingContextPanel = false
-    @Published var activeMemories: [Memory] = []
     @Published var suggestedPrompts: [String] = []
+    @Published var error: Error?
     
-    private let coordinator = GemiAICoordinator.shared
-    private let memoryManager = MemoryManager.shared
+    // MARK: - Private Properties
+    
     private let ollamaService = OllamaService.shared
-    private let processManager = OllamaProcessManager.shared
-    private let databaseManager = DatabaseManager.shared
+    private var connectionMonitorTask: Task<Void, Never>?
+    private var currentStreamingTask: Task<Void, Never>?
+    private let messagesPersistenceKey = "com.gemi.chat.messages"
+    private let maxStoredMessages = 100 // Limit stored messages to prevent excessive storage
+    private var lastConnectionCheck = Date()
+    private let connectionCheckInterval: TimeInterval = 60 // Check every 60 seconds
+    private var lastKnownConnectionStatus: ConnectionStatus = .disconnected
     
-    private var streamingMessage = ""
-    private var connectionCheckTask: Task<Void, Never>?
+    // MARK: - Types
     
-    enum ConnectionStatus {
+    enum ConnectionStatus: Equatable {
         case connected
         case connecting
         case disconnected
     }
     
+    // MARK: - Initialization
+    
     init() {
-        setupConnectionMonitoring()
-        loadConversations()
-        generateSuggestedPrompts()
+        setupInitialPrompts()
     }
     
     deinit {
-        connectionCheckTask?.cancel()
+        connectionMonitorTask?.cancel()
+        currentStreamingTask?.cancel()
     }
     
-    // MARK: - Connection Management
+    // MARK: - Public Methods
     
-    private func setupConnectionMonitoring() {
-        checkOllamaConnection()
+    /// Start monitoring the connection to Ollama
+    func startConnectionMonitoring() {
+        // Cancel any existing monitoring
+        connectionMonitorTask?.cancel()
         
-        // Check connection every 5 seconds
-        connectionCheckTask = Task {
+        // Start new monitoring
+        connectionMonitorTask = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 5_000_000_000) // 5 seconds
-                if !Task.isCancelled {
-                    await checkOllamaConnection()
+                // Check immediately if disconnected
+                if self?.lastKnownConnectionStatus == .disconnected {
+                    self?.checkOllamaConnection()
+                } else if let self = self, Date().timeIntervalSince(self.lastConnectionCheck) >= self.connectionCheckInterval {
+                    // Only check periodically if connected
+                    self.checkOllamaConnectionSilently()
+                }
+                
+                // Wait 10 seconds between checks
+                try? await Task.sleep(nanoseconds: 10_000_000_000)
+            }
+        }
+        
+        // Check immediately
+        Task {
+            checkOllamaConnection()
+        }
+    }
+    
+    /// Check the connection to Ollama silently (without updating UI unless status changes)
+    private func checkOllamaConnectionSilently() {
+        Task {
+            lastConnectionCheck = Date()
+            
+            do {
+                let isHealthy = try await ollamaService.checkHealth()
+                let newStatus: ConnectionStatus = isHealthy ? .connected : .disconnected
+                
+                // Only update if status actually changed
+                if lastKnownConnectionStatus != newStatus {
+                    lastKnownConnectionStatus = newStatus
+                    connectionStatus = newStatus
+                }
+            } catch {
+                // Only update if not already disconnected
+                if lastKnownConnectionStatus != .disconnected {
+                    lastKnownConnectionStatus = .disconnected
+                    connectionStatus = .disconnected
                 }
             }
         }
     }
     
+    /// Check the connection to Ollama
     func checkOllamaConnection() {
         Task {
-            connectionStatus = .connecting
+            guard lastKnownConnectionStatus != .connecting else { return }
+            
+            // Only update to connecting if we're currently disconnected
+            // This prevents unnecessary UI updates
+            if lastKnownConnectionStatus == .disconnected {
+                lastKnownConnectionStatus = .connecting
+                connectionStatus = .connecting
+            }
             
             do {
-                // Ensure Ollama is running
-                try await processManager.ensureOllamaRunning()
-                
-                // Check if model is available
                 let isHealthy = try await ollamaService.checkHealth()
-                connectionStatus = isHealthy ? .connected : .disconnected
+                let newStatus: ConnectionStatus = isHealthy ? .connected : .disconnected
+                
+                // Only update if status actually changed
+                if lastKnownConnectionStatus != newStatus {
+                    lastKnownConnectionStatus = newStatus
+                    connectionStatus = newStatus
+                }
+                
+                if !isHealthy {
+                    print("Ollama health check failed")
+                }
             } catch {
-                connectionStatus = .disconnected
-                print("Connection check failed: \(error)")
+                // Only update if not already disconnected
+                if lastKnownConnectionStatus != .disconnected {
+                    lastKnownConnectionStatus = .disconnected
+                    connectionStatus = .disconnected
+                }
+                print("Ollama connection error: \(error)")
+                
+                // Don't show error alerts for connection checks
+                // The UI will show the connection status
             }
         }
     }
     
-    // MARK: - Message Handling
-    
-    func sendMessage(_ content: String, withMemories specificMemories: [Memory]? = nil) async {
+    /// Send a message to the AI
+    func sendMessage(_ content: String) async {
         guard !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         guard connectionStatus == .connected else {
-            error = OllamaError.serviceUnavailable
+            error = OllamaError.serviceUnavailable("Please wait for connection to Ollama")
             return
         }
+        
+        // Cancel any existing streaming
+        currentStreamingTask?.cancel()
+        
+        // Clear error
+        error = nil
         
         // Add user message
         let userMessage = ChatHistoryMessage(role: .user, content: content)
         messages.append(userMessage)
         
-        // Show typing indicator
+        // Start typing indicator
         isTyping = true
         
-        // Simulate typing delay for natural feel
-        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+        // Small delay for natural feel
+        try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
         
         isTyping = false
         isStreaming = true
-        streamingMessage = ""
-        error = nil
         
-        do {
-            // Get relevant memories
-            let memories = specificMemories ?? memoryManager.getRelevantMemories(for: content)
-            activeMemories = memories
+        // Create placeholder for assistant message
+        let assistantMessage = ChatHistoryMessage(role: .assistant, content: "")
+        messages.append(assistantMessage)
+        let assistantIndex = messages.count - 1
+        
+        // Convert messages to Ollama format
+        let ollamaMessages = messages.dropLast().map { msg in
+            ChatMessage(
+                role: ChatMessage.Role(rawValue: msg.role.rawValue) ?? .user,
+                content: msg.content
+            )
+        }
+        
+        // Stream the response
+        currentStreamingTask = Task { [weak self] in
+            guard let self = self else { return }
+            var accumulatedContent = ""
             
-            // Build context messages
-            let _ = try await coordinator.buildContextForMessage(content, includeMemories: !memories.isEmpty)
-            
-            // Create assistant message placeholder
-            let assistantMessage = ChatHistoryMessage(role: .assistant, content: "")
-            messages.append(assistantMessage)
-            let assistantIndex = messages.count - 1
-            
-            // Stream the response
-            for try await response in coordinator.sendMessage(content, memories: memories.map { $0.content }) {
-                if let message = response.message {
-                    streamingMessage += message.content
+            do {
+                for try await response in await self.ollamaService.chat(messages: ollamaMessages) {
+                    if Task.isCancelled { break }
                     
-                    // Update the message with animation
-                    withAnimation(.easeInOut(duration: 0.1)) {
-                        messages[assistantIndex] = ChatHistoryMessage(
-                            role: .assistant,
-                            content: streamingMessage
-                        )
+                    if let message = response.message {
+                        accumulatedContent += message.content
+                        
+                        // Update the message
+                        await MainActor.run { [weak self] in
+                            guard let self = self,
+                                  self.messages.count > assistantIndex else { return }
+                            
+                            // Trim whitespace and newlines more aggressively to prevent empty space
+                            var trimmedContent = accumulatedContent.trimmingCharacters(in: .whitespacesAndNewlines)
+                            
+                            // Also remove any double newlines that might cause excessive spacing
+                            while trimmedContent.contains("\n\n\n") {
+                                trimmedContent = trimmedContent.replacingOccurrences(of: "\n\n\n", with: "\n\n")
+                            }
+                            
+                            self.messages[assistantIndex] = ChatHistoryMessage(
+                                role: .assistant,
+                                content: trimmedContent
+                            )
+                        }
+                    }
+                    
+                    if response.done {
+                        break
                     }
                 }
                 
-                if response.done {
-                    break
+                // Update prompts based on conversation
+                await MainActor.run { [weak self] in
+                    self?.updateSuggestedPrompts()
+                }
+                
+                // Save messages after ensuring all updates are complete
+                await MainActor.run { [weak self] in
+                    Task { @MainActor [weak self] in
+                        // Small delay to ensure message content is fully updated
+                        try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
+                        self?.saveMessages()
+                    }
+                }
+                
+            } catch {
+                // Handle errors
+                await MainActor.run { [weak self] in
+                    guard let self = self else { return }
+                    
+                    // Remove empty assistant message if no content was received
+                    if accumulatedContent.isEmpty && self.messages.count > assistantIndex {
+                        self.messages.remove(at: assistantIndex)
+                    }
+                    
+                    // Set appropriate error
+                    if error is OllamaError {
+                        self.error = error
+                    } else {
+                        self.error = OllamaError.connectionFailed(error.localizedDescription)
+                    }
                 }
             }
             
-            // Save conversation
-            await saveCurrentConversation()
-            
-            // Generate new prompts based on conversation
-            generateContextualPrompts()
-            
-        } catch {
-            self.error = error
-            // Remove the empty assistant message
-            if messages.last?.content.isEmpty == true {
-                messages.removeLast()
+            await MainActor.run { [weak self] in
+                self?.isStreaming = false
             }
         }
+    }
+    
+    /// Start a new chat
+    func startNewChat() {
+        // Cancel any ongoing streaming
+        currentStreamingTask?.cancel()
         
-        isStreaming = false
-    }
-    
-    // MARK: - Conversation Management
-    
-    func loadConversations() {
-        // TODO: Load from database when persistence is implemented
-        conversations = []
-    }
-    
-    func createNewConversation(title: String? = nil) {
-        let conversation = ChatConversation(
-            title: title ?? "New Chat \(Date().formatted(date: .abbreviated, time: .shortened))"
-        )
-        currentConversation = conversation
+        // Clear state
         messages = []
-        activeMemories = []
-        generateSuggestedPrompts()
-    }
-    
-    func loadConversation(_ conversation: ChatConversation) {
-        currentConversation = conversation
-        messages = conversation.messages
-        activeMemories = []
-    }
-    
-    private func saveCurrentConversation() async {
-        guard let conversation = currentConversation else { return }
+        isStreaming = false
+        isTyping = false
+        error = nil
         
-        conversation.messages = messages
-        conversation.updatedAt = Date()
+        // Reset prompts
+        setupInitialPrompts()
         
-        // TODO: Persist to database
+        // Clear saved messages
+        UserDefaults.standard.removeObject(forKey: messagesPersistenceKey)
     }
     
-    func deleteConversation(_ conversation: ChatConversation) {
-        conversations.removeAll { $0.id == conversation.id }
-        if currentConversation?.id == conversation.id {
-            currentConversation = nil
-            messages = []
+    // MARK: - Private Methods
+    
+    private func setupInitialPrompts() {
+        suggestedPrompts = [
+            "How are you feeling today?",
+            "What's on your mind?",
+            "Help me reflect on my day"
+        ]
+    }
+    
+    private func updateSuggestedPrompts() {
+        // Analyze the last message to suggest contextual prompts
+        guard let lastUserMessage = messages.reversed().first(where: { $0.role == .user })?.content else {
+            setupInitialPrompts()
+            return
         }
         
-        // TODO: Delete from database
-    }
-    
-    // MARK: - Prompts & Suggestions
-    
-    private func generateSuggestedPrompts() {
-        // Get recent journal entries for context
-        Task {
-            do {
-                let entries = try await databaseManager.loadEntries()
-                let recentEntries = Array(entries.prefix(10))
-                
-                // Use the companion service to generate prompts
-                let contextualPrompts = await CompanionModelService.shared.generateReflectionPrompts(basedOn: recentEntries)
-                
-                suggestedPrompts = contextualPrompts.isEmpty ? defaultPrompts : contextualPrompts
-            } catch {
-                suggestedPrompts = defaultPrompts
-            }
-        }
-    }
-    
-    private func generateContextualPrompts() {
-        // Generate follow-up prompts based on current conversation
-        guard messages.count > 2 else { return }
+        let lowercased = lastUserMessage.lowercased()
         
-        // This could be enhanced with AI-generated suggestions
-        let lastUserMessage = messages.reversed().first { $0.role == .user }?.content ?? ""
-        
-        if lastUserMessage.lowercased().contains("feeling") || lastUserMessage.lowercased().contains("emotion") {
+        if lowercased.contains("feeling") || lowercased.contains("emotion") || lowercased.contains("mood") {
             suggestedPrompts = [
-                "What physical sensations accompany these feelings?",
-                "When did you first notice feeling this way?",
-                "What would help you feel more grounded right now?"
+                "What triggered these feelings?",
+                "How can I process this emotion?",
+                "What would help me feel better?"
             ]
-        } else if lastUserMessage.lowercased().contains("goal") || lastUserMessage.lowercased().contains("plan") {
+        } else if lowercased.contains("goal") || lowercased.contains("plan") || lowercased.contains("future") {
             suggestedPrompts = [
-                "What's the first small step you could take?",
-                "What might get in the way, and how can you prepare?",
-                "How will you know when you've made progress?"
+                "What's the first step I should take?",
+                "What obstacles might I face?",
+                "How will I measure success?"
+            ]
+        } else if lowercased.contains("problem") || lowercased.contains("issue") || lowercased.contains("challenge") {
+            suggestedPrompts = [
+                "What solutions have I tried?",
+                "Who could help me with this?",
+                "What's the worst that could happen?"
+            ]
+        } else if lowercased.contains("grateful") || lowercased.contains("thankful") || lowercased.contains("appreciate") {
+            suggestedPrompts = [
+                "What else am I grateful for?",
+                "How can I express this gratitude?",
+                "What made this possible?"
             ]
         } else {
             suggestedPrompts = [
-                "Tell me more about that.",
+                "Tell me more about that",
                 "How does that make you feel?",
-                "What would you like to explore next?"
+                "What else is on your mind?"
             ]
         }
     }
     
-    private let defaultPrompts = [
-        "How are you feeling today?",
-        "What's on your mind?",
-        "Help me reflect on my day"
-    ]
+    // MARK: - Message Persistence
     
-    // MARK: - Memory Integration
-    
-    func getRelevantMemoriesForCurrentConversation() -> [Memory] {
-        guard !messages.isEmpty else { return [] }
+    /// Save messages to UserDefaults
+    func saveMessages() {
+        // Only save recent messages to avoid excessive storage
+        let messagesToSave = Array(messages.suffix(maxStoredMessages))
         
-        let conversationText = messages.map { $0.content }.joined(separator: " ")
-        return memoryManager.getRelevantMemories(for: conversationText, limit: 5)
-    }
-    
-    // MARK: - Export & Sharing
-    
-    func exportConversation(format: ExportFormat) -> String {
-        switch format {
-        case .markdown:
-            return exportAsMarkdown()
-        case .plainText:
-            return exportAsPlainText()
-        case .json:
-            return exportAsJSON()
-        }
-    }
-    
-    private func exportAsMarkdown() -> String {
-        var markdown = "# Chat with Gemi\n\n"
-        markdown += "*\(currentConversation?.createdAt.formatted() ?? Date().formatted())*\n\n"
-        
-        for message in messages {
-            let role = message.role == .user ? "You" : "Gemi"
-            markdown += "**\(role)**: \(message.content)\n\n"
+        // Convert to simple dictionary format for storage
+        let messageData = messagesToSave.map { message in
+            [
+                "id": message.id.uuidString,
+                "role": message.role.rawValue,
+                "content": message.content,
+                "timestamp": message.timestamp.timeIntervalSince1970
+            ]
         }
         
-        return markdown
+        UserDefaults.standard.set(messageData, forKey: messagesPersistenceKey)
     }
     
-    private func exportAsPlainText() -> String {
-        var text = "Chat with Gemi\n"
-        text += "\(currentConversation?.createdAt.formatted() ?? Date().formatted())\n\n"
-        
-        for message in messages {
-            let role = message.role == .user ? "You" : "Gemi"
-            text += "\(role): \(message.content)\n\n"
+    /// Load messages from UserDefaults
+    func loadMessages() {
+        guard let messageData = UserDefaults.standard.array(forKey: messagesPersistenceKey) as? [[String: Any]] else {
+            return
         }
         
-        return text
-    }
-    
-    private func exportAsJSON() -> String {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .prettyPrinted
-        encoder.dateEncodingStrategy = .iso8601
-        
-        guard let data = try? encoder.encode(messages) else { return "{}" }
-        return String(data: data, encoding: .utf8) ?? "{}"
-    }
-    
-    enum ExportFormat {
-        case markdown
-        case plainText
-        case json
-    }
-}
-
-// MARK: - Conversation Sidebar
-
-struct ConversationSidebar: View {
-    @ObservedObject var viewModel: EnhancedChatViewModel
-    @State private var searchText = ""
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("Conversations")
-                    .font(Theme.Typography.headline)
-                
-                Spacer()
-                
-                Button {
-                    viewModel.createNewConversation()
-                } label: {
-                    Image(systemName: "plus.circle")
-                }
-                .buttonStyle(.plain)
+        messages = messageData.compactMap { dict in
+            guard let idString = dict["id"] as? String,
+                  let id = UUID(uuidString: idString),
+                  let roleString = dict["role"] as? String,
+                  let role = ChatHistoryMessage.MessageRole(rawValue: roleString),
+                  let content = dict["content"] as? String,
+                  let timestamp = dict["timestamp"] as? TimeInterval else {
+                return nil
             }
-            .padding()
             
-            // Search
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(Theme.Colors.secondaryText)
-                
-                TextField("Search conversations...", text: $searchText)
-                    .textFieldStyle(.plain)
-            }
-            .padding(8)
-            .background(Theme.Colors.cardBackground)
-            .cornerRadius(Theme.smallCornerRadius)
-            .padding(.horizontal)
-            
-            // Conversations list
-            ScrollView {
-                VStack(spacing: 4) {
-                    if viewModel.conversations.isEmpty {
-                        Text("No conversations yet")
-                            .font(Theme.Typography.caption)
-                            .foregroundColor(Theme.Colors.tertiaryText)
-                            .padding(.top, Theme.largeSpacing)
-                    } else {
-                        ForEach(filteredConversations) { conversation in
-                            ConversationRow(
-                                conversation: conversation,
-                                isSelected: viewModel.currentConversation?.id == conversation.id
-                            ) {
-                                viewModel.loadConversation(conversation)
-                            }
-                        }
-                    }
-                }
-                .padding()
-            }
-        }
-        .background(Theme.Colors.windowBackground)
-    }
-    
-    private var filteredConversations: [ChatConversation] {
-        if searchText.isEmpty {
-            return viewModel.conversations
-        }
-        
-        return viewModel.conversations.filter { conversation in
-            conversation.title.localizedCaseInsensitiveContains(searchText) ||
-            conversation.messages.contains { $0.content.localizedCaseInsensitiveContains(searchText) }
-        }
-    }
-}
-
-struct ConversationRow: View {
-    let conversation: ChatConversation
-    let isSelected: Bool
-    let action: () -> Void
-    @State private var isHovered = false
-    
-    var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(conversation.title)
-                    .font(Theme.Typography.body)
-                    .lineLimit(1)
-                
-                if let lastMessage = conversation.messages.last {
-                    Text(lastMessage.content)
-                        .font(Theme.Typography.caption)
-                        .foregroundColor(Theme.Colors.secondaryText)
-                        .lineLimit(2)
-                }
-                
-                Text(conversation.updatedAt.formatted(date: .abbreviated, time: .shortened))
-                    .font(Theme.Typography.caption)
-                    .foregroundColor(Theme.Colors.tertiaryText)
-            }
-            .padding(Theme.smallSpacing)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: Theme.smallCornerRadius)
-                    .fill(isSelected ? Theme.Colors.selectedBackground : (isHovered ? Theme.Colors.hoverBackground : Color.clear))
+            return ChatHistoryMessage(
+                id: id,
+                role: role,
+                content: content,
+                timestamp: Date(timeIntervalSince1970: timestamp)
             )
         }
-        .buttonStyle(.plain)
-        .onHover { hovering in
-            isHovered = hovering
+        
+        // Update suggested prompts based on loaded conversation
+        if !messages.isEmpty {
+            updateSuggestedPrompts()
         }
     }
-}
-
-// MARK: - Context Panel
-
-struct ContextPanel: View {
-    @ObservedObject var viewModel: EnhancedChatViewModel
     
-    var body: some View {
-        VStack(alignment: .leading, spacing: Theme.spacing) {
-            Text("Active Context")
-                .font(Theme.Typography.headline)
-                .padding(.horizontal)
-            
-            ScrollView {
-                VStack(alignment: .leading, spacing: Theme.spacing) {
-                    if viewModel.activeMemories.isEmpty {
-                        Text("No memories active for this conversation")
-                            .font(Theme.Typography.caption)
-                            .foregroundColor(Theme.Colors.tertiaryText)
-                            .padding()
-                    } else {
-                        ForEach(viewModel.activeMemories) { memory in
-                            MemoryCard(memory: memory)
-                        }
-                    }
-                }
-                .padding(.horizontal)
-            }
-        }
-        .padding(.vertical)
-        .background(Theme.Colors.windowBackground)
-    }
-}
-
-struct MemoryCard: View {
-    let memory: Memory
+    // MARK: - Error Handling
     
-    var body: some View {
-        VStack(alignment: .leading, spacing: Theme.smallSpacing) {
-            HStack {
-                Label(memory.category.rawValue, systemImage: categoryIcon)
-                    .font(Theme.Typography.caption)
-                    .foregroundColor(Theme.Colors.primaryAccent)
-                
-                Spacer()
-                
-                ImportanceIndicator(level: memory.importance)
-            }
-            
-            Text(memory.content)
-                .font(Theme.Typography.body)
-                .lineLimit(3)
-            
-            Text("From \(memory.extractedAt.formatted(date: .abbreviated, time: .omitted))")
-                .font(Theme.Typography.caption)
-                .foregroundColor(Theme.Colors.tertiaryText)
+    /// Get a user-friendly error message
+    func errorMessage(for error: Error) -> String {
+        if let ollamaError = error as? OllamaError {
+            return ollamaError.localizedDescription
         }
-        .padding(Theme.spacing)
-        .background(Theme.Colors.cardBackground)
-        .cornerRadius(Theme.smallCornerRadius)
+        return "An unexpected error occurred. Please try again."
     }
     
-    private var categoryIcon: String {
-        switch memory.category {
-        case .personal: return "person"
-        case .emotional: return "heart"
-        case .goals: return "target"
-        case .relationships: return "person.2"
-        case .achievements: return "trophy"
-        case .challenges: return "exclamationmark.triangle"
-        case .preferences: return "slider.horizontal.3"
-        case .routine: return "clock"
+    /// Get recovery suggestion for an error
+    func recoverySuggestion(for error: Error) -> String? {
+        if let ollamaError = error as? OllamaError {
+            return ollamaError.recoverySuggestion
         }
-    }
-}
-
-struct ImportanceIndicator: View {
-    let level: Int
-    
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(1...5, id: \.self) { index in
-                Circle()
-                    .fill(index <= level ? Theme.Colors.primaryAccent : Theme.Colors.divider)
-                    .frame(width: 6, height: 6)
-            }
-        }
+        return nil
     }
 }

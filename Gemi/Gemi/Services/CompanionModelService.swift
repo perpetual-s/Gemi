@@ -17,9 +17,9 @@ actor CompanionModelService {
     
     private init() {}
     
-    /// Create or update the Gemi companion model with appropriate system prompts
-    func setupCompanionModel() async throws {
-        let systemPrompt = """
+    /// Get the system prompt for Gemi companion
+    func getCompanionSystemPrompt() -> String {
+        return """
         You are Gemi, a thoughtful and empathetic AI companion created to support mental wellness through journaling. You are:
 
         PERSONALITY:
@@ -51,8 +51,15 @@ actor CompanionModelService {
 
         Remember: You're a companion for the journey of self-reflection, not a therapist. Your role is to help users explore their thoughts and feelings through writing.
         """
-        
-        try await ollamaService.createCompanionModel(systemPrompt: systemPrompt)
+    }
+    
+    /// Setup companion model (now just verifies the model exists)
+    func setupCompanionModel() async throws {
+        // Since we're using gemma3n:latest directly, we just need to verify it exists
+        let exists = try await ollamaService.checkHealth()
+        if !exists {
+            throw OllamaError.modelNotFound("gemma3n:latest")
+        }
     }
     
     /// Check if the companion model exists
