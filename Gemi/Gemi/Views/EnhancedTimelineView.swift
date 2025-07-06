@@ -143,27 +143,48 @@ struct EnhancedTimelineView: View {
     
     private func dateSection(for date: Date) -> some View {
         VStack(alignment: .leading, spacing: Theme.spacing) {
-            HStack {
-                Text(dateHeader(for: date))
-                    .font(Theme.Typography.headline)
-                    .foregroundColor(Theme.Colors.secondaryText)
-                
-                Spacer()
-                
-                // Daily mood indicator
-                if let dailyMood = getDailyMood(for: date) {
-                    Text(dailyMood.emoji)
-                        .font(.title3)
-                }
-            }
+            dateSectionHeader(for: date)
+            entriesForDate(date)
+        }
+    }
+    
+    @ViewBuilder
+    private func dateSectionHeader(for date: Date) -> some View {
+        HStack {
+            Text(dateHeader(for: date))
+                .font(Theme.Typography.headline)
+                .foregroundColor(Theme.Colors.secondaryText)
             
-            ForEach(groupedEntries[date] ?? []) { entry in
-                EnhancedEntryCard(
-                    entry: entry,
-                    isSelected: selectedEntry?.id == entry.id,
-                    onTap: { selectedEntry = entry },
-                    onChat: { selectedEntryForChat = entry }
-                )
+            Spacer()
+            
+            // Daily mood indicator
+            if let dailyMood = getDailyMood(for: date) {
+                Text(dailyMood.emoji)
+                    .font(.title3)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func entriesForDate(_ date: Date) -> some View {
+        ForEach(groupedEntries[date] ?? []) { entry in
+            EnhancedEntryCard(
+                entry: entry,
+                isSelected: selectedEntry?.id == entry.id,
+                onTap: { selectedEntry = entry },
+                onChat: { selectedEntryForChat = entry },
+                onToggleFavorite: {
+                    toggleFavorite(for: entry)
+                }
+            )
+        }
+    }
+    
+    private func toggleFavorite(for entry: JournalEntry) {
+        if let index = journalStore.entries.firstIndex(where: { $0.id == entry.id }) {
+            journalStore.entries[index].isFavorite.toggle()
+            Task {
+                await journalStore.saveEntry(journalStore.entries[index])
             }
         }
     }
@@ -247,14 +268,18 @@ struct EnhancedEntryCard: View {
     let isSelected: Bool
     let onTap: () -> Void
     let onChat: () -> Void
+    let onToggleFavorite: () -> Void
     
     @State private var isHovered = false
     @State private var showAIActions = false
+    @State private var isExpanded = false
+    @State private var showingReadingMode = false
     
     var body: some View {
-        Button(action: onTap) {
+        VStack(spacing: 0) {
+            // Main card content - restructured to fix star button
             VStack(alignment: .leading, spacing: 8) {
-                // Header
+                // Header with proper button separation
                 HStack {
                     Text(entry.displayTitle)
                         .font(Theme.Typography.headline)
@@ -262,24 +287,26 @@ struct EnhancedEntryCard: View {
                     
                     Spacer()
                     
-                    HStack(spacing: 8) {
-                        if entry.isFavorite {
-                            Image(systemName: "star.fill")
-                                .font(.caption)
-                                .foregroundColor(.yellow)
+                    HStack(spacing: 12) {
+                        // Interactive favorite button - now outside main button
+                        Button(action: {
+                            onToggleFavorite()
+                        }) {
+                            Image(systemName: entry.isFavorite ? "star.fill" : "star")
+                                .font(.system(size: 16))
+                                .foregroundColor(entry.isFavorite ? .yellow : Theme.Colors.secondaryText)
+                                .scaleEffect(entry.isFavorite ? 1.1 : 1)
+                                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: entry.isFavorite)
                         }
+                        .buttonStyle(.plain)
+                        .help(entry.isFavorite ? "Remove from favorites" : "Add to favorites")
                         
-                        if isHovered || showAIActions {
-                            AIQuickActions(
-                                onChat: {
-                                    onChat()
-                                },
-                                onAnalyze: {
-                                    // TODO: Quick analysis
-                                }
-                            )
-                            .transition(.scale.combined(with: .opacity))
-                        }
+                        // Expand indicator
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 12))
+                            .foregroundColor(Theme.Colors.tertiaryText)
+                            .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isExpanded)
                         
                         Text(timeString)
                             .font(Theme.Typography.caption)
@@ -287,41 +314,59 @@ struct EnhancedEntryCard: View {
                     }
                 }
                 
-                // Content preview
-                if !entry.preview.isEmpty {
-                    Text(entry.preview)
-                        .font(Theme.Typography.body)
-                        .foregroundColor(Theme.Colors.secondaryText)
-                        .lineLimit(2)
-                }
-                
-                // Tags
-                if !entry.tags.isEmpty {
-                    HStack(spacing: 6) {
-                        ForEach(entry.tags, id: \.self) { tag in
-                            TagView(tag: tag)
+                // Make the rest of the card clickable (excluding star button)
+                Button(action: {
+                    if isExpanded {
+                        showingReadingMode = true
+                    } else {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            isExpanded.toggle()
                         }
                     }
-                }
-                
-                // Footer with mood and stats
-                HStack {
-                    if let mood = entry.mood {
-                        MoodBadge(mood: mood)
-                    }
-                    
-                    Spacer()
-                    
-                    HStack(spacing: Theme.spacing) {
-                        Label("\(entry.wordCount) words", systemImage: "text.alignleft")
-                            .font(Theme.Typography.caption)
-                            .foregroundColor(Theme.Colors.tertiaryText)
+                }) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        // Content preview (expandable)
+                        if !entry.content.isEmpty {
+                            Text(entry.content)
+                                .font(Theme.Typography.body)
+                                .foregroundColor(Theme.Colors.secondaryText)
+                                .lineLimit(isExpanded ? nil : 2)
+                                .animation(.easeInOut(duration: 0.2), value: isExpanded)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .multilineTextAlignment(.leading)
+                        }
                         
-                        Label("\(entry.readingTime) min", systemImage: "clock")
-                            .font(Theme.Typography.caption)
-                            .foregroundColor(Theme.Colors.tertiaryText)
+                        // Tags
+                        if !entry.tags.isEmpty {
+                            HStack(spacing: 6) {
+                                ForEach(entry.tags, id: \.self) { tag in
+                                    TagView(tag: tag)
+                                }
+                            }
+                        }
+                        
+                        // Footer with mood and stats
+                        HStack {
+                            if let mood = entry.mood {
+                                MoodBadge(mood: mood)
+                            }
+                            
+                            Spacer()
+                            
+                            HStack(spacing: Theme.spacing) {
+                                Label("\(entry.wordCount) words", systemImage: "text.alignleft")
+                                    .font(Theme.Typography.caption)
+                                    .foregroundColor(Theme.Colors.tertiaryText)
+                                
+                                Label("\(entry.readingTime) min", systemImage: "clock")
+                                    .font(Theme.Typography.caption)
+                                    .foregroundColor(Theme.Colors.tertiaryText)
+                            }
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .buttonStyle(.plain)
             }
             .padding()
             .background(
@@ -333,8 +378,47 @@ struct EnhancedEntryCard: View {
                     )
             )
             .shadow(color: shadowColor, radius: isHovered ? 4 : 2, x: 0, y: 1)
+            
+            // Expanded actions
+            if isExpanded {
+                HStack(spacing: 12) {
+                    // Read in full view button
+                    Button {
+                        showingReadingMode = true
+                    } label: {
+                        Label("Read Full", systemImage: "book")
+                            .font(.system(size: 13))
+                    }
+                    .buttonStyle(.bordered)
+                    
+                    // Chat about this entry
+                    Button {
+                        onChat()
+                    } label: {
+                        Label("Discuss with Gemi", systemImage: "bubble.left.and.bubble.right")
+                            .font(.system(size: 13))
+                    }
+                    .buttonStyle(.borderedProminent)
+                    
+                    Spacer()
+                    
+                    // Edit button
+                    Button {
+                        onTap() // This triggers edit mode
+                    } label: {
+                        Label("Edit", systemImage: "pencil")
+                            .font(.system(size: 13))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal)
+                .padding(.bottom)
+                .transition(.asymmetric(
+                    insertion: .move(edge: .bottom).combined(with: .opacity),
+                    removal: .opacity
+                ))
+            }
         }
-        .buttonStyle(.plain)
         .onHover { hovering in
             withAnimation(Theme.quickAnimation) {
                 isHovered = hovering
@@ -342,6 +426,14 @@ struct EnhancedEntryCard: View {
                     showAIActions = false
                 }
             }
+        }
+        .sheet(isPresented: $showingReadingMode) {
+            ReadingModeView(entry: entry, onDismiss: {
+                showingReadingMode = false
+            }, onChat: {
+                showingReadingMode = false
+                onChat()
+            })
         }
     }
     
@@ -480,4 +572,152 @@ struct MoodTrend {
     let dominantMood: Mood
     let summary: String
     let recommendation: String
+}
+
+// MARK: - Reading Mode View
+
+struct ReadingModeView: View {
+    let entry: JournalEntry
+    let onDismiss: () -> Void
+    let onChat: () -> Void
+    
+    @State private var showingShareMenu = false
+    @Environment(\.colorScheme) var colorScheme
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Enhanced header with visual design
+                    VStack(alignment: .leading, spacing: 16) {
+                        // Close button at top
+                        HStack {
+                            Spacer()
+                            Button(action: onDismiss) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(Theme.Colors.tertiaryText)
+                                    .background(Circle().fill(Color.white.opacity(0.8)))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
+                        
+                        // Title and metadata
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(entry.displayTitle)
+                                .font(.system(size: 28, weight: .bold, design: .rounded))
+                                .foregroundColor(.primary)
+                            
+                            HStack(spacing: 16) {
+                                // Date
+                                Label(entry.createdAt.formatted(date: .abbreviated, time: .shortened), systemImage: "calendar")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(Theme.Colors.secondaryText)
+                                
+                                // Mood
+                                if let mood = entry.mood {
+                                    HStack(spacing: 4) {
+                                        Text(mood.emoji)
+                                            .font(.system(size: 16))
+                                        Text(mood.rawValue.capitalized)
+                                            .font(.system(size: 13))
+                                            .foregroundColor(Theme.Colors.secondaryText)
+                                    }
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 4)
+                                    .background(
+                                        Capsule()
+                                            .fill(Theme.Colors.cardBackground)
+                                    )
+                                }
+                                
+                                Spacer()
+                                
+                                // Reading time
+                                HStack(spacing: 4) {
+                                    Image(systemName: "clock")
+                                        .font(.system(size: 12))
+                                    Text("\(entry.readingTime) min")
+                                        .font(.system(size: 13))
+                                }
+                                .foregroundColor(Theme.Colors.tertiaryText)
+                            }
+                        }
+                        .padding(.horizontal, 30)
+                    }
+                    .background(
+                        LinearGradient(
+                            colors: [Theme.Colors.cardBackground, Theme.Colors.windowBackground],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    
+                    // Main content area
+                    VStack(alignment: .leading, spacing: 24) {
+                        // Content with better typography
+                        Text(entry.content)
+                            .font(.system(size: 17, weight: .regular, design: .default))
+                            .lineSpacing(8)
+                            .foregroundColor(.primary.opacity(0.9))
+                            .textSelection(.enabled)
+                            .padding(.horizontal, 30)
+                            .padding(.top, 24)
+                        
+                        // Tags section
+                        if !entry.tags.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Tags")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(Theme.Colors.tertiaryText)
+                                    .textCase(.uppercase)
+                                
+                                HStack(spacing: 8) {
+                                    ForEach(entry.tags, id: \.self) { tag in
+                                        Text("#\(tag)")
+                                            .font(.system(size: 14))
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 6)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 6)
+                                                    .fill(Theme.Colors.primaryAccent.opacity(0.1))
+                                            )
+                                            .foregroundColor(Theme.Colors.primaryAccent)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 30)
+                        }
+                        
+                        // Action buttons
+                        HStack(spacing: 12) {
+                            Button(action: onChat) {
+                                Label("Discuss with Gemi", systemImage: "bubble.left.and.bubble.right")
+                                    .font(.system(size: 14, weight: .medium))
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.large)
+                            
+                            Button(action: {
+                                // Share functionality
+                                showingShareMenu = true
+                            }) {
+                                Label("Share", systemImage: "square.and.arrow.up")
+                                    .font(.system(size: 14, weight: .medium))
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.large)
+                        }
+                        .padding(.horizontal, 30)
+                        .padding(.bottom, 30)
+                    }
+                    .background(Theme.Colors.windowBackground)
+                }
+            }
+        }
+        .frame(minWidth: 600, minHeight: 500)
+        .background(Theme.Colors.windowBackground)
+    }
 }
