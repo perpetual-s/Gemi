@@ -62,10 +62,5 @@ Gemi/Scripts/Diagnostics/*.md
 *_backup.swift
 *_backup.*
 
-# Claude AI files and exports
-.claude
-.claude/
-claude_export*
-
-# Markdown files in Gemi directory
-Gemi/*.md 
+# Markdown files in Gemi directory (including subdirectories)
+Gemi/**/*.md 
