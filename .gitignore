@@ -60,4 +60,9 @@ Gemi/Scripts/Diagnostics/*.md
 *.orig
 *.bak
 *_backup.swift
-*_backup.* 
+*_backup.*
+
+# Claude AI files and exports
+.claude
+.claude/
+claude_export* 
