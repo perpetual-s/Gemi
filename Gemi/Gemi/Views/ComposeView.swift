@@ -411,7 +411,7 @@ class AutoSaveTimer: ObservableObject {
     func trigger() {
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 self?.onTrigger?()
             }
         }
