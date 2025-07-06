@@ -13,6 +13,25 @@ final class DatabaseManager: @unchecked Sendable {
     
     private init() {}
     
+    /// Test if the database connection is working
+    func testConnection() async -> Bool {
+        return await withCheckedContinuation { continuation in
+            queue.async {
+                guard let db = self.database else {
+                    continuation.resume(returning: false)
+                    return
+                }
+                
+                // Try a simple query to test connection
+                var statement: OpaquePointer?
+                let result = sqlite3_prepare_v2(db, "SELECT 1", -1, &statement, nil) == SQLITE_OK
+                sqlite3_finalize(statement)
+                
+                continuation.resume(returning: result)
+            }
+        }
+    }
+    
     func initialize() async throws {
         try await withCheckedThrowingContinuation { continuation in
             queue.async(flags: .barrier) {

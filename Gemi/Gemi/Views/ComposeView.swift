@@ -191,7 +191,7 @@ struct ComposeView: View {
                 .cornerRadius(Theme.smallCornerRadius)
                 .frame(minHeight: 300)
                 .focused($isContentFocused)
-                .onChange(of: content) { _ in
+                .onChange(of: content) {
                     updateWordCount()
                     autoSaveTimer.trigger()
                 }
@@ -403,14 +403,17 @@ struct FlowLayout: Layout {
     }
 }
 
+@MainActor
 class AutoSaveTimer: ObservableObject {
     private var timer: Timer?
     var onTrigger: (() -> Void)?
     
     func trigger() {
         timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
-            self.onTrigger?()
+        timer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
+            Task { @MainActor in
+                self?.onTrigger?()
+            }
         }
     }
     
