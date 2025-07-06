@@ -176,7 +176,7 @@ actor OllamaProcessManager {
         let outputStorage = ProcessOutputStorage()
         
         // Set up handlers to capture output
-        outputPipe.fileHandleForReading.readabilityHandler = { handle in
+        outputPipe.fileHandleForReading.readabilityHandler = { [outputStorage] handle in
             let data = handle.availableData
             if let output = String(data: data, encoding: .utf8), !output.isEmpty {
                 Task {
@@ -186,7 +186,7 @@ actor OllamaProcessManager {
             }
         }
         
-        errorPipe.fileHandleForReading.readabilityHandler = { handle in
+        errorPipe.fileHandleForReading.readabilityHandler = { [outputStorage] handle in
             let data = handle.availableData
             if let error = String(data: data, encoding: .utf8), !error.isEmpty {
                 Task {
