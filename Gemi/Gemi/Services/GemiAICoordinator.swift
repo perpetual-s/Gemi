@@ -49,13 +49,17 @@ final class GemiAICoordinator: ObservableObject {
             Task {
                 do {
                     // Build full context
-                    let contextMessages = try await buildContextForMessage(message)
+                    var contextMessages = try await buildContextForMessage(message)
+                    
+                    // Add memories as a system message if available
+                    if !memories.isEmpty {
+                        let memoriesContext = "Based on your journal entries, here's what I know about you:\n\n" + memories.joined(separator: "\n")
+                        let systemMessage = ChatMessage(role: .system, content: memoriesContext)
+                        contextMessages.insert(systemMessage, at: 0)
+                    }
                     
                     // Stream the response
-                    for try await response in await ollamaService.chat(
-                        messages: contextMessages,
-                        context: memories.isEmpty ? nil : memories.joined(separator: "\n")
-                    ) {
+                    for try await response in await ollamaService.chat(messages: contextMessages) {
                         continuation.yield(response)
                         
                         if response.done {
