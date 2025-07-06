@@ -65,4 +65,7 @@ Gemi/Scripts/Diagnostics/*.md
 # Claude AI files and exports
 .claude
 .claude/
-claude_export* 
+claude_export*
+
+# Markdown files in Gemi directory
+Gemi/*.md 
