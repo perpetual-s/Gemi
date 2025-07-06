@@ -8,10 +8,10 @@ actor OllamaService {
     private let session: URLSession
     
     /// The model name to use for all API calls
-    private let modelName = "gemma3n:latest"
+    private let modelName = ModelNameHelper.normalize("gemma3n")
     
     /// Custom model name for Gemi companion
-    private let companionModelName = "gemi-companion"
+    private let companionModelName = ModelNameHelper.normalize("gemi-companion")
     
     private init() {
         let configuration = URLSessionConfiguration.default
@@ -32,7 +32,10 @@ actor OllamaService {
         
         // Check if our model is available
         if let models = try? JSONDecoder().decode(ModelsResponse.self, from: data) {
-            return models.models.contains { $0.name == modelName || $0.name == companionModelName }
+            return models.models.contains { model in
+                ModelNameHelper.isSameModel(model.name, modelName) ||
+                ModelNameHelper.isSameModel(model.name, companionModelName)
+            }
         }
         
         return false
