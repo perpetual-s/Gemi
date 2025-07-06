@@ -127,7 +127,7 @@ actor OllamaService {
         PARAMETER top_p 0.9
         PARAMETER top_k 40
         PARAMETER num_ctx 4096
-        """
+"""
         
         let createRequest = CreateModelRequest(
             name: companionModelName,
