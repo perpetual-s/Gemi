@@ -498,6 +498,7 @@ enum OllamaProcessError: LocalizedError {
     case startupTimeout
     case maxAttemptsReached
     case portInUse
+    case serverNotResponding
     
     var errorDescription: String? {
         switch self {
@@ -513,6 +514,8 @@ enum OllamaProcessError: LocalizedError {
             return "Failed to start Ollama after multiple attempts"
         case .portInUse:
             return "Port 11434 is already in use by another process"
+        case .serverNotResponding:
+            return "Ollama server is not responding"
         }
     }
 }
