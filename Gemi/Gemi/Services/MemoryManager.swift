@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 /// Manages AI memories extracted from journal entries
 @MainActor
@@ -10,6 +11,7 @@ final class MemoryManager: ObservableObject {
     
     private let companionService = CompanionModelService.shared
     private let databaseManager = DatabaseManager.shared
+    private let logger = Logger(subsystem: "com.gemi.app", category: "MemoryManager")
     
     private init() {
         Task {
@@ -19,9 +21,9 @@ final class MemoryManager: ObservableObject {
     
     /// Load all memories from the database
     func loadMemories() async {
-        // For now, memories are loaded from the companion service
-        // In a full implementation, these would be loaded from SQLite
-        memories = []
+        // TODO: Load memories from database once Memory conforms to Sendable
+        // For now, memories are loaded from in-memory storage
+        logger.info("Loaded \(self.memories.count) memories from memory")
     }
     
     /// Process journal entries to extract memories
@@ -45,6 +47,11 @@ final class MemoryManager: ObservableObject {
                 importance: memoryData.importance
             )
             memories.append(memory)
+            
+            // TODO: Save to database once Memory conforms to Sendable
+            // Task {
+            //     try? await databaseManager.saveMemory(memoryData)
+            // }
         }
         
         // Sort memories by importance and date
@@ -88,6 +95,11 @@ final class MemoryManager: ObservableObject {
     /// Delete a specific memory
     func deleteMemory(_ memory: Memory) {
         memories.removeAll { $0.id == memory.id }
+        
+        // TODO: Delete from database once Memory conforms to Sendable
+        // Task {
+        //     try? await databaseManager.deleteMemory(memory.id)
+        // }
     }
     
     /// Update memory importance
@@ -106,6 +118,9 @@ final class MemoryManager: ObservableObject {
     /// Clear all memories (with user confirmation)
     func clearAllMemories() async {
         memories.removeAll()
+        
+        // TODO: Clear from database once Memory conforms to Sendable
+        // try? await databaseManager.clearAllMemories()
     }
     
     /// Get memories grouped by category

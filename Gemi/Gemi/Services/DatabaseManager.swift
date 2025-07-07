@@ -612,6 +612,91 @@ actor DatabaseManager {
             throw DatabaseError.failedToSave
         }
     }
+    
+    /* Temporarily disabled until Memory conforms to Sendable
+    func loadMemories() async throws -> [Memory] {
+        guard let db = database else {
+            throw DatabaseError.notInitialized
+        }
+        
+        let query = """
+            SELECT id, content, source_entry_id, category, importance, extracted_at
+            FROM memories
+            ORDER BY importance DESC, extracted_at DESC
+        """
+        
+        var statement: OpaquePointer?
+        defer { sqlite3_finalize(statement) }
+        
+        guard sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK else {
+            throw DatabaseError.failedToPrepareStatement
+        }
+        
+        var memories: [Memory] = []
+        
+        while sqlite3_step(statement) == SQLITE_ROW {
+            guard let idString = sqlite3_column_text(statement, 0),
+                  let id = UUID(uuidString: String(cString: idString)),
+                  let content = sqlite3_column_text(statement, 1),
+                  let sourceEntryIdString = sqlite3_column_text(statement, 2),
+                  let sourceEntryId = UUID(uuidString: String(cString: sourceEntryIdString)),
+                  let categoryString = sqlite3_column_text(statement, 3) else {
+                continue
+            }
+            
+            let importance = Int(sqlite3_column_int(statement, 4))
+            let extractedAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 5))
+            
+            let category = Memory.MemoryCategory(rawValue: String(cString: categoryString)) ?? .personal
+            
+            let memory = Memory(
+                id: id,
+                content: String(cString: content),
+                sourceEntryID: sourceEntryId,
+                category: category,
+                importance: importance,
+                extractedAt: extractedAt
+            )
+            
+            memories.append(memory)
+        }
+        
+        return memories
+    }
+    
+    func deleteMemory(_ id: UUID) async throws {
+        guard let db = database else {
+            throw DatabaseError.notInitialized
+        }
+        
+        let query = "DELETE FROM memories WHERE id = ?"
+        
+        var statement: OpaquePointer?
+        defer { sqlite3_finalize(statement) }
+        
+        guard sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK else {
+            throw DatabaseError.failedToPrepareStatement
+        }
+        
+        sqlite3_bind_text(statement, 1, id.uuidString, -1, SQLITE_TRANSIENT)
+        
+        guard sqlite3_step(statement) == SQLITE_DONE else {
+            throw DatabaseError.failedToDelete
+        }
+    }
+    
+    func clearAllMemories() async throws {
+        guard let db = database else {
+            throw DatabaseError.notInitialized
+        }
+        
+        let query = "DELETE FROM memories"
+        
+        guard sqlite3_exec(db, query, nil, nil, nil) == SQLITE_OK else {
+            throw DatabaseError.failedToDelete
+        }
+    }
+    */
 }
 
 // MARK: - Database Errors

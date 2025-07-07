@@ -7,6 +7,13 @@ struct SearchView: View {
     @State private var searchResults: [JournalEntry] = []
     @State private var isSearching = false
     @State private var searchTask: Task<Void, Never>?
+    @State private var selectedEntry: JournalEntry?
+    @State private var showingReadingView = false
+    @State private var readingEntry: JournalEntry?
+    @State private var showingComposeView = false
+    @State private var editingEntry: JournalEntry?
+    @State private var showingChat = false
+    @State private var chatEntry: JournalEntry?
     
     var body: some View {
         VStack(spacing: 0) {
@@ -106,15 +113,91 @@ struct SearchView: View {
                 ForEach(searchResults) { entry in
                     EnhancedEntryCard(
                         entry: entry,
-                        isSelected: false,
-                        onTap: {},
-                        onChat: {},
-                        onToggleFavorite: {}
+                        isSelected: selectedEntry?.id == entry.id,
+                        onTap: {
+                            selectedEntry = entry
+                        },
+                        onChat: {
+                            chatEntry = entry
+                            showingChat = true
+                        },
+                        onToggleFavorite: {
+                            Task {
+                                await toggleFavorite(for: entry)
+                            }
+                        },
+                        onEdit: {
+                            editingEntry = entry
+                            showingComposeView = true
+                        },
+                        onDelete: {
+                            Task {
+                                await journalStore.deleteEntry(entry)
+                                // Re-run search after deletion
+                                performRealtimeSearch(searchQuery)
+                            }
+                        },
+                        onRead: {
+                            readingEntry = entry
+                            showingReadingView = true
+                        }
                     )
                     .padding(.horizontal)
                 }
             }
             .padding(.vertical)
+        }
+        .sheet(isPresented: $showingReadingView) {
+            if let entry = readingEntry {
+                EnhancedEntryReadingView(
+                    entry: entry,
+                    onEdit: {
+                        showingReadingView = false
+                        editingEntry = entry
+                        showingComposeView = true
+                    },
+                    onDelete: {
+                        showingReadingView = false
+                        Task {
+                            await journalStore.deleteEntry(entry)
+                            // Re-run search after deletion
+                            performRealtimeSearch(searchQuery)
+                        }
+                    },
+                    onChat: {
+                        showingReadingView = false
+                        chatEntry = entry
+                        showingChat = true
+                    }
+                )
+                .frame(minWidth: 700, minHeight: 600)
+            }
+        }
+        .sheet(isPresented: $showingComposeView) {
+            if let entry = editingEntry {
+                ProductionComposeView(
+                    entry: entry,
+                    onSave: { updatedEntry in
+                        Task {
+                            await journalStore.updateEntry(updatedEntry)
+                            showingComposeView = false
+                            editingEntry = nil
+                            // Re-run search to update results
+                            performRealtimeSearch(searchQuery)
+                        }
+                    },
+                    onCancel: {
+                        showingComposeView = false
+                        editingEntry = nil
+                    }
+                )
+            }
+        }
+        .sheet(isPresented: $showingChat) {
+            if let entry = chatEntry {
+                GemiChatView(contextEntry: entry)
+                    .frame(minWidth: 800, minHeight: 600)
+            }
         }
     }
     
@@ -152,6 +235,16 @@ struct SearchView: View {
                     isSearching = false
                 }
             }
+        }
+    }
+    
+    private func toggleFavorite(for entry: JournalEntry) async {
+        let updatedEntry = entry
+        updatedEntry.isFavorite.toggle()
+        await journalStore.updateEntry(updatedEntry)
+        // Update search results to reflect the change
+        if let index = searchResults.firstIndex(where: { $0.id == entry.id }) {
+            searchResults[index] = updatedEntry
         }
     }
 }
