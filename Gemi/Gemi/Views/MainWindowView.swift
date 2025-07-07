@@ -139,6 +139,11 @@ final class JournalStore: ObservableObject {
         do {
             try await databaseManager.saveEntry(entry)
             await loadEntries()
+            
+            // Extract memories from the new entry using AI
+            Task {
+                await GemiAICoordinator.shared.processJournalEntry(entry)
+            }
         } catch {
             self.error = error
             print("Failed to save entry: \(error)")

@@ -564,6 +564,54 @@ actor DatabaseManager {
         
         return content
     }
+    
+    // MARK: - Memory Management
+    
+    func saveMemory(_ memoryData: MemoryData) async throws {
+        guard let db = database else {
+            throw DatabaseError.notInitialized
+        }
+        
+        let createTableQuery = """
+            CREATE TABLE IF NOT EXISTS memories (
+                id TEXT PRIMARY KEY,
+                content TEXT NOT NULL,
+                source_entry_id TEXT NOT NULL,
+                category TEXT NOT NULL,
+                importance INTEGER NOT NULL,
+                extracted_at REAL NOT NULL,
+                FOREIGN KEY (source_entry_id) REFERENCES entries(id)
+            )
+        """
+        
+        if sqlite3_exec(db, createTableQuery, nil, nil, nil) != SQLITE_OK {
+            throw DatabaseError.failedToCreateTable
+        }
+        
+        let insertQuery = """
+            INSERT OR REPLACE INTO memories (id, content, source_entry_id, category, importance, extracted_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """
+        
+        var statement: OpaquePointer?
+        defer { sqlite3_finalize(statement) }
+        
+        guard sqlite3_prepare_v2(db, insertQuery, -1, &statement, nil) == SQLITE_OK else {
+            throw DatabaseError.failedToPrepareStatement
+        }
+        
+        let memoryId = UUID()
+        sqlite3_bind_text(statement, 1, memoryId.uuidString, -1, SQLITE_TRANSIENT)
+        sqlite3_bind_text(statement, 2, memoryData.content, -1, SQLITE_TRANSIENT)
+        sqlite3_bind_text(statement, 3, memoryData.sourceEntryID.uuidString, -1, SQLITE_TRANSIENT)
+        sqlite3_bind_text(statement, 4, memoryData.category.rawValue, -1, SQLITE_TRANSIENT)
+        sqlite3_bind_int(statement, 5, Int32(memoryData.importance))
+        sqlite3_bind_double(statement, 6, Date().timeIntervalSince1970)
+        
+        guard sqlite3_step(statement) == SQLITE_DONE else {
+            throw DatabaseError.failedToSave
+        }
+    }
 }
 
 // MARK: - Database Errors
