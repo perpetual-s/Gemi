@@ -219,7 +219,7 @@ final class EnhancedChatViewModel: ObservableObject {
                 
                 // Save messages after ensuring all updates are complete
                 await MainActor.run { [weak self] in
-                    Task { @MainActor [weak self] in
+                    _ = Task { @MainActor [weak self] in
                         // Small delay to ensure message content is fully updated
                         try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
                         self?.saveMessages()
