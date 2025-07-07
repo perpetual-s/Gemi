@@ -119,21 +119,28 @@ final class GemiAICoordinator: ObservableObject {
         }
         
         let prompt = """
-        Read this journal entry and extract 2-5 things worth remembering about the person who wrote it.
-        These could be facts about them, their feelings, goals, relationships, or anything meaningful.
+        Extract literal facts from this journal entry. Only extract what is explicitly stated, not interpretations.
         
         Journal Entry:
         \(entry.content)
         
-        Respond with a simple list of memories, one per line. Keep each memory concise and clear.
-        For example:
-        - Lives in California and wants to explore the area
+        List 2-5 factual statements from the entry. Be literal and specific.
+        DO NOT interpret or add meaning. Only extract what was actually written.
+        
+        Examples of good extractions:
+        - Name is John
+        - Lives in California  
         - Has a meeting on August 2nd
-        - Feeling grateful today
+        - Wants to check something out
+        
+        Examples of bad extractions (too interpretive):
+        - Seems curious about life
+        - Expresses desire for exploration
+        - Appears to be ambitious
         """
         
         let messages = [
-            ChatMessage(role: .system, content: "You are an AI that extracts memorable information from journal entries. Be concise and focus on what's worth remembering."),
+            ChatMessage(role: .system, content: "You extract literal facts from journal entries. Never interpret or add meaning. Only state what is explicitly written."),
             ChatMessage(role: .user, content: prompt)
         ]
         
@@ -183,6 +190,8 @@ final class GemiAICoordinator: ObservableObject {
     }
     
     private func parseSimpleMemories(_ response: String, for entry: JournalEntry) -> [MemoryData] {
+        logger.debug("Parsing AI response: \(response)")
+        
         // Split by newlines and look for lines that start with -, *, or are meaningful sentences
         let lines = response.components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -191,21 +200,33 @@ final class GemiAICoordinator: ObservableObject {
         var memories: [MemoryData] = []
         
         for line in lines {
-            // Remove common list markers
+            // Remove common list markers and numbers
             let cleanedLine = line
-                .replacingOccurrences(of: "^[-*•]\\s*", with: "", options: .regularExpression)
+                .replacingOccurrences(of: "^[-*•\\d.]\\s*", with: "", options: .regularExpression)
+                .replacingOccurrences(of: "^\\d+\\.\\s*", with: "", options: .regularExpression)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             
-            // Skip empty lines or very short ones
-            if cleanedLine.count < 10 {
+            // Skip empty lines, very short ones, or meta text
+            if cleanedLine.count < 5 ||
+               cleanedLine.lowercased().contains("example") ||
+               cleanedLine.lowercased().contains("extraction") ||
+               cleanedLine.lowercased().contains("here are") ||
+               cleanedLine.lowercased().contains("facts from") {
                 continue
             }
             
+            // Remove quotes if present
+            let finalLine = cleanedLine
+                .replacingOccurrences(of: "^\"", with: "", options: .regularExpression)
+                .replacingOccurrences(of: "\"$", with: "", options: .regularExpression)
+            
             // Create a simple memory
             memories.append(MemoryData(
-                content: cleanedLine,
+                content: finalLine,
                 sourceEntryID: entry.id
             ))
+            
+            logger.debug("Extracted memory: \(finalLine)")
             
             // Limit to 5 memories per entry
             if memories.count >= 5 {
