@@ -105,6 +105,24 @@ struct EnhancedTimelineView: View {
                 .frame(minWidth: 700, minHeight: 600)
             }
         }
+        .onKeyPress(.return) {
+            // Enter/Return key to open selected entry for reading
+            if let selected = selectedEntry {
+                readingEntry = selected
+                showingReadingView = true
+                return .handled
+            }
+            return .ignored
+        }
+        .onKeyPress(.space) {
+            // Space key to open selected entry for reading (alternative)
+            if let selected = selectedEntry {
+                readingEntry = selected
+                showingReadingView = true
+                return .handled
+            }
+            return .ignored
+        }
     }
     
     private var header: some View {
@@ -212,7 +230,10 @@ struct EnhancedTimelineView: View {
             EnhancedEntryCard(
                 entry: entry,
                 isSelected: selectedEntry?.id == entry.id,
-                onTap: { selectedEntry = entry },
+                onTap: { 
+                    // Select the entry
+                    selectedEntry = entry
+                },
                 onChat: { selectedEntryForChat = entry },
                 onToggleFavorite: {
                     toggleFavorite(for: entry)
@@ -379,8 +400,12 @@ struct EnhancedEntryCard: View {
                 
                 // Make the rest of the card clickable (excluding star button)
                 Button(action: {
-                    // Show reading mode view instead of calling onRead
-                    showingReadingMode = true
+                    // Call the onRead callback if provided, otherwise show local reading mode
+                    if let onRead = onRead {
+                        onRead()
+                    } else {
+                        showingReadingMode = true
+                    }
                 }) {
                     VStack(alignment: .leading, spacing: 8) {
                         // Content preview (expandable)
@@ -432,6 +457,7 @@ struct EnhancedEntryCard: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.plain)
+                .help("Click to read • Double-click to edit")
             }
             .padding()
             .background(
@@ -443,6 +469,59 @@ struct EnhancedEntryCard: View {
                     )
             )
             .shadow(color: shadowColor, radius: isHovered ? 4 : 2, x: 0, y: 1)
+            .onTapGesture(count: 2) {
+                // Double-click to edit
+                if let onEdit = onEdit {
+                    onEdit()
+                }
+            }
+            .contextMenu {
+                Button {
+                    if let onRead = onRead {
+                        onRead()
+                    } else {
+                        showingReadingMode = true
+                    }
+                } label: {
+                    Label("Read Entry", systemImage: "book")
+                }
+                
+                Button {
+                    if let onEdit = onEdit {
+                        onEdit()
+                    }
+                } label: {
+                    Label("Edit Entry", systemImage: "pencil")
+                }
+                
+                Button {
+                    onChat()
+                } label: {
+                    Label("Chat about Entry", systemImage: "bubble.left.and.bubble.right")
+                }
+                
+                Divider()
+                
+                Button {
+                    localIsFavorite.toggle()
+                    onToggleFavorite()
+                } label: {
+                    Label(
+                        localIsFavorite ? "Remove from Favorites" : "Add to Favorites",
+                        systemImage: localIsFavorite ? "star.fill" : "star"
+                    )
+                }
+                
+                Divider()
+                
+                Button(role: .destructive) {
+                    if let onDelete = onDelete {
+                        onDelete()
+                    }
+                } label: {
+                    Label("Delete Entry", systemImage: "trash")
+                }
+            }
             
         }
         .onAppear {
@@ -488,14 +567,22 @@ struct EnhancedEntryCard: View {
     
     private var cardBackgroundColor: Color {
         if isSelected {
-            return Theme.Colors.selectedBackground
+            return Theme.Colors.primaryAccent.opacity(0.08)
+        } else if isHovered {
+            return Theme.Colors.cardBackground.opacity(0.95)
         } else {
             return Theme.Colors.cardBackground
         }
     }
     
     private var borderColor: Color {
-        isSelected ? Theme.Colors.primaryAccent : Color.clear
+        if isSelected {
+            return Theme.Colors.primaryAccent
+        } else if isHovered {
+            return Theme.Colors.primaryAccent.opacity(0.3)
+        } else {
+            return Color.clear
+        }
     }
     
     private var shadowColor: Color {

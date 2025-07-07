@@ -7,6 +7,8 @@ struct FavoritesView: View {
     @State private var chatEntry: JournalEntry?
     @State private var showingComposeView = false
     @State private var editingEntry: JournalEntry?
+    @State private var showingReadingView = false
+    @State private var readingEntry: JournalEntry?
     
     private var favoriteEntries: [JournalEntry] {
         journalStore.entries.filter { $0.isFavorite }
@@ -71,8 +73,6 @@ struct FavoritesView: View {
                                 isSelected: selectedEntry?.id == entry.id,
                                 onTap: {
                                     selectedEntry = entry
-                                    editingEntry = entry
-                                    showingComposeView = true
                                 },
                                 onChat: {
                                     chatEntry = entry
@@ -82,6 +82,19 @@ struct FavoritesView: View {
                                     Task {
                                         await toggleFavorite(for: entry)
                                     }
+                                },
+                                onEdit: {
+                                    editingEntry = entry
+                                    showingComposeView = true
+                                },
+                                onDelete: {
+                                    Task {
+                                        await journalStore.deleteEntry(entry)
+                                    }
+                                },
+                                onRead: {
+                                    readingEntry = entry
+                                    showingReadingView = true
                                 }
                             )
                             .transition(.asymmetric(
@@ -117,6 +130,30 @@ struct FavoritesView: View {
             if let entry = chatEntry {
                 GemiChatView(contextEntry: entry)
                     .frame(minWidth: 800, minHeight: 600)
+            }
+        }
+        .sheet(isPresented: $showingReadingView) {
+            if let entry = readingEntry {
+                EnhancedEntryReadingView(
+                    entry: entry,
+                    onEdit: {
+                        showingReadingView = false
+                        editingEntry = entry
+                        showingComposeView = true
+                    },
+                    onDelete: {
+                        showingReadingView = false
+                        Task {
+                            await journalStore.deleteEntry(entry)
+                        }
+                    },
+                    onChat: {
+                        showingReadingView = false
+                        chatEntry = entry
+                        showingChat = true
+                    }
+                )
+                .frame(minWidth: 700, minHeight: 600)
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: favoriteEntries.count)

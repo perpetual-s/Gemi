@@ -2,6 +2,11 @@ import SwiftUI
 import LocalAuthentication
 
 struct SettingsView: View {
+    @State private var showExportSuccess = false
+    @State private var showExportError = false
+    @State private var showBackupSuccess = false
+    @State private var showBackupError = false
+    @State private var errorMessage = ""
     let journalStore: JournalStore
     @AppStorage("ollamaHost") private var ollamaHost = OllamaConfiguration.shared.host
     @AppStorage("ollamaPort") private var ollamaPort = OllamaConfiguration.shared.port
@@ -111,6 +116,26 @@ struct SettingsView: View {
         .onAppear {
             checkConnection()
             loadAvailableModels()
+        }
+        .alert("Export Successful", isPresented: $showExportSuccess) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Your journal entries have been exported successfully.")
+        }
+        .alert("Export Failed", isPresented: $showExportError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(errorMessage)
+        }
+        .alert("Backup Successful", isPresented: $showBackupSuccess) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Your database has been backed up successfully.")
+        }
+        .alert("Backup Failed", isPresented: $showBackupError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(errorMessage)
         }
     }
     
@@ -530,9 +555,10 @@ struct SettingsView: View {
                     let data = try encoder.encode(entries)
                     try data.write(to: url)
                     
-                    // Show success
+                    showExportSuccess = true
                 } catch {
-                    // Show error
+                    errorMessage = error.localizedDescription
+                    showExportError = true
                 }
             }
         }
@@ -546,13 +572,28 @@ struct SettingsView: View {
         if savePanel.runModal() == .OK, let url = savePanel.url {
             Task {
                 do {
-                    // TODO: Implement database backup
-                    let dbURL = URL(fileURLWithPath: "~/Library/Application Support/Gemi/gemi.db")
-                    try FileManager.default.copyItem(at: dbURL, to: url)
+                    // Get proper application support directory
+                    let appSupportURL = try FileManager.default.url(
+                        for: .applicationSupportDirectory,
+                        in: .userDomainMask,
+                        appropriateFor: nil,
+                        create: false
+                    )
+                    let bundleID = Bundle.main.bundleIdentifier ?? "com.gemi.app"
+                    let sourceURL = appSupportURL
+                        .appendingPathComponent(bundleID)
+                        .appendingPathComponent("gemi.db")
                     
-                    // Show success
+                    if FileManager.default.fileExists(atPath: sourceURL.path) {
+                        try FileManager.default.copyItem(at: sourceURL, to: url)
+                        showBackupSuccess = true
+                    } else {
+                        errorMessage = "Database file not found"
+                        showBackupError = true
+                    }
                 } catch {
-                    // Show error
+                    errorMessage = error.localizedDescription
+                    showBackupError = true
                 }
             }
         }
