@@ -5,12 +5,15 @@ struct EnhancedTimelineView: View {
     @ObservedObject var journalStore: JournalStore
     @Binding var selectedEntry: JournalEntry?
     let onNewEntry: () -> Void
+    var onEditEntry: ((JournalEntry) -> Void)? = nil
     
     @State private var groupedEntries: [Date: [JournalEntry]] = [:]
     @State private var showingAIInsights = false
     @State private var moodTrend: MoodTrend?
     @State private var selectedEntryForChat: JournalEntry?
     @State private var showingFloatingChat = false
+    @State private var readingEntry: JournalEntry?
+    @State private var showingReadingView = false
     
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -70,6 +73,29 @@ struct EnhancedTimelineView: View {
         .sheet(isPresented: $showingFloatingChat) {
             GemiChatView()
                 .frame(width: 900, height: 600)
+        }
+        .sheet(isPresented: $showingReadingView) {
+            if let entry = readingEntry {
+                EntryReadingView(
+                    entry: entry,
+                    onEdit: {
+                        showingReadingView = false
+                        onEditEntry?(entry)
+                    },
+                    onDelete: {
+                        showingReadingView = false
+                        Task {
+                            await journalStore.deleteEntry(entry)
+                        }
+                    },
+                    onChat: {
+                        showingReadingView = false
+                        selectedEntryForChat = entry
+                        showingFloatingChat = true
+                    }
+                )
+                .frame(minWidth: 700, minHeight: 600)
+            }
         }
     }
     
@@ -182,6 +208,18 @@ struct EnhancedTimelineView: View {
                 onChat: { selectedEntryForChat = entry },
                 onToggleFavorite: {
                     toggleFavorite(for: entry)
+                },
+                onEdit: {
+                    onEditEntry?(entry)
+                },
+                onDelete: {
+                    Task {
+                        await journalStore.deleteEntry(entry)
+                    }
+                },
+                onRead: {
+                    readingEntry = entry
+                    showingReadingView = true
                 }
             )
         }
@@ -276,6 +314,9 @@ struct EnhancedEntryCard: View {
     let onTap: () -> Void
     let onChat: () -> Void
     let onToggleFavorite: () -> Void
+    var onEdit: (() -> Void)? = nil
+    var onDelete: (() -> Void)? = nil
+    var onRead: (() -> Void)? = nil
     
     @State private var isHovered = false
     @State private var showAIActions = false
@@ -323,12 +364,8 @@ struct EnhancedEntryCard: View {
                 
                 // Make the rest of the card clickable (excluding star button)
                 Button(action: {
-                    if isExpanded {
-                        showingReadingMode = true
-                    } else {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                            isExpanded.toggle()
-                        }
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        isExpanded.toggle()
                     }
                 }) {
                     VStack(alignment: .leading, spacing: 8) {
@@ -391,7 +428,7 @@ struct EnhancedEntryCard: View {
                 HStack(spacing: Theme.spacing) {
                     // Read in full view button
                     Button {
-                        showingReadingMode = true
+                        onRead?()
                     } label: {
                         Label("Read Full", systemImage: "book")
                             .font(.system(size: 13))

@@ -3,6 +3,9 @@ import SQLite3
 import CryptoKit
 import Security
 
+// SQLite3 constants not exposed in Swift
+private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+
 final class DatabaseManager: @unchecked Sendable {
     static let shared = DatabaseManager()
     
@@ -39,9 +42,44 @@ final class DatabaseManager: @unchecked Sendable {
                     try self.setupDatabase()
                     continuation.resume()
                 } catch {
-                    continuation.resume(throwing: error)
+                    print("Database initialization failed: \(error)")
+                    // Try to reset and reinitialize
+                    do {
+                        self.resetDatabase()
+                        try self.setupDatabase()
+                        continuation.resume()
+                    } catch {
+                        continuation.resume(throwing: error)
+                    }
                 }
             }
+        }
+    }
+    
+    private func resetDatabase() {
+        if let db = database {
+            sqlite3_close(db)
+            database = nil
+        }
+        
+        // Delete the database file to start fresh
+        do {
+            let appSupportURL = try FileManager.default.url(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask,
+                appropriateFor: nil,
+                create: false
+            )
+            let bundleID = Bundle.main.bundleIdentifier ?? "com.gemi.app"
+            let appDirectory = appSupportURL.appendingPathComponent(bundleID)
+            let databaseURL = appDirectory.appendingPathComponent(databaseName)
+            
+            if FileManager.default.fileExists(atPath: databaseURL.path) {
+                try FileManager.default.removeItem(at: databaseURL)
+                print("Database file deleted")
+            }
+        } catch {
+            print("Failed to delete database file: \(error)")
         }
     }
     
@@ -110,7 +148,7 @@ final class DatabaseManager: @unchecked Sendable {
                 weather TEXT,
                 location TEXT,
                 attachments TEXT,
-                is_encrypted INTEGER NOT NULL DEFAULT 1,
+                is_encrypted INTEGER NOT NULL DEFAULT 0,
                 is_favorite INTEGER NOT NULL DEFAULT 0,
                 is_deleted INTEGER NOT NULL DEFAULT 0
             )
@@ -230,6 +268,8 @@ final class DatabaseManager: @unchecked Sendable {
     }
     
     private func saveEntrySync(_ entry: JournalEntry) throws {
+        print("Attempting to save entry: \(entry.id)")
+        
         let sql = """
             INSERT OR REPLACE INTO journal_entries 
             (id, created_at, modified_at, title, content, encrypted_content, tags, mood, weather, location, attachments, is_encrypted, is_favorite, is_deleted)
@@ -238,62 +278,85 @@ final class DatabaseManager: @unchecked Sendable {
         
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else {
+            let errorMessage = String(cString: sqlite3_errmsg(database))
+            print("Failed to prepare save statement: \(errorMessage)")
             throw DatabaseError.failedToPrepare(sql)
         }
         
         defer { sqlite3_finalize(statement) }
         
-        sqlite3_bind_text(statement, 1, entry.id.uuidString, -1, nil)
+        // Use SQLITE_TRANSIENT to ensure string data is copied
+        sqlite3_bind_text(statement, 1, entry.id.uuidString, -1, SQLITE_TRANSIENT)
         sqlite3_bind_double(statement, 2, entry.createdAt.timeIntervalSince1970)
         sqlite3_bind_double(statement, 3, entry.modifiedAt.timeIntervalSince1970)
-        sqlite3_bind_text(statement, 4, entry.title, -1, nil)
+        
+        if entry.title.isEmpty {
+            sqlite3_bind_null(statement, 4)
+        } else {
+            sqlite3_bind_text(statement, 4, entry.title, -1, SQLITE_TRANSIENT)
+        }
         
         // Handle content and encrypted content properly
         if entry.isEncrypted, let encryptedData = entry.encryptedContent {
             // Entry is already encrypted, store the encrypted data
             sqlite3_bind_null(statement, 5) // content is null
-            sqlite3_bind_blob(statement, 6, [UInt8](encryptedData), Int32(encryptedData.count), nil)
+            sqlite3_bind_blob(statement, 6, [UInt8](encryptedData), Int32(encryptedData.count), SQLITE_TRANSIENT)
         } else if entry.isEncrypted && !entry.content.isEmpty {
             // Entry needs to be encrypted
             let contentData = entry.content.data(using: .utf8) ?? Data()
             let encryptedData = try encrypt(contentData)
             sqlite3_bind_null(statement, 5) // content is null
-            sqlite3_bind_blob(statement, 6, [UInt8](encryptedData), Int32(encryptedData.count), nil)
+            sqlite3_bind_blob(statement, 6, [UInt8](encryptedData), Int32(encryptedData.count), SQLITE_TRANSIENT)
         } else {
             // Entry is not encrypted
-            sqlite3_bind_text(statement, 5, entry.content, -1, nil)
+            if entry.content.isEmpty {
+                sqlite3_bind_null(statement, 5)
+            } else {
+                sqlite3_bind_text(statement, 5, entry.content, -1, SQLITE_TRANSIENT)
+            }
             sqlite3_bind_null(statement, 6)
         }
         
         let tagsJson = try JSONEncoder().encode(entry.tags)
-        sqlite3_bind_text(statement, 7, String(data: tagsJson, encoding: .utf8), -1, nil)
+        if let tagsString = String(data: tagsJson, encoding: .utf8) {
+            sqlite3_bind_text(statement, 7, tagsString, -1, SQLITE_TRANSIENT)
+        } else {
+            sqlite3_bind_text(statement, 7, "[]", -1, SQLITE_TRANSIENT)
+        }
         
         if let mood = entry.mood {
-            sqlite3_bind_text(statement, 8, mood.rawValue, -1, nil)
+            sqlite3_bind_text(statement, 8, mood.rawValue, -1, SQLITE_TRANSIENT)
         } else {
             sqlite3_bind_null(statement, 8)
         }
         
         if let weather = entry.weather {
-            sqlite3_bind_text(statement, 9, weather, -1, nil)
+            sqlite3_bind_text(statement, 9, weather, -1, SQLITE_TRANSIENT)
         } else {
             sqlite3_bind_null(statement, 9)
         }
         
         if let location = entry.location {
-            sqlite3_bind_text(statement, 10, location, -1, nil)
+            sqlite3_bind_text(statement, 10, location, -1, SQLITE_TRANSIENT)
         } else {
             sqlite3_bind_null(statement, 10)
         }
         
         let attachmentsJson = try JSONEncoder().encode(entry.attachments)
-        sqlite3_bind_text(statement, 11, String(data: attachmentsJson, encoding: .utf8), -1, nil)
+        if let attachmentsString = String(data: attachmentsJson, encoding: .utf8) {
+            sqlite3_bind_text(statement, 11, attachmentsString, -1, SQLITE_TRANSIENT)
+        } else {
+            sqlite3_bind_text(statement, 11, "[]", -1, SQLITE_TRANSIENT)
+        }
         
         sqlite3_bind_int(statement, 12, entry.isEncrypted ? 1 : 0)
         sqlite3_bind_int(statement, 13, entry.isFavorite ? 1 : 0)
         sqlite3_bind_int(statement, 14, entry.isDeleted ? 1 : 0)
         
-        guard sqlite3_step(statement) == SQLITE_DONE else {
+        let result = sqlite3_step(statement)
+        guard result == SQLITE_DONE else {
+            let errorMessage = String(cString: sqlite3_errmsg(database))
+            print("Failed to save entry: \(errorMessage) (code: \(result))")
             throw DatabaseError.failedToExecute(sql)
         }
     }
