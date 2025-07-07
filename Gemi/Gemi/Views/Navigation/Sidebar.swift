@@ -4,6 +4,7 @@ struct Sidebar: View {
     @Binding var selectedView: NavigationItem
     @ObservedObject var journalStore: JournalStore
     @State private var searchText = ""
+    @State private var showingSettings = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -24,6 +25,9 @@ struct Sidebar: View {
         }
         .frame(width: Theme.sidebarWidth)
         .background(Theme.Colors.windowBackground)
+        .sheet(isPresented: $showingSettings) {
+            SettingsView(journalStore: journalStore)
+        }
     }
     
     private var header: some View {
@@ -75,12 +79,13 @@ struct Sidebar: View {
     
     private var bottomSection: some View {
         HStack {
-            Button(action: {}) {
+            Button(action: { showingSettings = true }) {
                 Image(systemName: "gearshape")
                     .font(.title3)
             }
             .buttonStyle(.plain)
             .help("Settings (⌘,)")
+            .keyboardShortcut(",", modifiers: .command)
             
             Spacer()
             
