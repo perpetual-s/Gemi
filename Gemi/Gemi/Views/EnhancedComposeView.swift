@@ -107,16 +107,15 @@ struct EnhancedComposeView: View {
                                         .allowsHitTesting(false)
                                 }
                                 
-                                // Rich text editor
-                                RichTextEditor(
-                                    text: $entry.content,
-                                    isContentFocused: $isContentFocused,
-                                    showFormattingBar: $showFormattingBar,
-                                    selectedRange: $selectedRange
-                                )
-                                .padding(.top, 16)
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 20)
+                                // Enhanced text editor
+                                TextEditor(text: $entry.content)
+                                    .font(.system(size: 17, weight: .regular))
+                                    .lineSpacing(8)
+                                    .focused($isContentFocused)
+                                    .scrollContentBackground(.hidden)
+                                    .padding(.top, 16)
+                                    .padding(.horizontal, 20)
+                                    .padding(.bottom, 20)
                             }
                             .frame(minHeight: 450)
                             
@@ -527,24 +526,28 @@ struct EnhancedComposeView: View {
                 // Apply bold formatting to selected text
                 // This is placeholder - would need NSTextView for real implementation
             } else {
-                entry.content += "**bold text**"
+                // Formatting not implemented yet
             }
         case .italic:
             isItalicActive.toggle()
             if let range = selectedRange {
                 // Apply italic formatting
             } else {
-                entry.content += "*italic text*"
+                // Formatting not implemented yet
             }
         case .heading:
-            entry.content += "\n\n## Heading\n\n"
+            // Formatting not implemented yet
+            break
         case .list:
             isListActive.toggle()
-            entry.content += "\n- List item\n"
+            // Formatting not implemented yet
+            break
         case .quote:
-            entry.content += "\n> Quote\n"
+            // Formatting not implemented yet
+            break
         case .link:
-            entry.content += "[link text](url)"
+            // Formatting not implemented yet
+            break
         }
         isContentFocused = true
     }
@@ -1148,34 +1151,7 @@ struct FormatButton: View {
     }
 }
 
-// MARK: - Rich Text Editor
-
-struct RichTextEditor: View {
-    @Binding var text: String
-    @FocusState.Binding var isContentFocused: Bool
-    @Binding var showFormattingBar: Bool
-    @Binding var selectedRange: NSRange?
-    
-    var body: some View {
-        // For now, using TextEditor with enhanced features
-        // In production, this would be NSTextView for full rich text support
-        TextEditor(text: $text)
-            .font(.system(size: 17, weight: .regular))
-            .lineSpacing(8)
-            .focused($isContentFocused)
-            .scrollContentBackground(.hidden)
-            .onReceive(NotificationCenter.default.publisher(for: NSTextView.didChangeSelectionNotification)) { _ in
-                // Show formatting bar when text is selected
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    showFormattingBar = !text.isEmpty && isContentFocused
-                }
-            }
-            .onAppear {
-                // Configure text view appearance
-                // Note: This should be done on actual NSTextView instances, not globally
-            }
-    }
-}
+// MARK: - Rich Text Editor (Placeholder for future implementation)
 
 // MARK: - Formatting Button
 
