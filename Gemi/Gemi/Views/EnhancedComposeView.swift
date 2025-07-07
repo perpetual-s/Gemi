@@ -13,14 +13,13 @@ struct EnhancedComposeView: View {
     @State private var wordCount = 0
     @State private var isAnalyzingMood = false
     @State private var suggestedMood: Mood?
-    @State private var isBoldActive = false
-    @State private var isItalicActive = false
-    @State private var isListActive = false
     @State private var focusMode = false
     @FocusState private var isContentFocused: Bool
     @State private var selectedRange: NSRange?
-    @State private var showFormattingBar = false
     @State private var scrollOffset: CGFloat = 0
+    @State private var isBoldActive = false
+    @State private var isItalicActive = false
+    @State private var isListActive = false
     
     init(entry: JournalEntry? = nil, onSave: @escaping (JournalEntry) -> Void, onCancel: @escaping () -> Void) {
         self._entry = State(initialValue: entry ?? JournalEntry(content: ""))
@@ -149,16 +148,6 @@ struct EnhancedComposeView: View {
                         checkForWritingPatterns(newValue)
                     }
                     
-                    // Floating formatting toolbar
-                    if showFormattingBar && isContentFocused {
-                        floatingFormattingBar
-                            .padding(.horizontal, 20)
-                            .padding(.top, 12)
-                            .transition(.asymmetric(
-                                insertion: .scale(scale: 0.8, anchor: .top).combined(with: .opacity),
-                                removal: .scale(scale: 0.8, anchor: .top).combined(with: .opacity)
-                            ))
-                    }
                     
                     // AI Writing suggestions
                     if let prompt = selectedPrompt {
@@ -301,28 +290,6 @@ struct EnhancedComposeView: View {
     
     private var formattingToolbar: some View {
         HStack(spacing: 16) {
-            // Text formatting buttons
-            FormatButton(
-                icon: "bold",
-                isActive: isBoldActive,
-                action: { isBoldActive.toggle() }
-            )
-            
-            FormatButton(
-                icon: "italic",
-                isActive: isItalicActive,
-                action: { isItalicActive.toggle() }
-            )
-            
-            FormatButton(
-                icon: "list.bullet",
-                isActive: isListActive,
-                action: { isListActive.toggle() }
-            )
-            
-            Divider()
-                .frame(height: 20)
-            
             // Additional tools
             Button {
                 // Insert current date/time

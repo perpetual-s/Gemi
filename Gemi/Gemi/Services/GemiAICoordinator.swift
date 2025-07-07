@@ -168,4 +168,85 @@ final class GemiAICoordinator: ObservableObject {
             """
         }
     }
+    
+    /// Generate AI insights for a journal entry
+    func generateInsights(for entry: JournalEntry) async throws -> (summary: String, keyPoints: [String], prompts: [String]) {
+        logger.info("Generating AI insights for journal entry")
+        
+        let prompt = """
+        Analyze this journal entry and provide thoughtful insights.
+        
+        Entry:
+        Title: \(entry.displayTitle)
+        Content: \(entry.content)
+        Mood: \(entry.mood?.rawValue ?? "Not specified")
+        Tags: \(entry.tags.joined(separator: ", "))
+        
+        Please provide:
+        1. A brief 2-3 sentence summary that captures the essence of the entry
+        2. 3-4 key points or themes present in the entry
+        3. 2-3 thoughtful reflection prompts that encourage deeper self-exploration
+        
+        Format your response exactly as JSON:
+        {
+            "summary": "Your summary here",
+            "keyPoints": ["Point 1", "Point 2", "Point 3"],
+            "prompts": ["Prompt 1", "Prompt 2", "Prompt 3"]
+        }
+        """
+        
+        let messages = [
+            ChatMessage(role: .system, content: "You are Gemi, an empathetic AI diary companion. Provide thoughtful, personalized insights that help with self-reflection and growth."),
+            ChatMessage(role: .user, content: prompt)
+        ]
+        
+        var fullResponse = ""
+        
+        // Collect the full response
+        for try await response in await ollamaService.chat(messages: messages) {
+            fullResponse += response.message?.content ?? ""
+            
+            if response.done {
+                break
+            }
+        }
+        
+        // Parse JSON response
+        guard let data = fullResponse.data(using: .utf8) else {
+            throw OllamaError.invalidResponse("Invalid response format")
+        }
+        
+        do {
+            let decoder = JSONDecoder()
+            let insights = try decoder.decode(InsightsResponse.self, from: data)
+            return (insights.summary, insights.keyPoints, insights.prompts)
+        } catch {
+            // Fallback to basic parsing if JSON fails
+            logger.warning("Failed to parse JSON response, using fallback parsing")
+            return parseInsightsFromText(fullResponse)
+        }
+    }
+    
+    private func parseInsightsFromText(_ text: String) -> (summary: String, keyPoints: [String], prompts: [String]) {
+        // Basic fallback parsing logic
+        let lines = text.components(separatedBy: .newlines).filter { !$0.isEmpty }
+        
+        let summary = lines.first ?? "This entry reflects personal thoughts and experiences."
+        let keyPoints = Array(lines.prefix(4).dropFirst()).map { $0.trimmingCharacters(in: .whitespaces) }
+        let prompts = [
+            "What emotions stand out most in this entry?",
+            "How might these experiences shape your future actions?",
+            "What would you tell a friend in a similar situation?"
+        ]
+        
+        return (summary, keyPoints.isEmpty ? ["Personal reflection captured", "Emotional awareness demonstrated", "Growth mindset evident"] : keyPoints, prompts)
+    }
+}
+
+// MARK: - Response Models
+
+private struct InsightsResponse: Codable {
+    let summary: String
+    let keyPoints: [String]
+    let prompts: [String]
 }

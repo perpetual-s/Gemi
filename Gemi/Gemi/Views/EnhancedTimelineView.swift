@@ -76,7 +76,7 @@ struct EnhancedTimelineView: View {
         }
         .sheet(isPresented: $showingReadingView) {
             if let entry = readingEntry {
-                EntryReadingView(
+                EnhancedEntryReadingView(
                     entry: entry,
                     onEdit: {
                         showingReadingView = false
@@ -354,8 +354,12 @@ struct EnhancedEntryCard: View {
                                 .foregroundColor(localIsFavorite ? .yellow : Theme.Colors.secondaryText)
                                 .scaleEffect(localIsFavorite ? 1.1 : 1)
                                 .animation(.spring(response: 0.3, dampingFraction: 0.6), value: localIsFavorite)
+                                .frame(width: 24, height: 24)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                         .help(localIsFavorite ? "Remove from favorites" : "Add to favorites")
                         
                         // Expand indicator
@@ -373,8 +377,13 @@ struct EnhancedEntryCard: View {
                 
                 // Make the rest of the card clickable (excluding star button)
                 Button(action: {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                        isExpanded.toggle()
+                    // Open reading view if available, otherwise toggle expansion
+                    if let onRead = onRead {
+                        onRead()
+                    } else {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            isExpanded.toggle()
+                        }
                     }
                 }) {
                     VStack(alignment: .leading, spacing: 8) {
@@ -420,6 +429,15 @@ struct EnhancedEntryCard: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.plain)
+                .onHover { hovering in
+                    if onRead != nil {
+                        if hovering {
+                            NSCursor.pointingHand.set()
+                        } else {
+                            NSCursor.arrow.set()
+                        }
+                    }
+                }
             }
             .padding()
             .background(

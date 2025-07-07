@@ -28,6 +28,8 @@ struct ProductionComposeView: View {
     @State private var writingStreak = 0
     @State private var sessionStartTime = Date()
     @State private var writingPace = 0.0
+    @State private var showingEmojiPicker = false
+    @State private var selectedEmoji: String?
     
     init(entry: JournalEntry? = nil, onSave: @escaping (JournalEntry) -> Void, onCancel: @escaping () -> Void) {
         self._entry = State(initialValue: entry ?? JournalEntry(content: ""))
@@ -131,6 +133,26 @@ struct ProductionComposeView: View {
                 }
                 
                 Spacer()
+                
+                // Emoji picker
+                Button {
+                    showingEmojiPicker.toggle()
+                } label: {
+                    Text("😊")
+                        .font(.system(size: 18))
+                }
+                .buttonStyle(.plain)
+                .help("Insert emoji")
+                .popover(isPresented: $showingEmojiPicker) {
+                    EmojiPicker(
+                        selectedEmoji: $selectedEmoji,
+                        isPresented: $showingEmojiPicker,
+                        onEmojiSelected: { emoji in
+                            // Insert emoji at cursor position
+                            entry.content += emoji
+                        }
+                    )
+                }
                 
                 // AI Assistant toggle
                 Button {
@@ -828,13 +850,20 @@ struct MacTextEditor: NSViewRepresentable {
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? NSTextView else { return }
         
-        if textView.string != text {
+        // Update text only if changed to prevent unnecessary updates
+        if textView.string != text && !context.coordinator.isUpdating {
+            context.coordinator.isUpdating = true
             textView.string = text
+            context.coordinator.isUpdating = false
         }
         
-        if isFirstResponder && !(textView.window?.firstResponder.map({ $0 === textView }) ?? false) {
-            DispatchQueue.main.async {
-                textView.window?.makeFirstResponder(textView)
+        // Handle first responder status on main thread
+        if isFirstResponder {
+            let needsFocus = textView.window?.firstResponder !== textView
+            if needsFocus {
+                DispatchQueue.main.async { [weak textView] in
+                    textView?.window?.makeFirstResponder(textView)
+                }
             }
         }
     }
@@ -845,6 +874,7 @@ struct MacTextEditor: NSViewRepresentable {
     
     class Coordinator: NSObject, NSTextViewDelegate {
         var parent: MacTextEditor
+        var isUpdating = false
         
         init(_ parent: MacTextEditor) {
             self.parent = parent
@@ -852,6 +882,8 @@ struct MacTextEditor: NSViewRepresentable {
         
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
+            guard !isUpdating else { return }
+            
             parent.text = textView.string
             parent.onTextChange(textView.string)
         }
