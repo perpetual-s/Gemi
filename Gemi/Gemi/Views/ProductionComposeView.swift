@@ -172,20 +172,11 @@ struct ProductionComposeView: View {
     private var titleSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Title with professional styling
-            ZStack(alignment: .topLeading) {
-                if entry.title.isEmpty {
-                    Text("Untitled")
-                        .font(.system(size: 32, weight: .bold, design: .serif))
-                        .foregroundColor(.secondary.opacity(0.3))
-                        .padding(.top, 2)
-                }
-                
-                TextField("", text: $entry.title, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 32, weight: .bold, design: .serif))
-                    .lineLimit(1...3)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            TextField("Untitled", text: $entry.title, axis: .vertical)
+                .textFieldStyle(.plain)
+                .font(.system(size: 32, weight: .bold, design: .serif))
+                .lineLimit(1...3)
+                .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 40)
             .padding(.top, 32)
             
@@ -511,9 +502,7 @@ struct ProductionMoodPicker: View {
                     isSelected: selectedMood == mood,
                     isHovered: hoveredMood == mood
                 ) {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                        selectedMood = selectedMood == mood ? nil : mood
-                    }
+                    selectedMood = selectedMood == mood ? nil : mood
                 }
                 .onHover { isHovered in
                     hoveredMood = isHovered ? mood : nil
@@ -553,6 +542,8 @@ struct ProductionMoodButton: View {
                     )
             )
             .scaleEffect(isHovered ? 1.05 : 1)
+            .animation(.easeInOut(duration: 0.1), value: isSelected)
+            .animation(.easeInOut(duration: 0.1), value: isHovered)
         }
         .buttonStyle(.plain)
     }
