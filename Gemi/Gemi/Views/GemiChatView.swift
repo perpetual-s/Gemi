@@ -212,23 +212,28 @@ struct GemiChatView: View {
     
     private var emptyStateView: some View {
         VStack(spacing: 24) {
-            // Logo
-            Image(systemName: "bubble.left.and.bubble.right.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [Theme.Colors.primaryAccent, Theme.Colors.primaryAccent.opacity(0.6)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+            // Logo with emoji-like appearance
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Theme.Colors.primaryAccent.opacity(0.1), Theme.Colors.primaryAccent.opacity(0.05)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                     )
-                )
-                .padding(.bottom, 8)
+                    .frame(width: 100, height: 100)
+                
+                Text("💬")
+                    .font(.system(size: 56))
+            }
+            .padding(.bottom, 8)
             
             VStack(spacing: 8) {
-                Text("Welcome to Gemi")
+                Text("✨ Welcome to Gemi 📝")
                     .font(.system(size: 28, weight: .semibold, design: .rounded))
                 
-                Text("Your thoughtful AI companion")
+                Text("Your thoughtful AI companion 🤗")
                     .font(.system(size: 16))
                     .foregroundColor(Theme.Colors.secondaryText)
             }
