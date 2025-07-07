@@ -20,7 +20,6 @@ struct EnhancedEntryReadingView: View {
     // Reading preferences
     @AppStorage("readingFontSize") private var fontSize: Double = 17
     @AppStorage("readingLineSpacing") private var lineSpacing: Double = 1.5
-    @State private var theme: ReadingTheme = .light
     
     // AI service
     private let aiCoordinator = GemiAICoordinator.shared
@@ -71,7 +70,7 @@ struct EnhancedEntryReadingView: View {
                         .padding(.bottom, 32)
                 }
             }
-            .background(theme.backgroundColor)
+            .background(Theme.Colors.windowBackground)
             .toolbar {
                 toolbarContent
             }
@@ -276,7 +275,7 @@ struct EnhancedEntryReadingView: View {
             Text(entry.content)
                 .font(.system(size: fontSize, weight: .regular, design: .serif))
                 .lineSpacing(fontSize * (lineSpacing - 1))
-                .foregroundColor(theme.textColor)
+                .foregroundColor(.primary)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -387,14 +386,6 @@ struct EnhancedEntryReadingView: View {
                 Image(systemName: "textformat.size")
             }
             
-            // Theme toggle
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    theme = theme == .light ? .dark : .light
-                }
-            } label: {
-                Image(systemName: theme == .light ? "moon" : "sun.max")
-            }
             
             // More actions
             Menu {
