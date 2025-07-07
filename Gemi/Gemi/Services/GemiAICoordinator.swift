@@ -86,7 +86,12 @@ final class GemiAICoordinator: ObservableObject {
         do {
             let memories = try await extractMemoriesWithAI(from: entry)
             
-            // Add memories to MemoryManager and save to database
+            // Remove any existing memories for this entry first
+            await MainActor.run {
+                memoryManager.memories.removeAll { $0.sourceEntryID == entry.id }
+            }
+            
+            // Add all new memories to MemoryManager and save to database
             for memoryData in memories {
                 // Add to MemoryManager's in-memory array
                 let memory = Memory(
@@ -94,8 +99,6 @@ final class GemiAICoordinator: ObservableObject {
                     sourceEntryID: memoryData.sourceEntryID
                 )
                 await MainActor.run {
-                    // Remove any existing memories for this entry first
-                    memoryManager.memories.removeAll { $0.sourceEntryID == entry.id }
                     // Add the new memory
                     memoryManager.memories.append(memory)
                 }
