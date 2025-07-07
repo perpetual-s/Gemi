@@ -115,9 +115,6 @@ struct MemoriesView: View {
                             onDelete: {
                                 memoryToDelete = memory
                                 showingDeleteAlert = true
-                            },
-                            onUpdateImportance: { importance in
-                                viewModel.updateImportance(for: memory, importance: importance)
                             }
                         )
                         .transition(.asymmetric(
@@ -155,23 +152,17 @@ struct MemoriesView: View {
                 
                 Spacer()
                 
-                // Statistics
+                // Simple count badge
                 if !memoryManager.memories.isEmpty {
-                    HStack(spacing: 20) {
-                        StatBadge(
-                            icon: "star.fill",
-                            value: "\(memoryManager.memories.filter { $0.importance >= 4 }.count)",
-                            label: "Important"
+                    Text("\(memoryManager.memories.count)")
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundColor(Theme.Colors.primaryAccent)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            Capsule()
+                                .fill(Theme.Colors.primaryAccent.opacity(0.1))
                         )
-                        
-                        if let mostCommonCategory = memoryManager.memoriesByCategory().max(by: { $0.value.count < $1.value.count })?.key {
-                            StatBadge(
-                                icon: "tag.fill",
-                                value: mostCommonCategory.rawValue,
-                                label: "Top Category"
-                            )
-                        }
-                    }
                 }
             }
             .padding()
@@ -199,28 +190,6 @@ struct MemoriesView: View {
                 Divider()
                     .frame(height: 30)
                 
-                // Category filter
-                Menu {
-                    Button("All Categories") {
-                        viewModel.selectedCategory = nil
-                    }
-                    Divider()
-                    ForEach(Memory.MemoryCategory.allCases, id: \.self) { category in
-                        Button(category.rawValue) {
-                            viewModel.selectedCategory = category
-                        }
-                    }
-                } label: {
-                    Label(
-                        viewModel.selectedCategory?.rawValue ?? "All Categories",
-                        systemImage: "tag"
-                    )
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(viewModel.selectedCategory != nil ? Theme.Colors.primaryAccent.opacity(0.1) : Color.secondary.opacity(0.1))
-                    .clipShape(Capsule())
-                }
-                
                 // Sort order
                 Menu {
                     ForEach(MemoryViewModel.SortOrder.allCases, id: \.self) { order in
@@ -235,17 +204,6 @@ struct MemoriesView: View {
                         .background(Color.secondary.opacity(0.1))
                         .clipShape(Capsule())
                 }
-                
-                // High importance filter
-                Toggle(isOn: $viewModel.showOnlyHighImportance) {
-                    Label("Important Only", systemImage: "star.fill")
-                }
-                .toggleStyle(.button)
-                .buttonStyle(.plain)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(viewModel.showOnlyHighImportance ? Theme.Colors.primaryAccent.opacity(0.1) : Color.secondary.opacity(0.1))
-                .clipShape(Capsule())
             }
         }
     }
@@ -277,32 +235,20 @@ struct MemoryCard: View {
     let memory: Memory
     let onTap: () -> Void
     let onDelete: () -> Void
-    let onUpdateImportance: (Int) -> Void
     
     @State private var isHovered = false
     
     var body: some View {
         Button(action: onTap) {
             VStack(alignment: .leading, spacing: Theme.spacing) {
-                // Header
+                // Header with delete button
                 HStack {
-                    Label(memory.category.rawValue, systemImage: categoryIcon)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(categoryColor)
+                    // Date extracted
+                    Text(memory.extractedAt.formatted(date: .abbreviated, time: .omitted))
+                        .font(Theme.Typography.caption)
+                        .foregroundColor(Theme.Colors.secondaryText)
                     
                     Spacer()
-                    
-                    // Importance stars
-                    HStack(spacing: 4) {
-                        ForEach(1...5, id: \.self) { star in
-                            Image(systemName: star <= memory.importance ? "star.fill" : "star")
-                                .font(.system(size: 12))
-                                .foregroundColor(star <= memory.importance ? .yellow : .secondary.opacity(0.3))
-                                .onTapGesture {
-                                    onUpdateImportance(star)
-                                }
-                        }
-                    }
                     
                     if isHovered {
                         Button {
@@ -322,11 +268,7 @@ struct MemoryCard: View {
                     .font(Theme.Typography.body)
                     .lineLimit(3)
                     .multilineTextAlignment(.leading)
-                
-                // Footer
-                Text("Extracted \(memory.extractedAt.formatted(.relative(presentation: .named)))")
-                    .font(Theme.Typography.caption)
-                    .foregroundColor(Theme.Colors.tertiaryText)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding(Theme.spacing)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -345,32 +287,6 @@ struct MemoryCard: View {
             withAnimation(.easeInOut(duration: 0.2)) {
                 isHovered = hovering
             }
-        }
-    }
-    
-    private var categoryIcon: String {
-        switch memory.category {
-        case .personal: return "person.fill"
-        case .emotional: return "heart.fill"
-        case .goals: return "target"
-        case .relationships: return "person.2.fill"
-        case .achievements: return "trophy.fill"
-        case .challenges: return "exclamationmark.triangle.fill"
-        case .preferences: return "gearshape.fill"
-        case .routine: return "clock.fill"
-        }
-    }
-    
-    private var categoryColor: Color {
-        switch memory.category {
-        case .personal: return .blue
-        case .emotional: return .pink
-        case .goals: return .orange
-        case .relationships: return .purple
-        case .achievements: return .green
-        case .challenges: return .red
-        case .preferences: return .indigo
-        case .routine: return .cyan
         }
     }
 }

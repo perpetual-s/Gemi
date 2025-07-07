@@ -4,8 +4,6 @@ import Foundation
 struct MemoryData: Sendable {
     let content: String
     let sourceEntryID: UUID
-    let category: Memory.MemoryCategory
-    let importance: Int
 }
 
 /// Service responsible for creating and managing the custom Gemi companion model
@@ -116,120 +114,19 @@ actor CompanionModelService {
     }
     
     /// Extract key memories from journal entries for AI context
-    func extractMemories(from entries: [JournalEntry]) -> [MemoryData] {
-        var memories: [MemoryData] = []
+    func extractMemories(from entries: [JournalEntry]) async -> [MemoryData] {
+        // Memory extraction now handled by GemiAICoordinator
+        
+        // Use GemiAICoordinator for AI-powered extraction
+        let coordinator = await GemiAICoordinator.shared
         
         for entry in entries {
-            // Always extract at least one memory per entry
-            let wordCount = entry.content.split(separator: " ").count
-            
-            // Extract mood patterns
-            if let mood = entry.mood {
-                let moodMemory = MemoryData(
-                    content: "Felt \(mood.rawValue) on \(entry.createdAt.formatted(date: .abbreviated, time: .omitted))",
-                    sourceEntryID: entry.id,
-                    category: .emotional,
-                    importance: 3
-                )
-                memories.append(moodMemory)
-            }
-            
-            // Extract main content summary
-            if wordCount > 20 {
-                let summary = extractSummary(from: entry.content)
-                if !summary.isEmpty {
-                    let contentMemory = MemoryData(
-                        content: summary,
-                        sourceEntryID: entry.id,
-                        category: categorizeContent(entry.content),
-                        importance: entry.isFavorite ? 5 : 3
-                    )
-                    memories.append(contentMemory)
-                }
-            }
-            
-            // Extract tags as memories
-            if !entry.tags.isEmpty {
-                let tagMemory = MemoryData(
-                    content: "Wrote about \(entry.tags.joined(separator: ", "))",
-                    sourceEntryID: entry.id,
-                    category: .personal,
-                    importance: 2
-                )
-                memories.append(tagMemory)
-            }
-            
-            // Extract entries with specific keywords
-            let keywords: [(String, String, Memory.MemoryCategory)] = [
-                ("goal", "Set goal: ", .goals),
-                ("decided", "Made decision: ", .personal),
-                ("learned", "Learned: ", .personal),
-                ("met", "Met with ", .relationships),
-                ("achieved", "Achievement: ", .achievements),
-                ("struggle", "Challenge: ", .challenges)
-            ]
-            
-            let lowercasedContent = entry.content.lowercased()
-            for (keyword, prefix, category) in keywords {
-                if lowercasedContent.contains(keyword) {
-                    let context = extractContext(around: keyword, in: entry.content)
-                    if !context.isEmpty {
-                        let keywordMemory = MemoryData(
-                            content: prefix + context,
-                            sourceEntryID: entry.id,
-                            category: category,
-                            importance: 4
-                        )
-                        memories.append(keywordMemory)
-                        break // Only one keyword memory per entry
-                    }
-                }
-            }
+            await coordinator.processJournalEntry(entry)
         }
         
-        // Deduplicate based on content similarity and return top memories
-        let uniqueMemories = memories.reduce([MemoryData]()) { result, memory in
-            let isDuplicate = result.contains { existing in
-                existing.content.lowercased().contains(memory.content.lowercased()) ||
-                memory.content.lowercased().contains(existing.content.lowercased())
-            }
-            return isDuplicate ? result : result + [memory]
-        }
-        
-        return Array(uniqueMemories.sorted { $0.importance > $1.importance }.prefix(5))
+        // Return empty array as memories are now handled by GemiAICoordinator
+        return []
     }
     
-    private func extractSummary(from content: String) -> String {
-        let sentences = content.components(separatedBy: CharacterSet(charactersIn: ".!?"))
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-        
-        return sentences.prefix(2).joined(separator: ". ") + "."
-    }
-    
-    private func categorizeContent(_ content: String) -> Memory.MemoryCategory {
-        let lowercased = content.lowercased()
-        
-        if lowercased.contains("goal") || lowercased.contains("achieve") || lowercased.contains("plan") {
-            return .goals
-        } else if lowercased.contains("friend") || lowercased.contains("family") || lowercased.contains("partner") {
-            return .relationships
-        } else if lowercased.contains("accomplished") || lowercased.contains("succeeded") || lowercased.contains("proud") {
-            return .achievements
-        } else if lowercased.contains("challenge") || lowercased.contains("difficult") || lowercased.contains("struggle") {
-            return .challenges
-        } else {
-            return .personal
-        }
-    }
-    
-    private func extractContext(around keyword: String, in content: String) -> String {
-        let words = content.split(separator: " ")
-        if let keywordIndex = words.firstIndex(where: { $0.lowercased().contains(keyword) }) {
-            let startIndex = max(0, keywordIndex - 5)
-            let endIndex = min(words.count, keywordIndex + 6)
-            return words[startIndex..<endIndex].joined(separator: " ")
-        }
-        return ""
-    }
+    // Removed helper methods - memory extraction now handled by GemiAICoordinator
 }

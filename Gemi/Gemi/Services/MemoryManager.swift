@@ -42,9 +42,7 @@ final class MemoryManager: ObservableObject {
         for memoryData in extractedMemoryData {
             let memory = Memory(
                 content: memoryData.content,
-                sourceEntryID: memoryData.sourceEntryID,
-                category: memoryData.category,
-                importance: memoryData.importance
+                sourceEntryID: memoryData.sourceEntryID
             )
             memories.append(memory)
             
@@ -54,11 +52,8 @@ final class MemoryManager: ObservableObject {
             // }
         }
         
-        // Sort memories by importance and date
+        // Sort memories by date (most recent first)
         memories.sort { first, second in
-            if first.importance != second.importance {
-                return first.importance > second.importance
-            }
             return first.extractedAt > second.extractedAt
         }
     }
@@ -69,7 +64,7 @@ final class MemoryManager: ObservableObject {
         let keywords = extractKeywords(from: message)
         
         let scoredMemories = memories.map { memory -> (Memory, Int) in
-            var score = memory.importance
+            var score = 0
             
             // Check for keyword matches
             let memoryKeywords = extractKeywords(from: memory.content)
@@ -79,6 +74,8 @@ final class MemoryManager: ObservableObject {
             // Boost recent memories slightly
             let daysSinceExtracted = Calendar.current.dateComponents([.day], from: memory.extractedAt, to: Date()).day ?? 0
             if daysSinceExtracted < 7 {
+                score += 2
+            } else if daysSinceExtracted < 30 {
                 score += 1
             }
             
@@ -102,18 +99,7 @@ final class MemoryManager: ObservableObject {
         // }
     }
     
-    /// Update memory importance
-    func updateImportance(for memory: Memory, importance: Int) {
-        memory.importance = min(max(importance, 1), 5)
-        
-        // Re-sort memories after importance update
-        memories.sort { first, second in
-            if first.importance != second.importance {
-                return first.importance > second.importance
-            }
-            return first.extractedAt > second.extractedAt
-        }
-    }
+    // Removed updateImportance - no longer using importance scores
     
     /// Clear all memories (with user confirmation)
     func clearAllMemories() async {
@@ -123,17 +109,12 @@ final class MemoryManager: ObservableObject {
         // try? await databaseManager.clearAllMemories()
     }
     
-    /// Get memories grouped by category
-    func memoriesByCategory() -> [Memory.MemoryCategory: [Memory]] {
-        Dictionary(grouping: memories, by: { $0.category })
-    }
+    // Removed memoriesByCategory - no longer using categories
     
     /// Get memory statistics
     func getStatistics() -> MemoryStatistics {
         MemoryStatistics(
             totalCount: memories.count,
-            categoryCounts: Dictionary(grouping: memories, by: { $0.category }).mapValues { $0.count },
-            averageImportance: memories.isEmpty ? 0 : Double(memories.reduce(0) { $0 + $1.importance }) / Double(memories.count),
             oldestMemory: memories.min(by: { $0.extractedAt < $1.extractedAt })?.extractedAt,
             newestMemory: memories.max(by: { $0.extractedAt < $1.extractedAt })?.extractedAt
         )
@@ -157,8 +138,6 @@ final class MemoryManager: ObservableObject {
 
 struct MemoryStatistics {
     let totalCount: Int
-    let categoryCounts: [Memory.MemoryCategory: Int]
-    let averageImportance: Double
     let oldestMemory: Date?
     let newestMemory: Date?
 }
@@ -167,26 +146,18 @@ struct MemoryStatistics {
 
 @MainActor
 final class MemoryViewModel: ObservableObject {
-    @Published var selectedCategory: Memory.MemoryCategory?
     @Published var searchText = ""
-    @Published var sortOrder: SortOrder = .byImportance
-    @Published var showOnlyHighImportance = false
+    @Published var sortOrder: SortOrder = .byDate
     
     private let memoryManager = MemoryManager.shared
     
     enum SortOrder: String, CaseIterable {
-        case byImportance = "Importance"
         case byDate = "Date"
-        case byCategory = "Category"
+        case alphabetical = "A-Z"
     }
     
     var filteredMemories: [Memory] {
         var filtered = memoryManager.memories
-        
-        // Filter by category
-        if let category = selectedCategory {
-            filtered = filtered.filter { $0.category == category }
-        }
         
         // Filter by search text
         if !searchText.isEmpty {
@@ -195,19 +166,12 @@ final class MemoryViewModel: ObservableObject {
             }
         }
         
-        // Filter by importance
-        if showOnlyHighImportance {
-            filtered = filtered.filter { $0.importance >= 4 }
-        }
-        
         // Sort
         switch sortOrder {
-        case .byImportance:
-            filtered.sort { $0.importance > $1.importance }
         case .byDate:
             filtered.sort { $0.extractedAt > $1.extractedAt }
-        case .byCategory:
-            filtered.sort { $0.category.rawValue < $1.category.rawValue }
+        case .alphabetical:
+            filtered.sort { $0.content.localizedStandardCompare($1.content) == .orderedAscending }
         }
         
         return filtered
@@ -215,9 +179,5 @@ final class MemoryViewModel: ObservableObject {
     
     func deleteMemory(_ memory: Memory) {
         memoryManager.deleteMemory(memory)
-    }
-    
-    func updateImportance(for memory: Memory, importance: Int) {
-        memoryManager.updateImportance(for: memory, importance: importance)
     }
 }

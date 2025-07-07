@@ -142,25 +142,6 @@ actor DatabaseManager {
             )
         """
         
-        let createMemoriesTable = """
-            CREATE TABLE IF NOT EXISTS memories (
-                id TEXT PRIMARY KEY,
-                entry_id TEXT NOT NULL,
-                content TEXT NOT NULL,
-                keywords TEXT,
-                created_at REAL NOT NULL,
-                FOREIGN KEY (entry_id) REFERENCES entries(id) ON DELETE CASCADE
-            )
-        """
-        
-        // Create indexes for better performance
-        let createIndexes = [
-            "CREATE INDEX IF NOT EXISTS idx_entries_created_at ON entries(created_at DESC)",
-            "CREATE INDEX IF NOT EXISTS idx_entries_is_favorite ON entries(is_favorite)",
-            "CREATE INDEX IF NOT EXISTS idx_memories_entry_id ON memories(entry_id)",
-            "CREATE INDEX IF NOT EXISTS idx_memories_keywords ON memories(keywords)"
-        ]
-        
         guard let db = database else {
             throw DatabaseError.notInitialized
         }
@@ -170,14 +151,120 @@ actor DatabaseManager {
             throw DatabaseError.failedToCreateTable
         }
         
-        if sqlite3_exec(db, createMemoriesTable, nil, nil, nil) != SQLITE_OK {
-            throw DatabaseError.failedToCreateTable
-        }
+        // Handle memories table migration
+        try migrateMemoriesTable()
+        
+        // Create indexes for better performance
+        let createIndexes = [
+            "CREATE INDEX IF NOT EXISTS idx_entries_created_at ON entries(created_at DESC)",
+            "CREATE INDEX IF NOT EXISTS idx_entries_is_favorite ON entries(is_favorite)",
+            "CREATE INDEX IF NOT EXISTS idx_memories_source_entry_id ON memories(source_entry_id)"
+        ]
         
         // Create indexes
         for createIndex in createIndexes {
             sqlite3_exec(db, createIndex, nil, nil, nil)
         }
+    }
+    
+    private func migrateMemoriesTable() throws {
+        guard let db = database else {
+            throw DatabaseError.notInitialized
+        }
+        
+        // Check if memories table exists and what columns it has
+        let tableInfoQuery = "PRAGMA table_info(memories)"
+        var statement: OpaquePointer?
+        defer { sqlite3_finalize(statement) }
+        
+        guard sqlite3_prepare_v2(db, tableInfoQuery, -1, &statement, nil) == SQLITE_OK else {
+            // Table doesn't exist, create new one
+            let createMemoriesTable = """
+                CREATE TABLE IF NOT EXISTS memories (
+                    id TEXT PRIMARY KEY,
+                    content TEXT NOT NULL,
+                    source_entry_id TEXT NOT NULL,
+                    extracted_at REAL NOT NULL,
+                    FOREIGN KEY (source_entry_id) REFERENCES entries(id) ON DELETE CASCADE
+                )
+            """
+            
+            if sqlite3_exec(db, createMemoriesTable, nil, nil, nil) != SQLITE_OK {
+                throw DatabaseError.failedToCreateTable
+            }
+            return
+        }
+        
+        // Check column names
+        var hasOldSchema = false
+        var hasNewSchema = false
+        
+        while sqlite3_step(statement) == SQLITE_ROW {
+            if let namePtr = sqlite3_column_text(statement, 1) {
+                let columnName = String(cString: namePtr)
+                if columnName == "entry_id" {
+                    hasOldSchema = true
+                } else if columnName == "source_entry_id" {
+                    hasNewSchema = true
+                }
+            }
+        }
+        
+        if hasOldSchema && !hasNewSchema {
+            // Need to migrate from old schema to new
+            print("Migrating memories table from old schema to new schema...")
+            
+            // Create new table with correct schema
+            let createNewTable = """
+                CREATE TABLE memories_new (
+                    id TEXT PRIMARY KEY,
+                    content TEXT NOT NULL,
+                    source_entry_id TEXT NOT NULL,
+                    extracted_at REAL NOT NULL,
+                    FOREIGN KEY (source_entry_id) REFERENCES entries(id) ON DELETE CASCADE
+                )
+            """
+            
+            if sqlite3_exec(db, createNewTable, nil, nil, nil) != SQLITE_OK {
+                throw DatabaseError.failedToCreateTable
+            }
+            
+            // Copy data from old table to new (if any exists)
+            let migrateData = """
+                INSERT INTO memories_new (id, content, source_entry_id, extracted_at)
+                SELECT id, 
+                       COALESCE(content, ''), 
+                       entry_id,
+                       COALESCE(created_at, strftime('%s', 'now'))
+                FROM memories
+            """
+            
+            sqlite3_exec(db, migrateData, nil, nil, nil)
+            
+            // Drop old table and rename new one
+            sqlite3_exec(db, "DROP TABLE memories", nil, nil, nil)
+            sqlite3_exec(db, "ALTER TABLE memories_new RENAME TO memories", nil, nil, nil)
+            
+            print("Memory table migration completed successfully")
+        } else if !hasOldSchema && !hasNewSchema {
+            // Empty or corrupted table, recreate it
+            sqlite3_exec(db, "DROP TABLE IF EXISTS memories", nil, nil, nil)
+            
+            let createMemoriesTable = """
+                CREATE TABLE memories (
+                    id TEXT PRIMARY KEY,
+                    content TEXT NOT NULL,
+                    source_entry_id TEXT NOT NULL,
+                    extracted_at REAL NOT NULL,
+                    FOREIGN KEY (source_entry_id) REFERENCES entries(id) ON DELETE CASCADE
+                )
+            """
+            
+            if sqlite3_exec(db, createMemoriesTable, nil, nil, nil) != SQLITE_OK {
+                throw DatabaseError.failedToCreateTable
+            }
+        }
+        // If hasNewSchema is true, table is already in correct format
     }
     
     // MARK: - Entry Operations
@@ -408,41 +495,7 @@ actor DatabaseManager {
     }
     
     // MARK: - Memory Operations
-    
-    func saveMemory(_ memory: DatabaseMemory) async throws {
-        guard let db = database else {
-            throw DatabaseError.notInitialized
-        }
-        
-        let query = """
-            INSERT OR REPLACE INTO memories (id, entry_id, content, keywords, created_at)
-            VALUES (?, ?, ?, ?, ?)
-        """
-        
-        var statement: OpaquePointer?
-        defer { sqlite3_finalize(statement) }
-        
-        guard sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK else {
-            throw DatabaseError.failedToPrepareStatement
-        }
-        
-        sqlite3_bind_text(statement, 1, memory.id.uuidString, -1, SQLITE_TRANSIENT)
-        sqlite3_bind_text(statement, 2, memory.entryId.uuidString, -1, SQLITE_TRANSIENT)
-        sqlite3_bind_text(statement, 3, memory.content, -1, SQLITE_TRANSIENT)
-        
-        if !memory.keywords.isEmpty {
-            let keywordsString = memory.keywords.joined(separator: ",")
-            sqlite3_bind_text(statement, 4, keywordsString, -1, SQLITE_TRANSIENT)
-        } else {
-            sqlite3_bind_null(statement, 4)
-        }
-        
-        sqlite3_bind_double(statement, 5, memory.createdAt.timeIntervalSince1970)
-        
-        guard sqlite3_step(statement) == SQLITE_DONE else {
-            throw DatabaseError.failedToSave
-        }
-    }
+    // Note: Old DatabaseMemory-based function removed - use saveMemory(_ memoryData: MemoryData) instead
     
     func searchMemories(query: String, limit: Int = 10) async throws -> [DatabaseMemory] {
         guard let db = database else {
@@ -450,10 +503,10 @@ actor DatabaseManager {
         }
         
         let sql = """
-            SELECT id, entry_id, content, keywords, created_at
+            SELECT id, source_entry_id, content, extracted_at
             FROM memories
-            WHERE content LIKE ? OR keywords LIKE ?
-            ORDER BY created_at DESC
+            WHERE content LIKE ?
+            ORDER BY extracted_at DESC
             LIMIT ?
         """
         
@@ -466,8 +519,7 @@ actor DatabaseManager {
         
         let searchPattern = "%\(query)%"
         sqlite3_bind_text(statement, 1, searchPattern, -1, SQLITE_TRANSIENT)
-        sqlite3_bind_text(statement, 2, searchPattern, -1, SQLITE_TRANSIENT)
-        sqlite3_bind_int(statement, 3, Int32(limit))
+        sqlite3_bind_int(statement, 2, Int32(limit))
         
         var memories: [DatabaseMemory] = []
         
@@ -480,19 +532,15 @@ actor DatabaseManager {
                 continue
             }
             
-            var keywords: [String] = []
-            if let keywordsText = sqlite3_column_text(statement, 3) {
-                keywords = String(cString: keywordsText).split(separator: ",").map { String($0) }
-            }
+            let extractedAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 3))
             
-            let createdAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 4))
-            
+            // Note: DatabaseMemory still uses old property names for compatibility
             let memory = DatabaseMemory(
                 id: id,
                 entryId: entryId,
                 content: String(cString: content),
-                keywords: keywords,
-                createdAt: createdAt
+                keywords: [], // No longer using keywords
+                createdAt: extractedAt
             )
             
             memories.append(memory)
@@ -572,25 +620,9 @@ actor DatabaseManager {
             throw DatabaseError.notInitialized
         }
         
-        let createTableQuery = """
-            CREATE TABLE IF NOT EXISTS memories (
-                id TEXT PRIMARY KEY,
-                content TEXT NOT NULL,
-                source_entry_id TEXT NOT NULL,
-                category TEXT NOT NULL,
-                importance INTEGER NOT NULL,
-                extracted_at REAL NOT NULL,
-                FOREIGN KEY (source_entry_id) REFERENCES entries(id)
-            )
-        """
-        
-        if sqlite3_exec(db, createTableQuery, nil, nil, nil) != SQLITE_OK {
-            throw DatabaseError.failedToCreateTable
-        }
-        
         let insertQuery = """
-            INSERT OR REPLACE INTO memories (id, content, source_entry_id, category, importance, extracted_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT OR REPLACE INTO memories (id, content, source_entry_id, extracted_at)
+            VALUES (?, ?, ?, ?)
         """
         
         var statement: OpaquePointer?
@@ -604,9 +636,7 @@ actor DatabaseManager {
         sqlite3_bind_text(statement, 1, memoryId.uuidString, -1, SQLITE_TRANSIENT)
         sqlite3_bind_text(statement, 2, memoryData.content, -1, SQLITE_TRANSIENT)
         sqlite3_bind_text(statement, 3, memoryData.sourceEntryID.uuidString, -1, SQLITE_TRANSIENT)
-        sqlite3_bind_text(statement, 4, memoryData.category.rawValue, -1, SQLITE_TRANSIENT)
-        sqlite3_bind_int(statement, 5, Int32(memoryData.importance))
-        sqlite3_bind_double(statement, 6, Date().timeIntervalSince1970)
+        sqlite3_bind_double(statement, 4, Date().timeIntervalSince1970)
         
         guard sqlite3_step(statement) == SQLITE_DONE else {
             throw DatabaseError.failedToSave

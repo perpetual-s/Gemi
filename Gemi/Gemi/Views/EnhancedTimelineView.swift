@@ -1139,10 +1139,8 @@ struct EnhancedChatSheet: View {
         Task {
             // Create memories specific to this entry
             let entryMemory = Memory(
-                content: journalEntry.content.prefix(500) + "...",
-                sourceEntryID: journalEntry.id,
-                category: .personal,
-                importance: 5
+                content: String(journalEntry.content.prefix(500)) + "...",
+                sourceEntryID: journalEntry.id
             )
             
             // Use the reflection prompt if provided, otherwise use context
