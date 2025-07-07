@@ -205,7 +205,7 @@ actor DatabaseManager {
         // Bind parameters
         sqlite3_bind_text(statement, 1, entry.id.uuidString, -1, SQLITE_TRANSIENT)
         sqlite3_bind_text(statement, 2, entry.title, -1, SQLITE_TRANSIENT)
-        encryptedContent.withUnsafeBytes { bytes in
+        _ = encryptedContent.withUnsafeBytes { bytes in
             sqlite3_bind_blob(statement, 3, bytes.baseAddress, Int32(encryptedContent.count), SQLITE_TRANSIENT)
         }
         sqlite3_bind_double(statement, 4, entry.createdAt.timeIntervalSince1970)
