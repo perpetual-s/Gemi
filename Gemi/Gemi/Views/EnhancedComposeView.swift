@@ -522,7 +522,7 @@ struct EnhancedComposeView: View {
         switch type {
         case .bold:
             isBoldActive.toggle()
-            if let range = selectedRange {
+            if selectedRange != nil {
                 // Apply bold formatting to selected text
                 // This is placeholder - would need NSTextView for real implementation
             } else {
@@ -530,7 +530,7 @@ struct EnhancedComposeView: View {
             }
         case .italic:
             isItalicActive.toggle()
-            if let range = selectedRange {
+            if selectedRange != nil {
                 // Apply italic formatting
             } else {
                 // Formatting not implemented yet

@@ -123,7 +123,7 @@ struct FavoritesView: View {
     }
     
     private func toggleFavorite(for entry: JournalEntry) async {
-        var updatedEntry = entry
+        let updatedEntry = entry
         updatedEntry.isFavorite.toggle()
         await journalStore.updateEntry(updatedEntry)
     }

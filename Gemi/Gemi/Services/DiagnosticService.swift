@@ -65,7 +65,7 @@ actor DiagnosticService {
                 try await DatabaseManager.shared.saveEntry(testEntry)
                 
                 // Delete the test entry
-                try await DatabaseManager.shared.deleteEntry(testEntry.id, permanently: true)
+                try await DatabaseManager.shared.deleteEntry(testEntry.id)
                 
                 return DiagnosticResult(
                     component: "Database",
@@ -93,8 +93,8 @@ actor DiagnosticService {
     
     private func testNetworkPermissions() async -> DiagnosticResult {
         do {
-            // Test connection to localhost
-            let url = URL(string: "http://localhost:11434")!
+            // Test connection to Ollama server
+            let url = URL(string: await OllamaConfiguration.shared.baseURL)!
             var request = URLRequest(url: url)
             request.httpMethod = "HEAD"
             request.timeoutInterval = 5
@@ -106,8 +106,8 @@ actor DiagnosticService {
                     return DiagnosticResult(
                         component: "Network Permissions",
                         status: .success,
-                        message: "Network access to localhost is allowed",
-                        details: "Successfully connected to localhost:11434"
+                        message: "Network access to Ollama server is allowed",
+                        details: "Successfully connected to \(await OllamaConfiguration.shared.baseURL)"
                     )
                 } else {
                     return DiagnosticResult(
@@ -135,7 +135,7 @@ actor DiagnosticService {
                 return DiagnosticResult(
                     component: "Network Permissions",
                     status: .success,
-                    message: "Network access to localhost is allowed",
+                    message: "Network access to Ollama server is allowed",
                     details: "Connection refused (expected if Ollama not running)"
                 )
             }
@@ -143,7 +143,7 @@ actor DiagnosticService {
             return DiagnosticResult(
                 component: "Network Permissions",
                 status: .failure,
-                message: "Network access to localhost may be blocked",
+                message: "Network access to Ollama server may be blocked",
                 details: error.localizedDescription
             )
         }
