@@ -3,6 +3,8 @@ import SwiftUI
 struct MainWindowView: View {
     @State private var selectedView: NavigationItem = .timeline
     @State private var selectedEntry: JournalEntry? = nil
+    @State private var editingEntry: JournalEntry? = nil
+    @State private var showingReadingView = false
     @StateObject private var journalStore = JournalStore()
     
     var body: some View {
@@ -40,21 +42,27 @@ struct MainWindowView: View {
                 selectedEntry: $selectedEntry,
                 onNewEntry: {
                     selectedView = .compose
+                },
+                onEditEntry: { entry in
+                    editingEntry = entry
+                    selectedView = .compose
                 }
             )
         case .compose:
-            EnhancedComposeView(
-                entry: nil,
+            ProductionComposeView(
+                entry: editingEntry,
                 onSave: { entry in
                     Task {
                         await journalStore.saveEntry(entry)
                         selectedView = .timeline
+                        editingEntry = nil
                         // Find the saved entry from the refreshed entries array
                         selectedEntry = journalStore.entries.first { $0.id == entry.id }
                     }
                 },
                 onCancel: {
                     selectedView = .timeline
+                    editingEntry = nil
                 }
             )
         case .chat:
