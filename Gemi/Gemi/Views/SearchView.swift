@@ -104,10 +104,12 @@ struct SearchView: View {
                     .padding(.horizontal)
                 
                 ForEach(searchResults) { entry in
-                    EntryCard(
+                    EnhancedEntryCard(
                         entry: entry,
                         isSelected: false,
-                        onTap: {}
+                        onTap: {},
+                        onChat: {},
+                        onToggleFavorite: {}
                     )
                     .padding(.horizontal)
                 }

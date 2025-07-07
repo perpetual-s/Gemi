@@ -209,7 +209,7 @@ struct InsightsView: View {
                             
                             HStack {
                                 ForEach(topTags.prefix(4), id: \.self) { tag in
-                                    TagChip(tag: tag, onRemove: {})
+                                    SimpleTagChip(tag: tag)
                                 }
                             }
                         }
@@ -677,6 +677,23 @@ struct EmptyStateCard: View {
             RoundedRectangle(cornerRadius: Theme.cornerRadius)
                 .fill(Theme.Colors.cardBackground.opacity(0.5))
         )
+    }
+}
+
+// Simple tag chip component for insights view
+struct SimpleTagChip: View {
+    let tag: String
+    
+    var body: some View {
+        Text("#\(tag)")
+            .font(.system(size: 13))
+            .foregroundColor(Theme.Colors.primaryAccent)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Theme.Colors.primaryAccent.opacity(0.1))
+            )
     }
 }
 

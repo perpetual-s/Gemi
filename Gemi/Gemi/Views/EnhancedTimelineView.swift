@@ -397,7 +397,15 @@ struct EnhancedEntryCard: View {
                         if !entry.tags.isEmpty {
                             HStack(spacing: 6) {
                                 ForEach(entry.tags, id: \.self) { tag in
-                                    TagView(tag: tag)
+                                    Text("#\(tag)")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(Theme.Colors.primaryAccent)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .fill(Theme.Colors.primaryAccent.opacity(0.1))
+                                        )
                                 }
                             }
                         }
@@ -1028,7 +1036,7 @@ struct EnhancedChatSheet: View {
             Divider()
             
             // Chat view
-            ChatInterfaceView(viewModel: chatViewModel)
+            GemiChatView(contextEntry: journalEntry)
         }
         .frame(minWidth: 600, idealWidth: 700, maxWidth: 900, minHeight: 400, idealHeight: 500, maxHeight: 700)
         .background(Theme.Colors.windowBackground)
