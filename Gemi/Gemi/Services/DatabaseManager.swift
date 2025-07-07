@@ -58,11 +58,19 @@ final class DatabaseManager: @unchecked Sendable {
         let bundleID = Bundle.main.bundleIdentifier ?? "com.gemi.app"
         let appDirectory = appSupportURL.appendingPathComponent(bundleID)
         
-        try FileManager.default.createDirectory(
-            at: appDirectory,
-            withIntermediateDirectories: true,
-            attributes: nil
-        )
+        // Check if directory exists, create if needed
+        if !FileManager.default.fileExists(atPath: appDirectory.path) {
+            do {
+                try FileManager.default.createDirectory(
+                    at: appDirectory,
+                    withIntermediateDirectories: true,
+                    attributes: nil
+                )
+            } catch {
+                print("Failed to create app directory: \(error)")
+                throw DatabaseError.failedToOpen
+            }
+        }
         
         let databaseURL = appDirectory.appendingPathComponent(databaseName)
         
@@ -75,7 +83,15 @@ final class DatabaseManager: @unchecked Sendable {
         }
         
         // Enable Write-Ahead Logging for better performance
-        try executeSQL("PRAGMA journal_mode=WAL")
+        // First check if we can write to the database
+        do {
+            try executeSQL("PRAGMA journal_mode=WAL")
+        } catch {
+            // If WAL mode fails, try to continue without it
+            print("Warning: Could not enable WAL mode: \(error)")
+            // Try to use DELETE mode as fallback
+            try? executeSQL("PRAGMA journal_mode=DELETE")
+        }
         
         try createTables()
     }

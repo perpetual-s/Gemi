@@ -43,9 +43,15 @@ struct EnhancedTimelineView: View {
             .background(Theme.Colors.windowBackground)
             
             // Floating Chat Button
-            ChatFloatingButton(showingChat: $showingFloatingChat)
-                .padding(Theme.largeSpacing)
-                .transition(.scale.combined(with: .opacity))
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    ChatFloatingButton(showingChat: $showingFloatingChat)
+                        .padding(Theme.largeSpacing)
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
         }
         .onAppear {
             groupEntriesByDate()
@@ -97,6 +103,7 @@ struct EnhancedTimelineView: View {
                 } label: {
                     Label("AI Insights", systemImage: "brain")
                 }
+                .controlSize(.large)
                 .buttonStyle(.bordered)
                 
                 Button(action: onNewEntry) {
@@ -287,7 +294,7 @@ struct EnhancedEntryCard: View {
                     
                     Spacer()
                     
-                    HStack(spacing: 12) {
+                    HStack(spacing: Theme.spacing) {
                         // Interactive favorite button - now outside main button
                         Button(action: {
                             onToggleFavorite()
@@ -381,7 +388,7 @@ struct EnhancedEntryCard: View {
             
             // Expanded actions
             if isExpanded {
-                HStack(spacing: 12) {
+                HStack(spacing: Theme.spacing) {
                     // Read in full view button
                     Button {
                         showingReadingMode = true
@@ -411,8 +418,10 @@ struct EnhancedEntryCard: View {
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.horizontal)
-                .padding(.bottom)
+                .padding(.horizontal, Theme.spacing)
+                .padding(.top, Theme.smallSpacing)
+                .padding(.bottom, Theme.spacing)
+                .background(Theme.Colors.cardBackground.opacity(0.5))
                 .transition(.asymmetric(
                     insertion: .move(edge: .bottom).combined(with: .opacity),
                     removal: .opacity
@@ -585,9 +594,8 @@ struct ReadingModeView: View {
     @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 0) {
+        ScrollView {
+            VStack(spacing: 0) {
                     // Enhanced header with visual design
                     VStack(alignment: .leading, spacing: 16) {
                         // Close button at top
@@ -692,7 +700,7 @@ struct ReadingModeView: View {
                         }
                         
                         // Action buttons
-                        HStack(spacing: 12) {
+                        HStack(spacing: Theme.spacing) {
                             Button(action: onChat) {
                                 Label("Discuss with Gemi", systemImage: "bubble.left.and.bubble.right")
                                     .font(.system(size: 14, weight: .medium))
@@ -716,7 +724,6 @@ struct ReadingModeView: View {
                     .background(Theme.Colors.windowBackground)
                 }
             }
-        }
         .frame(minWidth: 600, minHeight: 500)
         .background(Theme.Colors.windowBackground)
     }

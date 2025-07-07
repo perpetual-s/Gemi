@@ -53,7 +53,7 @@ struct ChatSheet: View {
             // Chat view (Create a custom view to avoid recursion)
             ChatInterfaceView(viewModel: chatViewModel)
         }
-        .frame(width: 700, height: 500)
+        .frame(minWidth: 600, idealWidth: 700, maxWidth: 900, minHeight: 400, idealHeight: 500, maxHeight: 700)
         .background(Theme.Colors.windowBackground)
         .onAppear {
             if !isInitialized {
