@@ -227,9 +227,16 @@ struct EnhancedTimelineView: View {
     
     private func toggleFavorite(for entry: JournalEntry) {
         if let index = journalStore.entries.firstIndex(where: { $0.id == entry.id }) {
-            journalStore.entries[index].isFavorite.toggle()
+            // Update the entry
+            let updatedEntry = journalStore.entries[index]
+            updatedEntry.isFavorite.toggle()
+            updatedEntry.modifiedAt = Date()
+            
+            // Update local state immediately for responsive UI
+            journalStore.objectWillChange.send()
+            
             Task {
-                await journalStore.saveEntry(journalStore.entries[index])
+                await journalStore.saveEntry(updatedEntry)
             }
         }
     }
@@ -322,6 +329,7 @@ struct EnhancedEntryCard: View {
     @State private var showAIActions = false
     @State private var isExpanded = false
     @State private var showingReadingMode = false
+    @State private var localIsFavorite: Bool = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -338,16 +346,17 @@ struct EnhancedEntryCard: View {
                     HStack(spacing: Theme.spacing) {
                         // Interactive favorite button - now outside main button
                         Button(action: {
+                            localIsFavorite.toggle()
                             onToggleFavorite()
                         }) {
-                            Image(systemName: entry.isFavorite ? "star.fill" : "star")
+                            Image(systemName: localIsFavorite ? "star.fill" : "star")
                                 .font(.system(size: 16))
-                                .foregroundColor(entry.isFavorite ? .yellow : Theme.Colors.secondaryText)
-                                .scaleEffect(entry.isFavorite ? 1.1 : 1)
-                                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: entry.isFavorite)
+                                .foregroundColor(localIsFavorite ? .yellow : Theme.Colors.secondaryText)
+                                .scaleEffect(localIsFavorite ? 1.1 : 1)
+                                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: localIsFavorite)
                         }
                         .buttonStyle(.plain)
-                        .help(entry.isFavorite ? "Remove from favorites" : "Add to favorites")
+                        .help(localIsFavorite ? "Remove from favorites" : "Add to favorites")
                         
                         // Expand indicator
                         Image(systemName: "chevron.down")
@@ -464,6 +473,12 @@ struct EnhancedEntryCard: View {
                     removal: .opacity
                 ))
             }
+        }
+        .onAppear {
+            localIsFavorite = entry.isFavorite
+        }
+        .onChange(of: entry.isFavorite) { _, newValue in
+            localIsFavorite = newValue
         }
         .onHover { hovering in
             withAnimation(Theme.quickAnimation) {

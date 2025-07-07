@@ -9,7 +9,7 @@ struct MainWindowView: View {
     
     var body: some View {
         HSplitView {
-            Sidebar(selectedView: $selectedView)
+            Sidebar(selectedView: $selectedView, journalStore: journalStore)
                 .frame(minWidth: Theme.sidebarWidth, maxWidth: Theme.sidebarWidth)
             
             contentView

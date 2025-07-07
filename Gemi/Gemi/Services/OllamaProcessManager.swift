@@ -92,7 +92,7 @@ actor OllamaProcessManager {
     /// Check if Ollama server is already running
     func isOllamaServerRunning() async -> Bool {
         do {
-            let url = URL(string: "http://localhost:11434/api/tags")!
+            let url = URL(string: await OllamaConfiguration.shared.apiTagsURL)!
             let (_, response) = try await URLSession.shared.data(from: url)
             
             if let httpResponse = response as? HTTPURLResponse {
@@ -136,12 +136,14 @@ actor OllamaProcessManager {
         startupAttempts += 1
         
         // First, check if another Ollama instance is already running
-        if await isPortInUse(11434) {
+        let config = await OllamaConfiguration.shared
+        let port = await config.useCustomURL ? config.port : 11434
+        if await isPortInUse(port) {
             // Check if it's a valid Ollama server
             if await isOllamaServerRunning() {
                 isOllamaRunning = true
                 startupAttempts = 0
-                print("Ollama server already running on port 11434")
+                print("Ollama server already running on port \(port)")
                 return
             } else {
                 // Port is in use but not by Ollama
@@ -159,7 +161,10 @@ actor OllamaProcessManager {
         // Set environment variables
         var environment = ProcessInfo.processInfo.environment
         environment["OLLAMA_DEBUG"] = "1" // Enable debug logging
-        environment["OLLAMA_HOST"] = "127.0.0.1:11434" // Explicitly set host
+        let ollamaConfig = await OllamaConfiguration.shared
+        let host = await ollamaConfig.useCustomURL ? ollamaConfig.host : "127.0.0.1"
+        let hostPort = await ollamaConfig.useCustomURL ? ollamaConfig.port : 11434
+        environment["OLLAMA_HOST"] = "\(host):\(hostPort)" // Explicitly set host
         environment["HOME"] = NSHomeDirectory() // Ensure HOME is set
         process.environment = environment
         
@@ -513,7 +518,7 @@ enum OllamaProcessError: LocalizedError {
         case .maxAttemptsReached:
             return "Failed to start Ollama after multiple attempts"
         case .portInUse:
-            return "Port 11434 is already in use by another process"
+            return "Ollama port is already in use by another process"
         case .serverNotResponding:
             return "Ollama server is not responding"
         }

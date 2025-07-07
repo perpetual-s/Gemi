@@ -6,53 +6,42 @@ import Security
 // SQLite3 constants not exposed in Swift
 private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
-final class DatabaseManager: @unchecked Sendable {
+/// Thread-safe database manager using actor isolation for Swift 6 compliance
+actor DatabaseManager {
     static let shared = DatabaseManager()
     
     private let databaseName = "gemi.db"
     private let encryptionKeyTag = "com.gemi.encryptionKey"
     private var database: OpaquePointer?
-    private let queue = DispatchQueue(label: "com.gemi.database", attributes: .concurrent)
     
     private init() {}
     
     /// Test if the database connection is working
     func testConnection() async -> Bool {
-        return await withCheckedContinuation { continuation in
-            queue.async {
-                guard let db = self.database else {
-                    continuation.resume(returning: false)
-                    return
-                }
-                
-                // Try a simple query to test connection
-                var statement: OpaquePointer?
-                let result = sqlite3_prepare_v2(db, "SELECT 1", -1, &statement, nil) == SQLITE_OK
-                sqlite3_finalize(statement)
-                
-                continuation.resume(returning: result)
-            }
+        guard let db = database else {
+            return false
         }
+        
+        // Try a simple query to test connection
+        var statement: OpaquePointer?
+        let result = sqlite3_prepare_v2(db, "SELECT 1", -1, &statement, nil) == SQLITE_OK
+        sqlite3_finalize(statement)
+        
+        return result
     }
     
     func initialize() async throws {
-        try await withCheckedThrowingContinuation { continuation in
-            queue.async(flags: .barrier) {
-                do {
-                    try self.setupDatabase()
-                    continuation.resume()
-                } catch {
-                    print("Database initialization failed: \(error)")
-                    // Try to reset and reinitialize
-                    do {
-                        self.resetDatabase()
-                        try self.setupDatabase()
-                        continuation.resume()
-                    } catch {
-                        continuation.resume(throwing: error)
-                    }
-                }
-            }
+        if database != nil {
+            return // Already initialized
+        }
+        
+        do {
+            try setupDatabase()
+        } catch {
+            print("Database initialization failed: \(error)")
+            // Try to reset and reinitialize
+            resetDatabase()
+            try setupDatabase()
         }
     }
     
@@ -120,15 +109,18 @@ final class DatabaseManager: @unchecked Sendable {
             throw DatabaseError.failedToOpen
         }
         
-        // Enable Write-Ahead Logging for better performance
-        // First check if we can write to the database
+        // Enable WAL mode for better concurrency
+        sqlite3_exec(database, "PRAGMA journal_mode=WAL", nil, nil, nil)
+        
+        // Ensure proper file permissions
         do {
-            try executeSQL("PRAGMA journal_mode=WAL")
+            try FileManager.default.setAttributes(
+                [.posixPermissions: 0o600],
+                ofItemAtPath: databaseURL.path
+            )
         } catch {
-            // If WAL mode fails, try to continue without it
-            // This is common in sandboxed apps with certain file permissions
-            // The warning is expected in sandboxed environments
-            // Database will still function normally with default journal mode
+            print("Failed to set file permissions: \(error)")
+            // Non-critical, continue
         }
         
         try createTables()
@@ -136,435 +128,484 @@ final class DatabaseManager: @unchecked Sendable {
     
     private func createTables() throws {
         let createEntriesTable = """
-            CREATE TABLE IF NOT EXISTS journal_entries (
-                id TEXT PRIMARY KEY NOT NULL,
+            CREATE TABLE IF NOT EXISTS entries (
+                id TEXT PRIMARY KEY,
+                title TEXT,
+                content_encrypted BLOB NOT NULL,
                 created_at REAL NOT NULL,
                 modified_at REAL NOT NULL,
-                title TEXT,
-                content TEXT,
-                encrypted_content BLOB,
-                tags TEXT,
-                mood TEXT,
-                weather TEXT,
-                location TEXT,
-                attachments TEXT,
-                is_encrypted INTEGER NOT NULL DEFAULT 0,
                 is_favorite INTEGER NOT NULL DEFAULT 0,
-                is_deleted INTEGER NOT NULL DEFAULT 0
+                mood TEXT,
+                tags TEXT,
+                location TEXT,
+                weather TEXT
             )
         """
         
-        let createUsersTable = """
-            CREATE TABLE IF NOT EXISTS users (
-                id TEXT PRIMARY KEY NOT NULL,
-                name TEXT NOT NULL,
-                email TEXT,
+        let createMemoriesTable = """
+            CREATE TABLE IF NOT EXISTS memories (
+                id TEXT PRIMARY KEY,
+                entry_id TEXT NOT NULL,
+                content TEXT NOT NULL,
+                keywords TEXT,
                 created_at REAL NOT NULL,
-                last_login_at REAL NOT NULL,
-                preferences BLOB
+                FOREIGN KEY (entry_id) REFERENCES entries(id) ON DELETE CASCADE
             )
         """
         
-        let createIndices = [
-            "CREATE INDEX IF NOT EXISTS idx_entries_created_at ON journal_entries(created_at)",
-            "CREATE INDEX IF NOT EXISTS idx_entries_is_deleted ON journal_entries(is_deleted)",
-            "CREATE INDEX IF NOT EXISTS idx_entries_is_favorite ON journal_entries(is_favorite)"
+        // Create indexes for better performance
+        let createIndexes = [
+            "CREATE INDEX IF NOT EXISTS idx_entries_created_at ON entries(created_at DESC)",
+            "CREATE INDEX IF NOT EXISTS idx_entries_is_favorite ON entries(is_favorite)",
+            "CREATE INDEX IF NOT EXISTS idx_memories_entry_id ON memories(entry_id)",
+            "CREATE INDEX IF NOT EXISTS idx_memories_keywords ON memories(keywords)"
         ]
         
-        try executeSQL(createEntriesTable)
-        try executeSQL(createUsersTable)
+        guard let db = database else {
+            throw DatabaseError.notInitialized
+        }
         
-        for index in createIndices {
-            try executeSQL(index)
+        // Execute table creation
+        if sqlite3_exec(db, createEntriesTable, nil, nil, nil) != SQLITE_OK {
+            throw DatabaseError.failedToCreateTable
+        }
+        
+        if sqlite3_exec(db, createMemoriesTable, nil, nil, nil) != SQLITE_OK {
+            throw DatabaseError.failedToCreateTable
+        }
+        
+        // Create indexes
+        for createIndex in createIndexes {
+            sqlite3_exec(db, createIndex, nil, nil, nil)
         }
     }
     
-    private func executeSQL(_ sql: String) throws {
-        var statement: OpaquePointer?
-        
-        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else {
-            throw DatabaseError.failedToPrepare(sql)
-        }
-        
-        defer { sqlite3_finalize(statement) }
-        
-        guard sqlite3_step(statement) == SQLITE_DONE else {
-            throw DatabaseError.failedToExecute(sql)
-        }
-    }
-    
-    // MARK: - Encryption
-    
-    private func getOrCreateEncryptionKey() throws -> SymmetricKey {
-        if let existingKey = try? loadEncryptionKey() {
-            return existingKey
-        }
-        
-        let key = SymmetricKey(size: .bits256)
-        try saveEncryptionKey(key)
-        return key
-    }
-    
-    private func saveEncryptionKey(_ key: SymmetricKey) throws {
-        let keyData = key.withUnsafeBytes { Data($0) }
-        
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: encryptionKeyTag,
-            kSecValueData as String: keyData,
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-        ]
-        
-        let status = SecItemAdd(query as CFDictionary, nil)
-        guard status == errSecSuccess else {
-            throw DatabaseError.failedToSaveKey
-        }
-    }
-    
-    private func loadEncryptionKey() throws -> SymmetricKey {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: encryptionKeyTag,
-            kSecReturnData as String: true
-        ]
-        
-        var item: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &item)
-        
-        guard status == errSecSuccess,
-              let keyData = item as? Data else {
-            throw DatabaseError.keyNotFound
-        }
-        
-        return SymmetricKey(data: keyData)
-    }
-    
-    private func encrypt(_ data: Data) throws -> Data {
-        let key = try getOrCreateEncryptionKey()
-        let nonce = AES.GCM.Nonce()
-        let sealedBox = try AES.GCM.seal(data, using: key, nonce: nonce)
-        return sealedBox.combined ?? Data()
-    }
-    
-    private func decrypt(_ data: Data) throws -> Data {
-        let key = try getOrCreateEncryptionKey()
-        let sealedBox = try AES.GCM.SealedBox(combined: data)
-        return try AES.GCM.open(sealedBox, using: key)
-    }
-    
-    // MARK: - Journal Entry Operations
+    // MARK: - Entry Operations
     
     func saveEntry(_ entry: JournalEntry) async throws {
-        try await withCheckedThrowingContinuation { continuation in
-            queue.async(flags: .barrier) {
-                do {
-                    try self.saveEntrySync(entry)
-                    continuation.resume()
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
+        guard let db = database else {
+            throw DatabaseError.notInitialized
         }
-    }
-    
-    private func saveEntrySync(_ entry: JournalEntry) throws {
-        print("Attempting to save entry: \(entry.id)")
         
-        let sql = """
-            INSERT OR REPLACE INTO journal_entries 
-            (id, created_at, modified_at, title, content, encrypted_content, tags, mood, weather, location, attachments, is_encrypted, is_favorite, is_deleted)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        let encryptedContent = try await encryptContent(entry.content)
+        
+        let query = """
+            INSERT OR REPLACE INTO entries 
+            (id, title, content_encrypted, created_at, modified_at, is_favorite, mood, tags, location, weather)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         
         var statement: OpaquePointer?
-        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else {
-            let errorMessage = String(cString: sqlite3_errmsg(database))
-            print("Failed to prepare save statement: \(errorMessage)")
-            throw DatabaseError.failedToPrepare(sql)
-        }
-        
         defer { sqlite3_finalize(statement) }
         
-        // Use SQLITE_TRANSIENT to ensure string data is copied
+        guard sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK else {
+            throw DatabaseError.failedToPrepareStatement
+        }
+        
+        // Bind parameters
         sqlite3_bind_text(statement, 1, entry.id.uuidString, -1, SQLITE_TRANSIENT)
-        sqlite3_bind_double(statement, 2, entry.createdAt.timeIntervalSince1970)
-        sqlite3_bind_double(statement, 3, entry.modifiedAt.timeIntervalSince1970)
-        
-        if entry.title.isEmpty {
-            sqlite3_bind_null(statement, 4)
-        } else {
-            sqlite3_bind_text(statement, 4, entry.title, -1, SQLITE_TRANSIENT)
+        sqlite3_bind_text(statement, 2, entry.title, -1, SQLITE_TRANSIENT)
+        encryptedContent.withUnsafeBytes { bytes in
+            sqlite3_bind_blob(statement, 3, bytes.baseAddress, Int32(encryptedContent.count), SQLITE_TRANSIENT)
         }
-        
-        // Handle content and encrypted content properly
-        if entry.isEncrypted, let encryptedData = entry.encryptedContent {
-            // Entry is already encrypted, store the encrypted data
-            sqlite3_bind_null(statement, 5) // content is null
-            sqlite3_bind_blob(statement, 6, [UInt8](encryptedData), Int32(encryptedData.count), SQLITE_TRANSIENT)
-        } else if entry.isEncrypted && !entry.content.isEmpty {
-            // Entry needs to be encrypted
-            let contentData = entry.content.data(using: .utf8) ?? Data()
-            let encryptedData = try encrypt(contentData)
-            sqlite3_bind_null(statement, 5) // content is null
-            sqlite3_bind_blob(statement, 6, [UInt8](encryptedData), Int32(encryptedData.count), SQLITE_TRANSIENT)
-        } else {
-            // Entry is not encrypted
-            if entry.content.isEmpty {
-                sqlite3_bind_null(statement, 5)
-            } else {
-                sqlite3_bind_text(statement, 5, entry.content, -1, SQLITE_TRANSIENT)
-            }
-            sqlite3_bind_null(statement, 6)
-        }
-        
-        let tagsJson = try JSONEncoder().encode(entry.tags)
-        if let tagsString = String(data: tagsJson, encoding: .utf8) {
-            sqlite3_bind_text(statement, 7, tagsString, -1, SQLITE_TRANSIENT)
-        } else {
-            sqlite3_bind_text(statement, 7, "[]", -1, SQLITE_TRANSIENT)
-        }
+        sqlite3_bind_double(statement, 4, entry.createdAt.timeIntervalSince1970)
+        sqlite3_bind_double(statement, 5, entry.modifiedAt.timeIntervalSince1970)
+        sqlite3_bind_int(statement, 6, entry.isFavorite ? 1 : 0)
         
         if let mood = entry.mood {
-            sqlite3_bind_text(statement, 8, mood.rawValue, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 7, mood.rawValue, -1, SQLITE_TRANSIENT)
+        } else {
+            sqlite3_bind_null(statement, 7)
+        }
+        
+        if !entry.tags.isEmpty {
+            let tagsJSON = try JSONEncoder().encode(entry.tags)
+            let tagsString = String(data: tagsJSON, encoding: .utf8)
+            sqlite3_bind_text(statement, 8, tagsString, -1, SQLITE_TRANSIENT)
         } else {
             sqlite3_bind_null(statement, 8)
         }
         
-        if let weather = entry.weather {
-            sqlite3_bind_text(statement, 9, weather, -1, SQLITE_TRANSIENT)
+        if let location = entry.location {
+            sqlite3_bind_text(statement, 9, location, -1, SQLITE_TRANSIENT)
         } else {
             sqlite3_bind_null(statement, 9)
         }
         
-        if let location = entry.location {
-            sqlite3_bind_text(statement, 10, location, -1, SQLITE_TRANSIENT)
+        if let weather = entry.weather {
+            sqlite3_bind_text(statement, 10, weather, -1, SQLITE_TRANSIENT)
         } else {
             sqlite3_bind_null(statement, 10)
         }
         
-        let attachmentsJson = try JSONEncoder().encode(entry.attachments)
-        if let attachmentsString = String(data: attachmentsJson, encoding: .utf8) {
-            sqlite3_bind_text(statement, 11, attachmentsString, -1, SQLITE_TRANSIENT)
-        } else {
-            sqlite3_bind_text(statement, 11, "[]", -1, SQLITE_TRANSIENT)
-        }
-        
-        sqlite3_bind_int(statement, 12, entry.isEncrypted ? 1 : 0)
-        sqlite3_bind_int(statement, 13, entry.isFavorite ? 1 : 0)
-        sqlite3_bind_int(statement, 14, entry.isDeleted ? 1 : 0)
-        
-        let result = sqlite3_step(statement)
-        guard result == SQLITE_DONE else {
-            let errorMessage = String(cString: sqlite3_errmsg(database))
-            print("Failed to save entry: \(errorMessage) (code: \(result))")
-            throw DatabaseError.failedToExecute(sql)
+        guard sqlite3_step(statement) == SQLITE_DONE else {
+            throw DatabaseError.failedToSave
         }
     }
     
-    func loadEntries(includeDeleted: Bool = false) async throws -> [JournalEntry] {
-        try await withCheckedThrowingContinuation { continuation in
-            queue.async {
-                do {
-                    let entries = try self.loadEntriesSync(includeDeleted: includeDeleted)
-                    continuation.resume(returning: entries)
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
+    func loadEntries() async throws -> [JournalEntry] {
+        guard let db = database else {
+            throw DatabaseError.notInitialized
         }
-    }
-    
-    private func loadEntriesSync(includeDeleted: Bool = false) throws -> [JournalEntry] {
-        let sql = includeDeleted
-            ? "SELECT * FROM journal_entries ORDER BY created_at DESC"
-            : "SELECT * FROM journal_entries WHERE is_deleted = 0 ORDER BY created_at DESC"
+        
+        let query = """
+            SELECT id, title, content_encrypted, created_at, modified_at, is_favorite, mood, tags, location, weather
+            FROM entries
+            ORDER BY created_at DESC
+        """
         
         var statement: OpaquePointer?
-        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else {
-            throw DatabaseError.failedToPrepare(sql)
-        }
-        
         defer { sqlite3_finalize(statement) }
+        
+        guard sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK else {
+            throw DatabaseError.failedToPrepareStatement
+        }
         
         var entries: [JournalEntry] = []
         
         while sqlite3_step(statement) == SQLITE_ROW {
-            let entry = try parseEntry(from: statement)
+            guard let idString = sqlite3_column_text(statement, 0),
+                  let id = UUID(uuidString: String(cString: idString)) else {
+                continue
+            }
+            
+            let title = sqlite3_column_text(statement, 1).map { String(cString: $0) } ?? ""
+            
+            let encryptedContentPointer = sqlite3_column_blob(statement, 2)
+            let encryptedContentSize = Int(sqlite3_column_bytes(statement, 2))
+            let encryptedContent = Data(bytes: encryptedContentPointer!, count: encryptedContentSize)
+            
+            let content = try await decryptContent(encryptedContent)
+            
+            let createdAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 3))
+            let modifiedAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 4))
+            let isFavorite = sqlite3_column_int(statement, 5) == 1
+            
+            let moodString = sqlite3_column_text(statement, 6).map { String(cString: $0) }
+            let mood = moodString.flatMap { Mood(rawValue: $0) }
+            
+            var tags: [String] = []
+            if let tagsText = sqlite3_column_text(statement, 7),
+               let tagsData = String(cString: tagsText).data(using: .utf8) {
+                tags = (try? JSONDecoder().decode([String].self, from: tagsData)) ?? []
+            }
+            
+            let location = sqlite3_column_text(statement, 8).map { String(cString: $0) }
+            let weather = sqlite3_column_text(statement, 9).map { String(cString: $0) }
+            
+            let entry = JournalEntry(
+                id: id,
+                createdAt: createdAt,
+                modifiedAt: modifiedAt,
+                title: title,
+                content: content,
+                tags: tags,
+                mood: mood,
+                weather: weather,
+                location: location,
+                isFavorite: isFavorite
+            )
+            
             entries.append(entry)
         }
         
         return entries
     }
     
-    private func parseEntry(from statement: OpaquePointer?) throws -> JournalEntry {
-        // Column indices based on CREATE TABLE structure:
-        // 0: id, 1: created_at, 2: modified_at, 3: title, 4: content
-        // 5: encrypted_content, 6: tags, 7: mood, 8: weather, 9: location
-        // 10: attachments, 11: is_encrypted, 12: is_favorite, 13: is_deleted
-        
-        let id = UUID(uuidString: String(cString: sqlite3_column_text(statement, 0))) ?? UUID()
-        let createdAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 1))
-        let modifiedAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 2))
-        
-        let title = sqlite3_column_text(statement, 3).map { String(cString: $0) } ?? ""
-        
-        let isEncrypted = sqlite3_column_int(statement, 11) == 1
-        var content = ""
-        var encryptedContent: Data? = nil
-        
-        if isEncrypted {
-            // For encrypted entries, store the encrypted data
-            if let encryptedBlob = sqlite3_column_blob(statement, 5) {
-                let encryptedSize = Int(sqlite3_column_bytes(statement, 5))
-                encryptedContent = Data(bytes: encryptedBlob, count: encryptedSize)
-                // Leave content empty for encrypted entries
-                content = ""
-            }
-        } else {
-            // For non-encrypted entries, get the plain content
-            content = sqlite3_column_text(statement, 4).map { String(cString: $0) } ?? ""
-        }
-        
-        let tagsJson = sqlite3_column_text(statement, 6).map { String(cString: $0) } ?? "[]"
-        let tags = (try? JSONDecoder().decode([String].self, from: tagsJson.data(using: .utf8) ?? Data())) ?? []
-        
-        let moodString = sqlite3_column_text(statement, 7).map { String(cString: $0) }
-        let mood = moodString.flatMap { Mood(rawValue: $0) }
-        let weather = sqlite3_column_text(statement, 8).map { String(cString: $0) }
-        let location = sqlite3_column_text(statement, 9).map { String(cString: $0) }
-        
-        let attachmentsJson = sqlite3_column_text(statement, 10).map { String(cString: $0) } ?? "[]"
-        let attachments = (try? JSONDecoder().decode([String].self, from: attachmentsJson.data(using: .utf8) ?? Data())) ?? []
-        
-        let isFavorite = sqlite3_column_int(statement, 12) == 1
-        let isDeleted = sqlite3_column_int(statement, 13) == 1
-        
-        return JournalEntry(
-            id: id,
-            createdAt: createdAt,
-            modifiedAt: modifiedAt,
-            title: title,
-            content: content,
-            encryptedContent: encryptedContent,
-            tags: tags,
-            mood: mood,
-            weather: weather,
-            location: location,
-            attachments: attachments,
-            isEncrypted: isEncrypted,
-            isFavorite: isFavorite,
-            isDeleted: isDeleted
-        )
-    }
-    
-    func deleteEntry(_ id: UUID, permanently: Bool = false) async throws {
-        try await withCheckedThrowingContinuation { continuation in
-            queue.async(flags: .barrier) {
-                do {
-                    if permanently {
-                        let sql = "DELETE FROM journal_entries WHERE id = ?"
-                        var statement: OpaquePointer?
-                        guard sqlite3_prepare_v2(self.database, sql, -1, &statement, nil) == SQLITE_OK else {
-                            throw DatabaseError.failedToPrepare(sql)
-                        }
-                        defer { sqlite3_finalize(statement) }
-                        
-                        sqlite3_bind_text(statement, 1, id.uuidString, -1, nil)
-                        
-                        guard sqlite3_step(statement) == SQLITE_DONE else {
-                            throw DatabaseError.failedToExecute(sql)
-                        }
-                    } else {
-                        let sql = "UPDATE journal_entries SET is_deleted = 1 WHERE id = ?"
-                        var statement: OpaquePointer?
-                        guard sqlite3_prepare_v2(self.database, sql, -1, &statement, nil) == SQLITE_OK else {
-                            throw DatabaseError.failedToPrepare(sql)
-                        }
-                        defer { sqlite3_finalize(statement) }
-                        
-                        sqlite3_bind_text(statement, 1, id.uuidString, -1, nil)
-                        
-                        guard sqlite3_step(statement) == SQLITE_DONE else {
-                            throw DatabaseError.failedToExecute(sql)
-                        }
-                    }
-                    continuation.resume()
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
-        }
-    }
-    
     func searchEntries(query: String) async throws -> [JournalEntry] {
-        try await withCheckedThrowingContinuation { continuation in
-            queue.async {
-                do {
-                    let sql = """
-                        SELECT * FROM journal_entries 
-                        WHERE is_deleted = 0 AND (
-                            title LIKE ? OR 
-                            content LIKE ? OR 
-                            tags LIKE ? OR
-                            mood LIKE ? OR
-                            location LIKE ?
-                        )
-                        ORDER BY created_at DESC
-                    """
-                    
-                    var statement: OpaquePointer?
-                    guard sqlite3_prepare_v2(self.database, sql, -1, &statement, nil) == SQLITE_OK else {
-                        throw DatabaseError.failedToPrepare(sql)
-                    }
-                    
-                    defer { sqlite3_finalize(statement) }
-                    
-                    let searchPattern = "%\(query)%"
-                    for i in 1...5 {
-                        sqlite3_bind_text(statement, Int32(i), searchPattern, -1, nil)
-                    }
-                    
-                    var entries: [JournalEntry] = []
-                    
-                    while sqlite3_step(statement) == SQLITE_ROW {
-                        let entry = try self.parseEntry(from: statement)
-                        entries.append(entry)
-                    }
-                    
-                    continuation.resume(returning: entries)
-                } catch {
-                    continuation.resume(throwing: error)
-                }
+        guard let db = database else {
+            throw DatabaseError.notInitialized
+        }
+        
+        let searchPattern = "%\(query)%"
+        let sql = """
+            SELECT id, title, content_encrypted, created_at, modified_at, is_favorite, mood, tags, location, weather
+            FROM entries
+            WHERE title LIKE ? OR tags LIKE ?
+            ORDER BY created_at DESC
+        """
+        
+        var statement: OpaquePointer?
+        defer { sqlite3_finalize(statement) }
+        
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+            throw DatabaseError.failedToPrepareStatement
+        }
+        
+        sqlite3_bind_text(statement, 1, searchPattern, -1, SQLITE_TRANSIENT)
+        sqlite3_bind_text(statement, 2, searchPattern, -1, SQLITE_TRANSIENT)
+        
+        var entries: [JournalEntry] = []
+        
+        while sqlite3_step(statement) == SQLITE_ROW {
+            guard let idString = sqlite3_column_text(statement, 0),
+                  let id = UUID(uuidString: String(cString: idString)) else {
+                continue
             }
+            
+            let title = sqlite3_column_text(statement, 1).map { String(cString: $0) } ?? ""
+            
+            let encryptedContentPointer = sqlite3_column_blob(statement, 2)
+            let encryptedContentSize = Int(sqlite3_column_bytes(statement, 2))
+            let encryptedContent = Data(bytes: encryptedContentPointer!, count: encryptedContentSize)
+            
+            let content = try await decryptContent(encryptedContent)
+            
+            let createdAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 3))
+            let modifiedAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 4))
+            let isFavorite = sqlite3_column_int(statement, 5) == 1
+            
+            let moodString = sqlite3_column_text(statement, 6).map { String(cString: $0) }
+            let mood = moodString.flatMap { Mood(rawValue: $0) }
+            
+            var tags: [String] = []
+            if let tagsText = sqlite3_column_text(statement, 7),
+               let tagsData = String(cString: tagsText).data(using: .utf8) {
+                tags = (try? JSONDecoder().decode([String].self, from: tagsData)) ?? []
+            }
+            
+            let location = sqlite3_column_text(statement, 8).map { String(cString: $0) }
+            let weather = sqlite3_column_text(statement, 9).map { String(cString: $0) }
+            
+            let entry = JournalEntry(
+                id: id,
+                createdAt: createdAt,
+                modifiedAt: modifiedAt,
+                title: title,
+                content: content,
+                tags: tags,
+                mood: mood,
+                weather: weather,
+                location: location,
+                isFavorite: isFavorite
+            )
+            
+            entries.append(entry)
+        }
+        
+        return entries
+    }
+    
+    func deleteEntry(_ id: UUID) async throws {
+        guard let db = database else {
+            throw DatabaseError.notInitialized
+        }
+        
+        let query = "DELETE FROM entries WHERE id = ?"
+        
+        var statement: OpaquePointer?
+        defer { sqlite3_finalize(statement) }
+        
+        guard sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK else {
+            throw DatabaseError.failedToPrepareStatement
+        }
+        
+        sqlite3_bind_text(statement, 1, id.uuidString, -1, SQLITE_TRANSIENT)
+        
+        guard sqlite3_step(statement) == SQLITE_DONE else {
+            throw DatabaseError.failedToDelete
+        }
+    }
+    
+    // MARK: - Memory Operations
+    
+    func saveMemory(_ memory: DatabaseMemory) async throws {
+        guard let db = database else {
+            throw DatabaseError.notInitialized
+        }
+        
+        let query = """
+            INSERT OR REPLACE INTO memories (id, entry_id, content, keywords, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        """
+        
+        var statement: OpaquePointer?
+        defer { sqlite3_finalize(statement) }
+        
+        guard sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK else {
+            throw DatabaseError.failedToPrepareStatement
+        }
+        
+        sqlite3_bind_text(statement, 1, memory.id.uuidString, -1, SQLITE_TRANSIENT)
+        sqlite3_bind_text(statement, 2, memory.entryId.uuidString, -1, SQLITE_TRANSIENT)
+        sqlite3_bind_text(statement, 3, memory.content, -1, SQLITE_TRANSIENT)
+        
+        if !memory.keywords.isEmpty {
+            let keywordsString = memory.keywords.joined(separator: ",")
+            sqlite3_bind_text(statement, 4, keywordsString, -1, SQLITE_TRANSIENT)
+        } else {
+            sqlite3_bind_null(statement, 4)
+        }
+        
+        sqlite3_bind_double(statement, 5, memory.createdAt.timeIntervalSince1970)
+        
+        guard sqlite3_step(statement) == SQLITE_DONE else {
+            throw DatabaseError.failedToSave
+        }
+    }
+    
+    func searchMemories(query: String, limit: Int = 10) async throws -> [DatabaseMemory] {
+        guard let db = database else {
+            throw DatabaseError.notInitialized
+        }
+        
+        let sql = """
+            SELECT id, entry_id, content, keywords, created_at
+            FROM memories
+            WHERE content LIKE ? OR keywords LIKE ?
+            ORDER BY created_at DESC
+            LIMIT ?
+        """
+        
+        var statement: OpaquePointer?
+        defer { sqlite3_finalize(statement) }
+        
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+            throw DatabaseError.failedToPrepareStatement
+        }
+        
+        let searchPattern = "%\(query)%"
+        sqlite3_bind_text(statement, 1, searchPattern, -1, SQLITE_TRANSIENT)
+        sqlite3_bind_text(statement, 2, searchPattern, -1, SQLITE_TRANSIENT)
+        sqlite3_bind_int(statement, 3, Int32(limit))
+        
+        var memories: [DatabaseMemory] = []
+        
+        while sqlite3_step(statement) == SQLITE_ROW {
+            guard let idString = sqlite3_column_text(statement, 0),
+                  let id = UUID(uuidString: String(cString: idString)),
+                  let entryIdString = sqlite3_column_text(statement, 1),
+                  let entryId = UUID(uuidString: String(cString: entryIdString)),
+                  let content = sqlite3_column_text(statement, 2) else {
+                continue
+            }
+            
+            var keywords: [String] = []
+            if let keywordsText = sqlite3_column_text(statement, 3) {
+                keywords = String(cString: keywordsText).split(separator: ",").map { String($0) }
+            }
+            
+            let createdAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 4))
+            
+            let memory = DatabaseMemory(
+                id: id,
+                entryId: entryId,
+                content: String(cString: content),
+                keywords: keywords,
+                createdAt: createdAt
+            )
+            
+            memories.append(memory)
+        }
+        
+        return memories
+    }
+    
+    // MARK: - Encryption
+    
+    private func getOrCreateEncryptionKey() async throws -> SymmetricKey {
+        // Try to retrieve existing key from Keychain
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: encryptionKeyTag,
+            kSecReturnData as String: true
+        ]
+        
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        
+        if status == errSecSuccess, let keyData = result as? Data {
+            return SymmetricKey(data: keyData)
+        }
+        
+        // Generate new key
+        let key = SymmetricKey(size: .bits256)
+        let keyData = key.withUnsafeBytes { Data($0) }
+        
+        // Store in Keychain
+        let addQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: encryptionKeyTag,
+            kSecValueData as String: keyData,
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+        ]
+        
+        let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
+        guard addStatus == errSecSuccess else {
+            throw DatabaseError.encryptionError
+        }
+        
+        return key
+    }
+    
+    private func encryptContent(_ content: String) async throws -> Data {
+        let key = try await getOrCreateEncryptionKey()
+        guard let contentData = content.data(using: .utf8) else {
+            throw DatabaseError.encryptionError
+        }
+        
+        let sealedBox = try AES.GCM.seal(contentData, using: key)
+        guard let encrypted = sealedBox.combined else {
+            throw DatabaseError.encryptionError
+        }
+        
+        return encrypted
+    }
+    
+    private func decryptContent(_ encryptedData: Data) async throws -> String {
+        let key = try await getOrCreateEncryptionKey()
+        
+        let sealedBox = try AES.GCM.SealedBox(combined: encryptedData)
+        let decryptedData = try AES.GCM.open(sealedBox, using: key)
+        
+        guard let content = String(data: decryptedData, encoding: .utf8) else {
+            throw DatabaseError.decryptionError
+        }
+        
+        return content
+    }
+}
+
+// MARK: - Database Errors
+
+enum DatabaseError: LocalizedError {
+    case notInitialized
+    case failedToOpen
+    case failedToCreateTable
+    case failedToPrepareStatement
+    case failedToSave
+    case failedToDelete
+    case encryptionError
+    case decryptionError
+    
+    var errorDescription: String? {
+        switch self {
+        case .notInitialized:
+            return "Database not initialized"
+        case .failedToOpen:
+            return "Failed to open database"
+        case .failedToCreateTable:
+            return "Failed to create database tables"
+        case .failedToPrepareStatement:
+            return "Failed to prepare SQL statement"
+        case .failedToSave:
+            return "Failed to save to database"
+        case .failedToDelete:
+            return "Failed to delete from database"
+        case .encryptionError:
+            return "Failed to encrypt data"
+        case .decryptionError:
+            return "Failed to decrypt data"
         }
     }
 }
 
-enum DatabaseError: LocalizedError {
-    case failedToOpen
-    case failedToPrepare(String)
-    case failedToExecute(String)
-    case failedToSaveKey
-    case keyNotFound
-    case encryptionFailed
-    case decryptionFailed
-    
-    var errorDescription: String? {
-        switch self {
-        case .failedToOpen:
-            return "Failed to open database"
-        case .failedToPrepare(let sql):
-            return "Failed to prepare SQL: \(sql)"
-        case .failedToExecute(let sql):
-            return "Failed to execute SQL: \(sql)"
-        case .failedToSaveKey:
-            return "Failed to save encryption key"
-        case .keyNotFound:
-            return "Encryption key not found"
-        case .encryptionFailed:
-            return "Failed to encrypt data"
-        case .decryptionFailed:
-            return "Failed to decrypt data"
-        }
-    }
+// MARK: - Database Memory Model
+
+struct DatabaseMemory: Identifiable {
+    let id: UUID
+    let entryId: UUID
+    let content: String
+    let keywords: [String]
+    let createdAt: Date
 }

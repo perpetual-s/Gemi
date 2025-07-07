@@ -7,7 +7,6 @@ actor OllamaService {
     
     // MARK: - Properties
     
-    private let baseURL = "http://localhost:11434"
     private let session: URLSession
     private let modelName = "gemma3n:latest" // Correct model name
     
@@ -42,7 +41,7 @@ actor OllamaService {
         
         do {
             // First check if Ollama is running
-            let tagsURL = URL(string: "\(baseURL)/api/tags")!
+            let tagsURL = URL(string: await OllamaConfiguration.shared.apiTagsURL)!
             let (data, response) = try await session.data(from: tagsURL)
             
             guard let httpResponse = response as? HTTPURLResponse else {
@@ -107,7 +106,7 @@ actor OllamaService {
         while retryCount <= maxRetries {
             do {
                 // Build request
-                let url = URL(string: "\(baseURL)/api/chat")!
+                let url = URL(string: await OllamaConfiguration.shared.apiChatURL)!
                 var request = URLRequest(url: url)
                 request.httpMethod = "POST"
                 request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -183,7 +182,7 @@ actor OllamaService {
     
     /// Pull a model from Ollama library with progress tracking
     func pullModel(_ modelName: String, progressHandler: @escaping @Sendable (Double, String) -> Void) async throws {
-        let url = URL(string: "\(baseURL)/api/pull")!
+        let url = URL(string: await OllamaConfiguration.shared.apiPullURL)!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")

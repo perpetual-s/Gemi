@@ -2,6 +2,7 @@ import SwiftUI
 
 struct Sidebar: View {
     @Binding var selectedView: NavigationItem
+    @ObservedObject var journalStore: JournalStore
     @State private var searchText = ""
     
     var body: some View {
@@ -65,7 +66,8 @@ struct Sidebar: View {
                 NavigationRow(
                     item: item,
                     isSelected: selectedView == item,
-                    action: { selectedView = item }
+                    action: { selectedView = item },
+                    entryCount: item == .timeline ? journalStore.entries.count : nil
                 )
             }
         }
@@ -94,6 +96,7 @@ struct NavigationRow: View {
     let item: NavigationItem
     let isSelected: Bool
     let action: () -> Void
+    let entryCount: Int?
     
     @State private var isHovered = false
     
@@ -109,8 +112,8 @@ struct NavigationRow: View {
                 
                 Spacer()
                 
-                if item == .timeline {
-                    Text("12")
+                if let count = entryCount {
+                    Text("\(count)")
                         .font(Theme.Typography.caption)
                         .foregroundColor(Theme.Colors.tertiaryText)
                         .padding(.horizontal, 6)
