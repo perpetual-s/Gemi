@@ -27,7 +27,7 @@ struct MemoriesView: View {
                     Button {
                         showingProcessingView = true
                     } label: {
-                        Label("Process Entries", systemImage: "sparkles")
+                        Text("Process Entries")
                     }
                 }
             }
@@ -79,7 +79,7 @@ struct MemoriesView: View {
                 Button {
                     showingProcessingView = true
                 } label: {
-                    Label("Process Journal Entries", systemImage: "sparkles")
+                    Text("Process Journal Entries")
                         .padding(.horizontal, 20)
                         .padding(.vertical, 10)
                         .background(Theme.Colors.primaryAccent)
@@ -434,11 +434,8 @@ struct ProcessEntriesView: View {
                     Button {
                         processEntries()
                     } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "wand.and.stars")
-                            Text("Start Extraction")
-                                .font(.system(size: 15, weight: .medium))
-                        }
+                        Text("Start Extraction")
+                            .font(.system(size: 15, weight: .medium))
                         .padding(.horizontal, 28)
                         .padding(.vertical, 14)
                         .background(Theme.Colors.primaryAccent)
