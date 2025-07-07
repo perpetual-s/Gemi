@@ -230,7 +230,7 @@ struct GemiChatView: View {
             .padding(.bottom, 8)
             
             VStack(spacing: 8) {
-                Text("✨ Welcome to Gemi ✨")
+                Text("✨ Welcome to Gemi")
                     .font(.system(size: 28, weight: .semibold, design: .rounded))
                 
                 Text("Your thoughtful AI companion 🤗")
@@ -254,6 +254,13 @@ struct GemiChatView: View {
                 }
                 .padding(.top, 16)
             }
+            
+            // Attribution
+            Text("Private conversations powered by Gemma 3n from Google DeepMind")
+                .font(.system(size: 12))
+                .foregroundColor(Theme.Colors.tertiaryText)
+                .multilineTextAlignment(.center)
+                .padding(.top, 24)
         }
         .frame(maxWidth: 500)
     }
