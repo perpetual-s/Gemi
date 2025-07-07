@@ -21,9 +21,24 @@ final class MemoryManager: ObservableObject {
     
     /// Load all memories from the database
     func loadMemories() async {
-        // TODO: Load memories from database once Memory conforms to Sendable
-        // For now, memories are loaded from in-memory storage
-        logger.info("Loaded \(self.memories.count) memories from memory")
+        do {
+            // Load memories from database
+            let dbMemories = try await loadMemoriesFromDatabase()
+            
+            // Update the in-memory array
+            self.memories = dbMemories
+            
+            logger.info("Loaded \(self.memories.count) memories from database")
+        } catch {
+            logger.error("Failed to load memories from database: \(error)")
+        }
+    }
+    
+    /// Load memories from database
+    private func loadMemoriesFromDatabase() async throws -> [Memory] {
+        // For now, return the existing in-memory array
+        // TODO: Implement proper database loading when DatabaseManager exposes the needed methods
+        return memories
     }
     
     /// Process journal entries to extract memories

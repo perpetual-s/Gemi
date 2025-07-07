@@ -86,13 +86,23 @@ final class GemiAICoordinator: ObservableObject {
         do {
             let memories = try await extractMemoriesWithAI(from: entry)
             
-            // Save memories to database
+            // Add memories to MemoryManager and save to database
             for memoryData in memories {
+                // Add to MemoryManager's in-memory array
+                let memory = Memory(
+                    content: memoryData.content,
+                    sourceEntryID: memoryData.sourceEntryID
+                )
+                await MainActor.run {
+                    // Remove any existing memories for this entry first
+                    memoryManager.memories.removeAll { $0.sourceEntryID == entry.id }
+                    // Add the new memory
+                    memoryManager.memories.append(memory)
+                }
+                
+                // Also save to database for persistence
                 try? await databaseManager.saveMemory(memoryData)
             }
-            
-            // Refresh memory manager
-            await memoryManager.loadMemories()
             
             logger.info("Successfully extracted \(memories.count) memories from entry")
         } catch {
