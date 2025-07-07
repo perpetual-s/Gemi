@@ -102,30 +102,28 @@ final class GemiAICoordinator: ObservableObject {
     
     /// Extract memories using Gemma3n AI
     private func extractMemoriesWithAI(from entry: JournalEntry) async throws -> [MemoryData] {
+        // Skip very short entries
+        guard entry.content.trimmingCharacters(in: .whitespacesAndNewlines).count > 10 else {
+            logger.info("Entry too short for memory extraction")
+            return []
+        }
+        
         let prompt = """
-        Analyze this journal entry and extract 2-5 important memories.
+        Read this journal entry and extract 2-5 things worth remembering about the person who wrote it.
+        These could be facts about them, their feelings, goals, relationships, or anything meaningful.
         
         Journal Entry:
-        Date: \(entry.createdAt.formatted(date: .abbreviated, time: .omitted))
-        Mood: \(entry.mood?.rawValue ?? "Not specified")
-        Content: \(entry.content.prefix(1000))
+        \(entry.content)
         
-        Extract memories about:
-        - Personal facts or preferences
-        - Emotions and feelings
-        - Goals or plans
-        - People mentioned
-        - Events or experiences
-        
-        Respond with ONLY a JSON array, no other text:
-        [{"content": "memory text", "category": "personal", "importance": 3}]
-        
-        Categories: personal, emotional, goals, relationships, achievements, challenges, preferences, routine
-        Importance: 1-5 (5 is most important)
+        Respond with a simple list of memories, one per line. Keep each memory concise and clear.
+        For example:
+        - Lives in California and wants to explore the area
+        - Has a meeting on August 2nd
+        - Feeling grateful today
         """
         
         let messages = [
-            ChatMessage(role: .system, content: "Extract memories from journal entries. Respond with JSON only."),
+            ChatMessage(role: .system, content: "You are an AI that extracts memorable information from journal entries. Be concise and focus on what's worth remembering."),
             ChatMessage(role: .user, content: prompt)
         ]
         
@@ -142,150 +140,89 @@ final class GemiAICoordinator: ObservableObject {
         
         logger.info("AI Response: \(fullResponse)")
         
-        // Try to extract JSON from the response
-        let extractedMemories = extractJSONFromResponse(fullResponse, for: entry)
-        
-        if !extractedMemories.isEmpty {
-            return extractedMemories
+        // Check if AI is asking for the entry content (indicates it didn't receive it)
+        if fullResponse.lowercased().contains("please provide") || 
+           fullResponse.lowercased().contains("paste the text") ||
+           fullResponse.lowercased().contains("i'm ready") {
+            logger.warning("AI didn't receive journal content properly, using fallback extraction")
+            return extractBasicMemory(from: entry)
         }
         
-        // Fallback to parsing the response text
-        return parseMemoriesFromText(fullResponse, for: entry)
-    }
-    
-    private func extractJSONFromResponse(_ response: String, for entry: JournalEntry) -> [MemoryData] {
-        // Try to find JSON array in the response
-        if let startIndex = response.firstIndex(of: "["),
-           let endIndex = response.lastIndex(of: "]") {
-            let jsonString = String(response[startIndex...endIndex])
-            
-            if let data = jsonString.data(using: .utf8) {
-                do {
-                    let decoder = JSONDecoder()
-                    let extractedMemories = try decoder.decode([ExtractedMemory].self, from: data)
-                    
-                    return extractedMemories.compactMap { extracted in
-                        // Validate and clean the extracted memory
-                        guard !extracted.content.isEmpty else { return nil }
-                        
-                        let category = Memory.MemoryCategory.allCases.first { 
-                            $0.rawValue.lowercased() == extracted.category.lowercased() 
-                        } ?? .personal
-                        
-                        return MemoryData(
-                            content: extracted.content,
-                            sourceEntryID: entry.id,
-                            category: category,
-                            importance: min(max(extracted.importance, 1), 5)
-                        )
-                    }
-                } catch {
-                    logger.warning("JSON parsing failed: \(error)")
-                }
-            }
+        // Parse the simple text response
+        let memories = parseSimpleMemories(fullResponse, for: entry)
+        
+        // If no memories extracted, use basic extraction
+        if memories.isEmpty {
+            return extractBasicMemory(from: entry)
         }
         
-        return []
+        return memories
     }
     
-    private func parseMemoriesFromText(_ text: String, for entry: JournalEntry) -> [MemoryData] {
+    private func extractBasicMemory(from entry: JournalEntry) -> [MemoryData] {
+        // Extract first meaningful sentence as a basic memory
+        let content = entry.content.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !content.isEmpty else { return [] }
+        
+        let memory = MemoryData(
+            content: String(content.prefix(200)),
+            sourceEntryID: entry.id
+        )
+        
+        return [memory]
+    }
+    
+    private func parseSimpleMemories(_ response: String, for entry: JournalEntry) -> [MemoryData] {
+        // Split by newlines and look for lines that start with -, *, or are meaningful sentences
+        let lines = response.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        
         var memories: [MemoryData] = []
         
-        // Split by common delimiters and extract meaningful sentences
-        let lines = text.components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty && $0.count > 20 }
-        
         for line in lines {
-            // Skip lines that look like JSON syntax or instructions
-            if line.contains("{") || line.contains("}") || line.contains("```") {
+            // Remove common list markers
+            let cleanedLine = line
+                .replacingOccurrences(of: "^[-*•]\\s*", with: "", options: .regularExpression)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // Skip empty lines or very short ones
+            if cleanedLine.count < 10 {
                 continue
             }
             
-            // Extract if it looks like a memory
-            if line.contains("memory") || line.contains("remember") || 
-               line.starts(with: "-") || line.starts(with: "*") || line.starts(with: "•") {
-                
-                let content = line
-                    .replacingOccurrences(of: "^[-*•]\\s*", with: "", options: .regularExpression)
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                
-                if content.count > 15 {
-                    let category = categorizeMemory(content)
-                    let importance = determineImportance(content)
-                    
-                    memories.append(MemoryData(
-                        content: content,
-                        sourceEntryID: entry.id,
-                        category: category,
-                        importance: importance
-                    ))
-                }
+            // Create a simple memory
+            memories.append(MemoryData(
+                content: cleanedLine,
+                sourceEntryID: entry.id
+            ))
+            
+            // Limit to 5 memories per entry
+            if memories.count >= 5 {
+                break
             }
         }
         
-        // If no memories found, extract key sentences from the entry itself
-        if memories.isEmpty {
-            logger.info("No memories found in AI response, using basic extraction")
-            // Basic extraction when AI fails
-            let summary = String(entry.content.prefix(200))
-                .components(separatedBy: CharacterSet(charactersIn: ".!?"))
-                .first?
-                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        // If no memories found, extract a simple summary
+        if memories.isEmpty && !entry.content.isEmpty {
+            let summary = String(entry.content.prefix(150))
+                .replacingOccurrences(of: "\n", with: " ")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
             
             if !summary.isEmpty {
                 memories.append(MemoryData(
                     content: summary,
-                    sourceEntryID: entry.id,
-                    category: .personal,
-                    importance: 3
+                    sourceEntryID: entry.id
                 ))
             }
         }
         
-        return Array(memories.prefix(5))
+        return memories
     }
     
-    private func categorizeMemory(_ content: String) -> Memory.MemoryCategory {
-        let lowercased = content.lowercased()
-        
-        if lowercased.contains("feel") || lowercased.contains("emotion") || lowercased.contains("mood") {
-            return .emotional
-        } else if lowercased.contains("goal") || lowercased.contains("plan") || lowercased.contains("want to") {
-            return .goals
-        } else if lowercased.contains("friend") || lowercased.contains("family") || lowercased.contains("partner") {
-            return .relationships
-        } else if lowercased.contains("achieved") || lowercased.contains("accomplished") || lowercased.contains("success") {
-            return .achievements
-        } else if lowercased.contains("challenge") || lowercased.contains("difficult") || lowercased.contains("struggle") {
-            return .challenges
-        } else if lowercased.contains("like") || lowercased.contains("prefer") || lowercased.contains("enjoy") {
-            return .preferences
-        } else if lowercased.contains("daily") || lowercased.contains("routine") || lowercased.contains("usually") {
-            return .routine
-        }
-        
-        return .personal
-    }
+    // Removed - replaced by parseSimpleMemories
     
-    private func determineImportance(_ content: String) -> Int {
-        let lowercased = content.lowercased()
-        
-        // High importance keywords
-        if lowercased.contains("important") || lowercased.contains("significant") || 
-           lowercased.contains("major") || lowercased.contains("big") {
-            return 5
-        }
-        
-        // Medium-high importance
-        if lowercased.contains("goal") || lowercased.contains("decided") || 
-           lowercased.contains("realized") || lowercased.contains("learned") {
-            return 4
-        }
-        
-        // Default medium importance
-        return 3
-    }
+    // Removed categorization methods - using simple approach now
     
     // MARK: - Private Methods
     
@@ -450,8 +387,4 @@ private struct InsightsResponse: Codable {
     let prompts: [String]
 }
 
-private struct ExtractedMemory: Codable {
-    let content: String
-    let category: String
-    let importance: Int
-}
+// Removed ExtractedMemory struct - no longer using JSON approach
