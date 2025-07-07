@@ -381,91 +381,186 @@ struct ProcessEntriesView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var isProcessing = false
     @State private var processedCount = 0
+    @State private var totalCount = 0
     @State private var selectedTimeRange: TimeRange = .lastWeek
+    @State private var extractedMemoriesCount = 0
     
     enum TimeRange: String, CaseIterable {
         case lastWeek = "Last Week"
         case lastMonth = "Last Month"
         case lastThreeMonths = "Last 3 Months"
         case all = "All Entries"
+        
+        var icon: String {
+            switch self {
+            case .lastWeek: return "calendar"
+            case .lastMonth: return "calendar.badge.clock"
+            case .lastThreeMonths: return "calendar.circle"
+            case .all: return "tray.full"
+            }
+        }
+        
+        var description: String {
+            switch self {
+            case .lastWeek: return "Process entries from the past 7 days"
+            case .lastMonth: return "Process entries from the past month"
+            case .lastThreeMonths: return "Process entries from the past 3 months"
+            case .all: return "Process all journal entries"
+            }
+        }
     }
     
     var body: some View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("Process Journal Entries")
-                    .font(Theme.Typography.headline)
-                Spacer()
-                Button("Cancel") {
-                    dismiss()
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Extract Memories")
+                        .font(.system(size: 20, weight: .semibold))
+                    Text("Use AI to find important details in your journal")
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
                 }
+                Spacer()
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(.secondary.opacity(0.6))
+                        .background(Circle().fill(Color.clear))
+                }
+                .buttonStyle(.plain)
                 .disabled(isProcessing)
             }
-            .padding()
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
             
             Divider()
             
             // Content
-            VStack(spacing: Theme.largeSpacing) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 48))
-                    .foregroundColor(Theme.Colors.primaryAccent)
-                    .symbolRenderingMode(.hierarchical)
-                
-                Text("Extract memories from your journal entries")
-                    .font(Theme.Typography.body)
-                    .foregroundColor(Theme.Colors.secondaryText)
-                
-                // Time range picker
-                Picker("Time Range", selection: $selectedTimeRange) {
-                    ForEach(TimeRange.allCases, id: \.self) { range in
-                        Text(range.rawValue).tag(range)
+            VStack(spacing: 0) {
+                // Icon and description
+                VStack(spacing: 20) {
+                    ZStack {
+                        Circle()
+                            .fill(LinearGradient(
+                                colors: [Theme.Colors.primaryAccent.opacity(0.2), Theme.Colors.primaryAccent.opacity(0.1)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ))
+                            .frame(width: 80, height: 80)
+                        
+                        Image(systemName: "brain")
+                            .font(.system(size: 40))
+                            .foregroundColor(Theme.Colors.primaryAccent)
+                            .symbolRenderingMode(.hierarchical)
                     }
+                    
+                    Text("Gemi will analyze your entries and extract key memories")
+                        .font(.system(size: 15))
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 400)
+                .padding(.top, 30)
                 
-                if isProcessing {
-                    VStack(spacing: Theme.spacing) {
-                        ProgressView()
-                            .scaleEffect(1.2)
-                        Text("Processing \(processedCount) entries...")
-                            .font(Theme.Typography.caption)
-                            .foregroundColor(Theme.Colors.secondaryText)
+                // Time range selection
+                VStack(spacing: 16) {
+                    Text("Select time range")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    VStack(spacing: 8) {
+                        ForEach(TimeRange.allCases, id: \.self) { range in
+                            TimeRangeOption(
+                                range: range,
+                                isSelected: selectedTimeRange == range,
+                                onSelect: { selectedTimeRange = range }
+                            )
+                        }
                     }
-                    .padding()
+                    .padding(.horizontal, 40)
+                }
+                .padding(.top, 30)
+                
+                Spacer()
+                
+                // Progress or action button
+                if isProcessing {
+                    VStack(spacing: 16) {
+                        // Progress indicator
+                        ZStack {
+                            Circle()
+                                .stroke(Color.secondary.opacity(0.2), lineWidth: 4)
+                                .frame(width: 60, height: 60)
+                            
+                            Circle()
+                                .trim(from: 0, to: totalCount > 0 ? CGFloat(processedCount) / CGFloat(totalCount) : 0)
+                                .stroke(Theme.Colors.primaryAccent, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                                .frame(width: 60, height: 60)
+                                .rotationEffect(.degrees(-90))
+                                .animation(.easeInOut, value: processedCount)
+                            
+                            Text("\(Int((totalCount > 0 ? Double(processedCount) / Double(totalCount) : 0) * 100))%")
+                                .font(.system(size: 14, weight: .semibold))
+                        }
+                        
+                        VStack(spacing: 4) {
+                            Text("Processing entry \(processedCount) of \(totalCount)")
+                                .font(.system(size: 14, weight: .medium))
+                            Text("\(extractedMemoriesCount) memories extracted")
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.bottom, 40)
                 } else {
                     Button {
                         processEntries()
                     } label: {
-                        Label("Extract Memories", systemImage: "brain")
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 12)
-                            .background(Theme.Colors.primaryAccent)
-                            .foregroundColor(.white)
-                            .clipShape(Capsule())
+                        HStack(spacing: 8) {
+                            Image(systemName: "wand.and.stars")
+                            Text("Start Extraction")
+                                .font(.system(size: 15, weight: .medium))
+                        }
+                        .padding(.horizontal, 28)
+                        .padding(.vertical, 14)
+                        .background(Theme.Colors.primaryAccent)
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
                     }
                     .buttonStyle(.plain)
+                    .padding(.bottom, 30)
                 }
             }
-            .padding(40)
         }
-        .frame(width: 500, height: 400)
+        .frame(width: 520, height: 600)
         .background(Theme.Colors.windowBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .shadow(color: Color.black.opacity(0.15), radius: 20)
     }
     
     private func processEntries() {
         Task {
             isProcessing = true
+            extractedMemoriesCount = 0
             
             // Get entries based on time range
             let entries = await getEntriesForTimeRange()
+            totalCount = entries.count
             
             // Process each entry
             for (index, entry) in entries.enumerated() {
                 processedCount = index + 1
+                
+                // Get count before processing
+                let beforeCount = MemoryManager.shared.memories.count
+                
                 await GemiAICoordinator.shared.processJournalEntry(entry)
+                
+                // Update extracted count
+                let afterCount = MemoryManager.shared.memories.count
+                extractedMemoriesCount += max(0, afterCount - beforeCount)
                 
                 // Small delay to avoid overwhelming the API
                 try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
@@ -520,5 +615,51 @@ struct StatBadge: View {
                 .font(.system(size: 11))
                 .foregroundColor(Theme.Colors.secondaryText)
         }
+    }
+}
+
+struct TimeRangeOption: View {
+    let range: ProcessEntriesView.TimeRange
+    let isSelected: Bool
+    let onSelect: () -> Void
+    
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 12) {
+                Image(systemName: range.icon)
+                    .font(.system(size: 18))
+                    .foregroundColor(isSelected ? Theme.Colors.primaryAccent : .secondary)
+                    .frame(width: 24)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(range.rawValue)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(isSelected ? .primary : .secondary)
+                    
+                    Text(range.description)
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary.opacity(0.8))
+                }
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(Theme.Colors.primaryAccent)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? Theme.Colors.primaryAccent.opacity(0.1) : Color.secondary.opacity(0.05))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(isSelected ? Theme.Colors.primaryAccent : Color.clear, lineWidth: 1.5)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
