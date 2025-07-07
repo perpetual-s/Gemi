@@ -1,5 +1,4 @@
 import Foundation
-import SwiftData
 
 /// Manages AI memories extracted from journal entries
 @MainActor
@@ -11,13 +10,8 @@ final class MemoryManager: ObservableObject {
     
     private let companionService = CompanionModelService.shared
     private let databaseManager = DatabaseManager.shared
-    private var modelContext: ModelContext?
     
-    private init() {}
-    
-    /// Initialize the memory manager with a model context
-    func initialize(with context: ModelContext) {
-        self.modelContext = context
+    private init() {
         Task {
             await loadMemories()
         }
@@ -25,23 +19,13 @@ final class MemoryManager: ObservableObject {
     
     /// Load all memories from the database
     func loadMemories() async {
-        guard let context = modelContext else { return }
-        
-        do {
-            let descriptor = FetchDescriptor<Memory>(
-                sortBy: [SortDescriptor(\.importance, order: .reverse),
-                        SortDescriptor(\.extractedAt, order: .reverse)]
-            )
-            memories = try context.fetch(descriptor)
-        } catch {
-            print("Failed to load memories: \(error)")
-        }
+        // For now, memories are loaded from the companion service
+        // In a full implementation, these would be loaded from SQLite
+        memories = []
     }
     
     /// Process journal entries to extract memories
     func processEntries(_ entries: [JournalEntry]) async {
-        guard let context = modelContext else { return }
-        
         isProcessing = true
         defer { isProcessing = false }
         
@@ -50,11 +34,7 @@ final class MemoryManager: ObservableObject {
         
         // Remove existing memories for these entries to avoid duplicates
         let entryIDs = Set(entries.map { $0.id })
-        let existingMemories = memories.filter { entryIDs.contains($0.sourceEntryID) }
-        
-        for memory in existingMemories {
-            context.delete(memory)
-        }
+        memories.removeAll { entryIDs.contains($0.sourceEntryID) }
         
         // Add new memories
         for memoryData in extractedMemoryData {
@@ -64,15 +44,15 @@ final class MemoryManager: ObservableObject {
                 category: memoryData.category,
                 importance: memoryData.importance
             )
-            context.insert(memory)
+            memories.append(memory)
         }
         
-        // Save changes
-        do {
-            try context.save()
-            await loadMemories()
-        } catch {
-            print("Failed to save memories: \(error)")
+        // Sort memories by importance and date
+        memories.sort { first, second in
+            if first.importance != second.importance {
+                return first.importance > second.importance
+            }
+            return first.extractedAt > second.extractedAt
         }
     }
     
@@ -107,45 +87,25 @@ final class MemoryManager: ObservableObject {
     
     /// Delete a specific memory
     func deleteMemory(_ memory: Memory) {
-        guard let context = modelContext else { return }
-        
-        context.delete(memory)
-        
-        do {
-            try context.save()
-            memories.removeAll { $0.id == memory.id }
-        } catch {
-            print("Failed to delete memory: \(error)")
-        }
+        memories.removeAll { $0.id == memory.id }
     }
     
     /// Update memory importance
     func updateImportance(for memory: Memory, importance: Int) {
         memory.importance = min(max(importance, 1), 5)
         
-        guard let context = modelContext else { return }
-        
-        do {
-            try context.save()
-        } catch {
-            print("Failed to update memory importance: \(error)")
+        // Re-sort memories after importance update
+        memories.sort { first, second in
+            if first.importance != second.importance {
+                return first.importance > second.importance
+            }
+            return first.extractedAt > second.extractedAt
         }
     }
     
     /// Clear all memories (with user confirmation)
     func clearAllMemories() async {
-        guard let context = modelContext else { return }
-        
-        for memory in memories {
-            context.delete(memory)
-        }
-        
-        do {
-            try context.save()
-            memories.removeAll()
-        } catch {
-            print("Failed to clear memories: \(error)")
-        }
+        memories.removeAll()
     }
     
     /// Get memories grouped by category

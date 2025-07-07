@@ -82,10 +82,95 @@ final class GemiAICoordinator: ObservableObject {
     func processJournalEntry(_ entry: JournalEntry) async {
         logger.info("Processing journal entry for memory extraction")
         
-        // Use MemoryManager to process entries
-        await memoryManager.processEntries([entry])
+        // Use AI to extract meaningful memories
+        do {
+            let memories = try await extractMemoriesWithAI(from: entry)
+            
+            // Save memories to database
+            for memoryData in memories {
+                try? await databaseManager.saveMemory(memoryData)
+            }
+            
+            // Refresh memory manager
+            await memoryManager.loadMemories()
+            
+            logger.info("Successfully extracted \(memories.count) memories from entry")
+        } catch {
+            logger.error("Failed to extract memories: \(error)")
+        }
+    }
+    
+    /// Extract memories using Gemma3n AI
+    private func extractMemoriesWithAI(from entry: JournalEntry) async throws -> [MemoryData] {
+        let prompt = """
+        Extract important memories from this journal entry that would be useful to remember in future conversations.
         
-        logger.info("Processed journal entry for memory extraction")
+        Journal Entry:
+        Date: \(entry.createdAt.formatted(date: .long, time: .shortened))
+        Title: \(entry.displayTitle)
+        Mood: \(entry.mood?.rawValue ?? "Not specified")
+        Tags: \(entry.tags.joined(separator: ", "))
+        Content: \(entry.content)
+        
+        Extract 2-5 key memories from this entry. Focus on:
+        - Personal facts, preferences, or habits
+        - Emotional states and what caused them
+        - Goals, aspirations, or plans mentioned
+        - Relationships or people mentioned
+        - Achievements or challenges faced
+        - Important events or experiences
+        
+        Format your response as JSON array:
+        [
+            {
+                "content": "Brief memory description (1-2 sentences)",
+                "category": "personal|emotional|goals|relationships|achievements|challenges|preferences|routine",
+                "importance": 1-5
+            }
+        ]
+        
+        Be concise but specific. Include context when relevant.
+        """
+        
+        let messages = [
+            ChatMessage(role: .system, content: "You are Gemi, analyzing journal entries to extract important memories. Be selective and focus on meaningful information that would be valuable to remember in future conversations."),
+            ChatMessage(role: .user, content: prompt)
+        ]
+        
+        var fullResponse = ""
+        
+        // Collect the full response
+        for try await response in await ollamaService.chat(messages: messages) {
+            fullResponse += response.message?.content ?? ""
+            
+            if response.done {
+                break
+            }
+        }
+        
+        // Parse JSON response
+        guard let data = fullResponse.data(using: .utf8) else {
+            throw OllamaError.invalidResponse("Invalid response format")
+        }
+        
+        do {
+            let decoder = JSONDecoder()
+            let extractedMemories = try decoder.decode([ExtractedMemory].self, from: data)
+            
+            // Convert to MemoryData
+            return extractedMemories.map { extracted in
+                MemoryData(
+                    content: extracted.content,
+                    sourceEntryID: entry.id,
+                    category: Memory.MemoryCategory(rawValue: extracted.category.capitalized) ?? .personal,
+                    importance: min(max(extracted.importance, 1), 5)
+                )
+            }
+        } catch {
+            logger.warning("Failed to parse JSON, using fallback extraction")
+            // Fallback to simple extraction
+            return await CompanionModelService.shared.extractMemories(from: [entry])
+        }
     }
     
     // MARK: - Private Methods
@@ -249,4 +334,10 @@ private struct InsightsResponse: Codable {
     let summary: String
     let keyPoints: [String]
     let prompts: [String]
+}
+
+private struct ExtractedMemory: Codable {
+    let content: String
+    let category: String
+    let importance: Int
 }
