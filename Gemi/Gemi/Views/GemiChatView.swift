@@ -230,7 +230,7 @@ struct GemiChatView: View {
             .padding(.bottom, 8)
             
             VStack(spacing: 8) {
-                Text("✨ Welcome to Gemi 📝")
+                Text("✨ Welcome to Gemi ✨")
                     .font(.system(size: 28, weight: .semibold, design: .rounded))
                 
                 Text("Your thoughtful AI companion 🤗")
