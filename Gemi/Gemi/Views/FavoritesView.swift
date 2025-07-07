@@ -97,7 +97,7 @@ struct FavoritesView: View {
         .background(Theme.Colors.windowBackground)
         .sheet(isPresented: $showingComposeView) {
             if let entry = editingEntry {
-                EnhancedComposeView(
+                ProductionComposeView(
                     entry: entry,
                     onSave: { updatedEntry in
                         Task {

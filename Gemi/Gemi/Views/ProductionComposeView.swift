@@ -11,11 +11,6 @@ struct ProductionComposeView: View {
     @State private var wordCount = 0
     @State private var characterCount = 0
     @State private var isContentFocused = false
-    @State private var showingAIAssistant = false
-    @State private var isAnalyzingMood = false
-    @State private var suggestedMood: Mood?
-    @State private var selectedPrompt: String?
-    @State private var showingPrompts = false
     @State private var lastSavedContent = ""
     @State private var hasUnsavedChanges = false
     
@@ -30,6 +25,7 @@ struct ProductionComposeView: View {
     @State private var writingPace = 0.0
     @State private var showingEmojiPicker = false
     @State private var selectedEmoji: String?
+    @State private var textEditorCoordinator: MacTextEditor.Coordinator?
     
     init(entry: JournalEntry? = nil, onSave: @escaping (JournalEntry) -> Void, onCancel: @escaping () -> Void) {
         self._entry = State(initialValue: entry ?? JournalEntry(content: ""))
@@ -83,24 +79,6 @@ struct ProductionComposeView: View {
             updateWordCount()
             hasUnsavedChanges = (newValue != lastSavedContent)
         }
-        .sheet(isPresented: $showingPrompts) {
-            WritingPromptsSheet(
-                currentContent: entry.content,
-                onSelectPrompt: { prompt in
-                    selectedPrompt = prompt
-                    showingPrompts = false
-                }
-            )
-        }
-        .sheet(isPresented: $showingAIAssistant) {
-            AIAssistantSheet(
-                entry: $entry,
-                onAnalyzeMood: { mood in
-                    suggestedMood = mood
-                    entry.mood = mood
-                }
-            )
-        }
     }
     
     // MARK: - Header
@@ -144,39 +122,20 @@ struct ProductionComposeView: View {
                 .buttonStyle(.plain)
                 .help("Insert emoji")
                 .popover(isPresented: $showingEmojiPicker) {
-                    EmojiPicker(
-                        selectedEmoji: $selectedEmoji,
-                        isPresented: $showingEmojiPicker,
+                    QuickEmojiPicker(
                         onEmojiSelected: { emoji in
                             // Insert emoji at cursor position
-                            entry.content += emoji
-                        }
+                            if let coordinator = textEditorCoordinator {
+                                coordinator.insertTextAtCursor(emoji)
+                            } else {
+                                // Fallback: append to content
+                                entry.content += emoji
+                            }
+                        },
+                        isPresented: $showingEmojiPicker
                     )
                 }
                 
-                // AI Assistant toggle
-                Button {
-                    showingAIAssistant.toggle()
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 14))
-                        Text("AI Assistant")
-                            .font(.system(size: 13))
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(
-                        Capsule()
-                            .fill(showingAIAssistant ? Theme.Colors.primaryAccent : Color.clear)
-                            .overlay(
-                                Capsule()
-                                    .strokeBorder(Theme.Colors.primaryAccent, lineWidth: 1)
-                            )
-                    )
-                    .foregroundColor(showingAIAssistant ? .white : Theme.Colors.primaryAccent)
-                }
-                .buttonStyle(.plain)
                 
                 Divider()
                     .frame(height: 20)
@@ -264,6 +223,9 @@ struct ProductionComposeView: View {
                     lineSpacing: 1.6,
                     onTextChange: { _ in
                         updateWordCount()
+                    },
+                    onCoordinatorReady: { coordinator in
+                        textEditorCoordinator = coordinator
                     }
                 )
                 .frame(minHeight: 400)
@@ -382,28 +344,6 @@ struct ProductionComposeView: View {
                     
                     Spacer()
                     
-                    if let mood = suggestedMood, entry.mood == nil {
-                        Button {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                entry.mood = mood
-                            }
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 11))
-                                Text("AI suggests: \(mood.emoji)")
-                                    .font(.system(size: 12))
-                            }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(
-                                Capsule()
-                                    .fill(Theme.Colors.primaryAccent.opacity(0.1))
-                            )
-                            .foregroundColor(Theme.Colors.primaryAccent)
-                        }
-                        .buttonStyle(.plain)
-                    }
                 }
                 
                 ProductionMoodPicker(selectedMood: $entry.mood)
@@ -823,6 +763,7 @@ struct MacTextEditor: NSViewRepresentable {
     let backgroundColor: NSColor
     let lineSpacing: CGFloat
     let onTextChange: (String) -> Void
+    var onCoordinatorReady: ((Coordinator) -> Void)?
     
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSTextView.scrollableTextView()
@@ -843,6 +784,12 @@ struct MacTextEditor: NSViewRepresentable {
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineSpacing = lineSpacing * font.pointSize - font.pointSize
         textView.defaultParagraphStyle = paragraphStyle
+        
+        // Store reference to textView for cursor operations
+        context.coordinator.textView = textView
+        
+        // Notify that coordinator is ready
+        onCoordinatorReady?(context.coordinator)
         
         return scrollView
     }
@@ -875,9 +822,11 @@ struct MacTextEditor: NSViewRepresentable {
     class Coordinator: NSObject, NSTextViewDelegate {
         var parent: MacTextEditor
         var isUpdating = false
+        weak var textView: NSTextView?
         
         init(_ parent: MacTextEditor) {
             self.parent = parent
+            super.init()
         }
         
         func textDidChange(_ notification: Notification) {
@@ -887,220 +836,25 @@ struct MacTextEditor: NSViewRepresentable {
             parent.text = textView.string
             parent.onTextChange(textView.string)
         }
-    }
-}
-
-// MARK: - Writing Prompts Sheet
-
-struct WritingPromptsSheet: View {
-    let currentContent: String
-    let onSelectPrompt: (String) -> Void
-    @Environment(\.dismiss) private var dismiss
-    
-    let prompts = [
-        "What moment from today deserves to be remembered?",
-        "If you could tell your past self one thing, what would it be?",
-        "What's been weighing on your mind lately?",
-        "Describe a small victory you experienced recently.",
-        "What are you grateful for right now?",
-        "What would make tomorrow better than today?",
-        "Write about someone who made a difference in your life.",
-        "What fear would you like to overcome?",
-        "Describe your ideal day from start to finish.",
-        "What lesson did you learn this week?"
-    ]
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("Writing Prompts")
-                    .font(.system(size: 20, weight: .semibold))
-                
-                Spacer()
-                
-                Button("Done") {
-                    dismiss()
-                }
-            }
-            .padding(20)
+        
+        @MainActor
+        func insertTextAtCursor(_ text: String) {
+            guard let textView = textView else { return }
             
-            Divider()
+            // Get current selection range
+            let selectedRange = textView.selectedRange()
             
-            // Prompts
-            ScrollView {
-                VStack(spacing: 12) {
-                    ForEach(prompts, id: \.self) { prompt in
-                        PromptRow(prompt: prompt) {
-                            onSelectPrompt(prompt)
-                            dismiss()
-                        }
-                    }
-                }
-                .padding(20)
-            }
-        }
-        .frame(width: 500, height: 600)
-        .background(Color(nsColor: .windowBackgroundColor))
-    }
-}
-
-struct PromptRow: View {
-    let prompt: String
-    let action: () -> Void
-    @State private var isHovered = false
-    
-    var body: some View {
-        Button(action: action) {
-            HStack {
-                Image(systemName: "lightbulb")
-                    .font(.system(size: 16))
-                    .foregroundColor(Theme.Colors.primaryAccent)
+            // Insert text at cursor position
+            if textView.shouldChangeText(in: selectedRange, replacementString: text) {
+                textView.replaceCharacters(in: selectedRange, with: text)
+                textView.didChangeText()
                 
-                Text(prompt)
-                    .font(.system(size: 14))
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
-                    .opacity(isHovered ? 1 : 0.5)
-            }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(isHovered ? Color.secondary.opacity(0.08) : Color.secondary.opacity(0.05))
-            )
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
-                isHovered = hovering
+                // Move cursor after inserted text
+                let newCursorPosition = selectedRange.location + text.count
+                textView.setSelectedRange(NSRange(location: newCursorPosition, length: 0))
             }
         }
     }
 }
 
-// MARK: - AI Assistant Sheet
 
-struct AIAssistantSheet: View {
-    @Binding var entry: JournalEntry
-    let onAnalyzeMood: (Mood) -> Void
-    @Environment(\.dismiss) private var dismiss
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Label("AI Writing Assistant", systemImage: "sparkles")
-                    .font(.system(size: 20, weight: .semibold))
-                
-                Spacer()
-                
-                Button("Done") {
-                    dismiss()
-                }
-            }
-            .padding(20)
-            
-            Divider()
-            
-            // Assistant options
-            ScrollView {
-                VStack(spacing: 16) {
-                    AssistantOption(
-                        icon: "face.smiling",
-                        title: "Analyze Mood",
-                        description: "Detect the emotional tone of your writing"
-                    ) {
-                        // Analyze mood
-                        dismiss()
-                    }
-                    
-                    AssistantOption(
-                        icon: "lightbulb",
-                        title: "Writing Prompts",
-                        description: "Get personalized prompts based on your entries"
-                    ) {
-                        dismiss()
-                    }
-                    
-                    AssistantOption(
-                        icon: "arrow.right.circle",
-                        title: "Continue Writing",
-                        description: "Let AI help you continue your current thought"
-                    ) {
-                        dismiss()
-                    }
-                    
-                    AssistantOption(
-                        icon: "tag",
-                        title: "Suggest Tags",
-                        description: "Extract key themes and topics from your entry"
-                    ) {
-                        dismiss()
-                    }
-                    
-                    AssistantOption(
-                        icon: "text.quote",
-                        title: "Find Insights",
-                        description: "Discover patterns and insights in your writing"
-                    ) {
-                        dismiss()
-                    }
-                }
-                .padding(20)
-            }
-        }
-        .frame(width: 450, height: 500)
-        .background(Color(nsColor: .windowBackgroundColor))
-    }
-}
-
-struct AssistantOption: View {
-    let icon: String
-    let title: String
-    let description: String
-    let action: () -> Void
-    @State private var isHovered = false
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 16) {
-                Image(systemName: icon)
-                    .font(.system(size: 24))
-                    .foregroundColor(Theme.Colors.primaryAccent)
-                    .frame(width: 40)
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(.primary)
-                    
-                    Text(description)
-                        .font(.system(size: 13))
-                        .foregroundColor(.secondary)
-                        .lineLimit(2)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
-                    .opacity(isHovered ? 1 : 0.5)
-            }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(isHovered ? Color.secondary.opacity(0.08) : Color.secondary.opacity(0.05))
-            )
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
-                isHovered = hovering
-            }
-        }
-    }
-}

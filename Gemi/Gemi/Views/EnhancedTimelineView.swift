@@ -14,6 +14,7 @@ struct EnhancedTimelineView: View {
     @State private var showingFloatingChat = false
     @State private var readingEntry: JournalEntry?
     @State private var showingReadingView = false
+    @State private var selectedReflectionPrompt: String?
     
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -68,7 +69,14 @@ struct EnhancedTimelineView: View {
             AIInsightsView(entries: journalStore.entries)
         }
         .sheet(item: $selectedEntryForChat) { entry in
-            ChatSheet(journalEntry: entry)
+            if let prompt = selectedReflectionPrompt {
+                EnhancedChatSheet(journalEntry: entry, reflectionPrompt: prompt)
+                    .onDisappear {
+                        selectedReflectionPrompt = nil
+                    }
+            } else {
+                ChatSheet(journalEntry: entry)
+            }
         }
         .sheet(isPresented: $showingFloatingChat) {
             GemiChatView()
@@ -327,9 +335,9 @@ struct EnhancedEntryCard: View {
     
     @State private var isHovered = false
     @State private var showAIActions = false
-    @State private var isExpanded = false
     @State private var showingReadingMode = false
     @State private var localIsFavorite: Bool = false
+    @State private var selectedReflectionPrompt: String?
     
     var body: some View {
         VStack(spacing: 0) {
@@ -362,12 +370,6 @@ struct EnhancedEntryCard: View {
                         .contentShape(Rectangle())
                         .help(localIsFavorite ? "Remove from favorites" : "Add to favorites")
                         
-                        // Expand indicator
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 12))
-                            .foregroundColor(Theme.Colors.tertiaryText)
-                            .rotationEffect(.degrees(isExpanded ? 180 : 0))
-                            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isExpanded)
                         
                         Text(timeString)
                             .font(Theme.Typography.caption)
@@ -377,14 +379,8 @@ struct EnhancedEntryCard: View {
                 
                 // Make the rest of the card clickable (excluding star button)
                 Button(action: {
-                    // Open reading view if available, otherwise toggle expansion
-                    if let onRead = onRead {
-                        onRead()
-                    } else {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                            isExpanded.toggle()
-                        }
-                    }
+                    // Show reading mode view instead of calling onRead
+                    showingReadingMode = true
                 }) {
                     VStack(alignment: .leading, spacing: 8) {
                         // Content preview (expandable)
@@ -392,8 +388,7 @@ struct EnhancedEntryCard: View {
                             Text(entry.content)
                                 .font(Theme.Typography.body)
                                 .foregroundColor(Theme.Colors.secondaryText)
-                                .lineLimit(isExpanded ? nil : 2)
-                                .animation(.easeInOut(duration: 0.2), value: isExpanded)
+                                .lineLimit(2)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .multilineTextAlignment(.leading)
                         }
@@ -429,15 +424,6 @@ struct EnhancedEntryCard: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.plain)
-                .onHover { hovering in
-                    if onRead != nil {
-                        if hovering {
-                            NSCursor.pointingHand.set()
-                        } else {
-                            NSCursor.arrow.set()
-                        }
-                    }
-                }
             }
             .padding()
             .background(
@@ -450,47 +436,6 @@ struct EnhancedEntryCard: View {
             )
             .shadow(color: shadowColor, radius: isHovered ? 4 : 2, x: 0, y: 1)
             
-            // Expanded actions
-            if isExpanded {
-                HStack(spacing: Theme.spacing) {
-                    // Read in full view button
-                    Button {
-                        onRead?()
-                    } label: {
-                        Label("Read Full", systemImage: "book")
-                            .font(.system(size: 13))
-                    }
-                    .buttonStyle(.bordered)
-                    
-                    // Chat about this entry
-                    Button {
-                        onChat()
-                    } label: {
-                        Label("Discuss with Gemi", systemImage: "bubble.left.and.bubble.right")
-                            .font(.system(size: 13))
-                    }
-                    .buttonStyle(.borderedProminent)
-                    
-                    Spacer()
-                    
-                    // Edit button
-                    Button {
-                        onTap() // This triggers edit mode
-                    } label: {
-                        Label("Edit", systemImage: "pencil")
-                            .font(.system(size: 13))
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(.horizontal, Theme.spacing)
-                .padding(.top, Theme.smallSpacing)
-                .padding(.bottom, Theme.spacing)
-                .background(Theme.Colors.cardBackground.opacity(0.5))
-                .transition(.asymmetric(
-                    insertion: .move(edge: .bottom).combined(with: .opacity),
-                    removal: .opacity
-                ))
-            }
         }
         .onAppear {
             localIsFavorite = entry.isFavorite
@@ -507,12 +452,23 @@ struct EnhancedEntryCard: View {
             }
         }
         .sheet(isPresented: $showingReadingMode) {
-            ReadingModeView(entry: entry, onDismiss: {
-                showingReadingMode = false
-            }, onChat: {
-                showingReadingMode = false
-                onChat()
-            })
+            ReadingModeView(
+                entry: entry,
+                onDismiss: {
+                    showingReadingMode = false
+                },
+                onChat: {
+                    showingReadingMode = false
+                    // Pass the selected prompt to the parent onChat handler
+                    if let prompt = selectedReflectionPrompt {
+                        // We'll need to modify this to pass the prompt
+                        onChat()
+                    } else {
+                        onChat()
+                    }
+                },
+                selectedReflectionPrompt: $selectedReflectionPrompt
+            )
         }
     }
     
@@ -659,142 +615,483 @@ struct ReadingModeView: View {
     let entry: JournalEntry
     let onDismiss: () -> Void
     let onChat: () -> Void
+    @Binding var selectedReflectionPrompt: String?
     
     @State private var showingShareMenu = false
+    @State private var showingAIInsights = false
+    @State private var aiSummary: String?
+    @State private var aiKeyPoints: [String] = []
+    @State private var aiSuggestedPrompts: [String] = []
+    @State private var isAnalyzing = false
+    @State private var selectedPrompt: String?
+    @State private var hasGeneratedInsights = false
+    
     @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                    // Enhanced header with visual design
-                    VStack(alignment: .leading, spacing: 16) {
-                        // Close button at top
-                        HStack {
-                            Spacer()
-                            Button(action: onDismiss) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(Theme.Colors.tertiaryText)
-                                    .background(Circle().fill(Color.white.opacity(0.8)))
-                            }
-                            .buttonStyle(.plain)
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 20)
-                        
-                        // Title and metadata
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(entry.displayTitle)
-                                .font(.system(size: 28, weight: .bold, design: .rounded))
-                                .foregroundColor(.primary)
-                            
-                            HStack(spacing: 16) {
-                                // Date
-                                Label(entry.createdAt.formatted(date: .abbreviated, time: .shortened), systemImage: "calendar")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(Theme.Colors.secondaryText)
-                                
-                                // Mood
-                                if let mood = entry.mood {
-                                    HStack(spacing: 4) {
-                                        Text(mood.emoji)
-                                            .font(.system(size: 16))
-                                        Text(mood.rawValue.capitalized)
-                                            .font(.system(size: 13))
-                                            .foregroundColor(Theme.Colors.secondaryText)
-                                    }
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 4)
-                                    .background(
-                                        Capsule()
-                                            .fill(Theme.Colors.cardBackground)
-                                    )
-                                }
-                                
-                                Spacer()
-                                
-                                // Reading time
-                                HStack(spacing: 4) {
-                                    Image(systemName: "clock")
-                                        .font(.system(size: 12))
-                                    Text("\(entry.readingTime) min")
-                                        .font(.system(size: 13))
-                                }
+                // Enhanced header with visual design
+                VStack(alignment: .leading, spacing: 16) {
+                    // Close button at top
+                    HStack {
+                        Spacer()
+                        Button(action: onDismiss) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 24))
                                 .foregroundColor(Theme.Colors.tertiaryText)
+                                .background(Circle().fill(Color.white.opacity(0.8)))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                    
+                    // Title and metadata
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(entry.displayTitle)
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .foregroundColor(.primary)
+                        
+                        HStack(spacing: 16) {
+                            // Date
+                            Label(entry.createdAt.formatted(date: .abbreviated, time: .shortened), systemImage: "calendar")
+                                .font(.system(size: 13))
+                                .foregroundColor(Theme.Colors.secondaryText)
+                            
+                            // Mood
+                            if let mood = entry.mood {
+                                HStack(spacing: 4) {
+                                    Text(mood.emoji)
+                                        .font(.system(size: 16))
+                                    Text(mood.rawValue.capitalized)
+                                        .font(.system(size: 13))
+                                        .foregroundColor(Theme.Colors.secondaryText)
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .background(
+                                    Capsule()
+                                        .fill(Theme.Colors.cardBackground)
+                                )
+                            }
+                            
+                            Spacer()
+                            
+                            // Reading time
+                            HStack(spacing: 4) {
+                                Image(systemName: "clock")
+                                    .font(.system(size: 12))
+                                Text("\(entry.readingTime) min")
+                                    .font(.system(size: 13))
+                            }
+                            .foregroundColor(Theme.Colors.tertiaryText)
+                        }
+                    }
+                    .padding(.horizontal, 30)
+                }
+                .background(
+                    LinearGradient(
+                        colors: [Theme.Colors.cardBackground, Theme.Colors.windowBackground],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                
+                // AI Insights Toggle Button
+                HStack {
+                    Button(action: {
+                        if !hasGeneratedInsights && !isAnalyzing {
+                            generateAIInsights()
+                        }
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            showingAIInsights.toggle()
+                        }
+                    }) {
+                        HStack(spacing: 8) {
+                            if isAnalyzing {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle())
+                                    .scaleEffect(0.8)
+                                    .frame(width: 16, height: 16)
+                            } else {
+                                Image(systemName: showingAIInsights ? "sparkles.rectangle.stack.fill" : "sparkles")
+                                    .font(.system(size: 16))
+                                    .symbolRenderingMode(.hierarchical)
+                            }
+                            
+                            Text(showingAIInsights ? "Hide AI Insights" : "Generate AI Insights")
+                                .font(.system(size: 14, weight: .medium))
+                            
+                            if showingAIInsights && hasGeneratedInsights {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.green)
                             }
                         }
-                        .padding(.horizontal, 30)
-                    }
-                    .background(
-                        LinearGradient(
-                            colors: [Theme.Colors.cardBackground, Theme.Colors.windowBackground],
-                            startPoint: .top,
-                            endPoint: .bottom
+                        .foregroundColor(showingAIInsights ? .white : Theme.Colors.primaryAccent)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(showingAIInsights ? Theme.Colors.primaryAccent : Theme.Colors.primaryAccent.opacity(0.1))
                         )
-                    )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .strokeBorder(Theme.Colors.primaryAccent, lineWidth: showingAIInsights ? 0 : 1)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isAnalyzing)
                     
-                    // Main content area
-                    VStack(alignment: .leading, spacing: 24) {
-                        // Content with better typography
-                        Text(entry.content)
-                            .font(.system(size: 17, weight: .regular, design: .default))
-                            .lineSpacing(8)
-                            .foregroundColor(.primary.opacity(0.9))
-                            .textSelection(.enabled)
-                            .padding(.horizontal, 30)
-                            .padding(.top, 24)
+                    Spacer()
+                }
+                .padding(.horizontal, 30)
+                .padding(.top, 20)
+                
+                // AI Insights Section
+                if showingAIInsights && hasGeneratedInsights {
+                    VStack(alignment: .leading, spacing: 20) {
+                        // Summary Card
+                        if let summary = aiSummary {
+                            EnhancedInsightCard(
+                                icon: "text.quote",
+                                title: "AI Summary",
+                                color: Theme.Colors.primaryAccent
+                            ) {
+                                Text(summary)
+                                    .font(.system(size: 15))
+                                    .foregroundColor(.primary.opacity(0.9))
+                                    .lineSpacing(4)
+                            }
+                        }
                         
-                        // Tags section
-                        if !entry.tags.isEmpty {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Tags")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundColor(Theme.Colors.tertiaryText)
-                                    .textCase(.uppercase)
-                                
-                                HStack(spacing: 8) {
-                                    ForEach(entry.tags, id: \.self) { tag in
-                                        Text("#\(tag)")
-                                            .font(.system(size: 14))
-                                            .padding(.horizontal, 12)
-                                            .padding(.vertical, 6)
-                                            .background(
-                                                RoundedRectangle(cornerRadius: 6)
-                                                    .fill(Theme.Colors.primaryAccent.opacity(0.1))
-                                            )
-                                            .foregroundColor(Theme.Colors.primaryAccent)
+                        // Key Themes Card
+                        if !aiKeyPoints.isEmpty {
+                            EnhancedInsightCard(
+                                icon: "lightbulb.fill",
+                                title: "Key Themes",
+                                color: .orange
+                            ) {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    ForEach(Array(aiKeyPoints.enumerated()), id: \.offset) { index, point in
+                                        HStack(alignment: .top, spacing: 12) {
+                                            Text("\(index + 1)")
+                                                .font(.system(size: 12, weight: .semibold))
+                                                .foregroundColor(.white)
+                                                .frame(width: 20, height: 20)
+                                                .background(Circle().fill(Color.orange))
+                                            
+                                            Text(point)
+                                                .font(.system(size: 14))
+                                                .foregroundColor(.primary.opacity(0.85))
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        }
                                     }
                                 }
                             }
-                            .padding(.horizontal, 30)
                         }
                         
-                        // Action buttons
-                        HStack(spacing: Theme.spacing) {
-                            Button(action: onChat) {
-                                Label("Discuss with Gemi", systemImage: "bubble.left.and.bubble.right")
-                                    .font(.system(size: 14, weight: .medium))
+                        // Reflection Prompts Card
+                        if !aiSuggestedPrompts.isEmpty {
+                            EnhancedInsightCard(
+                                icon: "bubble.left.and.bubble.right.fill",
+                                title: "Reflection Prompts",
+                                color: .purple
+                            ) {
+                                VStack(spacing: 10) {
+                                    ForEach(aiSuggestedPrompts, id: \.self) { prompt in
+                                        Button {
+                                            selectedPrompt = prompt
+                                            selectedReflectionPrompt = prompt
+                                            onChat()
+                                        } label: {
+                                            HStack {
+                                                Text(prompt)
+                                                    .font(.system(size: 14))
+                                                    .foregroundColor(.primary)
+                                                    .multilineTextAlignment(.leading)
+                                                    .fixedSize(horizontal: false, vertical: true)
+                                                
+                                                Spacer()
+                                                
+                                                Image(systemName: "arrow.right.circle.fill")
+                                                    .font(.system(size: 18))
+                                                    .foregroundColor(.purple)
+                                            }
+                                            .padding(12)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .fill(Color.purple.opacity(0.08))
+                                            )
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .strokeBorder(Color.purple.opacity(0.2), lineWidth: 1)
+                                            )
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
                             }
-                            .buttonStyle(.borderedProminent)
-                            .controlSize(.large)
+                        }
+                    }
+                    .padding(.horizontal, 30)
+                    .padding(.vertical, 20)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .top).combined(with: .opacity),
+                        removal: .opacity
+                    ))
+                }
+                
+                // Main content area
+                VStack(alignment: .leading, spacing: 24) {
+                    // Content with better typography
+                    Text(entry.content)
+                        .font(.system(size: 17, weight: .regular, design: .default))
+                        .lineSpacing(8)
+                        .foregroundColor(.primary.opacity(0.9))
+                        .textSelection(.enabled)
+                        .padding(.horizontal, 30)
+                        .padding(.top, 24)
+                    
+                    // Tags section
+                    if !entry.tags.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Tags")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(Theme.Colors.tertiaryText)
+                                .textCase(.uppercase)
                             
-                            Button(action: {
-                                // Share functionality
-                                showingShareMenu = true
-                            }) {
-                                Label("Share", systemImage: "square.and.arrow.up")
-                                    .font(.system(size: 14, weight: .medium))
+                            HStack(spacing: 8) {
+                                ForEach(entry.tags, id: \.self) { tag in
+                                    Text("#\(tag)")
+                                        .font(.system(size: 14))
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 6)
+                                                .fill(Theme.Colors.primaryAccent.opacity(0.1))
+                                        )
+                                        .foregroundColor(Theme.Colors.primaryAccent)
+                                }
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.large)
                         }
                         .padding(.horizontal, 30)
-                        .padding(.bottom, 30)
                     }
-                    .background(Theme.Colors.windowBackground)
+                    
+                    // Action buttons
+                    HStack(spacing: Theme.spacing) {
+                        Button(action: onChat) {
+                            Label("Discuss with Gemi", systemImage: "bubble.left.and.bubble.right")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                        
+                        Button(action: {
+                            // Share functionality
+                            showingShareMenu = true
+                        }) {
+                            Label("Share", systemImage: "square.and.arrow.up")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.large)
+                    }
+                    .padding(.horizontal, 30)
+                    .padding(.bottom, 30)
                 }
+                .background(Theme.Colors.windowBackground)
             }
+        }
         .frame(minWidth: 600, minHeight: 500)
         .background(Theme.Colors.windowBackground)
+        .onAppear {
+            // Automatically generate insights when opening
+            if !hasGeneratedInsights && !isAnalyzing {
+                generateAIInsights()
+            }
+        }
+    }
+    
+    // MARK: - AI Methods
+    
+    private func generateAIInsights() {
+        isAnalyzing = true
+        showingAIInsights = true
+        
+        Task {
+            do {
+                // Use the real Gemma3n API through GemiAICoordinator
+                let insights = try await GemiAICoordinator.shared.generateInsights(for: entry)
+                
+                await MainActor.run {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        self.aiSummary = insights.summary
+                        self.aiKeyPoints = insights.keyPoints
+                        self.aiSuggestedPrompts = insights.prompts
+                        self.isAnalyzing = false
+                        self.hasGeneratedInsights = true
+                    }
+                }
+            } catch {
+                // Handle errors gracefully with fallback content
+                await MainActor.run {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        self.aiSummary = "Your entry captures a meaningful moment. While I couldn't generate specific insights right now, your reflection shows thoughtful self-awareness."
+                        self.aiKeyPoints = [
+                            "Personal reflection and self-awareness demonstrated",
+                            "Emotional processing through journaling",
+                            "Growth mindset evident in your writing"
+                        ]
+                        self.aiSuggestedPrompts = [
+                            "What emotions are most present in this entry, and what might they be telling you?",
+                            "How does this experience connect to your personal values or goals?",
+                            "What would you tell a friend going through something similar?"
+                        ]
+                        self.isAnalyzing = false
+                        self.hasGeneratedInsights = true
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Enhanced Insight Card Component
+
+struct EnhancedInsightCard<Content: View>: View {
+    let icon: String
+    let title: String
+    let color: Color
+    @ViewBuilder let content: Content
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(color)
+                
+                Text(title)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+            }
+            
+            content
+                .padding(.leading, 24)
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(color.opacity(0.05))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(color.opacity(0.1), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Enhanced Chat Sheet with Prompt
+
+struct EnhancedChatSheet: View {
+    let journalEntry: JournalEntry
+    let reflectionPrompt: String?
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var chatViewModel = ChatViewModel()
+    @State private var isInitialized = false
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Talking about your entry")
+                        .font(Theme.Typography.headline)
+                    Text(journalEntry.createdAt, style: .date)
+                        .font(Theme.Typography.caption)
+                        .foregroundColor(Theme.Colors.secondaryText)
+                }
+                
+                Spacer()
+                
+                Button("Done") {
+                    dismiss()
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(Theme.spacing)
+            
+            Divider()
+            
+            // Chat view
+            ChatInterfaceView(viewModel: chatViewModel)
+        }
+        .frame(minWidth: 600, idealWidth: 700, maxWidth: 900, minHeight: 400, idealHeight: 500, maxHeight: 700)
+        .background(Theme.Colors.windowBackground)
+        .onAppear {
+            if !isInitialized {
+                initializeChat()
+                isInitialized = true
+            }
+        }
+    }
+    
+    private func initializeChat() {
+        Task {
+            // Create memories specific to this entry
+            let entryMemory = Memory(
+                content: journalEntry.content.prefix(500) + "...",
+                sourceEntryID: journalEntry.id,
+                category: .personal,
+                importance: 5
+            )
+            
+            // Use the reflection prompt if provided, otherwise use context
+            let initialMessage: String
+            if let prompt = reflectionPrompt {
+                initialMessage = """
+                I'd like to reflect on my journal entry from \(journalEntry.createdAt.formatted(date: .abbreviated, time: .omitted)).
+                
+                \(prompt)
+                
+                Context from my entry: "\(journalEntry.content.prefix(200))..."
+                """
+            } else {
+                let context = extractContext(from: journalEntry)
+                initialMessage = """
+                I'd like to reflect on my journal entry from \(journalEntry.createdAt.formatted(date: .abbreviated, time: .omitted)). \
+                \(context)
+                """
+            }
+            
+            await chatViewModel.sendMessage(initialMessage, withMemories: [entryMemory])
+        }
+    }
+    
+    private func extractContext(from entry: JournalEntry) -> String {
+        var context = ""
+        
+        if let mood = entry.mood {
+            context += "I was feeling \(mood). "
+        }
+        
+        if !entry.tags.isEmpty {
+            context += "I wrote about \(entry.tags.joined(separator: ", ")). "
+        }
+        
+        // Extract first meaningful sentence
+        let sentences = entry.content.components(separatedBy: CharacterSet(charactersIn: ".!?"))
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        
+        if let firstSentence = sentences.first {
+            context += "Here's what I wrote: \"\(firstSentence)...\""
+        }
+        
+        return context
     }
 }
