@@ -45,6 +45,10 @@ struct ProductionComposeView: View {
             GeometryReader { geometry in
                 ScrollView {
                     VStack(spacing: 0) {
+                        // Add spacer to center content vertically when minimal
+                        Spacer(minLength: 0)
+                            .frame(maxHeight: .infinity)
+                        
                         // Title section with subtle animations
                         titleSection
                             .opacity(titleOpacity)
@@ -62,7 +66,12 @@ struct ProductionComposeView: View {
                             .padding(.top, 32)
                             .padding(.horizontal, 40)
                             .padding(.bottom, 20)
+                        
+                        // Add spacer to center content vertically when minimal
+                        Spacer(minLength: 0)
+                            .frame(maxHeight: .infinity)
                     }
+                    .frame(minHeight: geometry.size.height)
                 }
                 .scrollDismissesKeyboard(.interactively)
             }

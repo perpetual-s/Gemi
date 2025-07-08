@@ -163,24 +163,33 @@ struct GemiChatView: View {
     
     private var messagesScrollView: some View {
         ScrollViewReader { proxy in
-            ScrollView {
-                VStack(spacing: 12) {
-                    if viewModel.messages.isEmpty {
-                        emptyStateView
-                            .frame(maxHeight: .infinity)
-                    } else {
-                        messagesContent
+            GeometryReader { geometry in
+                ScrollView {
+                    VStack(spacing: 12) {
+                        if viewModel.messages.isEmpty {
+                            // Center the empty state vertically
+                            Spacer(minLength: 0)
+                                .frame(maxHeight: .infinity)
+                            
+                            emptyStateView
+                            
+                            Spacer(minLength: 0)
+                                .frame(maxHeight: .infinity)
+                        } else {
+                            messagesContent
+                        }
+                        
+                        // Spacer for bottom padding
+                        Color.clear
+                            .frame(height: 20)
+                            .id(bottomID)
                     }
-                    
-                    // Spacer for bottom padding
-                    Color.clear
-                        .frame(height: 20)
-                        .id(bottomID)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .frame(minHeight: geometry.size.height)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
+                .scrollDismissesKeyboard(.interactively)
             }
-            .scrollDismissesKeyboard(.interactively)
             .onChange(of: viewModel.messages.count) { _, _ in
                 withAnimation(.easeOut(duration: 0.3)) {
                     proxy.scrollTo(bottomID, anchor: .bottom)
