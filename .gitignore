@@ -62,5 +62,6 @@ Gemi/Scripts/Diagnostics/*.md
 *_backup.swift
 *_backup.*
 
-# Markdown files in Gemi directory (including subdirectories)
+# Markdown files - only allowed in Documentation/ folder
+*.md
 Gemi/**/*.md 
