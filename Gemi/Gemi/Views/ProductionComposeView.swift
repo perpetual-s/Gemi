@@ -570,9 +570,12 @@ struct ProductionTagEditor: View {
             // Existing tags
             if !tags.isEmpty {
                 ProductionFlowLayout(spacing: 8) {
-                    ForEach(Array(tags.enumerated()), id: \.offset) { index, tag in
+                    ForEach(tags, id: \.self) { tag in
                         ProductionTagChip(tag: tag) {
-                            tags.remove(at: index)
+                            // Use safer removal method
+                            if let index = tags.firstIndex(of: tag) {
+                                tags.remove(at: index)
+                            }
                         }
                     }
                     
@@ -592,6 +595,7 @@ struct ProductionTagEditor: View {
                     
                     TextField("Add tag", text: $newTag)
                         .textFieldStyle(.plain)
+                        .frame(minWidth: 100)
                         .focused($isInputFocused)
                         .onSubmit {
                             addTag()
@@ -622,9 +626,7 @@ struct ProductionTagEditor: View {
     
     private var addTagButton: some View {
         Button {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                isAddingTag.toggle()
-            }
+            isAddingTag.toggle()
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: "plus")
@@ -646,11 +648,9 @@ struct ProductionTagEditor: View {
     private func addTag() {
         let trimmedTag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedTag.isEmpty && !tags.contains(trimmedTag) {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                tags.append(trimmedTag)
-                newTag = ""
-                isAddingTag = false
-            }
+            tags.append(trimmedTag)
+            newTag = ""
+            isAddingTag = false
         }
     }
 }
