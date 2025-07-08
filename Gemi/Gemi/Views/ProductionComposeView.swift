@@ -29,6 +29,7 @@ struct ProductionComposeView: View {
     @State private var showingEmojiPicker = false
     @State private var selectedEmoji: String?
     @State private var textEditorCoordinator: MacTextEditor.Coordinator?
+    @State private var showingFocusMode = false
     
     init(entry: JournalEntry? = nil, onSave: @escaping (JournalEntry) -> Void, onCancel: @escaping () -> Void) {
         self._entry = State(initialValue: entry ?? JournalEntry(content: ""))
@@ -92,6 +93,10 @@ struct ProductionComposeView: View {
             updateWordCount()
             hasUnsavedChanges = (newValue != lastSavedContent)
         }
+        .sheet(isPresented: $showingFocusMode) {
+            FocusModeView(entry: $entry, isPresented: $showingFocusMode)
+                .frame(minWidth: 800, minHeight: 600)
+        }
     }
     
     // MARK: - Header
@@ -124,6 +129,21 @@ struct ProductionComposeView: View {
                 }
                 
                 Spacer()
+                
+                // Focus Mode button
+                Button {
+                    showingFocusMode = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.up.left.and.arrow.down.right")
+                            .font(.system(size: 14))
+                        Text("Focus")
+                            .font(.system(size: 14))
+                    }
+                    .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Enter distraction-free writing mode")
                 
                 // Emoji picker
                 Button {
