@@ -33,74 +33,77 @@ struct EnhancedTimelineView: View {
                 
                 GeometryReader { geometry in
                     ScrollView {
-                        LazyVStack(alignment: .leading, spacing: Theme.largeSpacing) {
-                            if journalStore.entries.isEmpty {
-                                // Add spacer to center vertically
+                        if groupedEntries.isEmpty {
+                            // Empty state - centered vertically
+                            VStack(spacing: 0) {
                                 Spacer(minLength: 0)
                                     .frame(maxHeight: .infinity)
                                 
                                 // Beautiful empty state matching design language
                                 VStack(spacing: Theme.largeSpacing) {
-                                // Icon with gradient background
-                                ZStack {
-                                    Circle()
-                                        .fill(
-                                            LinearGradient(
-                                                colors: [
-                                                    Theme.Colors.primaryAccent.opacity(0.1),
-                                                    Theme.Colors.primaryAccent.opacity(0.05)
-                                                ],
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
+                                    // Icon with gradient background
+                                    ZStack {
+                                        Circle()
+                                            .fill(
+                                                LinearGradient(
+                                                    colors: [
+                                                        Theme.Colors.primaryAccent.opacity(0.1),
+                                                        Theme.Colors.primaryAccent.opacity(0.05)
+                                                    ],
+                                                    startPoint: .topLeading,
+                                                    endPoint: .bottomTrailing
+                                                )
                                             )
-                                        )
-                                        .frame(width: 120, height: 120)
-                                    
-                                    Image(systemName: "calendar")
-                                        .font(.system(size: 56))
-                                        .foregroundColor(Theme.Colors.primaryAccent)
-                                }
-                                
-                                VStack(spacing: Theme.spacing) {
-                                    Text("No journal entries yet")
-                                        .font(Theme.Typography.title)
-                                        .foregroundColor(.primary)
-                                    
-                                    Text("Start documenting your journey.\nYour timeline will appear here.")
-                                        .font(Theme.Typography.body)
-                                        .foregroundColor(Theme.Colors.secondaryText)
-                                        .multilineTextAlignment(.center)
-                                        .frame(maxWidth: 400)
-                                    
-                                    Button(action: onNewEntry) {
-                                        Text("Create Your First Entry")
-                                            .font(Theme.Typography.body.weight(.medium))
-                                            .foregroundColor(.white)
-                                            .padding(.horizontal, 20)
-                                            .padding(.vertical, 10)
-                                            .background(Theme.Colors.primaryAccent)
-                                            .clipShape(Capsule())
+                                            .frame(width: 120, height: 120)
+                                        
+                                        Image(systemName: "calendar")
+                                            .font(.system(size: 56))
+                                            .foregroundColor(Theme.Colors.primaryAccent)
                                     }
-                                    .buttonStyle(.plain)
-                                    .padding(.top, Theme.spacing)
+                                    
+                                    VStack(spacing: Theme.spacing) {
+                                        Text("No journal entries yet")
+                                            .font(Theme.Typography.title)
+                                            .foregroundColor(.primary)
+                                        
+                                        Text("Start documenting your journey.\nYour timeline will appear here.")
+                                            .font(Theme.Typography.body)
+                                            .foregroundColor(Theme.Colors.secondaryText)
+                                            .multilineTextAlignment(.center)
+                                            .frame(maxWidth: 400)
+                                        
+                                        Button(action: onNewEntry) {
+                                            Text("Create Your First Entry")
+                                                .font(Theme.Typography.body.weight(.medium))
+                                                .foregroundColor(.white)
+                                                .padding(.horizontal, 20)
+                                                .padding(.vertical, 10)
+                                                .background(Theme.Colors.primaryAccent)
+                                                .clipShape(Capsule())
+                                        }
+                                        .buttonStyle(.plain)
+                                        .padding(.top, Theme.spacing)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 60)
+                                
+                                Spacer(minLength: 0)
+                                    .frame(maxHeight: .infinity)
+                            }
+                            .frame(minHeight: geometry.size.height)
+                            .padding()
+                        } else {
+                            // Entries - aligned from top without centering
+                            LazyVStack(alignment: .leading, spacing: Theme.largeSpacing) {
+                                ForEach(sortedDates, id: \.self) { date in
+                                    dateSection(for: date)
                                 }
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 60)
-                            
-                            // Add spacer to center vertically
-                            Spacer(minLength: 0)
-                                .frame(maxHeight: .infinity)
-                        } else {
-                            ForEach(sortedDates, id: \.self) { date in
-                                dateSection(for: date)
-                            }
+                            .padding()
                         }
                     }
-                    .frame(minHeight: geometry.size.height)
-                    .padding()
                 }
-            }
             }
             .background(Theme.Colors.windowBackground)
             
