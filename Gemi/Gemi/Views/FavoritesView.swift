@@ -68,20 +68,13 @@ struct FavoritesView: View {
                 ScrollView {
                     LazyVStack(spacing: Theme.spacing) {
                         ForEach(favoriteEntries) { entry in
-                            EnhancedEntryCard(
+                            PremiumEntryCard(
                                 entry: entry,
                                 isSelected: selectedEntry?.id == entry.id,
-                                onTap: {
+                                onSelect: {
                                     selectedEntry = entry
-                                },
-                                onChat: {
-                                    chatEntry = entry
-                                    showingChat = true
-                                },
-                                onToggleFavorite: {
-                                    Task {
-                                        await toggleFavorite(for: entry)
-                                    }
+                                    readingEntry = entry
+                                    showingReadingView = true
                                 },
                                 onEdit: {
                                     editingEntry = entry
@@ -92,9 +85,9 @@ struct FavoritesView: View {
                                         await journalStore.deleteEntry(entry)
                                     }
                                 },
-                                onRead: {
-                                    readingEntry = entry
-                                    showingReadingView = true
+                                onChat: {
+                                    chatEntry = entry
+                                    showingChat = true
                                 }
                             )
                             .transition(.asymmetric(
