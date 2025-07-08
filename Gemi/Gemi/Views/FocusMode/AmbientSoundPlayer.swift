@@ -1,20 +1,41 @@
 import AVFoundation
 import SwiftUI
 
+/// Ambient sound options for Focus Mode
+enum AmbientSound: String, CaseIterable {
+    case none = "None"
+    case rain = "Rain"
+    case coffeeshop = "Coffee Shop"
+    case ocean = "Ocean Waves"
+    case forest = "Forest"
+    case fireplace = "Fireplace"
+    
+    var icon: String {
+        switch self {
+        case .none: return "speaker.slash"
+        case .rain: return "cloud.rain"
+        case .coffeeshop: return "cup.and.saucer"
+        case .ocean: return "water.waves"
+        case .forest: return "leaf"
+        case .fireplace: return "flame"
+        }
+    }
+}
+
 /// Manages ambient sound playback for Focus Mode
 @MainActor
 final class AmbientSoundPlayer {
     static let shared = AmbientSoundPlayer()
     
     private var audioPlayer: AVAudioPlayer?
-    private var currentSound: FocusModeView.AmbientSound = .none
+    private var currentSound: AmbientSound = .none
     private var whiteNoiseGenerator: WhiteNoiseGenerator?
     
     private init() {
         // No audio session setup needed on macOS
     }
     
-    func play(sound: FocusModeView.AmbientSound) {
+    func play(sound: AmbientSound) {
         guard sound != .none else {
             stop()
             return
@@ -73,7 +94,7 @@ final class AmbientSoundPlayer {
         }
     }
     
-    private func getSoundFile(for sound: FocusModeView.AmbientSound) -> String {
+    private func getSoundFile(for sound: AmbientSound) -> String {
         switch sound {
         case .rain: return "rain-ambient"
         case .coffeeshop: return "coffeeshop-ambient"
@@ -85,7 +106,7 @@ final class AmbientSoundPlayer {
     }
     
     // Fallback: Create ambient sounds using system capabilities
-    private func playSystemSound(for sound: FocusModeView.AmbientSound) {
+    private func playSystemSound(for sound: AmbientSound) {
         // For demo purposes, we'll create simple ambient effects
         // In production, you'd want actual recorded ambient sounds
         

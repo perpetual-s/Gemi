@@ -6,6 +6,7 @@ struct ProductionComposeView: View {
     @State private var entry: JournalEntry
     let onSave: (JournalEntry) -> Void
     let onCancel: () -> Void
+    let onFocusMode: ((JournalEntry) -> Void)?
     
     // Editor state
     @State private var wordCount = 0
@@ -29,12 +30,12 @@ struct ProductionComposeView: View {
     @State private var showingEmojiPicker = false
     @State private var selectedEmoji: String?
     @State private var textEditorCoordinator: MacTextEditor.Coordinator?
-    @State private var showingFocusMode = false
     
-    init(entry: JournalEntry? = nil, onSave: @escaping (JournalEntry) -> Void, onCancel: @escaping () -> Void) {
+    init(entry: JournalEntry? = nil, onSave: @escaping (JournalEntry) -> Void, onCancel: @escaping () -> Void, onFocusMode: ((JournalEntry) -> Void)? = nil) {
         self._entry = State(initialValue: entry ?? JournalEntry(content: ""))
         self.onSave = onSave
         self.onCancel = onCancel
+        self.onFocusMode = onFocusMode
     }
     
     var body: some View {
@@ -93,10 +94,7 @@ struct ProductionComposeView: View {
             updateWordCount()
             hasUnsavedChanges = (newValue != lastSavedContent)
         }
-        .sheet(isPresented: $showingFocusMode) {
-            FocusModeView(entry: $entry, isPresented: $showingFocusMode)
-                .frame(minWidth: 800, minHeight: 600)
-        }
+        // Focus mode shortcut handled via button
     }
     
     // MARK: - Header
@@ -131,19 +129,21 @@ struct ProductionComposeView: View {
                 Spacer()
                 
                 // Focus Mode button
-                Button {
-                    showingFocusMode = true
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "arrow.up.left.and.arrow.down.right")
-                            .font(.system(size: 14))
-                        Text("Focus")
-                            .font(.system(size: 14))
+                if let onFocusMode = onFocusMode {
+                    Button {
+                        onFocusMode(entry)
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                .font(.system(size: 14))
+                            Text("Focus")
+                                .font(.system(size: 14))
+                        }
+                        .foregroundColor(.secondary)
                     }
-                    .foregroundColor(.secondary)
+                    .buttonStyle(.plain)
+                    .help("Enter distraction-free writing mode")
                 }
-                .buttonStyle(.plain)
-                .help("Enter distraction-free writing mode")
                 
                 // Emoji picker
                 Button {
