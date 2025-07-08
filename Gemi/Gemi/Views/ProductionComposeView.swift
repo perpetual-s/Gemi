@@ -14,6 +14,9 @@ struct ProductionComposeView: View {
     @State private var lastSavedContent = ""
     @State private var hasUnsavedChanges = false
     
+    // Force UI updates for class properties
+    @State private var updateTrigger = UUID()
+    
     // Animation states
     @State private var titleOpacity = 0.0
     @State private var contentOpacity = 0.0
@@ -68,6 +71,7 @@ struct ProductionComposeView: View {
             productionFooter
         }
         .background(Color(nsColor: .textBackgroundColor))
+        .id(updateTrigger) // Force view updates when trigger changes
         .onAppear {
             titleOpacity = 1
             contentOpacity = 1
@@ -335,9 +339,39 @@ struct ProductionComposeView: View {
                     
                     Spacer()
                     
+                    // Show selected mood prominently
+                    if let mood = entry.mood {
+                        HStack(spacing: 6) {
+                            Text(mood.emoji)
+                                .font(.system(size: 20))
+                            Text(mood.rawValue.capitalized)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.blue)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(Color.blue.opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .strokeBorder(Color.blue, lineWidth: 1.5)
+                                )
+                        )
+                        .transition(.asymmetric(
+                            insertion: .scale.combined(with: .opacity),
+                            removal: .scale.combined(with: .opacity)
+                        ))
+                    }
                 }
                 
-                ProductionMoodPicker(selectedMood: $entry.mood)
+                ProductionMoodPicker(selectedMood: Binding(
+                    get: { entry.mood },
+                    set: { newMood in
+                        entry.mood = newMood
+                        updateTrigger = UUID() // Force UI update
+                    }
+                ))
             }
             
             // Tags
@@ -345,7 +379,13 @@ struct ProductionComposeView: View {
                 Text("Tags")
                     .font(.system(size: 15, weight: .medium))
                 
-                ProductionTagEditor(tags: $entry.tags)
+                ProductionTagEditor(tags: Binding(
+                    get: { entry.tags },
+                    set: { newTags in
+                        entry.tags = newTags
+                        updateTrigger = UUID() // Force UI update
+                    }
+                ))
             }
             
             // Additional options
@@ -354,6 +394,7 @@ struct ProductionComposeView: View {
                 Button {
                     // Direct toggle without animation wrapper
                     entry.isFavorite.toggle()
+                    updateTrigger = UUID() // Force UI update
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: entry.isFavorite ? "star.fill" : "star")
@@ -537,14 +578,15 @@ struct ProductionMoodButton: View {
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.blue.opacity(0.15) : Color(NSColor.controlBackgroundColor))
+                    .fill(isSelected ? Color.blue.opacity(0.2) : Color(NSColor.controlBackgroundColor))
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
                             .strokeBorder(
-                                isSelected ? Color.blue : Color.clear,
-                                lineWidth: isSelected ? 2.5 : 0
+                                isSelected ? Color.blue : Color.secondary.opacity(0.2),
+                                lineWidth: isSelected ? 3 : 1
                             )
                     )
+                    .shadow(color: isSelected ? Color.blue.opacity(0.3) : Color.clear, radius: 3)
             )
             .scaleEffect(isPressed ? 0.95 : 1.0)
         }
@@ -659,26 +701,46 @@ struct ProductionTagChip: View {
     let tag: String
     let onRemove: () -> Void
     @State private var isHovered = false
+    @State private var isPressed = false
     
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             Text("#\(tag)")
                 .font(.system(size: 13))
                 .foregroundColor(Theme.Colors.primaryAccent)
             
-            Button(action: onRemove) {
+            Button(action: {
+                // Add haptic feedback
+                NSHapticFeedbackManager.defaultPerformer.perform(
+                    .levelChange,
+                    performanceTime: .default
+                )
+                onRemove()
+            }) {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(isHovered ? Color.red : .secondary)
+                    .scaleEffect(isPressed ? 0.85 : 1.0)
+                    .animation(.easeInOut(duration: 0.1), value: isPressed)
             }
             .buttonStyle(PlainButtonStyle())
-            .opacity(isHovered ? 1 : 0.7)
+            .contentShape(Rectangle()) // Ensure entire button area is clickable
+            .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
+                isPressed = pressing
+            }, perform: {})
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Theme.Colors.primaryAccent.opacity(0.1))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .strokeBorder(
+                            isHovered ? Theme.Colors.primaryAccent.opacity(0.3) : Color.clear,
+                            lineWidth: 1
+                        )
+                )
         )
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
