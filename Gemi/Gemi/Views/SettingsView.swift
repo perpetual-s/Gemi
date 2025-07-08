@@ -232,6 +232,9 @@ struct SettingsView: View {
         } message: {
             Text(errorMessage)
         }
+        .sheet(isPresented: $showingDataManagement) {
+            DataManagementView(journalStore: journalStore)
+        }
     }
     
     // MARK: - General Settings
@@ -1093,6 +1096,92 @@ struct VisualEffectBlur: NSViewRepresentable {
     }
     
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
+}
+
+// MARK: - Data Management View
+
+struct DataManagementView: View {
+    let journalStore: JournalStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var showDeleteConfirmation = false
+    @State private var entriesToDelete: Set<UUID> = []
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Manage Data")
+                        .font(.system(size: 24, weight: .bold))
+                    
+                    Text("Review and manage your journal entries")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                Button("Done") {
+                    dismiss()
+                }
+                .buttonStyle(PremiumButtonStyle())
+            }
+            .padding()
+            .background(VisualEffectBlur())
+            
+            Divider()
+            
+            // Content
+            if journalStore.entries.isEmpty {
+                VStack(spacing: 16) {
+                    Image(systemName: "doc.text")
+                        .font(.system(size: 48))
+                        .foregroundColor(.secondary)
+                    
+                    Text("No entries yet")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List(journalStore.entries) { entry in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(entry.displayTitle)
+                                .font(.system(size: 14, weight: .medium))
+                                .lineLimit(1)
+                            
+                            Text(entry.createdAt.formatted(date: .abbreviated, time: .shortened))
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        Text("\(entry.wordCount) words")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.vertical, 4)
+                }
+                .listStyle(InsetListStyle())
+            }
+            
+            // Footer
+            Divider()
+            
+            HStack {
+                Text("\(journalStore.entries.count) entries")
+                    .font(.system(size: 13))
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+            }
+            .padding()
+            .background(VisualEffectBlur())
+        }
+        .frame(width: 600, height: 500)
+    }
 }
 
 #Preview {
