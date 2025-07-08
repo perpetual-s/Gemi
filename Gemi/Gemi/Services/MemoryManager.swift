@@ -111,6 +111,11 @@ final class MemoryManager: ObservableObject {
             .map { $0.0 }
     }
     
+    /// Search memories (alias for getRelevantMemories for compatibility)
+    func searchMemories(for message: String, limit: Int = 10) -> [Memory] {
+        return getRelevantMemories(for: message, limit: limit)
+    }
+    
     /// Delete a specific memory
     func deleteMemory(_ memory: Memory) {
         memories.removeAll { $0.id == memory.id }
@@ -162,44 +167,4 @@ struct MemoryStatistics {
     let totalCount: Int
     let oldestMemory: Date?
     let newestMemory: Date?
-}
-
-// MARK: - Memory View Model for UI
-
-@MainActor
-final class MemoryViewModel: ObservableObject {
-    @Published var searchText = ""
-    @Published var sortOrder: SortOrder = .byDate
-    
-    private let memoryManager = MemoryManager.shared
-    
-    enum SortOrder: String, CaseIterable {
-        case byDate = "Date"
-        case alphabetical = "A-Z"
-    }
-    
-    var filteredMemories: [Memory] {
-        var filtered = memoryManager.memories
-        
-        // Filter by search text
-        if !searchText.isEmpty {
-            filtered = filtered.filter { 
-                $0.content.localizedCaseInsensitiveContains(searchText) 
-            }
-        }
-        
-        // Sort
-        switch sortOrder {
-        case .byDate:
-            filtered.sort { $0.extractedAt > $1.extractedAt }
-        case .alphabetical:
-            filtered.sort { $0.content.localizedStandardCompare($1.content) == .orderedAscending }
-        }
-        
-        return filtered
-    }
-    
-    func deleteMemory(_ memory: Memory) {
-        memoryManager.deleteMemory(memory)
-    }
 }
