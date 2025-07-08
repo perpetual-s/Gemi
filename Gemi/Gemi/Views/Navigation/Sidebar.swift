@@ -153,6 +153,7 @@ struct NavigationRow: View {
 }
 
 enum NavigationItem: String, CaseIterable, Identifiable {
+    case home
     case timeline
     case compose
     case chat
@@ -165,6 +166,7 @@ enum NavigationItem: String, CaseIterable, Identifiable {
     
     var title: String {
         switch self {
+        case .home: return "Home"
         case .timeline: return "Timeline"
         case .compose: return "New Entry"
         case .chat: return "Chat with Gemi"
@@ -177,6 +179,7 @@ enum NavigationItem: String, CaseIterable, Identifiable {
     
     var icon: String {
         switch self {
+        case .home: return "house"
         case .timeline: return "calendar"
         case .compose: return "square.and.pencil"
         case .chat: return "bubble.left.and.bubble.right.fill"
