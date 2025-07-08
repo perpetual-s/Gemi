@@ -31,6 +31,12 @@ struct ProductionComposeView: View {
     @State private var selectedEmoji: String?
     @State private var textEditorCoordinator: MacTextEditor.Coordinator?
     
+    // AI Assistant states
+    @State private var showAIAssistant = false
+    @State private var aiAssistantExpanded = false
+    @State private var showWritersBlockBreaker = false
+    @StateObject private var sentimentAnalyzer = SentimentAnalyzer()
+    
     init(entry: JournalEntry? = nil, onSave: @escaping (JournalEntry) -> Void, onCancel: @escaping () -> Void, onFocusMode: ((JournalEntry) -> Void)? = nil) {
         self._entry = State(initialValue: entry ?? JournalEntry(content: ""))
         self.onSave = onSave
@@ -39,13 +45,14 @@ struct ProductionComposeView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Professional header
-            productionHeader
-            
-            // Main editor area
-            GeometryReader { geometry in
-                ScrollView {
+        ZStack {
+            VStack(spacing: 0) {
+                // Professional header
+                productionHeader
+                
+                // Main editor area
+                GeometryReader { geometry in
+                    ScrollView {
                     VStack(spacing: 0) {
                         // Add spacer to center content vertically when minimal
                         Spacer(minLength: 0)
@@ -78,11 +85,50 @@ struct ProductionComposeView: View {
                 .scrollDismissesKeyboard(.interactively)
             }
             
-            // Professional footer
-            productionFooter
+                // Professional footer
+                productionFooter
+            }
+            
+            // AI Assistant overlay
+            if showAIAssistant {
+                VStack {
+                    HStack {
+                        Spacer()
+                        AIAssistantBubble(
+                            isVisible: $showAIAssistant,
+                            isExpanded: $aiAssistantExpanded,
+                            onSuggestionAccepted: { suggestion in
+                                insertTextAtCursor(suggestion)
+                            },
+                            position: .bottomRight
+                        )
+                        .padding(.trailing, 20)
+                        .padding(.bottom, 100)
+                    }
+                    Spacer()
+                }
+                .allowsHitTesting(true)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.8, anchor: .bottomTrailing).combined(with: .opacity),
+                    removal: .scale(scale: 0.8, anchor: .bottomTrailing).combined(with: .opacity)
+                ))
+            }
         }
         .background(Color(nsColor: .textBackgroundColor))
         .id(updateTrigger) // Force view updates when trigger changes
+        .sheet(isPresented: $showWritersBlockBreaker) {
+            WritersBlockBreaker(
+                isPresented: $showWritersBlockBreaker,
+                onPromptSelected: { prompt in
+                    // Insert the prompt as a starting point
+                    if entry.content.isEmpty {
+                        entry.content = "Prompt: \(prompt.prompt)\n\n"
+                    } else {
+                        entry.content += "\n\nPrompt: \(prompt.prompt)\n\n"
+                    }
+                }
+            )
+        }
         .onAppear {
             titleOpacity = 1
             contentOpacity = 1
@@ -93,6 +139,9 @@ struct ProductionComposeView: View {
         .onChange(of: entry.content) { oldValue, newValue in
             updateWordCount()
             hasUnsavedChanges = (newValue != lastSavedContent)
+            
+            // Analyze sentiment
+            sentimentAnalyzer.analyzeText(newValue)
         }
         // Focus mode shortcut handled via button
     }
@@ -145,6 +194,34 @@ struct ProductionComposeView: View {
                     .help("Enter distraction-free writing mode")
                 }
                 
+                // AI Assistant toggle
+                Button {
+                    withAnimation(.spring(response: 0.3)) {
+                        showAIAssistant.toggle()
+                        if showAIAssistant {
+                            aiAssistantExpanded = false
+                        }
+                    }
+                } label: {
+                    Image(systemName: "wand.and.stars")
+                        .font(.system(size: 16))
+                        .foregroundColor(showAIAssistant ? Theme.Colors.primaryAccent : .secondary)
+                        .symbolEffect(.pulse, value: showAIAssistant)
+                }
+                .buttonStyle(.plain)
+                .help("Toggle AI Writing Assistant")
+                
+                // Writer's block breaker
+                Button {
+                    showWritersBlockBreaker.toggle()
+                } label: {
+                    Image(systemName: "lightbulb")
+                        .font(.system(size: 16))
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Writer's Block Breaker")
+                
                 // Emoji picker
                 Button {
                     showingEmojiPicker.toggle()
@@ -157,13 +234,7 @@ struct ProductionComposeView: View {
                 .popover(isPresented: $showingEmojiPicker) {
                     QuickEmojiPicker(
                         onEmojiSelected: { emoji in
-                            // Insert emoji at cursor position
-                            if let coordinator = textEditorCoordinator {
-                                coordinator.insertTextAtCursor(emoji)
-                            } else {
-                                // Fallback: append to content
-                                entry.content += emoji
-                            }
+                            insertTextAtCursor(emoji)
                         },
                         isPresented: $showingEmojiPicker
                     )
@@ -263,6 +334,18 @@ struct ProductionComposeView: View {
                     .padding(.horizontal, 40)
                     .padding(.top, 16)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+            
+            // Sentiment indicator
+            if wordCount > 10 && sentimentAnalyzer.currentAnalysis.confidence > 0.3 {
+                SentimentIndicator(sentiment: sentimentAnalyzer.currentAnalysis)
+                    .frame(maxWidth: 400)
+                    .padding(.horizontal, 40)
+                    .padding(.top, 8)
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.95, anchor: .top).combined(with: .opacity),
+                        removal: .scale(scale: 0.95, anchor: .top).combined(with: .opacity)
+                    ))
             }
         }
     }
@@ -536,6 +619,15 @@ struct ProductionComposeView: View {
         lastSavedContent = entry.content
         hasUnsavedChanges = false
         onSave(entry)
+    }
+    
+    private func insertTextAtCursor(_ text: String) {
+        if let coordinator = textEditorCoordinator {
+            coordinator.insertTextAtCursor(text)
+        } else {
+            // Fallback: append to content
+            entry.content += text
+        }
     }
 }
 
