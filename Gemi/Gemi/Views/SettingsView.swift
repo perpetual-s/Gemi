@@ -25,6 +25,7 @@ struct SettingsView: View {
     @State private var showingDataManagement = false
     @State private var showingAbout = false
     @State private var isLoadingModels = false
+    @State private var selectedTabAnimation = false
     
     @Environment(\.dismiss) private var dismiss
     
@@ -48,9 +49,18 @@ struct SettingsView: View {
             case .unknown: return "Unknown"
             }
         }
+        
+        var icon: String {
+            switch self {
+            case .connected: return "checkmark.circle.fill"
+            case .disconnected: return "xmark.circle.fill"
+            case .checking: return "arrow.triangle.2.circlepath"
+            case .unknown: return "questionmark.circle"
+            }
+        }
     }
     
-    private enum SettingsTab: String, CaseIterable {
+    enum SettingsTab: String, CaseIterable {
         case general = "General"
         case ai = "AI & Models"
         case appearance = "Appearance"
@@ -60,10 +70,20 @@ struct SettingsView: View {
         var icon: String {
             switch self {
             case .general: return "gear"
-            case .ai: return "cpu"
+            case .ai: return "brain"
             case .appearance: return "paintbrush"
             case .security: return "lock.shield"
             case .data: return "externaldrive"
+            }
+        }
+        
+        var description: String {
+            switch self {
+            case .general: return "Configure app behavior and preferences"
+            case .ai: return "Manage AI models and connections"
+            case .appearance: return "Customize fonts and visual style"
+            case .security: return "Privacy settings and authentication"
+            case .data: return "Backup and export your journal"
             }
         }
     }
@@ -72,47 +92,122 @@ struct SettingsView: View {
     
     var body: some View {
         HSplitView {
-            // Sidebar
+            // Premium Sidebar
             VStack(spacing: 0) {
-                List(SettingsTab.allCases, id: \.self, selection: $selectedTab) { tab in
-                    Label(tab.rawValue, systemImage: tab.icon)
-                        .tag(tab)
+                // Header
+                VStack(spacing: 4) {
+                    Image(systemName: "gear")
+                        .font(.system(size: 28, weight: .light))
+                        .foregroundColor(.secondary)
+                        .padding(.top, 20)
+                    
+                    Text("Settings")
+                        .font(.system(size: 20, weight: .semibold, design: .rounded))
+                        .padding(.bottom, 20)
                 }
-                .listStyle(SidebarListStyle())
-                .frame(width: 200)
-            }
-            
-            // Content
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    switch selectedTab {
-                    case .general:
-                        generalSettings
-                    case .ai:
-                        aiSettings
-                    case .appearance:
-                        appearanceSettings
-                    case .security:
-                        securitySettings
-                    case .data:
-                        dataSettings
+                
+                // Navigation
+                VStack(spacing: 2) {
+                    ForEach(SettingsTab.allCases, id: \.self) { tab in
+                        SettingsTabButton(
+                            tab: tab,
+                            isSelected: selectedTab == tab,
+                            action: {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    selectedTab = tab
+                                    selectedTabAnimation = true
+                                }
+                            }
+                        )
                     }
                 }
-                .padding(32)
-                .frame(maxWidth: 600, alignment: .leading)
+                .padding(.horizontal, 12)
+                
+                Spacer()
+                
+                // Version info
+                VStack(spacing: 8) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 24))
+                        .foregroundColor(.secondary.opacity(0.5))
+                    
+                    Text("Gemi 1.0")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    Text("Built for Privacy")
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary.opacity(0.7))
+                }
+                .padding(.bottom, 20)
+            }
+            .frame(width: 260)
+            .background(VisualEffectBlur())
+            
+            // Content Area
+            ZStack {
+                // Background gradient
+                LinearGradient(
+                    colors: [
+                        Color(NSColor.windowBackgroundColor),
+                        Color(NSColor.windowBackgroundColor).opacity(0.98)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        // Content Header
+                        HStack {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(selectedTab.rawValue)
+                                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                                
+                                Text(selectedTab.description)
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Spacer()
+                        }
+                        .padding(.horizontal, 40)
+                        .padding(.top, 40)
+                        .padding(.bottom, 32)
+                        
+                        // Tab Content
+                        Group {
+                            switch selectedTab {
+                            case .general:
+                                generalSettings
+                            case .ai:
+                                aiSettings
+                            case .appearance:
+                                appearanceSettings
+                            case .security:
+                                securitySettings
+                            case .data:
+                                dataSettings
+                            }
+                        }
+                        .padding(.horizontal, 40)
+                        .padding(.bottom, 40)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .move(edge: .trailing)),
+                            removal: .opacity.combined(with: .move(edge: .leading))
+                        ))
+                        .id(selectedTab)
+                    }
+                    .frame(maxWidth: 700, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                }
+                .scrollIndicators(.hidden)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(NSColor.windowBackgroundColor))
         }
-        .frame(width: 800, height: 600)
-        .toolbar {
-            ToolbarItem(placement: .automatic) {
-                Button("Done") {
-                    dismiss()
-                }
-                .keyboardShortcut(.defaultAction)
-            }
-        }
+        .frame(width: 900, height: 650)
+        .background(Color(NSColor.windowBackgroundColor))
         .onAppear {
             checkConnection()
             loadAvailableModels()
@@ -142,47 +237,77 @@ struct SettingsView: View {
     // MARK: - General Settings
     
     private var generalSettings: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            Text("General")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            
-            GroupBox {
-                VStack(alignment: .leading, spacing: 16) {
-                    Toggle("Launch at startup", isOn: .constant(false))
-                        .disabled(true)
-                        .help("Coming soon")
+        VStack(spacing: 24) {
+            // Application Settings Card
+            PremiumSettingsCard(
+                title: "Application",
+                icon: "app.badge",
+                iconColor: .blue
+            ) {
+                VStack(spacing: 20) {
+                    PremiumToggle(
+                        title: "Launch at startup",
+                        subtitle: "Start Gemi when you log in",
+                        isOn: .constant(false),
+                        isDisabled: true
+                    )
                     
-                    Toggle("Show in menu bar", isOn: .constant(false))
-                        .disabled(true)
-                        .help("Coming soon")
+                    PremiumToggle(
+                        title: "Show in menu bar",
+                        subtitle: "Quick access from the menu bar",
+                        isOn: .constant(false),
+                        isDisabled: true
+                    )
                     
-                    HStack {
-                        Text("Auto-save interval:")
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("Auto-save interval")
+                                .font(.system(size: 14, weight: .medium))
+                            
+                            Spacer()
+                            
+                            Text("\(Int(autoSaveInterval)) seconds")
+                                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                .foregroundColor(.blue)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.blue.opacity(0.1))
+                                )
+                        }
+                        
                         Slider(value: $autoSaveInterval, in: 1...10, step: 1)
-                            .frame(width: 200)
-                        Text("\(Int(autoSaveInterval)) seconds")
-                            .monospacedDigit()
+                            .tint(.blue)
                     }
                 }
-                .padding()
-            } label: {
-                Label("Application", systemImage: "app")
-                    .font(.headline)
             }
             
-            GroupBox {
-                VStack(alignment: .leading, spacing: 16) {
-                    Toggle("Enable Markdown rendering", isOn: $enableMarkdown)
+            // Editor Settings Card
+            PremiumSettingsCard(
+                title: "Editor",
+                icon: "doc.text",
+                iconColor: .purple
+            ) {
+                VStack(spacing: 20) {
+                    PremiumToggle(
+                        title: "Enable Markdown rendering",
+                        subtitle: "Format text with Markdown syntax",
+                        isOn: $enableMarkdown
+                    )
                     
-                    Toggle("Show word count", isOn: .constant(true))
+                    PremiumToggle(
+                        title: "Show word count",
+                        subtitle: "Display word count in the editor",
+                        isOn: .constant(true)
+                    )
                     
-                    Toggle("Show reading time", isOn: .constant(true))
+                    PremiumToggle(
+                        title: "Show reading time",
+                        subtitle: "Estimate reading time for entries",
+                        isOn: .constant(true)
+                    )
                 }
-                .padding()
-            } label: {
-                Label("Editor", systemImage: "doc.text")
-                    .font(.headline)
             }
         }
     }
@@ -190,93 +315,149 @@ struct SettingsView: View {
     // MARK: - AI Settings
     
     private var aiSettings: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            Text("AI & Models")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            
-            GroupBox {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack(alignment: .top) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Ollama Host:")
-                            TextField("Host", text: $ollamaHost)
-                                .textFieldStyle(.roundedBorder)
-                                .frame(width: 200)
-                        }
+        VStack(spacing: 24) {
+            // Connection Status Card
+            PremiumSettingsCard(
+                title: "Ollama Connection",
+                icon: "network",
+                iconColor: connectionStatus.color
+            ) {
+                VStack(spacing: 24) {
+                    // Connection Status Banner
+                    HStack(spacing: 16) {
+                        Image(systemName: connectionStatus.icon)
+                            .font(.system(size: 32))
+                            .foregroundColor(connectionStatus.color)
+                            .symbolEffect(.pulse, isActive: connectionStatus == .checking)
                         
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Port:")
-                            TextField("Port", value: $ollamaPort, format: .number)
-                                .textFieldStyle(.roundedBorder)
-                                .frame(width: 80)
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Status:")
-                            HStack {
-                                Circle()
-                                    .fill(connectionStatus.color)
-                                    .frame(width: 8, height: 8)
-                                Text(connectionStatus.text)
-                                    .font(.caption)
-                            }
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Connection Status")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.secondary)
+                            
+                            Text(connectionStatus.text)
+                                .font(.system(size: 16, weight: .semibold))
                         }
                         
                         Spacer()
                         
-                        Button("Test Connection") {
-                            checkConnection()
+                        Button(action: checkConnection) {
+                            Label("Test Connection", systemImage: "arrow.clockwise")
+                                .font(.system(size: 13, weight: .medium))
                         }
+                        .buttonStyle(PremiumButtonStyle())
                         .disabled(isCheckingConnection)
                     }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(connectionStatus.color.opacity(0.1))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .strokeBorder(connectionStatus.color.opacity(0.2), lineWidth: 1)
+                            )
+                    )
                     
                     Divider()
                     
-                    HStack {
+                    // Connection Settings
+                    HStack(spacing: 20) {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Model:")
-                            Picker("", selection: $selectedModel) {
-                                ForEach(availableModels, id: \.self) { model in
-                                    Text(model).tag(model)
-                                }
-                            }
-                            .pickerStyle(.menu)
-                            .frame(width: 200)
-                            .disabled(isLoadingModels)
+                            Text("Host")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.secondary)
+                            
+                            TextField("localhost", text: $ollamaHost)
+                                .textFieldStyle(PremiumTextFieldStyle())
+                                .frame(width: 200)
                         }
                         
-                        Button(action: loadAvailableModels) {
-                            Image(systemName: "arrow.clockwise")
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Port")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.secondary)
+                            
+                            TextField("11434", value: $ollamaPort, format: .number)
+                                .textFieldStyle(PremiumTextFieldStyle())
+                                .frame(width: 100)
                         }
-                        .disabled(isLoadingModels)
-                        .help("Refresh models")
                     }
-                    
-                    Text("Recommended: gemma3n:latest for best performance")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                 }
-                .padding()
-            } label: {
-                Label("Ollama Configuration", systemImage: "server.rack")
-                    .font(.headline)
             }
             
-            GroupBox {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Model not installed?")
-                        .font(.headline)
+            // Model Selection Card
+            PremiumSettingsCard(
+                title: "AI Model",
+                icon: "brain",
+                iconColor: .indigo
+            ) {
+                VStack(spacing: 20) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Active Model")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.secondary)
+                            
+                            HStack {
+                                Picker("", selection: $selectedModel) {
+                                    ForEach(availableModels, id: \.self) { model in
+                                        Text(model).tag(model)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .frame(width: 200)
+                                .disabled(isLoadingModels)
+                                
+                                Button(action: loadAvailableModels) {
+                                    Image(systemName: "arrow.clockwise")
+                                        .font(.system(size: 14))
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(isLoadingModels)
+                                .help("Refresh models")
+                            }
+                        }
+                        
+                        Spacer()
+                    }
                     
-                    Text("Run this command in Terminal:")
-                        .font(.caption)
+                    // Model Info
+                    HStack(spacing: 12) {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 14))
+                            .foregroundColor(.blue)
+                        
+                        Text("Recommended: **gemma3n:latest** for optimal performance and privacy")
+                            .font(.system(size: 13))
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.blue.opacity(0.05))
+                    )
+                }
+            }
+            
+            // Installation Help Card
+            PremiumSettingsCard(
+                title: "Model Installation",
+                icon: "arrow.down.circle",
+                iconColor: .green
+            ) {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Install Gemma 3n model")
+                        .font(.system(size: 14, weight: .semibold))
                     
                     HStack {
                         Text("ollama pull gemma3n:latest")
-                            .font(.system(.body, design: .monospaced))
-                            .padding(8)
-                            .background(Color(NSColor.secondarySystemFill))
-                            .cornerRadius(4)
+                            .font(.system(size: 13, design: .monospaced))
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color(NSColor.secondarySystemFill))
+                            )
                             .textSelection(.enabled)
                         
                         Button(action: {
@@ -284,14 +465,16 @@ struct SettingsView: View {
                             NSPasteboard.general.setString("ollama pull gemma3n:latest", forType: .string)
                         }) {
                             Image(systemName: "doc.on.clipboard")
+                                .font(.system(size: 14))
                         }
+                        .buttonStyle(.plain)
                         .help("Copy to clipboard")
                     }
+                    
+                    Text("Run this command in Terminal to install the model")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
                 }
-                .padding()
-            } label: {
-                Label("Model Installation", systemImage: "arrow.down.circle")
-                    .font(.headline)
             }
         }
     }
@@ -299,63 +482,100 @@ struct SettingsView: View {
     // MARK: - Appearance Settings
     
     private var appearanceSettings: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            Text("Appearance")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            
-            GroupBox {
-                VStack(alignment: .leading, spacing: 16) {
+        VStack(spacing: 24) {
+            // Typography Card
+            PremiumSettingsCard(
+                title: "Typography",
+                icon: "textformat",
+                iconColor: .orange
+            ) {
+                VStack(spacing: 24) {
                     HStack {
-                        Text("Font:")
-                        Picker("", selection: $defaultFont) {
-                            Text("System").tag("System")
-                            Text("San Francisco").tag("SF Pro")
-                            Text("New York").tag("New York")
-                            Text("Helvetica").tag("Helvetica")
-                            Text("Monaco").tag("Monaco")
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Font Family")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.secondary)
+                            
+                            Picker("", selection: $defaultFont) {
+                                Text("System").tag("System")
+                                Text("San Francisco").tag("SF Pro")
+                                Text("New York").tag("New York")
+                                Text("Helvetica").tag("Helvetica")
+                                Text("Monaco").tag("Monaco")
+                            }
+                            .pickerStyle(.menu)
+                            .frame(width: 180)
                         }
-                        .pickerStyle(.menu)
-                        .frame(width: 150)
+                        
+                        Spacer()
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Font Size")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.secondary)
+                            
+                            HStack {
+                                Slider(value: $defaultFontSize, in: 11...20, step: 1)
+                                    .frame(width: 150)
+                                    .tint(.orange)
+                                
+                                Text("\(Int(defaultFontSize)) pt")
+                                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                    .foregroundColor(.orange)
+                                    .frame(width: 50)
+                            }
+                        }
                     }
                     
-                    HStack {
-                        Text("Font size:")
-                        Slider(value: $defaultFontSize, in: 11...20, step: 1)
-                            .frame(width: 200)
-                        Text("\(Int(defaultFontSize)) pt")
-                            .monospacedDigit()
-                    }
+                    Divider()
                     
-                    HStack {
-                        Text("Preview:")
+                    // Preview
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Preview")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.secondary)
+                        
                         Text("The quick brown fox jumps over the lazy dog")
                             .font(.system(size: defaultFontSize))
-                            .padding(8)
-                            .background(Color(NSColor.secondarySystemFill))
-                            .cornerRadius(4)
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color(NSColor.secondarySystemFill))
+                            )
                     }
                 }
-                .padding()
-            } label: {
-                Label("Typography", systemImage: "textformat")
-                    .font(.headline)
             }
             
-            GroupBox {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Theme follows your system appearance settings")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+            // Theme Card
+            PremiumSettingsCard(
+                title: "Theme",
+                icon: "circle.lefthalf.filled",
+                iconColor: .indigo
+            ) {
+                VStack(spacing: 16) {
+                    HStack {
+                        Image(systemName: "moon.stars")
+                            .font(.system(size: 32))
+                            .foregroundColor(.indigo)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Automatic Theme")
+                                .font(.system(size: 14, weight: .semibold))
+                            
+                            Text("Gemi follows your system appearance settings")
+                                .font(.system(size: 13))
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                    }
                     
                     Button("Open System Preferences") {
                         NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.general")!)
                     }
+                    .buttonStyle(PremiumButtonStyle())
                 }
-                .padding()
-            } label: {
-                Label("Theme", systemImage: "circle.lefthalf.filled")
-                    .font(.headline)
             }
         }
     }
@@ -363,61 +583,113 @@ struct SettingsView: View {
     // MARK: - Security Settings
     
     private var securitySettings: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            Text("Security & Privacy")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            
-            GroupBox {
-                VStack(alignment: .leading, spacing: 16) {
-                    Toggle("Require authentication on launch", isOn: $requireAuthentication)
+        VStack(spacing: 24) {
+            // Authentication Card
+            PremiumSettingsCard(
+                title: "Authentication",
+                icon: "faceid",
+                iconColor: .green
+            ) {
+                VStack(spacing: 20) {
+                    PremiumToggle(
+                        title: "Require authentication on launch",
+                        subtitle: "Use Face ID, Touch ID, or password to unlock",
+                        isOn: $requireAuthentication
+                    )
                     
-                    HStack {
-                        Text("Session timeout:")
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("Session timeout")
+                                .font(.system(size: 14, weight: .medium))
+                            
+                            Spacer()
+                            
+                            Text("\(Int(sessionTimeout)) minutes")
+                                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                .foregroundColor(.green)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.green.opacity(0.1))
+                                )
+                        }
+                        
                         Slider(value: $sessionTimeout, in: 5...120, step: 5)
-                            .frame(width: 200)
-                        Text("\(Int(sessionTimeout)) minutes")
-                            .monospacedDigit()
+                            .tint(.green)
                     }
                     
-                    Toggle("Lock when system sleeps", isOn: .constant(true))
+                    PremiumToggle(
+                        title: "Lock when system sleeps",
+                        subtitle: "Require authentication after sleep",
+                        isOn: .constant(true)
+                    )
                 }
-                .padding()
-            } label: {
-                Label("Authentication", systemImage: "faceid")
-                    .font(.headline)
             }
             
-            GroupBox {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack {
-                        Image(systemName: "checkmark.shield.fill")
-                            .foregroundColor(.green)
-                            .font(.largeTitle)
+            // Privacy Card
+            PremiumSettingsCard(
+                title: "Privacy Protection",
+                icon: "lock.shield",
+                iconColor: .mint
+            ) {
+                VStack(spacing: 20) {
+                    // Encryption Status
+                    HStack(spacing: 16) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.green.opacity(0.1))
+                                .frame(width: 60, height: 60)
+                            
+                            Image(systemName: "checkmark.shield.fill")
+                                .font(.system(size: 28))
+                                .foregroundColor(.green)
+                        }
                         
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .leading, spacing: 6) {
                             Text("Your data is encrypted")
-                                .font(.headline)
-                            Text("All journal entries are encrypted with AES-256-GCM and stored locally on your device")
-                                .font(.caption)
+                                .font(.system(size: 16, weight: .semibold))
+                            
+                            Text("AES-256-GCM encryption protects all journal entries")
+                                .font(.system(size: 13))
                                 .foregroundColor(.secondary)
                         }
+                        
+                        Spacer()
                     }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.green.opacity(0.05))
+                    )
                     
-                    Divider()
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        Label("No cloud sync", systemImage: "icloud.slash")
-                        Label("No analytics or tracking", systemImage: "eye.slash")
-                        Label("No external API calls (except local Ollama)", systemImage: "network.slash")
-                        Label("Open source and auditable", systemImage: "chevron.left.forwardslash.chevron.right")
+                    // Privacy Features
+                    VStack(spacing: 12) {
+                        PrivacyFeatureRow(
+                            icon: "icloud.slash",
+                            title: "No cloud sync",
+                            subtitle: "All data stays on your device"
+                        )
+                        
+                        PrivacyFeatureRow(
+                            icon: "eye.slash",
+                            title: "No analytics",
+                            subtitle: "Zero tracking or telemetry"
+                        )
+                        
+                        PrivacyFeatureRow(
+                            icon: "network.slash",
+                            title: "Offline-first",
+                            subtitle: "Works without internet connection"
+                        )
+                        
+                        PrivacyFeatureRow(
+                            icon: "checkmark.seal",
+                            title: "Open source",
+                            subtitle: "Fully auditable codebase"
+                        )
                     }
-                    .font(.caption)
                 }
-                .padding()
-            } label: {
-                Label("Privacy", systemImage: "hand.raised.shield")
-                    .font(.headline)
             }
         }
     }
@@ -425,71 +697,94 @@ struct SettingsView: View {
     // MARK: - Data Settings
     
     private var dataSettings: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            Text("Data & Sync")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            
-            GroupBox {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text("Total entries:")
-                            Text("\(journalStore.entries.count)")
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                        }
+        VStack(spacing: 24) {
+            // Storage Overview Card
+            PremiumSettingsCard(
+                title: "Storage Overview",
+                icon: "internaldrive",
+                iconColor: .blue
+            ) {
+                VStack(spacing: 20) {
+                    HStack(spacing: 40) {
+                        DataMetricView(
+                            value: "\(journalStore.entries.count)",
+                            label: "Total Entries",
+                            icon: "doc.text",
+                            color: .blue
+                        )
                         
-                        Spacer()
+                        DataMetricView(
+                            value: formatDatabaseSize(),
+                            label: "Database Size",
+                            icon: "externaldrive",
+                            color: .purple
+                        )
                         
-                        VStack(alignment: .leading) {
-                            Text("Database size:")
-                            Text(formatDatabaseSize())
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                        }
+                        DataMetricView(
+                            value: "\(journalStore.favoriteEntries.count)",
+                            label: "Favorites",
+                            icon: "star.fill",
+                            color: .yellow
+                        )
                     }
                     
                     Divider()
                     
-                    HStack {
-                        Button("Export All Entries") {
-                            exportEntries()
+                    HStack(spacing: 12) {
+                        Button(action: exportEntries) {
+                            Label("Export All", systemImage: "square.and.arrow.up")
+                                .font(.system(size: 13, weight: .medium))
                         }
+                        .buttonStyle(PremiumButtonStyle())
                         
-                        Button("Backup Database") {
-                            backupDatabase()
+                        Button(action: backupDatabase) {
+                            Label("Backup Database", systemImage: "arrow.down.circle")
+                                .font(.system(size: 13, weight: .medium))
                         }
+                        .buttonStyle(PremiumButtonStyle())
                         
                         Spacer()
                         
-                        Button("Manage Data") {
-                            showingDataManagement = true
+                        Button(action: { showingDataManagement = true }) {
+                            Label("Manage Data", systemImage: "slider.horizontal.3")
+                                .font(.system(size: 13, weight: .medium))
                         }
+                        .buttonStyle(PremiumButtonStyle(style: .secondary))
                     }
                 }
-                .padding()
-            } label: {
-                Label("Data Management", systemImage: "externaldrive")
-                    .font(.headline)
             }
             
-            GroupBox {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Automatic backups")
-                        .font(.headline)
+            // Automatic Backup Card
+            PremiumSettingsCard(
+                title: "Automatic Backups",
+                icon: "clock.arrow.circlepath",
+                iconColor: .orange
+            ) {
+                VStack(spacing: 16) {
+                    HStack {
+                        Image(systemName: "clock.badge.checkmark")
+                            .font(.system(size: 32))
+                            .foregroundColor(.orange)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Coming Soon")
+                                .font(.system(size: 16, weight: .semibold))
+                            
+                            Text("Automatic encrypted backups to your chosen location")
+                                .font(.system(size: 13))
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                    }
                     
-                    Toggle("Enable automatic backups", isOn: .constant(false))
-                        .disabled(true)
-                    
-                    Text("Coming soon: Automatic encrypted backups to a location of your choice")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    PremiumToggle(
+                        title: "Enable automatic backups",
+                        subtitle: "Back up your journal daily",
+                        isOn: .constant(false),
+                        isDisabled: true
+                    )
                 }
-                .padding()
-            } label: {
-                Label("Backups", systemImage: "clock.arrow.circlepath")
-                    .font(.headline)
             }
         }
     }
@@ -598,6 +893,206 @@ struct SettingsView: View {
             }
         }
     }
+}
+
+// MARK: - Supporting Views
+
+struct SettingsTabButton: View {
+    let tab: SettingsView.SettingsTab
+    let isSelected: Bool
+    let action: () -> Void
+    
+    @State private var isHovered = false
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: tab.icon)
+                    .font(.system(size: 16))
+                    .frame(width: 24)
+                
+                Text(tab.rawValue)
+                    .font(.system(size: 14, weight: isSelected ? .medium : .regular))
+                
+                Spacer()
+            }
+            .foregroundColor(isSelected ? .primary : .secondary)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? Color.accentColor.opacity(0.15) : (isHovered ? Color.gray.opacity(0.08) : Color.clear))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(isSelected ? Color.accentColor.opacity(0.3) : Color.clear, lineWidth: 1)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovered = hovering
+            }
+        }
+    }
+}
+
+struct PremiumSettingsCard<Content: View>: View {
+    let title: String
+    let icon: String
+    let iconColor: Color
+    @ViewBuilder let content: Content
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                    .foregroundColor(iconColor)
+                
+                Text(title)
+                    .font(.system(size: 18, weight: .semibold))
+                
+                Spacer()
+            }
+            
+            content
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(NSColor.controlBackgroundColor))
+                .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 2)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(Color.gray.opacity(0.1), lineWidth: 1)
+        )
+    }
+}
+
+struct PremiumToggle: View {
+    let title: String
+    let subtitle: String
+    @Binding var isOn: Bool
+    var isDisabled: Bool = false
+    
+    var body: some View {
+        Toggle(isOn: $isOn) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 14, weight: .medium))
+                
+                if !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .toggleStyle(SwitchToggleStyle())
+        .disabled(isDisabled)
+        .opacity(isDisabled ? 0.5 : 1)
+    }
+}
+
+struct PremiumButtonStyle: ButtonStyle {
+    enum Style {
+        case primary, secondary
+    }
+    
+    var style: Style = .primary
+    
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(style == .primary ? Color.accentColor : Color.gray.opacity(0.15))
+            )
+            .foregroundColor(style == .primary ? .white : .primary)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+struct PremiumTextFieldStyle: TextFieldStyle {
+    func _body(configuration: TextField<Self._Label>) -> some View {
+        configuration
+            .textFieldStyle(.plain)
+            .padding(8)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(NSColor.textBackgroundColor))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(Color.gray.opacity(0.2), lineWidth: 1)
+                    )
+            )
+    }
+}
+
+struct PrivacyFeatureRow: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundColor(.mint)
+                .frame(width: 24)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 13, weight: .medium))
+                
+                Text(subtitle)
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+struct DataMetricView: View {
+    let value: String
+    let label: String
+    let icon: String
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 24))
+                .foregroundColor(color)
+            
+            Text(value)
+                .font(.system(size: 24, weight: .bold, design: .rounded))
+            
+            Text(label)
+                .font(.system(size: 12))
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+struct VisualEffectBlur: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = .sidebar
+        view.blendingMode = .behindWindow
+        view.state = .active
+        return view
+    }
+    
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
 }
 
 #Preview {
