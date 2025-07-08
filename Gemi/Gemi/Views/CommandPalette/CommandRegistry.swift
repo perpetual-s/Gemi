@@ -68,12 +68,21 @@ class CommandRegistry: ObservableObject {
         commands = [
             // Navigation Commands
             Command(
+                title: "Go to Home",
+                subtitle: "View dashboard and recent entries",
+                icon: "house",
+                category: .navigation,
+                shortcut: "⌘1",
+                aliases: ["home", "dashboard", "start"],
+                action: { NotificationCenter.default.post(name: .navigateToHome, object: nil) }
+            ),
+            Command(
                 title: "Go to Timeline",
                 subtitle: "View all journal entries",
                 icon: "calendar",
                 category: .navigation,
-                shortcut: "⌘1",
-                aliases: ["home", "entries", "list", "all"],
+                shortcut: "⌘2",
+                aliases: ["entries", "list", "all", "history"],
                 action: { NotificationCenter.default.post(name: .navigateToTimeline, object: nil) }
             ),
             Command(
@@ -90,7 +99,6 @@ class CommandRegistry: ObservableObject {
                 subtitle: "See your starred entries",
                 icon: "star",
                 category: .navigation,
-                shortcut: "⌘3",
                 aliases: ["starred", "bookmarks", "saved"],
                 action: { NotificationCenter.default.post(name: .navigateToFavorites, object: nil) }
             ),
@@ -99,7 +107,6 @@ class CommandRegistry: ObservableObject {
                 subtitle: "Manage AI memories",
                 icon: "brain",
                 category: .navigation,
-                shortcut: "⌘4",
                 aliases: ["memories", "context", "knowledge"],
                 action: { NotificationCenter.default.post(name: .navigateToMemories, object: nil) }
             ),
@@ -108,7 +115,6 @@ class CommandRegistry: ObservableObject {
                 subtitle: "View patterns and analytics",
                 icon: "chart.line.uptrend.xyaxis",
                 category: .navigation,
-                shortcut: "⌘5",
                 aliases: ["analytics", "stats", "trends", "dashboard"],
                 action: { NotificationCenter.default.post(name: .navigateToInsights, object: nil) }
             ),
@@ -313,6 +319,7 @@ class CommandRegistry: ObservableObject {
 
 // MARK: - Notification Names
 extension Notification.Name {
+    static let navigateToHome = Notification.Name("navigateToHome")
     static let navigateToTimeline = Notification.Name("navigateToTimeline")
     static let navigateToFavorites = Notification.Name("navigateToFavorites")
     static let navigateToMemories = Notification.Name("navigateToMemories")

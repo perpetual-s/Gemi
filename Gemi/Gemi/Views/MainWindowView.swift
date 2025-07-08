@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct MainWindowView: View {
-    @State private var selectedView: NavigationItem = .timeline
+    @State private var selectedView: NavigationItem = .home
     @State private var selectedEntry: JournalEntry? = nil
     @State private var editingEntry: JournalEntry? = nil
     @State private var showingReadingView = false
@@ -37,6 +37,9 @@ struct MainWindowView: View {
                 showingCommandPalette = true
             }
             // Navigation notifications from command palette
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToHome)) { _ in
+                selectedView = .home
+            }
             .onReceive(NotificationCenter.default.publisher(for: .navigateToTimeline)) { _ in
                 selectedView = .timeline
             }
@@ -61,6 +64,18 @@ struct MainWindowView: View {
     @ViewBuilder
     private var contentView: some View {
         switch selectedView {
+        case .home:
+            HomeView(
+                journalStore: journalStore,
+                selectedEntry: $selectedEntry,
+                onNewEntry: {
+                    selectedView = .compose
+                },
+                onEditEntry: { entry in
+                    editingEntry = entry
+                    selectedView = .compose
+                }
+            )
         case .timeline:
             EnhancedTimelineView(
                 journalStore: journalStore,
