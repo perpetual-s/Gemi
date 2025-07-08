@@ -120,10 +120,15 @@ final class MemoryManager: ObservableObject {
     func deleteMemory(_ memory: Memory) {
         memories.removeAll { $0.id == memory.id }
         
-        // TODO: Delete from database once Memory conforms to Sendable
-        // Task {
-        //     try? await databaseManager.deleteMemory(memory.id)
-        // }
+        // Delete from database using just the ID
+        Task {
+            do {
+                try await databaseManager.deleteMemoryByID(memory.id)
+                logger.info("Deleted memory from database: \(memory.id)")
+            } catch {
+                logger.error("Failed to delete memory from database: \(error)")
+            }
+        }
     }
     
     // Removed updateImportance - no longer using importance scores
@@ -132,8 +137,13 @@ final class MemoryManager: ObservableObject {
     func clearAllMemories() async {
         memories.removeAll()
         
-        // TODO: Clear from database once Memory conforms to Sendable
-        // try? await databaseManager.clearAllMemories()
+        // Clear from database
+        do {
+            try await databaseManager.clearAllMemoriesFromDB()
+            logger.info("Cleared all memories from database")
+        } catch {
+            logger.error("Failed to clear memories from database: \(error)")
+        }
     }
     
     // Removed memoriesByCategory - no longer using categories
