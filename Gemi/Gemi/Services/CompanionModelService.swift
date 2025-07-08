@@ -2,8 +2,24 @@ import Foundation
 
 /// Data transfer object for Memory information
 struct MemoryData: Sendable {
+    let id: UUID
     let content: String
     let sourceEntryID: UUID
+    let extractedAt: Date
+    
+    init(content: String, sourceEntryID: UUID) {
+        self.id = UUID()
+        self.content = content
+        self.sourceEntryID = sourceEntryID
+        self.extractedAt = Date()
+    }
+    
+    init(id: UUID, content: String, sourceEntryID: UUID, extractedAt: Date) {
+        self.id = id
+        self.content = content
+        self.sourceEntryID = sourceEntryID
+        self.extractedAt = extractedAt
+    }
 }
 
 /// Service responsible for creating and managing the custom Gemi companion model

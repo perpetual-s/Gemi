@@ -531,7 +531,7 @@ struct ProductionMoodButton: View {
                 
                 Text(mood.rawValue)
                     .font(.system(size: 11))
-                    .foregroundColor(isSelected ? Theme.Colors.primaryAccent : .secondary)
+                    .foregroundColor(isSelected ? Color.blue : .secondary)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
@@ -570,11 +570,9 @@ struct ProductionTagEditor: View {
             // Existing tags
             if !tags.isEmpty {
                 ProductionFlowLayout(spacing: 8) {
-                    ForEach(tags, id: \.self) { tag in
+                    ForEach(Array(tags.enumerated()), id: \.offset) { index, tag in
                         ProductionTagChip(tag: tag) {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                tags.removeAll { $0 == tag }
-                            }
+                            tags.remove(at: index)
                         }
                     }
                     
