@@ -36,9 +36,16 @@ final class MemoryManager: ObservableObject {
     
     /// Load memories from database
     private func loadMemoriesFromDatabase() async throws -> [Memory] {
-        // For now, return the existing in-memory array
-        // TODO: Implement proper database loading when DatabaseManager exposes the needed methods
-        return memories
+        // Load from database
+        let memoryDataArray = try await databaseManager.loadAllMemories()
+        
+        // Convert MemoryData to Memory objects
+        return memoryDataArray.map { memoryData in
+            Memory(
+                content: memoryData.content,
+                sourceEntryID: memoryData.sourceEntryID
+            )
+        }
     }
     
     /// Process journal entries to extract memories
