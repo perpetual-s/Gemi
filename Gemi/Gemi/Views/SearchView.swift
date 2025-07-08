@@ -71,33 +71,66 @@ struct SearchView: View {
     }
     
     private var emptySearchState: some View {
-        VStack(spacing: Theme.spacing) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 64))
-                .foregroundColor(Theme.Colors.tertiaryText)
+        VStack(spacing: Theme.largeSpacing) {
+            // Icon with gradient background
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Theme.Colors.primaryAccent.opacity(0.1),
+                                Theme.Colors.primaryAccent.opacity(0.05)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 120, height: 120)
+                
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 56))
+                    .foregroundColor(Theme.Colors.primaryAccent)
+            }
             
-            Text("Search your journal")
-                .font(Theme.Typography.title)
-            
-            Text("Find entries by keywords, tags, or moods")
-                .font(Theme.Typography.body)
-                .foregroundColor(Theme.Colors.secondaryText)
+            VStack(spacing: Theme.spacing) {
+                Text("Search your journal")
+                    .font(Theme.Typography.title)
+                    .foregroundColor(.primary)
+                
+                Text("Find entries by keywords, tags, or moods.\nTry searching for specific memories or feelings.")
+                    .font(Theme.Typography.body)
+                    .foregroundColor(Theme.Colors.secondaryText)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 400)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
     private var noResultsState: some View {
-        VStack(spacing: Theme.spacing) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 64))
-                .foregroundColor(Theme.Colors.tertiaryText)
+        VStack(spacing: Theme.largeSpacing) {
+            // Icon with muted background
+            ZStack {
+                Circle()
+                    .fill(Color.secondary.opacity(0.1))
+                    .frame(width: 120, height: 120)
+                
+                Image(systemName: "magnifyingglass.circle")
+                    .font(.system(size: 56))
+                    .foregroundColor(.secondary.opacity(0.6))
+            }
             
-            Text("No results found")
-                .font(Theme.Typography.title)
-            
-            Text("Try searching with different keywords")
-                .font(Theme.Typography.body)
-                .foregroundColor(Theme.Colors.secondaryText)
+            VStack(spacing: Theme.spacing) {
+                Text("No results found")
+                    .font(Theme.Typography.title)
+                    .foregroundColor(.primary)
+                
+                Text("Try different keywords or check your spelling.\nYou can also search by mood or date.")
+                    .font(Theme.Typography.body)
+                    .foregroundColor(Theme.Colors.secondaryText)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 400)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

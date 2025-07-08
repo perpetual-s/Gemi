@@ -13,32 +13,85 @@ struct InsightsView: View {
     }
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                // Enhanced header with time range selector
-                enhancedHeader
-                    .padding(.horizontal)
-                    .padding(.top)
+        if entries.isEmpty {
+            // Beautiful empty state when no entries
+            VStack(spacing: Theme.largeSpacing) {
+                // Icon with gradient background
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Theme.Colors.primaryAccent.opacity(0.1),
+                                    Theme.Colors.primaryAccent.opacity(0.05)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 120, height: 120)
+                    
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 56))
+                        .foregroundColor(Theme.Colors.primaryAccent)
+                }
                 
-                // Stats cards with better design
-                statsGrid
-                    .padding()
-                
-                // Mood insights section
-                moodInsightsSection
-                    .padding(.horizontal)
-                    .padding(.bottom)
-                
-                // Writing patterns
-                writingPatternsSection
-                    .padding(.horizontal)
-                    .padding(.bottom)
+                VStack(spacing: Theme.spacing) {
+                    Text("No insights yet")
+                        .font(Theme.Typography.title)
+                        .foregroundColor(.primary)
+                    
+                    Text("Start journaling to discover patterns and\ntrack your emotional journey over time.")
+                        .font(Theme.Typography.body)
+                        .foregroundColor(Theme.Colors.secondaryText)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: 400)
+                    
+                    Button(action: {
+                        NotificationCenter.default.post(name: .newEntry, object: nil)
+                    }) {
+                        Text("Create Your First Entry")
+                            .font(Theme.Typography.body.weight(.medium))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                            .background(Theme.Colors.primaryAccent)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, Theme.spacing)
+                }
             }
-        }
-        .background(Theme.Colors.windowBackground)
-        .onAppear {
-            withAnimation(.easeOut(duration: 0.6).delay(0.2)) {
-                animateCharts = true
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Theme.Colors.windowBackground)
+        } else {
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Enhanced header with time range selector
+                    enhancedHeader
+                        .padding(.horizontal)
+                        .padding(.top)
+                    
+                    // Stats cards with better design
+                    statsGrid
+                        .padding()
+                    
+                    // Mood insights section
+                    moodInsightsSection
+                        .padding(.horizontal)
+                        .padding(.bottom)
+                    
+                    // Writing patterns
+                    writingPatternsSection
+                        .padding(.horizontal)
+                        .padding(.bottom)
+                }
+            }
+            .background(Theme.Colors.windowBackground)
+            .onAppear {
+                withAnimation(.easeOut(duration: 0.6).delay(0.2)) {
+                    animateCharts = true
+                }
             }
         }
     }
