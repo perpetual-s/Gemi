@@ -22,9 +22,9 @@ struct AIAssistantBubble: View {
         var offset: CGSize {
             switch self {
             case .topRight:
-                return CGSize(width: -20, height: 100)
+                return CGSize(width: -30, height: 30)
             case .bottomRight:
-                return CGSize(width: -20, height: -100)
+                return CGSize(width: -30, height: -30)
             case .custom(let x, let y):
                 return CGSize(width: x, height: y)
             }
@@ -66,9 +66,12 @@ struct AIAssistantBubble: View {
                 }
         )
         .onAppear {
-            withAnimation(.easeOut(duration: 0.4)) {
-                bubbleOpacity = 1
-                scale = 1
+            // Delay slightly to ensure view is properly laid out
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.easeOut(duration: 0.4)) {
+                    bubbleOpacity = 1
+                    scale = 1
+                }
             }
         }
     }

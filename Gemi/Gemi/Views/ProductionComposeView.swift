@@ -92,6 +92,7 @@ struct ProductionComposeView: View {
             // AI Assistant overlay
             if showAIAssistant {
                 VStack {
+                    Spacer()
                     HStack {
                         Spacer()
                         AIAssistantBubble(
@@ -102,16 +103,16 @@ struct ProductionComposeView: View {
                             },
                             position: .bottomRight
                         )
-                        .padding(.trailing, 20)
-                        .padding(.bottom, 100)
                     }
-                    Spacer()
                 }
+                .padding(.trailing, 30)
+                .padding(.bottom, 30)
                 .allowsHitTesting(true)
                 .transition(.asymmetric(
                     insertion: .scale(scale: 0.8, anchor: .bottomTrailing).combined(with: .opacity),
                     removal: .scale(scale: 0.8, anchor: .bottomTrailing).combined(with: .opacity)
                 ))
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showAIAssistant)
             }
         }
         .background(Color(nsColor: .textBackgroundColor))
@@ -221,25 +222,6 @@ struct ProductionComposeView: View {
                 }
                 .buttonStyle(.plain)
                 .help("Writer's Block Breaker")
-                
-                // Emoji picker
-                Button {
-                    showingEmojiPicker.toggle()
-                } label: {
-                    Text("😊")
-                        .font(.system(size: 18))
-                }
-                .buttonStyle(.plain)
-                .help("Insert emoji")
-                .popover(isPresented: $showingEmojiPicker) {
-                    QuickEmojiPicker(
-                        onEmojiSelected: { emoji in
-                            insertTextAtCursor(emoji)
-                        },
-                        isPresented: $showingEmojiPicker
-                    )
-                }
-                
                 
                 Divider()
                     .frame(height: 20)
