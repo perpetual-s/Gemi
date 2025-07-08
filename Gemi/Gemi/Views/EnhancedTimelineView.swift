@@ -169,35 +169,8 @@ struct EnhancedTimelineView: View {
     }
     
     private var emptyState: some View {
-        VStack(spacing: Theme.spacing) {
-            Image(systemName: "book.closed")
-                .font(.system(size: 64))
-                .foregroundColor(Theme.Colors.tertiaryText)
-            
-            Text("No journal entries yet")
-                .font(Theme.Typography.title)
-            
-            Text("Start writing to capture your thoughts and memories")
-                .font(Theme.Typography.body)
-                .foregroundColor(Theme.Colors.secondaryText)
-            
-            VStack(spacing: Theme.spacing) {
-                Button(action: onNewEntry) {
-                    Label("Create Your First Entry", systemImage: "plus.circle.fill")
-                }
-                .controlSize(.large)
-                .buttonStyle(.borderedProminent)
-                
-                Button {
-                    showingFloatingChat = true
-                } label: {
-                    Label("Talk to Gemi", systemImage: "bubble.left.and.bubble.right")
-                }
-                .buttonStyle(.bordered)
-            }
-            .padding(.top)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        EmptyStateView()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
     private func dateSection(for date: Date) -> some View {
@@ -227,16 +200,14 @@ struct EnhancedTimelineView: View {
     @ViewBuilder
     private func entriesForDate(_ date: Date) -> some View {
         ForEach(groupedEntries[date] ?? []) { entry in
-            EnhancedEntryCard(
+            PremiumEntryCard(
                 entry: entry,
                 isSelected: selectedEntry?.id == entry.id,
-                onTap: { 
+                onSelect: { 
                     // Select the entry
                     selectedEntry = entry
-                },
-                onChat: { selectedEntryForChat = entry },
-                onToggleFavorite: {
-                    toggleFavorite(for: entry)
+                    readingEntry = entry
+                    showingReadingView = true
                 },
                 onEdit: {
                     onEditEntry?(entry)
@@ -246,9 +217,9 @@ struct EnhancedTimelineView: View {
                         await journalStore.deleteEntry(entry)
                     }
                 },
-                onRead: {
-                    readingEntry = entry
-                    showingReadingView = true
+                onChat: {
+                    selectedEntryForChat = entry
+                    showingFloatingChat = true
                 }
             )
         }
@@ -339,254 +310,6 @@ struct EnhancedTimelineView: View {
         default:
             return "Every emotion is valid. Keep exploring through writing."
         }
-    }
-}
-
-// MARK: - Enhanced Entry Card
-
-struct EnhancedEntryCard: View {
-    let entry: JournalEntry
-    let isSelected: Bool
-    let onTap: () -> Void
-    let onChat: () -> Void
-    let onToggleFavorite: () -> Void
-    var onEdit: (() -> Void)? = nil
-    var onDelete: (() -> Void)? = nil
-    var onRead: (() -> Void)? = nil
-    
-    @State private var isHovered = false
-    @State private var showAIActions = false
-    @State private var showingReadingMode = false
-    @State private var localIsFavorite: Bool = false
-    @State private var selectedReflectionPrompt: String?
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            // Main card content - restructured to fix star button
-            VStack(alignment: .leading, spacing: 8) {
-                // Header with proper button separation
-                HStack {
-                    Text(entry.displayTitle)
-                        .font(Theme.Typography.headline)
-                        .lineLimit(1)
-                    
-                    Spacer()
-                    
-                    HStack(spacing: Theme.spacing) {
-                        // Interactive favorite button - now outside main button
-                        Button(action: {
-                            localIsFavorite.toggle()
-                            onToggleFavorite()
-                        }) {
-                            Image(systemName: localIsFavorite ? "star.fill" : "star")
-                                .font(.system(size: 16))
-                                .foregroundColor(localIsFavorite ? .yellow : Theme.Colors.secondaryText)
-                                .scaleEffect(localIsFavorite ? 1.1 : 1)
-                                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: localIsFavorite)
-                                .frame(width: 24, height: 24)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                        .help(localIsFavorite ? "Remove from favorites" : "Add to favorites")
-                        
-                        
-                        Text(timeString)
-                            .font(Theme.Typography.caption)
-                            .foregroundColor(Theme.Colors.tertiaryText)
-                    }
-                }
-                
-                // Make the rest of the card clickable (excluding star button)
-                Button(action: {
-                    // Call the onRead callback if provided, otherwise show local reading mode
-                    if let onRead = onRead {
-                        onRead()
-                    } else {
-                        showingReadingMode = true
-                    }
-                }) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        // Content preview (expandable)
-                        if !entry.content.isEmpty {
-                            Text(entry.content)
-                                .font(Theme.Typography.body)
-                                .foregroundColor(Theme.Colors.secondaryText)
-                                .lineLimit(2)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .multilineTextAlignment(.leading)
-                        }
-                        
-                        // Tags
-                        if !entry.tags.isEmpty {
-                            HStack(spacing: 6) {
-                                ForEach(entry.tags, id: \.self) { tag in
-                                    Text("#\(tag)")
-                                        .font(.system(size: 11))
-                                        .foregroundColor(Theme.Colors.primaryAccent)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .fill(Theme.Colors.primaryAccent.opacity(0.1))
-                                        )
-                                }
-                            }
-                        }
-                        
-                        // Footer with mood and stats
-                        HStack {
-                            if let mood = entry.mood {
-                                MoodBadge(mood: mood)
-                            }
-                            
-                            Spacer()
-                            
-                            HStack(spacing: Theme.spacing) {
-                                Label("\(entry.wordCount) words", systemImage: "text.alignleft")
-                                    .font(Theme.Typography.caption)
-                                    .foregroundColor(Theme.Colors.tertiaryText)
-                                
-                                Label("\(entry.readingTime) min", systemImage: "clock")
-                                    .font(Theme.Typography.caption)
-                                    .foregroundColor(Theme.Colors.tertiaryText)
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .buttonStyle(.plain)
-                .help("Click to read • Double-click to edit")
-            }
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: Theme.cornerRadius)
-                    .fill(cardBackgroundColor)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: Theme.cornerRadius)
-                            .strokeBorder(borderColor, lineWidth: isSelected ? 2 : 0)
-                    )
-            )
-            .shadow(color: shadowColor, radius: isHovered ? 4 : 2, x: 0, y: 1)
-            .onTapGesture(count: 2) {
-                // Double-click to edit
-                if let onEdit = onEdit {
-                    onEdit()
-                }
-            }
-            .contextMenu {
-                Button {
-                    if let onRead = onRead {
-                        onRead()
-                    } else {
-                        showingReadingMode = true
-                    }
-                } label: {
-                    Label("Read Entry", systemImage: "book")
-                }
-                
-                Button {
-                    if let onEdit = onEdit {
-                        onEdit()
-                    }
-                } label: {
-                    Label("Edit Entry", systemImage: "pencil")
-                }
-                
-                Button {
-                    onChat()
-                } label: {
-                    Label("Chat about Entry", systemImage: "bubble.left.and.bubble.right")
-                }
-                
-                Divider()
-                
-                Button {
-                    localIsFavorite.toggle()
-                    onToggleFavorite()
-                } label: {
-                    Label(
-                        localIsFavorite ? "Remove from Favorites" : "Add to Favorites",
-                        systemImage: localIsFavorite ? "star.fill" : "star"
-                    )
-                }
-                
-                Divider()
-                
-                Button(role: .destructive) {
-                    if let onDelete = onDelete {
-                        onDelete()
-                    }
-                } label: {
-                    Label("Delete Entry", systemImage: "trash")
-                }
-            }
-            
-        }
-        .onAppear {
-            localIsFavorite = entry.isFavorite
-        }
-        .onChange(of: entry.isFavorite) { _, newValue in
-            localIsFavorite = newValue
-        }
-        .onHover { hovering in
-            withAnimation(Theme.quickAnimation) {
-                isHovered = hovering
-                if !hovering {
-                    showAIActions = false
-                }
-            }
-        }
-        .sheet(isPresented: $showingReadingMode) {
-            ReadingModeView(
-                entry: entry,
-                onDismiss: {
-                    showingReadingMode = false
-                },
-                onChat: {
-                    showingReadingMode = false
-                    // Pass the selected prompt to the parent onChat handler
-                    if let prompt = selectedReflectionPrompt {
-                        // We'll need to modify this to pass the prompt
-                        onChat()
-                    } else {
-                        onChat()
-                    }
-                },
-                selectedReflectionPrompt: $selectedReflectionPrompt
-            )
-        }
-    }
-    
-    private var timeString: String {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        return formatter.string(from: entry.createdAt)
-    }
-    
-    private var cardBackgroundColor: Color {
-        if isSelected {
-            return Theme.Colors.primaryAccent.opacity(0.08)
-        } else if isHovered {
-            return Theme.Colors.cardBackground.opacity(0.95)
-        } else {
-            return Theme.Colors.cardBackground
-        }
-    }
-    
-    private var borderColor: Color {
-        if isSelected {
-            return Theme.Colors.primaryAccent
-        } else if isHovered {
-            return Theme.Colors.primaryAccent.opacity(0.3)
-        } else {
-            return Color.clear
-        }
-    }
-    
-    private var shadowColor: Color {
-        Color.black.opacity(isHovered ? 0.1 : 0.05)
     }
 }
 

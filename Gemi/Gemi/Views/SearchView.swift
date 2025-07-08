@@ -111,20 +111,13 @@ struct SearchView: View {
                     .padding(.horizontal)
                 
                 ForEach(searchResults) { entry in
-                    EnhancedEntryCard(
+                    PremiumEntryCard(
                         entry: entry,
                         isSelected: selectedEntry?.id == entry.id,
-                        onTap: {
+                        onSelect: {
                             selectedEntry = entry
-                        },
-                        onChat: {
-                            chatEntry = entry
-                            showingChat = true
-                        },
-                        onToggleFavorite: {
-                            Task {
-                                await toggleFavorite(for: entry)
-                            }
+                            readingEntry = entry
+                            showingReadingView = true
                         },
                         onEdit: {
                             editingEntry = entry
@@ -137,9 +130,9 @@ struct SearchView: View {
                                 performRealtimeSearch(searchQuery)
                             }
                         },
-                        onRead: {
-                            readingEntry = entry
-                            showingReadingView = true
+                        onChat: {
+                            chatEntry = entry
+                            showingChat = true
                         }
                     )
                     .padding(.horizontal)

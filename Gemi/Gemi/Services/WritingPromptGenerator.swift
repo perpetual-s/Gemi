@@ -1,6 +1,7 @@
 import Foundation
 
 /// Generates intelligent writing prompts based on time, user history, and context
+@MainActor
 final class WritingPromptGenerator {
     static let shared = WritingPromptGenerator()
     
