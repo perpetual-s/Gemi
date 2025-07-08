@@ -6,6 +6,8 @@ struct MainWindowView: View {
     @State private var editingEntry: JournalEntry? = nil
     @State private var showingReadingView = false
     @State private var showingCommandPalette = false
+    @State private var showingFocusMode = false
+    @State private var focusModeEntry: JournalEntry? = nil
     @StateObject private var journalStore = JournalStore()
     
     var body: some View {
@@ -58,6 +60,27 @@ struct MainWindowView: View {
                 CommandPaletteView(isShowing: $showingCommandPalette)
                     .zIndex(1000)
             }
+            
+            // Focus Mode Overlay
+            if showingFocusMode, let entry = focusModeEntry {
+                FocusModeView(
+                    entry: Binding(
+                        get: { entry },
+                        set: { updatedEntry in
+                            focusModeEntry = updatedEntry
+                            if editingEntry != nil {
+                                self.editingEntry = updatedEntry
+                            }
+                        }
+                    ),
+                    isPresented: $showingFocusMode
+                )
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .scale(scale: 1.02)),
+                    removal: .opacity.combined(with: .scale(scale: 0.98))
+                ))
+                .zIndex(2000)
+            }
         }
     }
     
@@ -98,6 +121,12 @@ struct MainWindowView: View {
                 onCancel: {
                     selectedView = .timeline
                     editingEntry = nil
+                },
+                onFocusMode: { entry in
+                    focusModeEntry = entry
+                    withAnimation(.easeOut(duration: 0.4)) {
+                        showingFocusMode = true
+                    }
                 }
             )
         case .chat:

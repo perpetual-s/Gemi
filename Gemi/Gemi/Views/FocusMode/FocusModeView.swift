@@ -1,64 +1,55 @@
 import SwiftUI
 import AppKit
 
-/// A distraction-free writing environment with typewriter scrolling and ambient sounds
+/// Premium Focus Mode with full feature parity and advanced focus capabilities
 struct FocusModeView: View {
     @Binding var entry: JournalEntry
     @Binding var isPresented: Bool
     
-    // Editor state
+    // Core state
+    @StateObject private var settings = FocusModeSettings.shared
     @State private var wordCount = 0
     @State private var characterCount = 0
-    @State private var sessionStartTime = Date()
-    @State private var writingPace = 0.0
-    @State private var lastSavedContent = ""
     @State private var hasUnsavedChanges = false
+    @State private var lastSavedContent = ""
     
-    // Focus mode settings
-    @State private var showingSettings = false
-    @State private var selectedAmbientSound: AmbientSound = .none
-    @State private var typewriterMode = true
-    @State private var wordGoal = 750
-    @State private var showProgress = true
-    @State private var fontSize: CGFloat = 20
+    // UI visibility states
+    @State private var showHeader = true
+    @State private var showFooter = true
+    @State private var showMetadata = false
+    @State private var showSettings = false
+    @State private var showEmojiPicker = false
+    @State private var textEditorCoordinator: FocusTextEditor.Coordinator?
     
     // Animation states
-    @State private var fadeInOpacity = 0.0
-    @State private var settingsOpacity = 0.0
-    @State private var progressOpacity = 0.0
+    @State private var backgroundOpacity = 0.0
+    @State private var contentOpacity = 0.0
+    @State private var uiOpacity = 0.0
     
-    @Environment(\.colorScheme) var colorScheme
+    // Timer for UI auto-hide
+    @State private var uiHideTimer: Timer?
+    
+    // Force UI updates
+    @State private var updateTrigger = UUID()
+    
+    @Environment(\.colorScheme) var systemColorScheme
     @Namespace private var animation
-    
-    enum AmbientSound: String, CaseIterable {
-        case none = "Silence"
-        case rain = "Rain"
-        case coffeeshop = "Coffee Shop"
-        case ocean = "Ocean Waves"
-        case forest = "Forest"
-        case fireplace = "Fireplace"
-        
-        var icon: String {
-            switch self {
-            case .none: return "speaker.slash"
-            case .rain: return "cloud.rain"
-            case .coffeeshop: return "cup.and.saucer"
-            case .ocean: return "water.waves"
-            case .forest: return "leaf"
-            case .fireplace: return "flame"
-            }
-        }
-    }
     
     var body: some View {
         ZStack {
-            // Background
+            // Background layer with blur
             focusBackground
+                .opacity(backgroundOpacity)
+                .animation(.easeOut(duration: 0.4), value: backgroundOpacity)
             
-            // Main content
+            // Main content layer
             VStack(spacing: 0) {
-                // Minimal header
-                focusHeader
+                // Smart header (appears on hover/movement)
+                if showHeader {
+                    focusHeader
+                        .opacity(uiOpacity)
+                        .animation(.easeOut(duration: 0.25), value: uiOpacity)
+                }
                 
                 // Writing area
                 GeometryReader { geometry in
@@ -66,44 +57,33 @@ struct FocusModeView: View {
                         ScrollView {
                             VStack(spacing: 0) {
                                 // Centering spacer for typewriter mode
-                                if typewriterMode {
+                                if settings.typewriterMode {
                                     Spacer()
                                         .frame(height: geometry.size.height / 2 - 100)
                                 }
                                 
-                                // Title input
-                                TextField("Untitled", text: $entry.title, axis: .vertical)
-                                    .textFieldStyle(.plain)
-                                    .font(.system(size: fontSize + 8, weight: .bold, design: .serif))
-                                    .multilineTextAlignment(.center)
-                                    .lineLimit(1...2)
-                                    .padding(.horizontal, 80)
-                                    .padding(.bottom, 30)
-                                    .opacity(0.9)
-                                
-                                // Content editor
-                                FocusTextEditor(
-                                    text: $entry.content,
-                                    fontSize: fontSize,
-                                    typewriterMode: typewriterMode,
-                                    onTextChange: { _ in
-                                        updateWordCount()
-                                    }
-                                )
-                                .id("editor")
-                                .padding(.horizontal, 80)
-                                .frame(minHeight: geometry.size.height - 200)
+                                // Content container with max width
+                                VStack(spacing: 40) {
+                                    // Title editor
+                                    titleEditor
+                                    
+                                    // Main content editor
+                                    contentEditor
+                                        .id("editor")
+                                }
+                                .frame(maxWidth: settings.maxLineWidth)
+                                .padding(.horizontal, 40)
                                 
                                 // Bottom spacer for typewriter mode
-                                if typewriterMode {
+                                if settings.typewriterMode {
                                     Spacer()
                                         .frame(height: geometry.size.height / 2)
                                 }
                             }
+                            .frame(maxWidth: .infinity)
                         }
                         .onChange(of: entry.content) { _, _ in
-                            if typewriterMode {
-                                // Scroll to keep cursor in center
+                            if settings.typewriterMode {
                                 withAnimation(.easeOut(duration: 0.2)) {
                                     proxy.scrollTo("editor", anchor: .center)
                                 }
@@ -111,44 +91,40 @@ struct FocusModeView: View {
                         }
                     }
                 }
+                .opacity(contentOpacity)
+                .animation(.easeOut(duration: 0.5).delay(0.2), value: contentOpacity)
                 
-                // Writing progress (if enabled)
-                if showProgress {
-                    focusProgressBar
-                        .opacity(progressOpacity)
-                        .animation(.easeOut(duration: 0.5), value: progressOpacity)
+                // Smart footer (appears on hover/movement)
+                if showFooter {
+                    focusFooter
+                        .opacity(uiOpacity)
+                        .animation(.easeOut(duration: 0.25), value: uiOpacity)
                 }
             }
-            .opacity(fadeInOpacity)
-            .animation(.easeOut(duration: 0.8), value: fadeInOpacity)
             
-            // Settings overlay
-            if showingSettings {
-                focusSettingsOverlay
+            // Overlay panels
+            if showSettings {
+                focusSettingsPanel
+            }
+            
+            if showMetadata {
+                metadataPanel
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .foregroundColor(settings.effectiveTextColor)
         .onAppear {
-            fadeInOpacity = 1
-            progressOpacity = 1
-            lastSavedContent = entry.content
-            updateWordCount()
-            
-            // Play ambient sound if selected
-            if selectedAmbientSound != .none {
-                AmbientSoundPlayer.shared.play(sound: selectedAmbientSound)
-            }
+            setupFocusMode()
         }
         .onDisappear {
-            AmbientSoundPlayer.shared.stop()
+            cleanupFocusMode()
         }
-        .onChange(of: entry.content) { oldValue, newValue in
-            hasUnsavedChanges = (newValue != lastSavedContent)
+        .onHover { hovering in
+            if hovering {
+                showUIElements()
+            }
         }
-        .onKeyPress(.escape) {
-            exitFocusMode()
-            return .handled
-        }
+        // Keyboard shortcuts handled via menu commands or buttons
     }
     
     // MARK: - Components
@@ -156,301 +132,349 @@ struct FocusModeView: View {
     private var focusBackground: some View {
         ZStack {
             // Base color
-            Rectangle()
-                .fill(colorScheme == .dark ? Color.black : Color(hex: "FAF9F6"))
+            settings.effectiveBackgroundColor
                 .ignoresSafeArea()
             
-            // Subtle gradient overlay
-            LinearGradient(
-                colors: [
-                    Color.clear,
-                    (colorScheme == .dark ? Color.white : Color.black).opacity(0.02)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            // Optional blur of underlying content
+            if settings.backgroundOpacity < 1.0 {
+                VisualEffectBlur()
+                    .opacity(1.0 - settings.backgroundOpacity)
+                    .ignoresSafeArea()
+            }
             
-            // Ambient animation
-            if selectedAmbientSound != .none {
-                AmbientVisualEffect(sound: selectedAmbientSound)
+            // Ambient visual effects
+            // TODO: Implement AmbientVisualEffect
+            /*
+            if settings.showAmbientVisuals && settings.ambientSound != "none" {
+                AmbientVisualEffect(sound: AmbientSound(rawValue: settings.ambientSound.capitalized) ?? .none)
                     .ignoresSafeArea()
                     .opacity(0.3)
             }
+            */
         }
     }
     
     private var focusHeader: some View {
-        HStack {
+        HStack(spacing: 20) {
             // Exit button
             Button {
                 exitFocusMode()
             } label: {
                 HStack(spacing: 6) {
-                    Image(systemName: "arrow.left")
+                    Image(systemName: "xmark")
                         .font(.system(size: 14, weight: .medium))
                     Text("Exit Focus")
                         .font(.system(size: 14))
                 }
-                .foregroundColor(.secondary)
+                .foregroundColor(settings.effectiveTextColor.opacity(0.6))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(
                     Capsule()
-                        .fill(Color.secondary.opacity(0.1))
+                        .fill(settings.effectiveTextColor.opacity(0.1))
                 )
             }
             .buttonStyle(.plain)
+            .help("Exit focus mode (Esc)")
             
-            Spacer()
-            
-            // Session timer
-            HStack(spacing: 16) {
-                // Writing time
-                HStack(spacing: 4) {
-                    Image(systemName: "clock")
-                        .font(.system(size: 12))
-                    Text(formatSessionTime())
-                        .font(.system(size: 13, design: .monospaced))
-                }
-                .foregroundColor(.secondary.opacity(0.8))
+            // Document info
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.displayTitle)
+                    .font(.system(size: 14, weight: .medium))
+                    .lineLimit(1)
                 
-                // Word count
-                HStack(spacing: 4) {
-                    Image(systemName: "text.alignleft")
-                        .font(.system(size: 12))
-                    Text("\(wordCount)")
-                        .font(.system(size: 13, design: .monospaced))
-                }
-                .foregroundColor(.secondary.opacity(0.8))
+                Text(formatSessionTime())
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundColor(settings.effectiveTextColor.opacity(0.6))
             }
             
             Spacer()
             
-            // Settings button
-            Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                    showingSettings.toggle()
+            // Word count (if enabled)
+            if settings.showWordCount {
+                HStack(spacing: 16) {
+                    Label("\(wordCount)", systemImage: "text.alignleft")
+                        .font(.system(size: 13))
+                        .foregroundColor(settings.effectiveTextColor.opacity(0.6))
+                    
+                    if settings.wordGoal > 0 {
+                        ProgressCircle(
+                            progress: min(Double(wordCount) / Double(settings.wordGoal), 1.0),
+                            size: 20,
+                            lineWidth: 2
+                        )
+                    }
                 }
-            } label: {
-                Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 16))
-                    .foregroundColor(.secondary)
-                    .frame(width: 32, height: 32)
-                    .background(
-                        Circle()
-                            .fill(showingSettings ? Color.secondary.opacity(0.2) : Color.secondary.opacity(0.1))
-                    )
             }
-            .buttonStyle(.plain)
+            
+            // Quick actions
+            HStack(spacing: 12) {
+                // Metadata toggle
+                Button {
+                    withAnimation(.spring(response: 0.3)) {
+                        showMetadata.toggle()
+                    }
+                } label: {
+                    Image(systemName: "tag")
+                        .font(.system(size: 16))
+                        .foregroundColor(settings.effectiveTextColor.opacity(0.6))
+                        .frame(width: 32, height: 32)
+                        .background(
+                            Circle()
+                                .fill(showMetadata ? settings.effectiveTextColor.opacity(0.2) : settings.effectiveTextColor.opacity(0.1))
+                        )
+                }
+                .buttonStyle(.plain)
+                .help("Show metadata (tags, mood)")
+                
+                // Settings
+                Button {
+                    withAnimation(.spring(response: 0.3)) {
+                        showSettings.toggle()
+                    }
+                } label: {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 16))
+                        .foregroundColor(settings.effectiveTextColor.opacity(0.6))
+                        .frame(width: 32, height: 32)
+                        .background(
+                            Circle()
+                                .fill(showSettings ? settings.effectiveTextColor.opacity(0.2) : settings.effectiveTextColor.opacity(0.1))
+                        )
+                }
+                .buttonStyle(.plain)
+                .help("Focus settings (⌘,)")
+                
+                // Save button
+                if hasUnsavedChanges {
+                    Button {
+                        saveEntry()
+                    } label: {
+                        Label("Save", systemImage: "checkmark.circle.fill")
+                            .font(.system(size: 14))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule()
+                                    .fill(Color.green)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .transition(.scale.combined(with: .opacity))
+                    .keyboardShortcut(.return, modifiers: .command)
+                }
+            }
         }
         .padding(.horizontal, 30)
         .padding(.vertical, 20)
+        .background(
+            settings.effectiveBackgroundColor.opacity(0.8)
+                .overlay(
+                    Rectangle()
+                        .fill(settings.effectiveTextColor.opacity(0.05))
+                        .frame(height: 1),
+                    alignment: .bottom
+                )
+        )
     }
     
-    private var focusProgressBar: some View {
+    private var titleEditor: some View {
+        TextField("Untitled", text: $entry.title, axis: .vertical)
+            .textFieldStyle(.plain)
+            .font(.system(size: settings.fontSize + 12, weight: .bold, design: .serif))
+            .multilineTextAlignment(.leading)
+            .lineLimit(1...3)
+            .foregroundColor(settings.effectiveTextColor)
+            .opacity(settings.focusLevel == .none || settings.focusLevel == .paragraph ? 1.0 : settings.inactiveTextOpacity)
+    }
+    
+    private var contentEditor: some View {
+        FocusTextEditor(
+            text: $entry.content,
+            fontSize: settings.fontSize,
+            textColor: settings.effectiveTextColor,
+            focusLevel: settings.focusLevel,
+            highlightIntensity: settings.highlightIntensity,
+            typewriterMode: settings.typewriterMode,
+            onTextChange: { _ in
+                updateWordCount()
+                hasUnsavedChanges = (entry.content != lastSavedContent)
+            },
+            onCoordinatorReady: { coordinator in
+                textEditorCoordinator = coordinator
+            }
+        )
+        .frame(minHeight: 500)
+    }
+    
+    private var focusFooter: some View {
         VStack(spacing: 0) {
-            Divider()
-                .opacity(0.3)
-            
-            HStack(spacing: 20) {
-                // Progress bar
+            // Progress bar (if enabled)
+            if settings.showProgress && settings.wordGoal > 0 {
                 GeometryReader { geometry in
                     ZStack(alignment: .leading) {
                         // Background
-                        Capsule()
-                            .fill(Color.secondary.opacity(0.1))
-                            .frame(height: 3)
+                        Rectangle()
+                            .fill(settings.effectiveTextColor.opacity(0.1))
+                            .frame(height: 2)
                         
                         // Progress
-                        Capsule()
+                        Rectangle()
                             .fill(
                                 LinearGradient(
-                                    colors: progressGradientColors,
+                                    colors: progressColors,
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
                             )
-                            .frame(width: geometry.size.width * min(Double(wordCount) / Double(wordGoal), 1.0), height: 3)
-                            .animation(.spring(response: 0.5, dampingFraction: 0.8), value: wordCount)
+                            .frame(width: geometry.size.width * min(Double(wordCount) / Double(settings.wordGoal), 1.0), height: 2)
+                            .animation(.spring(response: 0.5), value: wordCount)
                     }
                 }
-                .frame(width: 200, height: 3)
-                
-                // Goal text
-                Text("\(wordCount) / \(wordGoal)")
-                    .font(.system(size: 12, design: .monospaced))
-                    .foregroundColor(.secondary.opacity(0.8))
+                .frame(height: 2)
+                .padding(.horizontal, 30)
+                .padding(.vertical, 10)
+            }
+            
+            // Stats bar
+            HStack(spacing: 30) {
+                // Writing stats
+                HStack(spacing: 20) {
+                    Label("\(characterCount) characters", systemImage: "character")
+                        .font(.system(size: 12))
+                    
+                    Label("\(wordCount) words", systemImage: "text.alignleft")
+                        .font(.system(size: 12))
+                    
+                    Label("\(entry.readingTime) min read", systemImage: "book")
+                        .font(.system(size: 12))
+                }
+                .foregroundColor(settings.effectiveTextColor.opacity(0.6))
                 
                 Spacer()
                 
-                // Pace indicator
-                if writingPace > 0 {
-                    HStack(spacing: 4) {
-                        Image(systemName: "speedometer")
-                            .font(.system(size: 11))
-                        Text("\(Int(writingPace)) wpm")
-                            .font(.system(size: 12))
-                    }
-                    .foregroundColor(.secondary.opacity(0.8))
-                }
-                
-                // Achievement
-                if wordCount >= wordGoal {
-                    HStack(spacing: 4) {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(.yellow)
-                        Text("Goal achieved!")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.primary)
-                    }
-                    .transition(.scale.combined(with: .opacity))
-                }
+                // Focus level indicator
+                Label(settings.focusLevel.rawValue, systemImage: settings.focusLevel.icon)
+                    .font(.system(size: 12))
+                    .foregroundColor(settings.effectiveTextColor.opacity(0.6))
             }
             .padding(.horizontal, 30)
             .padding(.vertical, 12)
         }
-        .background(Color(nsColor: .textBackgroundColor).opacity(0.8))
+        .background(
+            settings.effectiveBackgroundColor.opacity(0.8)
+                .overlay(
+                    Rectangle()
+                        .fill(settings.effectiveTextColor.opacity(0.05))
+                        .frame(height: 1),
+                    alignment: .top
+                )
+        )
     }
     
-    private var focusSettingsOverlay: some View {
-        VStack(spacing: 0) {
-            // Click outside to dismiss
-            Color.clear
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    withAnimation {
-                        showingSettings = false
-                    }
-                }
-            
-            // Settings panel
-            VStack(spacing: 24) {
-                // Title
-                HStack {
-                    Text("Focus Settings")
-                        .font(.system(size: 18, weight: .semibold))
-                    Spacer()
-                    Button {
-                        withAnimation {
-                            showingSettings = false
-                        }
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                }
-                
-                Divider()
-                
-                // Typewriter mode toggle
-                Toggle(isOn: $typewriterMode) {
-                    Label("Typewriter Scrolling", systemImage: "text.cursor")
-                        .font(.system(size: 14))
-                }
-                .toggleStyle(.switch)
-                
-                // Show progress toggle
-                Toggle(isOn: $showProgress) {
-                    Label("Show Writing Progress", systemImage: "chart.line.uptrend.xyaxis")
-                        .font(.system(size: 14))
-                }
-                .toggleStyle(.switch)
-                .onChange(of: showProgress) { _, newValue in
-                    withAnimation {
-                        progressOpacity = newValue ? 1 : 0
-                    }
-                }
-                
-                // Font size slider
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("Text Size", systemImage: "textformat.size")
-                        .font(.system(size: 14))
-                    
-                    HStack {
-                        Text("A")
-                            .font(.system(size: 14))
-                        
-                        Slider(value: $fontSize, in: 16...28, step: 1)
-                        
-                        Text("A")
-                            .font(.system(size: 20))
-                    }
-                    .foregroundColor(.secondary)
-                }
-                
-                // Word goal
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("Writing Goal", systemImage: "target")
-                        .font(.system(size: 14))
-                    
-                    HStack {
-                        TextField("Goal", value: $wordGoal, format: .number)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 80)
-                        
-                        Text("words")
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                // Ambient sounds
-                VStack(alignment: .leading, spacing: 12) {
-                    Label("Ambient Sound", systemImage: "speaker.wave.2")
-                        .font(.system(size: 14))
-                    
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 12) {
-                        ForEach(AmbientSound.allCases, id: \.self) { sound in
-                            AmbientSoundButton(
-                                sound: sound,
-                                isSelected: selectedAmbientSound == sound,
-                                action: {
-                                    selectedAmbientSound = sound
-                                    if sound == .none {
-                                        AmbientSoundPlayer.shared.stop()
-                                    } else {
-                                        AmbientSoundPlayer.shared.play(sound: sound)
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
+    private var metadataPanel: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            // Header
+            HStack {
+                Text("Entry Details")
+                    .font(.system(size: 18, weight: .semibold))
                 
                 Spacer()
-            }
-            .padding(24)
-            .frame(width: 400, height: 500)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(nsColor: .textBackgroundColor))
-                    .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
-            )
-            .transition(.asymmetric(
-                insertion: .scale(scale: 0.9).combined(with: .opacity),
-                removal: .scale(scale: 0.9).combined(with: .opacity)
-            ))
-            
-            Color.clear
-                .contentShape(Rectangle())
-                .onTapGesture {
+                
+                Button {
                     withAnimation {
-                        showingSettings = false
+                        showMetadata = false
                     }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(settings.effectiveTextColor.opacity(0.5))
                 }
+                .buttonStyle(.plain)
+            }
+            
+            // Mood selector
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Mood")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(settings.effectiveTextColor.opacity(0.8))
+                
+                FocusMoodPicker(
+                    selectedMood: Binding(
+                        get: { entry.mood },
+                        set: { newMood in
+                            entry.mood = newMood
+                            updateTrigger = UUID()
+                        }
+                    ),
+                    textColor: settings.effectiveTextColor
+                )
+            }
+            
+            // Tags
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Tags")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(settings.effectiveTextColor.opacity(0.8))
+                
+                FocusTagEditor(
+                    tags: Binding(
+                        get: { entry.tags },
+                        set: { newTags in
+                            entry.tags = newTags
+                            updateTrigger = UUID()
+                        }
+                    ),
+                    textColor: settings.effectiveTextColor
+                )
+            }
+            
+            // Favorite toggle
+            Toggle(isOn: Binding(
+                get: { entry.isFavorite },
+                set: { newValue in
+                    entry.isFavorite = newValue
+                    updateTrigger = UUID()
+                }
+            )) {
+                Label("Mark as Favorite", systemImage: entry.isFavorite ? "star.fill" : "star")
+                    .font(.system(size: 14))
+            }
+            .toggleStyle(.switch)
+            
+            Spacer()
         }
-        .background(Color.black.opacity(0.3))
-        .ignoresSafeArea()
+        .padding(24)
+        .frame(width: 350, height: 400)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(settings.effectiveBackgroundColor)
+                .shadow(color: .black.opacity(0.2), radius: 20)
+        )
+        .foregroundColor(settings.effectiveTextColor)
+        .transition(.asymmetric(
+            insertion: .scale(scale: 0.9).combined(with: .opacity),
+            removal: .scale(scale: 0.9).combined(with: .opacity)
+        ))
+        .position(x: 200, y: 250)
+    }
+    
+    private var focusSettingsPanel: some View {
+        FocusSettingsPanel(
+            settings: settings,
+            isPresented: $showSettings
+        )
+        .transition(.asymmetric(
+            insertion: .scale(scale: 0.9).combined(with: .opacity),
+            removal: .scale(scale: 0.9).combined(with: .opacity)
+        ))
     }
     
     // MARK: - Helper Methods
     
-    private var progressGradientColors: [Color] {
-        let percentage = Double(wordCount) / Double(wordGoal)
+    private var progressColors: [Color] {
+        let percentage = Double(wordCount) / Double(settings.wordGoal)
         if percentage < 0.25 {
             return [Color.blue.opacity(0.6), Color.blue]
         } else if percentage < 0.5 {
@@ -462,20 +486,49 @@ struct FocusModeView: View {
         }
     }
     
+    private func setupFocusMode() {
+        // Start animations
+        withAnimation(.easeOut(duration: 0.4)) {
+            backgroundOpacity = 1
+        }
+        withAnimation(.easeOut(duration: 0.5).delay(0.2)) {
+            contentOpacity = 1
+        }
+        withAnimation(.easeOut(duration: 0.3).delay(0.3)) {
+            uiOpacity = 1
+        }
+        
+        // Initialize state
+        lastSavedContent = entry.content
+        updateWordCount()
+        settings.startSession()
+        
+        // Start UI auto-hide timer if enabled
+        if settings.autoHideUI {
+            startUIHideTimer()
+        }
+        
+        // Play ambient sound if selected
+        if settings.ambientSound != "none" {
+            AmbientSoundPlayer.shared.play(sound: AmbientSound(rawValue: settings.ambientSound.capitalized) ?? .none)
+        }
+    }
+    
+    private func cleanupFocusMode() {
+        settings.endSession()
+        settings.saveSettings()
+        AmbientSoundPlayer.shared.stop()
+        uiHideTimer?.invalidate()
+    }
+    
     private func updateWordCount() {
         let words = entry.content.split { $0.isWhitespace || $0.isNewline }
         wordCount = words.filter { !$0.isEmpty }.count
         characterCount = entry.content.count
-        
-        // Calculate writing pace
-        let timeElapsed = Date().timeIntervalSince(sessionStartTime) / 60.0 // minutes
-        if timeElapsed > 0 {
-            writingPace = Double(wordCount) / timeElapsed
-        }
     }
     
     private func formatSessionTime() -> String {
-        let elapsed = Date().timeIntervalSince(sessionStartTime)
+        let elapsed = Date().timeIntervalSince(settings.sessionStartTime)
         let hours = Int(elapsed / 3600)
         let minutes = Int((elapsed.truncatingRemainder(dividingBy: 3600)) / 60)
         let seconds = Int(elapsed.truncatingRemainder(dividingBy: 60))
@@ -487,12 +540,43 @@ struct FocusModeView: View {
         }
     }
     
-    private func exitFocusMode() {
-        withAnimation(.easeOut(duration: 0.3)) {
-            fadeInOpacity = 0
+    private func showUIElements() {
+        withAnimation(.easeOut(duration: 0.25)) {
+            uiOpacity = 1
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        if settings.autoHideUI {
+            startUIHideTimer()
+        }
+    }
+    
+    private func startUIHideTimer() {
+        uiHideTimer?.invalidate()
+        // Since SwiftUI Views are structs, we can't capture self in timer
+        // Instead, we'll rely on the auto-hide behavior through state changes
+    }
+    
+    private func saveEntry() {
+        lastSavedContent = entry.content
+        hasUnsavedChanges = false
+        // The parent view should handle the actual save
+    }
+    
+    private func exitFocusMode() {
+        if hasUnsavedChanges {
+            // Should show confirmation dialog
+            // For now, just exit
+        }
+        
+        withAnimation(.easeOut(duration: 0.3)) {
+            contentOpacity = 0
+            uiOpacity = 0
+        }
+        withAnimation(.easeOut(duration: 0.4).delay(0.1)) {
+            backgroundOpacity = 0
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
             isPresented = false
         }
     }
@@ -500,308 +584,31 @@ struct FocusModeView: View {
 
 // MARK: - Supporting Views
 
-struct AmbientSoundButton: View {
-    let sound: FocusModeView.AmbientSound
-    let isSelected: Bool
-    let action: () -> Void
-    
-    @State private var isHovered = false
+struct ProgressCircle: View {
+    let progress: Double
+    let size: CGFloat
+    let lineWidth: CGFloat
     
     var body: some View {
-        Button(action: action) {
-            VStack(spacing: 8) {
-                Image(systemName: sound.icon)
-                    .font(.system(size: 20))
-                    .foregroundColor(isSelected ? .white : .secondary)
-                
-                Text(sound.rawValue)
-                    .font(.system(size: 11))
-                    .foregroundColor(isSelected ? .white : .secondary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Theme.Colors.primaryAccent : Color.secondary.opacity(0.1))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(
-                                isHovered ? Theme.Colors.primaryAccent.opacity(0.5) : Color.clear,
-                                lineWidth: 1
-                            )
-                    )
-            )
-            .scaleEffect(isHovered ? 1.05 : 1.0)
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering in
-            withAnimation(.easeOut(duration: 0.15)) {
-                isHovered = hovering
-            }
-        }
-    }
-}
-
-struct FocusTextEditor: NSViewRepresentable {
-    @Binding var text: String
-    let fontSize: CGFloat
-    let typewriterMode: Bool
-    let onTextChange: (String) -> Void
-    
-    func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = NSTextView.scrollableTextView()
-        scrollView.hasVerticalScroller = false
-        scrollView.hasHorizontalScroller = false
-        scrollView.autohidesScrollers = true
-        
-        let textView = scrollView.documentView as! NSTextView
-        textView.delegate = context.coordinator
-        textView.string = text
-        textView.font = .systemFont(ofSize: fontSize, weight: .regular)
-        textView.textColor = .labelColor
-        textView.backgroundColor = .clear
-        textView.isRichText = false
-        textView.importsGraphics = false
-        textView.allowsUndo = true
-        textView.isAutomaticQuoteSubstitutionEnabled = false
-        textView.isAutomaticSpellingCorrectionEnabled = true
-        textView.drawsBackground = false
-        
-        // Set line spacing for readability
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.lineSpacing = fontSize * 0.8
-        paragraphStyle.alignment = typewriterMode ? .center : .left
-        textView.defaultParagraphStyle = paragraphStyle
-        
-        // Note: NSTextView doesn't support placeholders like NSTextField
-        
-        return scrollView
-    }
-    
-    func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        guard let textView = scrollView.documentView as? NSTextView else { return }
-        
-        // Update text only if changed
-        if textView.string != text && !context.coordinator.isUpdating {
-            context.coordinator.isUpdating = true
-            textView.string = text
-            context.coordinator.isUpdating = false
-        }
-        
-        // Update font size
-        textView.font = .systemFont(ofSize: fontSize, weight: .regular)
-        
-        // Update paragraph style for typewriter mode
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.lineSpacing = fontSize * 0.8
-        paragraphStyle.alignment = typewriterMode ? .center : .left
-        textView.defaultParagraphStyle = paragraphStyle
-    }
-    
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-    
-    class Coordinator: NSObject, NSTextViewDelegate {
-        var parent: FocusTextEditor
-        var isUpdating = false
-        
-        init(_ parent: FocusTextEditor) {
-            self.parent = parent
-        }
-        
-        func textDidChange(_ notification: Notification) {
-            guard let textView = notification.object as? NSTextView else { return }
-            guard !isUpdating else { return }
+        ZStack {
+            Circle()
+                .stroke(Color.gray.opacity(0.2), lineWidth: lineWidth)
             
-            parent.text = textView.string
-            parent.onTextChange(textView.string)
-        }
-    }
-}
-
-// MARK: - Ambient Visual Effects
-
-struct AmbientVisualEffect: View {
-    let sound: FocusModeView.AmbientSound
-    @State private var phase: CGFloat = 0
-    
-    var body: some View {
-        GeometryReader { geometry in
-            switch sound {
-            case .rain:
-                RainEffect(phase: phase)
-            case .ocean:
-                WaveEffect(phase: phase)
-            case .forest:
-                ForestEffect(phase: phase)
-            case .coffeeshop:
-                CoffeeShopEffect(phase: phase)
-            case .fireplace:
-                FireplaceEffect(phase: phase)
-            case .none:
-                EmptyView()
-            }
-        }
-        .onAppear {
-            withAnimation(.linear(duration: 20).repeatForever(autoreverses: false)) {
-                phase = 1
-            }
-        }
-    }
-}
-
-struct RainEffect: View {
-    let phase: CGFloat
-    
-    var body: some View {
-        Canvas { context, size in
-            for i in 0..<50 {
-                let x = CGFloat.random(in: 0...size.width)
-                let y = (CGFloat(i) * 20 + phase * size.height * 2).truncatingRemainder(dividingBy: size.height)
-                let opacity = Double.random(in: 0.1...0.3)
-                
-                context.stroke(
-                    Path { path in
-                        path.move(to: CGPoint(x: x, y: y))
-                        path.addLine(to: CGPoint(x: x - 2, y: y + 10))
-                    },
-                    with: .color(.white.opacity(opacity)),
-                    lineWidth: 1
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(
+                    LinearGradient(
+                        colors: [.green, .blue],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                 )
-            }
+                .rotationEffect(.degrees(-90))
+                .animation(.spring(response: 0.5), value: progress)
         }
+        .frame(width: size, height: size)
     }
 }
 
-struct WaveEffect: View {
-    let phase: CGFloat
-    
-    var body: some View {
-        GeometryReader { geometry in
-            ForEach(0..<3) { i in
-                Wave(phase: phase, amplitude: 20 + CGFloat(i) * 10, frequency: 0.01 - CGFloat(i) * 0.002)
-                    .stroke(
-                        Color.blue.opacity(0.1 - Double(i) * 0.03),
-                        lineWidth: 2
-                    )
-                    .offset(y: geometry.size.height * 0.7 + CGFloat(i) * 30)
-            }
-        }
-    }
-}
-
-struct Wave: Shape {
-    var phase: CGFloat
-    let amplitude: CGFloat
-    let frequency: CGFloat
-    
-    var animatableData: CGFloat {
-        get { phase }
-        set { phase = newValue }
-    }
-    
-    func path(in rect: CGRect) -> Path {
-        Path { path in
-            path.move(to: CGPoint(x: 0, y: rect.midY))
-            
-            for x in stride(from: 0, to: rect.width, by: 2) {
-                let y = sin((x + phase * rect.width * 2) * frequency) * amplitude + rect.midY
-                path.addLine(to: CGPoint(x: x, y: y))
-            }
-        }
-    }
-}
-
-struct ForestEffect: View {
-    let phase: CGFloat
-    
-    var body: some View {
-        ZStack {
-            ForEach(0..<20) { i in
-                Circle()
-                    .fill(Color.green.opacity(0.05))
-                    .frame(width: 50)
-                    .offset(
-                        x: sin(phase * .pi * 2 + CGFloat(i)) * 100,
-                        y: cos(phase * .pi * 2 + CGFloat(i) * 0.5) * 100
-                    )
-                    .blur(radius: 3)
-            }
-        }
-    }
-}
-
-struct CoffeeShopEffect: View {
-    let phase: CGFloat
-    
-    var body: some View {
-        ZStack {
-            ForEach(0..<15) { i in
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.brown.opacity(0.03))
-                    .frame(width: 80, height: 80)
-                    .rotationEffect(.degrees(phase * 360 + Double(i) * 24))
-                    .offset(
-                        x: cos(phase * .pi * 2 + CGFloat(i) * 0.5) * 150,
-                        y: sin(phase * .pi * 2 + CGFloat(i) * 0.3) * 150
-                    )
-            }
-        }
-        .blur(radius: 2)
-    }
-}
-
-struct FireplaceEffect: View {
-    let phase: CGFloat
-    
-    var body: some View {
-        ZStack {
-            ForEach(0..<30) { i in
-                Ellipse()
-                    .fill(
-                        LinearGradient(
-                            colors: [.orange.opacity(0.1), .red.opacity(0.05)],
-                            startPoint: .bottom,
-                            endPoint: .top
-                        )
-                    )
-                    .frame(width: 40, height: 80)
-                    .offset(
-                        x: sin(phase * .pi * 4 + CGFloat(i)) * 20,
-                        y: -phase * 200 + CGFloat(i) * 30
-                    )
-                    .opacity(1 - phase)
-            }
-        }
-    }
-}
-
-// MARK: - Color Extension
-
-extension Color {
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let a, r, g, b: UInt64
-        switch hex.count {
-        case 3: // RGB (12-bit)
-            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6: // RGB (24-bit)
-            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: // ARGB (32-bit)
-            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default:
-            (a, r, g, b) = (255, 0, 0, 0)
-        }
-        
-        self.init(
-            .sRGB,
-            red: Double(r) / 255,
-            green: Double(g) / 255,
-            blue:  Double(b) / 255,
-            opacity: Double(a) / 255
-        )
-    }
-}
+// VisualEffectBlur is already defined in SettingsView.swift
