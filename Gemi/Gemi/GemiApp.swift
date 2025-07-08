@@ -43,6 +43,14 @@ struct GemiApp: App {
             }
             
             CommandGroup(after: .newItem) {
+                Button("Command Palette") {
+                    NotificationCenter.default.post(name: .showCommandPalette, object: nil)
+                }
+                .keyboardShortcut("k", modifiers: .command)
+                .disabled(!authManager.isAuthenticated)
+                
+                Divider()
+                
                 Button("Search") {
                     NotificationCenter.default.post(name: .search, object: nil)
                 }
@@ -71,4 +79,5 @@ extension Notification.Name {
     static let newEntry = Notification.Name("newEntry")
     static let search = Notification.Name("search")
     static let openChat = Notification.Name("openChat")
+    static let showCommandPalette = Notification.Name("showCommandPalette")
 }

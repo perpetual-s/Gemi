@@ -5,31 +5,56 @@ struct MainWindowView: View {
     @State private var selectedEntry: JournalEntry? = nil
     @State private var editingEntry: JournalEntry? = nil
     @State private var showingReadingView = false
+    @State private var showingCommandPalette = false
     @StateObject private var journalStore = JournalStore()
     
     var body: some View {
-        HSplitView {
-            Sidebar(selectedView: $selectedView, journalStore: journalStore)
-                .frame(minWidth: Theme.sidebarWidth, maxWidth: Theme.sidebarWidth)
-            
-            contentView
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .background(Theme.Colors.windowBackground)
-        .frame(minWidth: Theme.minWindowWidth, minHeight: Theme.minWindowHeight)
-        .onAppear {
-            Task {
-                await journalStore.loadEntries()
+        ZStack {
+            HSplitView {
+                Sidebar(selectedView: $selectedView, journalStore: journalStore)
+                    .frame(minWidth: Theme.sidebarWidth, maxWidth: Theme.sidebarWidth)
+                
+                contentView
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .newEntry)) { _ in
-            selectedView = .compose
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .search)) { _ in
-            selectedView = .search
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .openChat)) { _ in
-            selectedView = .chat
+            .background(Theme.Colors.windowBackground)
+            .frame(minWidth: Theme.minWindowWidth, minHeight: Theme.minWindowHeight)
+            .onAppear {
+                Task {
+                    await journalStore.loadEntries()
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .newEntry)) { _ in
+                selectedView = .compose
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .search)) { _ in
+                selectedView = .search
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .openChat)) { _ in
+                selectedView = .chat
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .showCommandPalette)) { _ in
+                showingCommandPalette = true
+            }
+            // Navigation notifications from command palette
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToTimeline)) { _ in
+                selectedView = .timeline
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToFavorites)) { _ in
+                selectedView = .favorites
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToMemories)) { _ in
+                selectedView = .memories
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToInsights)) { _ in
+                selectedView = .insights
+            }
+            
+            // Command Palette Overlay
+            if showingCommandPalette {
+                CommandPaletteView(isShowing: $showingCommandPalette)
+                    .zIndex(1000)
+            }
         }
     }
     
