@@ -39,11 +39,13 @@ final class MemoryManager: ObservableObject {
         // Load from database
         let memoryDataArray = try await databaseManager.loadAllMemories()
         
-        // Convert MemoryData to Memory objects
+        // Convert MemoryData to Memory objects using the initializer with ID
         return memoryDataArray.map { memoryData in
             Memory(
+                id: memoryData.id,
                 content: memoryData.content,
-                sourceEntryID: memoryData.sourceEntryID
+                sourceEntryID: memoryData.sourceEntryID,
+                extractedAt: memoryData.extractedAt
             )
         }
     }
@@ -63,15 +65,21 @@ final class MemoryManager: ObservableObject {
         // Add new memories
         for memoryData in extractedMemoryData {
             let memory = Memory(
+                id: memoryData.id,
                 content: memoryData.content,
-                sourceEntryID: memoryData.sourceEntryID
+                sourceEntryID: memoryData.sourceEntryID,
+                extractedAt: memoryData.extractedAt
             )
             memories.append(memory)
             
-            // TODO: Save to database once Memory conforms to Sendable
-            // Task {
-            //     try? await databaseManager.saveMemory(memoryData)
-            // }
+            // Save to database
+            Task {
+                do {
+                    try await databaseManager.saveMemory(memoryData)
+                } catch {
+                    logger.error("Failed to save memory to database: \(error)")
+                }
+            }
         }
         
         // Sort memories by date (most recent first)
