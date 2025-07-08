@@ -13,15 +13,31 @@ struct FocusTextEditor: NSViewRepresentable {
     var onCoordinatorReady: ((Coordinator) -> Void)?
     
     func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = FocusTextView.scrollableTextView()
+        // Create scroll view manually
+        let scrollView = NSScrollView()
         scrollView.hasVerticalScroller = false
         scrollView.hasHorizontalScroller = false
         scrollView.autohidesScrollers = true
         scrollView.drawsBackground = false
         scrollView.backgroundColor = .clear
+        scrollView.borderType = .noBorder
         
-        let textView = scrollView.documentView as! FocusTextView
-        textView.setupView() // Call setup here where it's safe
+        // Create text container and text view
+        let contentSize = scrollView.contentSize
+        let textContainer = NSTextContainer(size: contentSize)
+        textContainer.widthTracksTextView = true
+        textContainer.containerSize = CGSize(width: contentSize.width, height: CGFloat.greatestFiniteMagnitude)
+        
+        let textView = FocusTextView(frame: NSRect(origin: .zero, size: contentSize), textContainer: textContainer)
+        textView.minSize = CGSize(width: 0, height: 0)
+        textView.maxSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.autoresizingMask = [.width]
+        textView.textContainer?.widthTracksTextView = true
+        
+        // Setup text view properties
+        textView.setupView()
         textView.focusDelegate = context.coordinator
         textView.delegate = context.coordinator
         textView.string = text
@@ -46,6 +62,9 @@ struct FocusTextEditor: NSViewRepresentable {
         // Store reference for cursor operations
         context.coordinator.textView = textView
         onCoordinatorReady?(context.coordinator)
+        
+        // Set up the scroll view
+        scrollView.documentView = textView
         
         return scrollView
     }
