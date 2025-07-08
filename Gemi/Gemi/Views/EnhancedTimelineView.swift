@@ -31,11 +31,16 @@ struct EnhancedTimelineView: View {
                 
                 Divider()
                 
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: Theme.largeSpacing) {
-                        if journalStore.entries.isEmpty {
-                            // Beautiful empty state matching design language
-                            VStack(spacing: Theme.largeSpacing) {
+                GeometryReader { geometry in
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: Theme.largeSpacing) {
+                            if journalStore.entries.isEmpty {
+                                // Add spacer to center vertically
+                                Spacer(minLength: 0)
+                                    .frame(maxHeight: .infinity)
+                                
+                                // Beautiful empty state matching design language
+                                VStack(spacing: Theme.largeSpacing) {
                                 // Icon with gradient background
                                 ZStack {
                                     Circle()
@@ -80,16 +85,22 @@ struct EnhancedTimelineView: View {
                                     .padding(.top, Theme.spacing)
                                 }
                             }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .frame(maxWidth: .infinity)
                             .padding(.vertical, 60)
+                            
+                            // Add spacer to center vertically
+                            Spacer(minLength: 0)
+                                .frame(maxHeight: .infinity)
                         } else {
                             ForEach(sortedDates, id: \.self) { date in
                                 dateSection(for: date)
                             }
                         }
                     }
+                    .frame(minHeight: geometry.size.height)
                     .padding()
                 }
+            }
             }
             .background(Theme.Colors.windowBackground)
             
