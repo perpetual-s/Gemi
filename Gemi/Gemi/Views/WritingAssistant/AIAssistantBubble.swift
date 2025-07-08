@@ -178,33 +178,98 @@ struct AIAssistantBubble: View {
     private func generateSuggestion() {
         isThinking = true
         
-        // Simulate AI thinking
+        // Generate contextual suggestions - will be replaced with actual AI service
+        let suggestions = [
+            "Perhaps you could explore how this experience shaped your perspective on...",
+            "Consider diving deeper into the emotions you felt during...",
+            "What if you described the sensory details of this moment - the sights, sounds, and feelings?",
+            "Try reflecting on how this connects to other experiences in your life...",
+            "You might want to explore what this reveals about your values and beliefs..."
+        ]
+        
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             withAnimation {
-                suggestion = "Perhaps you could explore how this experience shaped your perspective on..."
-                isThinking = false
+                self.suggestion = suggestions.randomElement() ?? ""
+                self.isThinking = false
             }
         }
     }
     
     private func generateContinuation() {
         isThinking = true
-        // Implementation would call AI service
+        
+        // Mock suggestions for now - will be replaced with actual AI service
+        let continuations = [
+            "As I reflected on this moment, I realized...",
+            "This experience taught me something valuable about...",
+            "Looking back now, I can see how this shaped...",
+            "What struck me most was the way...",
+            "In that instant, everything became clear..."
+        ]
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation {
+                self.suggestion = continuations.randomElement() ?? ""
+                self.isThinking = false
+            }
+        }
     }
     
     private func generateIdeas() {
         isThinking = true
-        // Implementation would call AI service
+        
+        let ideas = [
+            "Have you considered exploring how this made you feel physically? Sometimes our bodies hold memories in unexpected ways.",
+            "What would you tell your younger self about this experience?",
+            "Try describing this moment as if you were painting it - what colors, textures, and shapes come to mind?",
+            "If this experience were a song, what would it sound like? Fast or slow? Major or minor key?",
+            "Consider the other perspectives involved. How might others have experienced this same moment?"
+        ]
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation {
+                self.suggestion = ideas.randomElement() ?? ""
+                self.isThinking = false
+            }
+        }
     }
     
     private func improveStyle() {
         isThinking = true
-        // Implementation would call AI service
+        
+        let styleAdvice = [
+            "Try using more sensory details to bring your writing to life. What did you see, hear, smell, taste, or touch?",
+            "Consider varying your sentence length. Mix short, punchy sentences with longer, flowing ones for better rhythm.",
+            "Show, don't tell. Instead of saying 'I was happy,' describe what that happiness felt like in your body.",
+            "Use active voice to make your writing more immediate and engaging.",
+            "Add specific details rather than general descriptions. 'The old oak tree' is more vivid than 'a tree.'"
+        ]
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation {
+                self.suggestion = styleAdvice.randomElement() ?? ""
+                self.isThinking = false
+            }
+        }
     }
     
     private func breakWritersBlock() {
         isThinking = true
-        // Implementation would call AI service
+        
+        let prompts = [
+            "Write about the last thing that made you laugh unexpectedly.",
+            "Describe a small moment from today that you might otherwise forget.",
+            "If your current mood were a weather pattern, what would it be and why?",
+            "Write a letter to yourself one year from now. What do you hope has changed?",
+            "Think of an object in your room. Tell its story - where it came from and why it matters."
+        ]
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation {
+                self.suggestion = prompts.randomElement() ?? ""
+                self.isThinking = false
+            }
+        }
     }
 }
 
