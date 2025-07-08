@@ -643,6 +643,46 @@ actor DatabaseManager {
         }
     }
     
+    func loadAllMemories() async throws -> [MemoryData] {
+        guard let db = database else {
+            throw DatabaseError.notInitialized
+        }
+        
+        let query = """
+            SELECT id, content, source_entry_id, extracted_at
+            FROM memories
+            ORDER BY extracted_at DESC
+        """
+        
+        var statement: OpaquePointer?
+        defer { sqlite3_finalize(statement) }
+        
+        guard sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK else {
+            throw DatabaseError.failedToPrepareStatement
+        }
+        
+        var memories: [MemoryData] = []
+        
+        while sqlite3_step(statement) == SQLITE_ROW {
+            guard let idString = sqlite3_column_text(statement, 0),
+                  let id = UUID(uuidString: String(cString: idString)),
+                  let content = sqlite3_column_text(statement, 1),
+                  let sourceEntryIdString = sqlite3_column_text(statement, 2),
+                  let sourceEntryId = UUID(uuidString: String(cString: sourceEntryIdString)) else {
+                continue
+            }
+            
+            let memoryData = MemoryData(
+                content: String(cString: content),
+                sourceEntryID: sourceEntryId
+            )
+            
+            memories.append(memoryData)
+        }
+        
+        return memories
+    }
+    
     /* Temporarily disabled until Memory conforms to Sendable
     func loadMemories() async throws -> [Memory] {
         guard let db = database else {
