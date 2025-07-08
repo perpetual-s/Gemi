@@ -683,6 +683,39 @@ actor DatabaseManager {
         return memories
     }
     
+    // Memory deletion methods that work with IDs (Sendable)
+    func deleteMemoryByID(_ id: UUID) async throws {
+        guard let db = database else {
+            throw DatabaseError.notInitialized
+        }
+        
+        let query = "DELETE FROM memories WHERE id = ?"
+        
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK else {
+            throw DatabaseError.failedToPrepareStatement
+        }
+        defer { sqlite3_finalize(statement) }
+        
+        sqlite3_bind_text(statement, 1, id.uuidString, -1, SQLITE_TRANSIENT)
+        
+        guard sqlite3_step(statement) == SQLITE_DONE else {
+            throw DatabaseError.failedToDelete
+        }
+    }
+    
+    func clearAllMemoriesFromDB() async throws {
+        guard let db = database else {
+            throw DatabaseError.notInitialized
+        }
+        
+        let query = "DELETE FROM memories"
+        
+        guard sqlite3_exec(db, query, nil, nil, nil) == SQLITE_OK else {
+            throw DatabaseError.failedToDelete
+        }
+    }
+    
     /* Temporarily disabled until Memory conforms to Sendable
     func loadMemories() async throws -> [Memory] {
         guard let db = database else {

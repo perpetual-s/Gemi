@@ -352,19 +352,26 @@ struct ProductionComposeView: View {
             HStack(spacing: 20) {
                 // Favorite toggle
                 Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                        entry.isFavorite.toggle()
-                    }
+                    // Direct toggle without animation wrapper
+                    entry.isFavorite.toggle()
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: entry.isFavorite ? "star.fill" : "star")
                             .font(.system(size: 14))
                             .foregroundColor(entry.isFavorite ? .yellow : .secondary)
+                            .symbolEffect(.bounce, value: entry.isFavorite)
                         Text(entry.isFavorite ? "Favorited" : "Add to favorites")
                             .font(.system(size: 13))
+                            .foregroundColor(entry.isFavorite ? .primary : .secondary)
                     }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(entry.isFavorite ? Color.yellow.opacity(0.1) : Color.clear)
+                    )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PlainButtonStyle())
                 
                 Spacer()
             }
@@ -530,12 +537,12 @@ struct ProductionMoodButton: View {
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Theme.Colors.primaryAccent.opacity(0.1) : Color(NSColor.controlBackgroundColor))
+                    .fill(isSelected ? Color.blue.opacity(0.15) : Color(NSColor.controlBackgroundColor))
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
                             .strokeBorder(
-                                isSelected ? Theme.Colors.primaryAccent : Color.clear,
-                                lineWidth: 2
+                                isSelected ? Color.blue : Color.clear,
+                                lineWidth: isSelected ? 2.5 : 0
                             )
                     )
             )
@@ -662,12 +669,12 @@ struct ProductionTagChip: View {
                 .foregroundColor(Theme.Colors.primaryAccent)
             
             Button(action: onRemove) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .medium))
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.secondary)
             }
-            .buttonStyle(.plain)
-            .opacity(isHovered ? 1 : 0.6)
+            .buttonStyle(PlainButtonStyle())
+            .opacity(isHovered ? 1 : 0.7)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
