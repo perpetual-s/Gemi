@@ -5,8 +5,7 @@ struct MemoriesView: View {
     @ObservedObject var memoryManager = MemoryManager.shared
     @State private var showingProcessingView = false
     @State private var selectedMemory: Memory?
-    @State private var showingDeleteAlert = false
-    @State private var memoryToDelete: Memory?
+    // Removed: showingDeleteAlert and memoryToDelete - no longer needed
     
     var body: some View {
         ZStack {
@@ -35,16 +34,7 @@ struct MemoriesView: View {
         .sheet(isPresented: $showingProcessingView) {
             ProcessEntriesView()
         }
-        .alert("Delete Memory", isPresented: $showingDeleteAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Delete", role: .destructive) {
-                if let memory = memoryToDelete {
-                    viewModel.deleteMemory(memory)
-                }
-            }
-        } message: {
-            Text("Are you sure you want to delete this memory? This action cannot be undone.")
-        }
+        // Removed: alert for deletion confirmation
     }
     
     // MARK: - Empty State
@@ -113,8 +103,8 @@ struct MemoriesView: View {
                             memory: memory,
                             onTap: { selectedMemory = memory },
                             onDelete: {
-                                memoryToDelete = memory
-                                showingDeleteAlert = true
+                                // Direct deletion without confirmation
+                                viewModel.deleteMemory(memory)
                             }
                         )
                         .transition(.asymmetric(

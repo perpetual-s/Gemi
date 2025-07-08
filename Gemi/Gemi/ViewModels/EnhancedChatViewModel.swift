@@ -16,6 +16,8 @@ final class EnhancedChatViewModel: ObservableObject {
     // MARK: - Private Properties
     
     private let ollamaService = OllamaService.shared
+    private let memoryManager = MemoryManager.shared
+    private let aiCoordinator = GemiAICoordinator.shared
     private var connectionMonitorTask: Task<Void, Never>?
     private var currentStreamingTask: Task<Void, Never>?
     private let messagesPersistenceKey = "com.gemi.chat.messages"
@@ -167,13 +169,28 @@ final class EnhancedChatViewModel: ObservableObject {
         messages.append(assistantMessage)
         let assistantIndex = messages.count - 1
         
-        // Convert messages to Ollama format
-        let ollamaMessages = messages.dropLast().map { msg in
+        // Build context with system prompts and memories
+        var ollamaMessages: [ChatMessage] = []
+        
+        // Add system prompt with Gemi's personality and context
+        let systemPrompt = buildSystemPrompt()
+        ollamaMessages.append(ChatMessage(role: .system, content: systemPrompt))
+        
+        // Add relevant memories if available
+        let relevantMemories = memoryManager.searchMemories(for: content)
+        if !relevantMemories.isEmpty {
+            let memoryContext = "Based on your journal entries, here's what I know about you:\n\n" + relevantMemories.map { "- " + $0.content }.joined(separator: "\n")
+            ollamaMessages.append(ChatMessage(role: .system, content: memoryContext))
+        }
+        
+        // Convert existing messages to Ollama format
+        let existingMessages = messages.dropLast().map { msg in
             ChatMessage(
                 role: ChatMessage.Role(rawValue: msg.role.rawValue) ?? .user,
                 content: msg.content
             )
         }
+        ollamaMessages.append(contentsOf: existingMessages)
         
         // Stream the response
         currentStreamingTask = Task { [weak self] in
@@ -267,6 +284,31 @@ final class EnhancedChatViewModel: ObservableObject {
         
         // Clear saved messages
         UserDefaults.standard.removeObject(forKey: messagesPersistenceKey)
+    }
+    
+    // MARK: - System Prompt Building
+    
+    private func buildSystemPrompt() -> String {
+        return """
+        You are Gemi, a thoughtful and empathetic AI journal companion. Your role is to help users with their personal reflections and journal entries.
+        
+        Context about the app:
+        - This is a private, offline journal app where users write personal diary entries
+        - Users can write entries, reflect on their day, and have conversations with you
+        - When users ask to "write an entry", they mean a journal/diary entry about their day or thoughts
+        - All conversations happen within the context of personal journaling and self-reflection
+        
+        Your personality:
+        - Warm, supportive, and encouraging
+        - Good listener who remembers past conversations
+        - Offers thoughtful reflections without being preachy
+        - Helps users explore their thoughts and feelings through journaling
+        - When asked to help write an entry, suggest prompts about their day, feelings, or experiences
+        
+        IMPORTANT: DO NOT use markdown formatting like **bold** or *italic* in your responses. Write in plain text only.
+        
+        Respond naturally and conversationally, as a caring friend would.
+        """
     }
     
     // MARK: - Private Methods

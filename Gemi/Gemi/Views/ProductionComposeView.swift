@@ -489,7 +489,6 @@ struct StatLabel: View {
 
 struct ProductionMoodPicker: View {
     @Binding var selectedMood: Mood?
-    @State private var hoveredMood: Mood?
     
     let moods: [Mood] = Mood.allCases
     let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 5)
@@ -499,13 +498,11 @@ struct ProductionMoodPicker: View {
             ForEach(moods, id: \.self) { mood in
                 ProductionMoodButton(
                     mood: mood,
-                    isSelected: selectedMood == mood,
-                    isHovered: hoveredMood == mood
+                    isSelected: selectedMood == mood
                 ) {
-                    selectedMood = selectedMood == mood ? nil : mood
-                }
-                .onHover { isHovered in
-                    hoveredMood = isHovered ? mood : nil
+                    withAnimation(.easeInOut(duration: 0.1)) {
+                        selectedMood = selectedMood == mood ? nil : mood
+                    }
                 }
             }
         }
@@ -515,8 +512,9 @@ struct ProductionMoodPicker: View {
 struct ProductionMoodButton: View {
     let mood: Mood
     let isSelected: Bool
-    let isHovered: Bool
     let action: () -> Void
+    
+    @State private var isPressed = false
     
     var body: some View {
         Button(action: action) {
@@ -532,7 +530,7 @@ struct ProductionMoodButton: View {
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Theme.Colors.primaryAccent.opacity(0.1) : Color.clear)
+                    .fill(isSelected ? Theme.Colors.primaryAccent.opacity(0.1) : Color(NSColor.controlBackgroundColor))
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
                             .strokeBorder(
@@ -541,11 +539,14 @@ struct ProductionMoodButton: View {
                             )
                     )
             )
-            .scaleEffect(isHovered ? 1.05 : 1)
-            .animation(.easeInOut(duration: 0.1), value: isSelected)
-            .animation(.easeInOut(duration: 0.1), value: isHovered)
+            .scaleEffect(isPressed ? 0.95 : 1.0)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PlainButtonStyle())
+        .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
+            withAnimation(.easeInOut(duration: 0.1)) {
+                isPressed = pressing
+            }
+        }, perform: {})
     }
 }
 

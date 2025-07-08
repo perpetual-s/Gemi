@@ -8,7 +8,12 @@ actor OllamaService {
     // MARK: - Properties
     
     private let session: URLSession
-    private let modelName = "gemma3n:latest" // Correct model name
+    private var modelName = "gemma3n:latest" // Default model, can be changed to custom
+    
+    // Model management
+    func setModel(_ name: String) {
+        modelName = name
+    }
     
     // Connection state caching
     private var lastHealthCheck: Date?

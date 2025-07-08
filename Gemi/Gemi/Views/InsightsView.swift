@@ -558,22 +558,16 @@ struct EnhancedStatCard: View {
                     .font(Theme.Typography.caption)
                     .foregroundColor(Theme.Colors.secondaryText)
                 
-                // Always show subtitle area for consistent height
-                Group {
-                    if let subtitle = subtitle {
-                        Text(subtitle)
-                            .font(.system(size: 11))
-                            .foregroundColor(color)
-                    } else {
-                        Text(" ")  // Invisible spacer
-                            .font(.system(size: 11))
-                    }
-                }
-                .padding(.top, 2)
+                // Subtitle area with consistent height
+                Text(subtitle ?? " ")
+                    .font(.system(size: 11))
+                    .foregroundColor(subtitle != nil ? color : .clear)
+                    .frame(height: 14)  // Fixed height for subtitle area
+                    .padding(.top, 2)
             }
         }
         .padding()
-        .frame(minHeight: 120)  // Ensure consistent minimum height
+        .frame(minHeight: 140, maxHeight: 140)  // Fixed height for all cards
         .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: Theme.cornerRadius)
