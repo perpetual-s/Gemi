@@ -31,17 +31,32 @@ struct EnhancedTimelineView: View {
                 
                 Divider()
                 
-                if journalStore.entries.isEmpty {
-                    emptyState
-                } else {
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: Theme.largeSpacing) {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: Theme.largeSpacing) {
+                        if journalStore.entries.isEmpty {
+                            // Simple message for timeline when no entries
+                            VStack(spacing: 16) {
+                                Image(systemName: "calendar")
+                                    .font(.system(size: 48))
+                                    .foregroundColor(.secondary.opacity(0.5))
+                                
+                                Text("No journal entries yet")
+                                    .font(.title3)
+                                    .foregroundColor(.secondary)
+                                
+                                Text("Create your first entry to see it here")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary.opacity(0.8))
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 60)
+                        } else {
                             ForEach(sortedDates, id: \.self) { date in
                                 dateSection(for: date)
                             }
                         }
-                        .padding()
                     }
+                    .padding()
                 }
             }
             .background(Theme.Colors.windowBackground)
@@ -168,10 +183,6 @@ struct EnhancedTimelineView: View {
         .padding()
     }
     
-    private var emptyState: some View {
-        EmptyStateView()
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
     
     private func dateSection(for date: Date) -> some View {
         VStack(alignment: .leading, spacing: Theme.spacing) {

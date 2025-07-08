@@ -67,12 +67,7 @@ struct MainWindowView: View {
         case .home:
             HomeView(
                 journalStore: journalStore,
-                selectedEntry: $selectedEntry,
                 onNewEntry: {
-                    selectedView = .compose
-                },
-                onEditEntry: { entry in
-                    editingEntry = entry
                     selectedView = .compose
                 }
             )
