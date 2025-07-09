@@ -365,8 +365,10 @@ struct EnhancedTimelineView: View {
             return "It's okay to feel this way. Writing can help process these emotions."
         case .neutral:
             return "A balanced state. What small joy could brighten your day?"
-        default:
-            return "Every emotion is valid. Keep exploring through writing."
+        case .angry:
+            return "Strong emotions deserve attention. Express them safely through writing."
+        case .accomplished:
+            return "Celebrate your achievements! You've earned this feeling."
         }
     }
 }
@@ -467,12 +469,12 @@ struct MoodBadge: View {
             return .orange
         case .sad:
             return .purple
-        case .frustrated:
+        case .frustrated, .angry:
             return .red
         case .neutral:
             return .gray
-        default:
-            return Theme.Colors.primaryAccent
+        case .accomplished:
+            return .indigo
         }
     }
 }
