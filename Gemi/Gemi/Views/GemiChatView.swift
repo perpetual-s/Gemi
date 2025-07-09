@@ -77,8 +77,8 @@ struct GemiChatView: View {
     private var chatHeader: some View {
         HStack(spacing: 16) {
             
-            // Title with more breathing room
-            VStack(alignment: .leading, spacing: 4) {
+            // Title - matching other views' styling
+            HStack(alignment: .bottom, spacing: 4) {
                 Text("Chat with Gemi")
                     .font(Theme.Typography.sectionHeader)
                 
@@ -86,6 +86,7 @@ struct GemiChatView: View {
                     Text("Thinking...")
                         .font(Theme.Typography.caption)
                         .foregroundColor(Theme.Colors.secondaryText)
+                        .padding(.bottom, 2)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -110,7 +111,7 @@ struct GemiChatView: View {
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 24)
-        .padding(.vertical, 16)
+        .padding(.vertical, 20)
         .background(.ultraThinMaterial)
         .overlay(alignment: .bottom) {
             Divider()
@@ -169,33 +170,31 @@ struct GemiChatView: View {
     
     private var messagesScrollView: some View {
         ScrollViewReader { proxy in
-            GeometryReader { geometry in
-                ScrollView {
-                    VStack(spacing: 12) {
-                        if viewModel.messages.isEmpty {
-                            // Center the empty state vertically
-                            Spacer(minLength: 0)
-                                .frame(maxHeight: .infinity)
-                            
-                            emptyStateView
-                            
-                            Spacer(minLength: 0)
-                                .frame(maxHeight: .infinity)
-                        } else {
-                            messagesContent
-                        }
+            ScrollView {
+                VStack(spacing: 12) {
+                    if viewModel.messages.isEmpty {
+                        emptyStateView
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .padding(.top, 60)
+                    } else {
+                        // Messages start from top
+                        messagesContent
                         
-                        // Spacer for bottom padding
-                        Color.clear
-                            .frame(height: 20)
-                            .id(bottomID)
+                        // Flexible spacer to push content up when there are few messages
+                        Spacer(minLength: 0)
                     }
-                    .padding(.horizontal)
-                    .padding(.top, 12)
-                    .frame(minHeight: geometry.size.height)
+                    
+                    // Anchor for scrolling to bottom
+                    Color.clear
+                        .frame(height: 1)
+                        .id(bottomID)
                 }
-                .scrollDismissesKeyboard(.interactively)
+                .padding(.horizontal)
+                .padding(.top, 12)
+                .padding(.bottom, 20)
+                .frame(maxWidth: .infinity)
             }
+            .scrollDismissesKeyboard(.interactively)
             .onChange(of: viewModel.messages.count) { _, _ in
                 withAnimation(.easeOut(duration: 0.3)) {
                     proxy.scrollTo(bottomID, anchor: .bottom)
