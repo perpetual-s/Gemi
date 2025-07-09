@@ -115,54 +115,103 @@ struct HomeView: View {
     }
     
     private var heroSection: some View {
-        VStack(spacing: 24) {
-            // Time icon with glow
+        VStack(spacing: 8) {
+            // Enhanced time icon with better visibility
             ZStack {
-                // Glow effect
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [
-                                Theme.Colors.ambientColor(for: currentHour),
-                                Color.clear
-                            ],
-                            center: .center,
-                            startRadius: 20,
-                            endRadius: 80
+                // Multi-layer glow for depth
+                ForEach(0..<3) { index in
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    iconColor.opacity(0.3 - Double(index) * 0.08),
+                                    Color.clear
+                                ],
+                                center: .center,
+                                startRadius: 20 + CGFloat(index * 10),
+                                endRadius: 80 + CGFloat(index * 20)
+                            )
                         )
-                    )
-                    .frame(width: 160, height: 160)
-                    .blur(radius: 20)
+                        .frame(width: 160 + CGFloat(index * 30), height: 160 + CGFloat(index * 30))
+                        .blur(radius: 15 + CGFloat(index * 5))
+                }
                 
-                // Icon
-                Image(systemName: timeBasedIcon)
-                    .font(.system(size: 64, weight: .light))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [
-                                Theme.Colors.ambientColor(for: currentHour),
-                                Theme.Colors.ambientColor(for: currentHour).opacity(0.6)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
+                // Enhanced icon with stronger contrast
+                ZStack {
+                    // Background circle for contrast
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    iconColor.opacity(0.15),
+                                    iconColor.opacity(0.05)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
                         )
-                    )
-                    .shadow(color: Theme.Colors.ambientColor(for: currentHour).opacity(0.5), radius: 20)
+                        .frame(width: 100, height: 100)
+                    
+                    // Icon with enhanced visibility
+                    Image(systemName: timeBasedIcon)
+                        .font(.system(size: 56, weight: .medium, design: .rounded))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [
+                                    iconColor,
+                                    iconColor.opacity(0.8)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .shadow(color: iconColor.opacity(0.5), radius: 10, x: 0, y: 2)
+                        .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 1)
+                }
             }
             .scaleEffect(heroScale)
             .opacity(heroOpacity)
             
-            // Greeting
-            VStack(spacing: 12) {
+            // Greeting with refined typography
+            VStack(spacing: 6) {
                 Text(greeting)
-                    .font(.system(size: 42, weight: .light, design: .rounded))
-                    .foregroundColor(.primary)
+                    .font(.system(size: 38, weight: .medium, design: .rounded))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [
+                                Color.primary,
+                                Color.primary.opacity(0.9)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .shadow(color: Color.black.opacity(0.1), radius: 1, x: 0, y: 1)
                 
                 Text("Ready to capture today's moments?")
-                    .font(.system(size: 20, weight: .regular))
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 19, weight: .regular, design: .rounded))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [
+                                Color.secondary,
+                                Color.secondary.opacity(0.8)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
             }
             .opacity(heroOpacity)
+        }
+    }
+    
+    // Computed property for dynamic icon color
+    private var iconColor: Color {
+        switch currentHour {
+        case 5..<12: return Color.orange
+        case 12..<17: return Color.yellow
+        case 17..<21: return Color.orange
+        default: return Color.indigo
         }
     }
     
