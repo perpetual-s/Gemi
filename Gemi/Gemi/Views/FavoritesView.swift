@@ -7,7 +7,6 @@ struct FavoritesView: View {
     @State private var chatEntry: JournalEntry?
     @State private var showingComposeView = false
     @State private var editingEntry: JournalEntry?
-    @State private var showingReadingView = false
     @State private var readingEntry: JournalEntry?
     
     private var favoriteEntries: [JournalEntry] {
@@ -85,7 +84,6 @@ struct FavoritesView: View {
                                 onSelect: {
                                     selectedEntry = entry
                                     readingEntry = entry
-                                    showingReadingView = true
                                 },
                                 onEdit: {
                                     editingEntry = entry
@@ -137,29 +135,27 @@ struct FavoritesView: View {
                     .frame(minWidth: 800, minHeight: 600)
             }
         }
-        .sheet(isPresented: $showingReadingView) {
-            if let entry = readingEntry {
-                EnhancedEntryReadingView(
-                    entry: entry,
-                    onEdit: {
-                        showingReadingView = false
-                        editingEntry = entry
-                        showingComposeView = true
-                    },
-                    onDelete: {
-                        showingReadingView = false
-                        Task {
-                            await journalStore.deleteEntry(entry)
-                        }
-                    },
-                    onChat: {
-                        showingReadingView = false
-                        chatEntry = entry
-                        showingChat = true
+        .sheet(item: $readingEntry) { entry in
+            EnhancedEntryReadingView(
+                entry: entry,
+                onEdit: {
+                    readingEntry = nil
+                    editingEntry = entry
+                    showingComposeView = true
+                },
+                onDelete: {
+                    readingEntry = nil
+                    Task {
+                        await journalStore.deleteEntry(entry)
                     }
-                )
-                .frame(minWidth: 700, minHeight: 600)
-            }
+                },
+                onChat: {
+                    readingEntry = nil
+                    chatEntry = entry
+                    showingChat = true
+                }
+            )
+            .frame(minWidth: 700, minHeight: 600)
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: favoriteEntries.count)
     }

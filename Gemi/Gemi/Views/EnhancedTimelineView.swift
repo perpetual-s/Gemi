@@ -13,7 +13,6 @@ struct EnhancedTimelineView: View {
     @State private var selectedEntryForChat: JournalEntry?
     @State private var showingFloatingChat = false
     @State private var readingEntry: JournalEntry?
-    @State private var showingReadingView = false
     @State private var selectedReflectionPrompt: String?
     
     var body: some View {
@@ -143,34 +142,33 @@ struct EnhancedTimelineView: View {
             GemiChatView()
                 .frame(width: 900, height: 600)
         }
-        .sheet(isPresented: $showingReadingView) {
-            if let entry = readingEntry {
-                EnhancedEntryReadingView(
-                    entry: entry,
-                    onEdit: {
-                        showingReadingView = false
-                        onEditEntry?(entry)
-                    },
-                    onDelete: {
-                        showingReadingView = false
-                        Task {
-                            await journalStore.deleteEntry(entry)
-                        }
-                    },
-                    onChat: {
-                        showingReadingView = false
-                        selectedEntryForChat = entry
-                        showingFloatingChat = true
+        .sheet(item: $readingEntry) { entry in
+            // Ensure the entry is captured properly
+            EnhancedEntryReadingView(
+                entry: entry,
+                onEdit: {
+                    readingEntry = nil
+                    onEditEntry?(entry)
+                },
+                onDelete: {
+                    readingEntry = nil
+                    Task {
+                        await journalStore.deleteEntry(entry)
                     }
-                )
-                .frame(minWidth: 700, minHeight: 600)
-            }
+                },
+                onChat: {
+                    readingEntry = nil
+                    selectedEntryForChat = entry
+                    showingFloatingChat = true
+                }
+            )
+            .frame(minWidth: 700, idealWidth: 800, minHeight: 600, idealHeight: 700)
+            .background(Theme.Colors.windowBackground)
         }
         .onKeyPress(.return) {
             // Enter/Return key to open selected entry for reading
             if let selected = selectedEntry {
                 readingEntry = selected
-                showingReadingView = true
                 return .handled
             }
             return .ignored
@@ -179,7 +177,6 @@ struct EnhancedTimelineView: View {
             // Space key to open selected entry for reading (alternative)
             if let selected = selectedEntry {
                 readingEntry = selected
-                showingReadingView = true
                 return .handled
             }
             return .ignored
@@ -265,7 +262,6 @@ struct EnhancedTimelineView: View {
                     // Select the entry
                     selectedEntry = entry
                     readingEntry = entry
-                    showingReadingView = true
                 },
                 onEdit: {
                     onEditEntry?(entry)
