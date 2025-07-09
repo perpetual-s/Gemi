@@ -13,32 +13,19 @@ struct FocusTextEditor: NSViewRepresentable {
     var onCoordinatorReady: ((Coordinator) -> Void)?
     
     func makeNSView(context: Context) -> NSScrollView {
-        // Create scroll view manually
-        let scrollView = NSScrollView()
-        scrollView.hasVerticalScroller = true
-        scrollView.hasHorizontalScroller = false
-        scrollView.autohidesScrollers = true
-        scrollView.drawsBackground = false
-        scrollView.backgroundColor = .clear
-        scrollView.borderType = .noBorder
+        // Use the standard scrollable text view creation method
+        let scrollView = NSTextView.scrollableTextView()
         
-        // Create text container and text view
-        let contentSize = scrollView.contentSize
-        let textContainer = NSTextContainer(size: contentSize)
-        textContainer.widthTracksTextView = true
-        textContainer.containerSize = CGSize(width: contentSize.width, height: CGFloat.greatestFiniteMagnitude)
+        // Get the text view from the scroll view
+        guard let textView = scrollView.documentView as? NSTextView else {
+            // Fallback to manual creation if needed
+            let scrollView = NSScrollView()
+            let textView = NSTextView()
+            scrollView.documentView = textView
+            return scrollView
+        }
         
-        let textView = FocusTextView(frame: NSRect(origin: .zero, size: contentSize), textContainer: textContainer)
-        textView.minSize = CGSize(width: 0, height: 0)
-        textView.maxSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
-        textView.isVerticallyResizable = true
-        textView.isHorizontallyResizable = false
-        textView.autoresizingMask = [.width]
-        textView.textContainer?.widthTracksTextView = true
-        
-        // Setup text view properties
-        textView.setupView()
-        textView.focusDelegate = context.coordinator
+        // Configure the text view - simplified version
         textView.delegate = context.coordinator
         textView.string = text
         textView.font = .systemFont(ofSize: fontSize, weight: .regular)
@@ -50,16 +37,8 @@ struct FocusTextEditor: NSViewRepresentable {
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticSpellingCorrectionEnabled = true
         textView.drawsBackground = false
-        textView.focusLevel = focusLevel
-        textView.highlightIntensity = highlightIntensity
-        textView.isEditable = true  // Enable editing
-        textView.isSelectable = true  // Enable text selection
-        textView.usesAdaptiveColorMappingForDarkAppearance = true
-        
-        // Set initial text
-        if text.isEmpty {
-            textView.string = ""
-        }
+        textView.isEditable = true
+        textView.isSelectable = true
         
         // Set line spacing for readability
         let paragraphStyle = NSMutableParagraphStyle()
@@ -71,14 +50,16 @@ struct FocusTextEditor: NSViewRepresentable {
         context.coordinator.textView = textView
         onCoordinatorReady?(context.coordinator)
         
-        // Set up the scroll view
-        scrollView.documentView = textView
+        // Make it first responder
+        DispatchQueue.main.async {
+            textView.window?.makeFirstResponder(textView)
+        }
         
         return scrollView
     }
     
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        guard let textView = scrollView.documentView as? FocusTextView else { return }
+        guard let textView = scrollView.documentView as? NSTextView else { return }
         
         // Update text only if changed
         if textView.string != text && !context.coordinator.isUpdating {
@@ -90,8 +71,6 @@ struct FocusTextEditor: NSViewRepresentable {
         // Update appearance
         textView.font = .systemFont(ofSize: fontSize, weight: .regular)
         textView.textColor = NSColor(textColor)
-        textView.focusLevel = focusLevel
-        textView.highlightIntensity = highlightIntensity
         
         // Update paragraph style
         let paragraphStyle = NSMutableParagraphStyle()
@@ -104,10 +83,10 @@ struct FocusTextEditor: NSViewRepresentable {
         Coordinator(self)
     }
     
-    class Coordinator: NSObject, NSTextViewDelegate, FocusTextViewDelegate {
+    class Coordinator: NSObject, NSTextViewDelegate {
         var parent: FocusTextEditor
         var isUpdating = false
-        weak var textView: FocusTextView?
+        weak var textView: NSTextView?
         
         init(_ parent: FocusTextEditor) {
             self.parent = parent

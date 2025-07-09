@@ -319,18 +319,23 @@ struct FocusModeView: View {
                 .foregroundColor(settings.effectiveTextColor.opacity(0.4))
                 .tracking(1)
             
-            // Temporarily use standard TextEditor to test if binding works
-            TextEditor(text: $localContent)
-                .font(.system(size: settings.fontSize, design: .serif))
-                .foregroundColor(settings.effectiveTextColor)
-                .scrollContentBackground(.hidden)
-                .background(Color.clear)
-                .onChange(of: localContent) { _, newContent in
+            FocusTextEditor(
+                text: $localContent,
+                fontSize: settings.fontSize,
+                textColor: settings.effectiveTextColor,
+                focusLevel: settings.focusLevel,
+                highlightIntensity: settings.highlightIntensity,
+                typewriterMode: settings.typewriterMode,
+                onTextChange: { newContent in
                     entry.content = newContent
                     updateWordCount()
                     hasUnsavedChanges = (newContent != lastSavedContent)
                     updateTrigger = UUID()
+                },
+                onCoordinatorReady: { coordinator in
+                    textEditorCoordinator = coordinator
                 }
+            )
             .frame(minHeight: 400)
             .frame(maxHeight: .infinity)
         }
