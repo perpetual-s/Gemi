@@ -98,22 +98,26 @@ struct ProductionComposeView: View {
             
             // AI Assistant overlay
             if showAIAssistant {
-                VStack {
-                    HStack {
+                GeometryReader { geometry in
+                    VStack {
+                        HStack {
+                            Spacer()
+                            AIAssistantBubble(
+                                isVisible: $showAIAssistant,
+                                isExpanded: $aiAssistantExpanded,
+                                onSuggestionAccepted: { suggestion in
+                                    insertTextAtCursor(suggestion)
+                                },
+                                position: .custom(
+                                    x: -30,
+                                    y: min(80, geometry.size.height * 0.1) // Responsive positioning
+                                )
+                            )
+                        }
                         Spacer()
-                        AIAssistantBubble(
-                            isVisible: $showAIAssistant,
-                            isExpanded: $aiAssistantExpanded,
-                            onSuggestionAccepted: { suggestion in
-                                insertTextAtCursor(suggestion)
-                            },
-                            position: .topRight
-                        )
                     }
-                    Spacer()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .padding(.trailing, 30)
-                .padding(.top, 80) // Position below the header
                 .allowsHitTesting(true)
                 .transition(.asymmetric(
                     insertion: .scale(scale: 0.8, anchor: .topTrailing).combined(with: .opacity),
@@ -222,12 +226,16 @@ struct ProductionComposeView: View {
                 Button {
                     showWritersBlockBreaker.toggle()
                 } label: {
-                    Image(systemName: "lightbulb")
-                        .font(.system(size: 16))
-                        .foregroundColor(.secondary)
+                    HStack(spacing: 4) {
+                        Image(systemName: "lightbulb")
+                            .font(.system(size: 14))
+                        Text("Ideas")
+                            .font(.system(size: 14))
+                    }
+                    .foregroundColor(.secondary)
                 }
                 .buttonStyle(.plain)
-                .help("Writer's Block Breaker")
+                .help("Get writing ideas and break through writer's block")
                 
                 Divider()
                     .frame(height: 20)

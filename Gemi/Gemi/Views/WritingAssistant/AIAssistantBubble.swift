@@ -136,39 +136,42 @@ struct AIAssistantBubble: View {
             }
             
             // Quick action buttons
-            VStack(spacing: 8) {
-                QuickActionButton(
-                    icon: "arrow.right.circle",
-                    title: "Continue writing",
-                    color: .blue
-                ) {
-                    generateContinuation()
-                }
-                
-                QuickActionButton(
-                    icon: "lightbulb",
-                    title: "Get ideas",
-                    color: .orange
-                ) {
-                    generateIdeas()
-                }
-                
-                QuickActionButton(
-                    icon: "text.quote",
-                    title: "Improve style",
-                    color: .purple
-                ) {
-                    improveStyle()
-                }
-                
-                QuickActionButton(
-                    icon: "sparkles",
-                    title: "Break writer's block",
-                    color: .green
-                ) {
-                    breakWritersBlock()
+            ScrollView {
+                VStack(spacing: 8) {
+                    QuickActionButton(
+                        icon: "arrow.right.circle",
+                        title: "Continue writing",
+                        color: .blue
+                    ) {
+                        generateContinuation()
+                    }
+                    
+                    QuickActionButton(
+                        icon: "lightbulb",
+                        title: "Get ideas",
+                        color: .orange
+                    ) {
+                        generateIdeas()
+                    }
+                    
+                    QuickActionButton(
+                        icon: "text.quote",
+                        title: "Improve style",
+                        color: .purple
+                    ) {
+                        improveStyle()
+                    }
+                    
+                    QuickActionButton(
+                        icon: "sparkles",
+                        title: "Break writer's block",
+                        color: .green
+                    ) {
+                        breakWritersBlock()
+                    }
                 }
             }
+            .frame(maxHeight: 200) // Limit height to ensure visibility
         }
         .padding(.trailing, 12)
     }
