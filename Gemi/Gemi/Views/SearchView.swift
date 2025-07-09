@@ -16,20 +16,23 @@ struct SearchView: View {
     @State private var chatEntry: JournalEntry?
     
     var body: some View {
-        VStack(spacing: 0) {
-            searchHeader
-            
-            Divider()
-            
-            if searchQuery.isEmpty {
-                emptySearchState
-            } else if isSearching {
-                ProgressView("Searching...")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if searchResults.isEmpty {
-                noResultsState
-            } else {
-                searchResultsList
+        ScrollView {
+            VStack(spacing: Theme.spacing) {
+                searchHeader
+                
+                if searchQuery.isEmpty {
+                    emptySearchState
+                        .padding(.top, 40)
+                } else if isSearching {
+                    ProgressView("Searching...")
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 100)
+                } else if searchResults.isEmpty {
+                    noResultsState
+                        .padding(.top, 60)
+                } else {
+                    searchResultsContent
+                }
             }
         }
         .background(Theme.Colors.windowBackground)
@@ -139,44 +142,42 @@ struct SearchView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
-    private var searchResultsList: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: Theme.spacing) {
-                Text("\(searchResults.count) results for \"\(searchQuery)\"")
-                    .font(Theme.Typography.caption)
-                    .foregroundColor(Theme.Colors.secondaryText)
-                    .padding(.horizontal)
-                
-                ForEach(searchResults) { entry in
-                    PremiumEntryCard(
-                        entry: entry,
-                        isSelected: selectedEntry?.id == entry.id,
-                        onSelect: {
-                            selectedEntry = entry
-                            readingEntry = entry
-                            showingReadingView = true
-                        },
-                        onEdit: {
-                            editingEntry = entry
-                            showingComposeView = true
-                        },
-                        onDelete: {
-                            Task {
-                                await journalStore.deleteEntry(entry)
-                                // Re-run search after deletion
-                                performRealtimeSearch(searchQuery)
-                            }
-                        },
-                        onChat: {
-                            chatEntry = entry
-                            showingChat = true
+    private var searchResultsContent: some View {
+        LazyVStack(alignment: .leading, spacing: Theme.spacing) {
+            Text("\(searchResults.count) results for \"\(searchQuery)\"")
+                .font(Theme.Typography.caption)
+                .foregroundColor(Theme.Colors.secondaryText)
+                .padding(.horizontal, 24)
+            
+            ForEach(searchResults) { entry in
+                PremiumEntryCard(
+                    entry: entry,
+                    isSelected: selectedEntry?.id == entry.id,
+                    onSelect: {
+                        selectedEntry = entry
+                        readingEntry = entry
+                        showingReadingView = true
+                    },
+                    onEdit: {
+                        editingEntry = entry
+                        showingComposeView = true
+                    },
+                    onDelete: {
+                        Task {
+                            await journalStore.deleteEntry(entry)
+                            // Re-run search after deletion
+                            performRealtimeSearch(searchQuery)
                         }
-                    )
-                    .padding(.horizontal)
-                }
+                    },
+                    onChat: {
+                        chatEntry = entry
+                        showingChat = true
+                    }
+                )
+                .padding(.horizontal, 24)
             }
-            .padding(.vertical)
         }
+        .padding(.bottom)
         .sheet(isPresented: $showingReadingView) {
             if let entry = readingEntry {
                 EnhancedEntryReadingView(
