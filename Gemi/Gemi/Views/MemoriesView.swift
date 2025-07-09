@@ -155,7 +155,8 @@ struct MemoriesView: View {
                         )
                 }
             }
-            .padding()
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
         }
     }
     

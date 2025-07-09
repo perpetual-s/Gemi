@@ -245,12 +245,19 @@ struct ProductionComposeView: View {
                 .disabled(entry.content.isEmpty)
                 .keyboardShortcut(.return, modifiers: .command)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            
-            Divider()
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
         }
-        .background(ProductionVisualEffectView())
+        .background(
+            ZStack {
+                ProductionVisualEffectView()
+                VStack {
+                    Spacer()
+                    Divider()
+                        .opacity(0.3)
+                }
+            }
+        )
     }
     
     // MARK: - Title Section

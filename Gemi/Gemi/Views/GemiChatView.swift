@@ -75,10 +75,10 @@ struct GemiChatView: View {
     // MARK: - Header
     
     private var chatHeader: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 16) {
             
-            // Title
-            VStack(alignment: .leading, spacing: 2) {
+            // Title with more breathing room
+            VStack(alignment: .leading, spacing: 4) {
                 Text("Chat with Gemi")
                     .font(Theme.Typography.largeTitle)
                 
@@ -88,8 +88,7 @@ struct GemiChatView: View {
                         .foregroundColor(Theme.Colors.secondaryText)
                 }
             }
-            
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
             
             // Connection indicator
             connectionIndicator
@@ -98,17 +97,24 @@ struct GemiChatView: View {
             Button {
                 viewModel.startNewChat()
             } label: {
-                Image(systemName: "square.and.pencil")
-                    .font(Theme.Typography.headline)
-                    .foregroundColor(.primary)
+                ZStack {
+                    Circle()
+                        .fill(Theme.Colors.primaryAccent.opacity(0.1))
+                        .frame(width: 36, height: 36)
+                    
+                    Image(systemName: "square.and.pencil")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(Theme.Colors.primaryAccent)
+                }
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
         .background(.ultraThinMaterial)
         .overlay(alignment: .bottom) {
             Divider()
+                .opacity(0.5)
         }
     }
     
@@ -184,7 +190,7 @@ struct GemiChatView: View {
                             .frame(height: 20)
                             .id(bottomID)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal)
                     .padding(.top, 12)
                     .frame(minHeight: geometry.size.height)
                 }
@@ -554,6 +560,7 @@ struct MessageBubble: View {
                     .background(Circle().fill(Theme.Colors.primaryAccent.opacity(0.1)))
             }
         }
+        .padding(.horizontal, 20)
         .frame(maxWidth: .infinity, alignment: message.role == .user ? .trailing : .leading)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.2)) {

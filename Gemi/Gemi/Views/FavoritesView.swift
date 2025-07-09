@@ -35,7 +35,8 @@ struct FavoritesView: View {
                 }
                 Spacer()
             }
-            .padding()
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
             
             Divider()
             
@@ -43,14 +44,26 @@ struct FavoritesView: View {
                 // Enhanced empty state
                 VStack(spacing: Theme.largeSpacing) {
                     ZStack {
+                        // Animated gradient background
                         Circle()
-                            .fill(Theme.Colors.primaryAccent.opacity(0.1))
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Theme.Colors.primaryAccent.opacity(0.2),
+                                        Theme.Colors.primaryAccent.opacity(0.05)
+                                    ]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
                             .frame(width: 120, height: 120)
+                            .shadow(color: Theme.Colors.primaryAccent.opacity(0.2), radius: 20, x: 0, y: 10)
                         
                         Image(systemName: "star.fill")
                             .font(.system(size: 56))
-                            .foregroundColor(Theme.Colors.primaryAccent.opacity(0.3))
-                            .symbolRenderingMode(.hierarchical)
+                            .foregroundColor(.yellow)
+                            .symbolRenderingMode(.multicolor)
+                            .shadow(color: .yellow.opacity(0.3), radius: 10)
                     }
                     
                     VStack(spacing: Theme.spacing) {
