@@ -63,19 +63,32 @@ struct FocusModeView: View {
                                 }
                                 
                                 // Content container with max width
-                                VStack(spacing: 0) {
+                                VStack(alignment: .leading, spacing: 24) {
                                     // Title editor
                                     titleEditor
+                                        .padding(.horizontal, 4)
                                     
                                     // Visual separator between title and content
                                     Rectangle()
                                         .fill(settings.effectiveTextColor.opacity(0.1))
                                         .frame(height: 1)
-                                        .padding(.vertical, 20)
+                                        .frame(maxWidth: .infinity)
                                     
-                                    // Main content editor
-                                    contentEditor
-                                        .id("editor")
+                                    // Main content editor with clear visual bounds
+                                    ZStack(alignment: .topLeading) {
+                                        // Background to show content area
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(settings.effectiveTextColor.opacity(0.02))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .stroke(settings.effectiveTextColor.opacity(0.05), lineWidth: 1)
+                                            )
+                                        
+                                        contentEditor
+                                            .padding(16)
+                                            .id("editor")
+                                    }
+                                    .frame(minHeight: 400)
                                 }
                                 .frame(maxWidth: settings.maxLineWidth)
                                 .padding(.horizontal, 40)
@@ -287,32 +300,51 @@ struct FocusModeView: View {
     }
     
     private var titleEditor: some View {
-        TextField("Untitled", text: $entry.title, axis: .vertical)
-            .textFieldStyle(.plain)
-            .font(.system(size: settings.fontSize + 12, weight: .bold, design: .serif))
-            .multilineTextAlignment(.leading)
-            .lineLimit(1...3)
-            .foregroundColor(settings.effectiveTextColor)
-            .opacity(settings.focusLevel == .none || settings.focusLevel == .paragraph ? 1.0 : settings.inactiveTextOpacity)
+        VStack(alignment: .leading, spacing: 8) {
+            Text("TITLE")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(settings.effectiveTextColor.opacity(0.4))
+                .tracking(1)
+            
+            TextField("Untitled", text: $entry.title, axis: .vertical)
+                .textFieldStyle(.plain)
+                .font(.system(size: settings.fontSize + 12, weight: .bold, design: .serif))
+                .multilineTextAlignment(.leading)
+                .lineLimit(1...3)
+                .foregroundColor(settings.effectiveTextColor)
+                .opacity(settings.focusLevel == .none || settings.focusLevel == .paragraph ? 1.0 : settings.inactiveTextOpacity)
+        }
     }
     
     private var contentEditor: some View {
-        FocusTextEditor(
-            text: $entry.content,
-            fontSize: settings.fontSize,
-            textColor: settings.effectiveTextColor,
-            focusLevel: settings.focusLevel,
-            highlightIntensity: settings.highlightIntensity,
-            typewriterMode: settings.typewriterMode,
-            onTextChange: { _ in
-                updateWordCount()
-                hasUnsavedChanges = (entry.content != lastSavedContent)
-            },
-            onCoordinatorReady: { coordinator in
-                textEditorCoordinator = coordinator
-            }
-        )
-        .frame(minHeight: 500)
+        VStack(alignment: .leading, spacing: 8) {
+            Text("CONTENT")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(settings.effectiveTextColor.opacity(0.4))
+                .tracking(1)
+            
+            FocusTextEditor(
+                text: $entry.content,
+                fontSize: settings.fontSize,
+                textColor: settings.effectiveTextColor,
+                focusLevel: settings.focusLevel,
+                highlightIntensity: settings.highlightIntensity,
+                typewriterMode: settings.typewriterMode,
+                onTextChange: { _ in
+                    updateWordCount()
+                    hasUnsavedChanges = (entry.content != lastSavedContent)
+                },
+                onCoordinatorReady: { coordinator in
+                    textEditorCoordinator = coordinator
+                }
+            )
+            .frame(minHeight: 300)
+            .frame(maxHeight: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(settings.effectiveTextColor.opacity(0.02))
+            )
+        }
     }
     
     private var focusFooter: some View {
@@ -464,7 +496,9 @@ struct FocusModeView: View {
             insertion: .scale(scale: 0.9).combined(with: .opacity),
             removal: .scale(scale: 0.9).combined(with: .opacity)
         ))
-        .position(x: NSScreen.main?.frame.width ?? 1400 - 200, y: 250)
+        .offset(x: 0, y: 100)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+        .padding(.trailing, 40)
     }
     
     private var focusSettingsPanel: some View {
