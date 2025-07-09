@@ -52,38 +52,43 @@ struct ProductionComposeView: View {
                 
                 // Main editor area
                 GeometryReader { geometry in
-                    ScrollView {
-                    VStack(spacing: 0) {
-                        // Add spacer to center content vertically when minimal
-                        Spacer(minLength: 0)
-                            .frame(maxHeight: .infinity)
-                        
-                        // Title section with subtle animations
-                        titleSection
-                            .opacity(titleOpacity)
-                            .animation(.easeOut(duration: 0.5).delay(0.1), value: titleOpacity)
-                        
-                        // Professional content editor
-                        contentEditor(in: geometry)
-                            .opacity(contentOpacity)
-                            .animation(.easeOut(duration: 0.5).delay(0.2), value: contentOpacity)
-                        
-                        // Metadata section
-                        metadataSection
-                            .opacity(metadataOpacity)
-                            .animation(.easeOut(duration: 0.5).delay(0.3), value: metadataOpacity)
-                            .padding(.top, 32)
-                            .padding(.horizontal, 40)
-                            .padding(.bottom, 20)
-                        
-                        // Add spacer to center content vertically when minimal
-                        Spacer(minLength: 0)
-                            .frame(maxHeight: .infinity)
+                    ScrollViewReader { scrollProxy in
+                        ScrollView {
+                            VStack(spacing: 0) {
+                                // Add spacer to center content vertically when minimal
+                                Spacer(minLength: 0)
+                                    .frame(maxHeight: .infinity)
+                                
+                                // Title section with subtle animations
+                                titleSection
+                                    .opacity(titleOpacity)
+                                    .animation(.easeOut(duration: 0.5).delay(0.1), value: titleOpacity)
+                                    .id("title")
+                                
+                                // Professional content editor
+                                contentEditor(in: geometry)
+                                    .opacity(contentOpacity)
+                                    .animation(.easeOut(duration: 0.5).delay(0.2), value: contentOpacity)
+                                    .id("content")
+                                
+                                // Metadata section
+                                metadataSection
+                                    .opacity(metadataOpacity)
+                                    .animation(.easeOut(duration: 0.5).delay(0.3), value: metadataOpacity)
+                                    .padding(.top, 32)
+                                    .padding(.horizontal, 40)
+                                    .padding(.bottom, 20)
+                                    .id("metadata")
+                                
+                                // Add spacer to center content vertically when minimal
+                                Spacer(minLength: 0)
+                                    .frame(maxHeight: .infinity)
+                            }
+                            .frame(minHeight: geometry.size.height)
+                        }
+                        .scrollDismissesKeyboard(.interactively)
                     }
-                    .frame(minHeight: geometry.size.height)
                 }
-                .scrollDismissesKeyboard(.interactively)
-            }
             
                 // Professional footer
                 productionFooter
@@ -466,13 +471,7 @@ struct ProductionComposeView: View {
                     }
                 }
                 
-                ProductionMoodPicker(selectedMood: Binding(
-                    get: { entry.mood },
-                    set: { newMood in
-                        entry.mood = newMood
-                        updateTrigger = UUID() // Force UI update
-                    }
-                ))
+                ProductionMoodPicker(selectedMood: $entry.mood)
             }
             
             // Tags
@@ -658,9 +657,7 @@ struct ProductionMoodPicker: View {
                     mood: mood,
                     isSelected: selectedMood == mood
                 ) {
-                    withAnimation(.easeInOut(duration: 0.1)) {
-                        selectedMood = selectedMood == mood ? nil : mood
-                    }
+                    selectedMood = selectedMood == mood ? nil : mood
                 }
             }
         }
@@ -699,6 +696,7 @@ struct ProductionMoodButton: View {
                     .shadow(color: isSelected ? Color.blue.opacity(0.3) : Color.clear, radius: 3)
             )
             .scaleEffect(isPressed ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.15), value: isSelected)
         }
         .buttonStyle(PlainButtonStyle())
         .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
