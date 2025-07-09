@@ -55,6 +55,10 @@ struct HomeView: View {
                     quickActionsGrid
                         .padding(.horizontal, 40)
                     
+                    // Privacy promise section
+                    privacySection
+                        .padding(.horizontal, 40)
+                    
                     // Recent activity
                     if !journalStore.entries.isEmpty {
                         recentActivitySection
@@ -312,6 +316,92 @@ struct HomeView: View {
         .opacity(heroOpacity)
     }
     
+    private var privacySection: some View {
+        VStack(spacing: 20) {
+            // Header with lock icon
+            HStack(spacing: 12) {
+                Image(systemName: "lock.shield.fill")
+                    .font(.system(size: 32, weight: .medium))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color.green, Color.green.opacity(0.7)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Your Privacy, Our Promise")
+                        .font(.system(size: 22, weight: .semibold, design: .rounded))
+                        .foregroundColor(.primary)
+                    
+                    Text("Powered by Gemma 3n from Google DeepMind")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+            }
+            
+            // Privacy features grid
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
+                PrivacyFeatureCard(
+                    icon: "iphone.gen3",
+                    title: "100% On-Device",
+                    description: "Everything stays on your Mac"
+                )
+                
+                PrivacyFeatureCard(
+                    icon: "network.slash",
+                    title: "No Cloud Sync",
+                    description: "Works completely offline"
+                )
+                
+                PrivacyFeatureCard(
+                    icon: "key.fill",
+                    title: "Encrypted Storage",
+                    description: "Your entries are protected"
+                )
+                
+                PrivacyFeatureCard(
+                    icon: "hand.raised.fill",
+                    title: "No Data Collection",
+                    description: "We can't see your journals"
+                )
+            }
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: Theme.cornerRadius * 1.5)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.green.opacity(0.05),
+                            Color.green.opacity(0.02)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: Theme.cornerRadius * 1.5)
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [
+                                    Color.green.opacity(0.3),
+                                    Color.green.opacity(0.1)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+        )
+        .shadow(color: Color.green.opacity(0.1), radius: 20, x: 0, y: 10)
+        .opacity(heroOpacity)
+    }
+    
     // MARK: - Methods
     
     private func animateIn() {
@@ -473,6 +563,57 @@ struct FloatingOrbsView: View {
             }
         }
         .allowsHitTesting(false)
+    }
+}
+
+// MARK: - Privacy Feature Card
+
+struct PrivacyFeatureCard: View {
+    let icon: String
+    let title: String
+    let description: String
+    @State private var isHovered = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 24, weight: .medium))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [Color.green, Color.green.opacity(0.7)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .scaleEffect(isHovered ? 1.1 : 1.0)
+                .animation(Theme.microInteraction, value: isHovered)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundColor(.primary)
+                
+                Text(description)
+                    .font(.system(size: 13))
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: Theme.smallCornerRadius)
+                .fill(Color.white.opacity(isHovered ? 0.08 : 0.04))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Theme.smallCornerRadius)
+                        .strokeBorder(Color.green.opacity(isHovered ? 0.3 : 0.15), lineWidth: 1)
+                )
+        )
+        .scaleEffect(isHovered ? 1.02 : 1.0)
+        .animation(Theme.smoothAnimation, value: isHovered)
+        .onHover { hovering in
+            isHovered = hovering
+        }
     }
 }
 

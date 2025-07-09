@@ -249,10 +249,17 @@ struct GemiChatView: View {
             .padding(.bottom, 8)
             
             VStack(spacing: 8) {
-                Text("Welcome to Gemi ✨")
+                Text("Your thoughts are safe here")
                     .font(Theme.Typography.largeTitle)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color.primary, Color.primary.opacity(0.8)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
                 
-                Text("Your thoughtful AI companion")
+                Text("Share freely, nothing leaves your device")
                     .font(Theme.Typography.headline)
                     .foregroundColor(Theme.Colors.secondaryText)
                 
