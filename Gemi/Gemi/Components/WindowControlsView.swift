@@ -84,8 +84,8 @@ struct UnifiedWindowStyle: ViewModifier {
                 
                 // Style the window buttons
                 if let closeButton = window?.standardWindowButton(.closeButton),
-                   let miniaturizeButton = window?.standardWindowButton(.miniaturizeButton),
-                   let zoomButton = window?.standardWindowButton(.zoomButton) {
+                   let _ = window?.standardWindowButton(.miniaturizeButton),
+                   let _ = window?.standardWindowButton(.zoomButton) {
                     
                     let buttonSuperview = closeButton.superview
                     

@@ -471,7 +471,13 @@ struct ProductionComposeView: View {
                     }
                 }
                 
-                ProductionMoodPicker(selectedMood: $entry.mood)
+                ProductionMoodPicker(selectedMood: Binding(
+                    get: { entry.mood },
+                    set: { newMood in
+                        entry.mood = newMood
+                        updateTrigger = UUID() // Force UI update for class property
+                    }
+                ))
             }
             
             // Tags
