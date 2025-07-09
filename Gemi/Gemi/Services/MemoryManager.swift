@@ -139,6 +139,44 @@ final class MemoryManager: ObservableObject {
         }
     }
     
+    /// Clean markdown formatting from all existing memories
+    func cleanMarkdownFromMemories() async {
+        logger.info("Cleaning markdown from \(self.memories.count) memories")
+        
+        var cleanedCount = 0
+        for memory in memories {
+            let cleanedContent = memory.content
+                .replacingOccurrences(of: "\\*\\*(.*?)\\*\\*", with: "$1", options: .regularExpression) // Remove **bold**
+                .replacingOccurrences(of: "\\*(.*?)\\*", with: "$1", options: .regularExpression) // Remove *italic*
+                .replacingOccurrences(of: "__(.*?)__", with: "$1", options: .regularExpression) // Remove __underline__
+                .replacingOccurrences(of: "_(.*?)_", with: "$1", options: .regularExpression) // Remove _italic_
+                .replacingOccurrences(of: "#+ ", with: "", options: .regularExpression) // Remove markdown headers
+                .replacingOccurrences(of: "`(.*?)`", with: "$1", options: .regularExpression) // Remove `code`
+            
+            if cleanedContent != memory.content {
+                memory.content = cleanedContent
+                cleanedCount += 1
+                logger.debug("Cleaned memory: \(memory.id)")
+                
+                // Save individual memory
+                let memoryData = MemoryData(
+                    id: memory.id,
+                    content: memory.content,
+                    sourceEntryID: memory.sourceEntryID,
+                    extractedAt: memory.extractedAt
+                )
+                
+                do {
+                    try await databaseManager.saveMemory(memoryData)
+                } catch {
+                    logger.error("Failed to save cleaned memory: \(error)")
+                }
+            }
+        }
+        
+        logger.info("Cleaned markdown from \(cleanedCount) memories")
+    }
+    
     // Removed updateImportance - no longer using importance scores
     
     /// Clear all memories (with user confirmation)
