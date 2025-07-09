@@ -35,8 +35,10 @@ struct MainWindowView: View {
                         VisualEffectView.contentBackground
                             .opacity(0.5)
                     )
+                    .ignoresSafeArea()
             }
             .frame(minWidth: Theme.minWindowWidth, minHeight: Theme.minWindowHeight)
+            .ignoresSafeArea()
             .onAppear {
                 Task {
                     await journalStore.loadEntries()
@@ -98,6 +100,7 @@ struct MainWindowView: View {
                 .zIndex(2000)
             }
         }
+        .unifiedWindowStyle()
     }
     
     @ViewBuilder

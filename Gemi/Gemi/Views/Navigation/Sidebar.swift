@@ -10,7 +10,18 @@ struct Sidebar: View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: Theme.spacing) {
-                    // Unified header section without background
+                    // Window controls area with padding for traffic lights
+                    HStack {
+                        // Space for traffic light buttons
+                        Color.clear
+                            .frame(width: 70, height: 20)
+                        
+                        Spacer()
+                    }
+                    .padding(.top, 12)
+                    .padding(.horizontal)
+                    
+                    // Unified header section
                     HStack {
                         ZStack {
                             // Gradient background for icon
@@ -45,7 +56,6 @@ struct Sidebar: View {
                         .help("New Entry (⌘N)")
                     }
                     .padding(.horizontal)
-                    .padding(.top, 20)
                     .padding(.bottom, Theme.spacing)
                     
                     searchBar
