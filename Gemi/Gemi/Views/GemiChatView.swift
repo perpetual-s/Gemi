@@ -77,16 +77,21 @@ struct GemiChatView: View {
     private var chatHeader: some View {
         HStack(spacing: 16) {
             
-            // Title - matching other views' styling
-            HStack(alignment: .bottom, spacing: 4) {
+            // Title with attribution
+            VStack(alignment: .leading, spacing: 2) {
                 Text("Chat with Gemi")
                     .font(Theme.Typography.sectionHeader)
                 
-                if viewModel.isStreaming {
-                    Text("Thinking...")
+                HStack(spacing: 4) {
+                    Text("Powered by Gemma 3n from Google DeepMind")
                         .font(Theme.Typography.caption)
-                        .foregroundColor(Theme.Colors.secondaryText)
-                        .padding(.bottom, 2)
+                        .foregroundColor(Theme.Colors.tertiaryText)
+                    
+                    if viewModel.isStreaming {
+                        Text("• Thinking...")
+                            .font(Theme.Typography.caption)
+                            .foregroundColor(Theme.Colors.secondaryText)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -244,7 +249,7 @@ struct GemiChatView: View {
             .padding(.bottom, 8)
             
             VStack(spacing: 8) {
-                Text("✨ Welcome to Gemi")
+                Text("Welcome to Gemi ✨")
                     .font(Theme.Typography.largeTitle)
                 
                 Text("Your thoughtful AI companion 🤗")
