@@ -252,9 +252,44 @@ struct GemiChatView: View {
                 Text("Welcome to Gemi ✨")
                     .font(Theme.Typography.largeTitle)
                 
-                Text("Your thoughtful AI companion 🤗")
+                Text("Your thoughtful AI companion")
                     .font(Theme.Typography.headline)
                     .foregroundColor(Theme.Colors.secondaryText)
+                
+                // Privacy-focused attribution - prominently placed
+                HStack(spacing: 4) {
+                    Image(systemName: "lock.shield.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [Color.green, Color.green.opacity(0.8)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                    
+                    Text("100% Private • Powered by Gemma 3n • No Cloud")
+                        .font(Theme.Typography.body)
+                        .fontWeight(.medium)
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [Color.primary.opacity(0.9), Color.primary.opacity(0.7)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    Capsule()
+                        .fill(Color.green.opacity(0.08))
+                        .overlay(
+                            Capsule()
+                                .strokeBorder(Color.green.opacity(0.2), lineWidth: 1)
+                        )
+                )
+                .padding(.top, 4)
             }
             
             // Suggestions
@@ -274,13 +309,6 @@ struct GemiChatView: View {
                 }
                 .padding(.top, 16)
             }
-            
-            // Attribution
-            Text("Private conversations powered by Gemma 3n from Google DeepMind")
-                .font(Theme.Typography.caption)
-                .foregroundColor(Theme.Colors.tertiaryText)
-                .multilineTextAlignment(.center)
-                .padding(.top, 24)
         }
         .frame(maxWidth: 500)
     }
