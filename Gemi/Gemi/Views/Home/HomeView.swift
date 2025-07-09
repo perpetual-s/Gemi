@@ -299,21 +299,148 @@ struct HomeView: View {
     }
     
     private var inspirationSection: some View {
-        GlassCard {
-            VStack(spacing: 16) {
-                Text("\"\(currentQuote.text)\"")
-                    .font(.system(size: 18, weight: .light, design: .serif))
-                    .foregroundColor(.primary)
-                    .multilineTextAlignment(.center)
-                    .italic()
+        VStack(alignment: .leading, spacing: 20) {
+            // Section header
+            HStack {
+                Image(systemName: "quote.opening")
+                    .font(.system(size: 24, weight: .light))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color.purple, Color.purple.opacity(0.7)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
                 
-                Text("— \(currentQuote.author)")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.secondary)
+                Text("Daily Inspiration")
+                    .font(.system(size: 24, weight: .semibold, design: .rounded))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                // Refresh button
+                Button {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        currentQuote = InspirationQuotes.random()
+                        isAnimatingGradient.toggle()
+                    }
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Get new inspiration")
             }
-            .padding(32)
+            
+            // Beautiful quote display without traditional box
+            ZStack {
+                // Animated gradient background
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(
+                        LinearGradient(
+                            colors: isAnimatingGradient ? 
+                                [Color.purple.opacity(0.05), Color.pink.opacity(0.03), Color.blue.opacity(0.02)] :
+                                [Color.blue.opacity(0.05), Color.purple.opacity(0.03), Color.pink.opacity(0.02)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .animation(.easeInOut(duration: 3).repeatForever(autoreverses: true), value: isAnimatingGradient)
+                
+                // Content
+                VStack(spacing: 24) {
+                    // Large decorative quote mark
+                    Text("\"")
+                        .font(.system(size: 80, weight: .ultraLight, design: .serif))
+                        .foregroundColor(Color.purple.opacity(0.15))
+                        .offset(x: -20, y: -10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    // Quote text with elegant typography
+                    Text(currentQuote.text)
+                        .font(.system(size: 22, weight: .light, design: .serif))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [Color.primary, Color.primary.opacity(0.85)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(6)
+                        .italic()
+                        .padding(.horizontal, 40)
+                    
+                    // Author with decorative elements
+                    HStack(spacing: 16) {
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.purple.opacity(0), Color.purple.opacity(0.3), Color.purple.opacity(0)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(width: 60, height: 1)
+                        
+                        Text(currentQuote.author)
+                            .font(.system(size: 16, weight: .medium, design: .rounded))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [Color.secondary, Color.secondary.opacity(0.8)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                        
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.purple.opacity(0.3), Color.purple.opacity(0), Color.purple.opacity(0)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(width: 60, height: 1)
+                    }
+                    
+                    // Closing quote mark
+                    Text("\"")
+                        .font(.system(size: 80, weight: .ultraLight, design: .serif))
+                        .foregroundColor(Color.purple.opacity(0.15))
+                        .offset(x: 20, y: 10)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
+                .padding(.vertical, 40)
+            }
+            .shadow(color: Color.purple.opacity(0.1), radius: 30, x: 0, y: 10)
+            
+            // Writing prompt carousel
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Or start with a prompt")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.secondary)
+                
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(WritingPromptGenerator.shared.getPromptRotation(count: 5), id: \.self) { prompt in
+                            PromptCard(prompt: prompt) {
+                                // Create new entry with prompt
+                                NotificationCenter.default.post(
+                                    name: .createEntryWithPrompt,
+                                    object: prompt
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
         .opacity(heroOpacity)
+        .onAppear {
+            isAnimatingGradient = true
+        }
     }
     
     private var privacySection: some View {
@@ -617,4 +744,83 @@ struct PrivacyFeatureCard: View {
     }
 }
 
-// MARK: - Notifications are already defined in MainWindowView
+// MARK: - Prompt Card
+
+struct PromptCard: View {
+    let prompt: String
+    let action: () -> Void
+    @State private var isHovered = false
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 8) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 16))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color.yellow, Color.orange],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                
+                Text(prompt)
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundColor(.primary)
+                    .lineLimit(3)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(16)
+            .frame(width: 240, height: 100)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.yellow.opacity(isHovered ? 0.08 : 0.05),
+                                Color.orange.opacity(isHovered ? 0.05 : 0.02)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .strokeBorder(
+                                LinearGradient(
+                                    colors: [
+                                        Color.yellow.opacity(isHovered ? 0.3 : 0.1),
+                                        Color.orange.opacity(isHovered ? 0.2 : 0.05)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1
+                            )
+                    )
+            )
+            .scaleEffect(isHovered ? 1.02 : 1.0)
+            .shadow(
+                color: isHovered ? Color.orange.opacity(0.1) : Color.clear,
+                radius: 10,
+                x: 0,
+                y: 5
+            )
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            withAnimation(.easeOut(duration: 0.2)) {
+                isHovered = hovering
+            }
+        }
+    }
+}
+
+// MARK: - Notifications
+
+extension Notification.Name {
+    static let createEntryWithPrompt = Notification.Name("createEntryWithPrompt")
+}
+
+// Note: Other notifications are already defined in MainWindowView
