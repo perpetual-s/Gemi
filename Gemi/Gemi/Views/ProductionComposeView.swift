@@ -657,7 +657,9 @@ struct ProductionMoodPicker: View {
                     mood: mood,
                     isSelected: selectedMood == mood
                 ) {
-                    selectedMood = selectedMood == mood ? nil : mood
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedMood = selectedMood == mood ? nil : mood
+                    }
                 }
             }
         }
@@ -685,15 +687,15 @@ struct ProductionMoodButton: View {
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.blue.opacity(0.2) : Color(NSColor.controlBackgroundColor))
+                    .fill(isSelected ? Color.blue.opacity(0.15) : Color(NSColor.controlBackgroundColor))
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
                             .strokeBorder(
                                 isSelected ? Color.blue : Color.secondary.opacity(0.2),
-                                lineWidth: isSelected ? 3 : 1
+                                lineWidth: isSelected ? 2 : 1
                             )
                     )
-                    .shadow(color: isSelected ? Color.blue.opacity(0.3) : Color.clear, radius: 3)
+                    .shadow(color: isSelected ? Color.blue.opacity(0.4) : Color.clear, radius: 4)
             )
             .scaleEffect(isPressed ? 0.95 : 1.0)
             .animation(.easeInOut(duration: 0.15), value: isSelected)
