@@ -197,19 +197,18 @@ struct GemiChatView: View {
             .scrollDismissesKeyboard(.interactively)
             .scrollBounceBehavior(.basedOnSize)  // Better bounce behavior
             .onChange(of: viewModel.messages.count) { oldCount, newCount in
-                // Only scroll for new messages, not during streaming
-                if newCount > oldCount && !viewModel.isStreaming {
+                // Scroll for new messages
+                if newCount > oldCount {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                         scrollToBottom(proxy: proxy, animated: true)
                     }
                 }
             }
-            .onChange(of: viewModel.isStreaming) { wasStreaming, isStreaming in
-                // Scroll to bottom when streaming completes
-                if wasStreaming && !isStreaming {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        scrollToBottom(proxy: proxy, animated: true)
-                    }
+            .onChange(of: viewModel.messages.last?.content) { _, _ in
+                // Continuously scroll as content streams in
+                if viewModel.isStreaming {
+                    // Use no animation for smooth continuous scrolling during streaming
+                    scrollToBottom(proxy: proxy, animated: false)
                 }
             }
             .onAppear {
@@ -234,7 +233,7 @@ struct GemiChatView: View {
                     .combined(with: .opacity),
                 removal: .opacity
             ))
-            .animation(.easeOut(duration: 0.2), value: message.content)  // Smooth content updates
+            .animation(viewModel.isStreaming ? nil : .easeOut(duration: 0.2), value: message.content)  // No animation during streaming for smooth scroll
         }
         
         if viewModel.isTyping {
