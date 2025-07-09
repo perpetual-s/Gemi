@@ -17,6 +17,11 @@ struct Theme {
     static let bounceAnimation: Animation = .spring(response: 0.5, dampingFraction: 0.65, blendDuration: 0)
     static let morphAnimation: Animation = .interactiveSpring(response: 0.6, dampingFraction: 0.7, blendDuration: 0.25)
     
+    // Enhanced animations
+    static let gentleSpring: Animation = .spring(response: 0.4, dampingFraction: 0.8)
+    static let microInteraction: Animation = .spring(response: 0.3, dampingFraction: 0.75)
+    static let delightfulBounce: Animation = .spring(response: 0.4, dampingFraction: 0.6)
+    
     struct Colors {
         static let primaryAccent = Color.accentColor
         static let secondaryText = Color.secondary
@@ -41,6 +46,10 @@ struct Theme {
         static let caption = Font.system(size: 12, weight: .regular, design: .default)
         static let footnote = Font.system(size: 11, weight: .regular, design: .default)
         static let greeting = Font.system(size: 24, weight: .light, design: .rounded)
+        
+        // Unified section headers for consistent UI
+        static let sectionHeader = Font.system(size: 24, weight: .semibold, design: .rounded)
+        static let sectionSubheader = Font.system(size: 13, weight: .medium, design: .rounded)
     }
     
     struct Gradients {
@@ -68,6 +77,15 @@ struct Theme {
         static let glassBlur: Material = .ultraThinMaterial
         static let contentBlur: Material = .regularMaterial
         static let sidebarBlur: Material = .thinMaterial
+        
+        // Enhanced effects for depth
+        static let ultraLight = Color.white.opacity(0.03)
+        static let glassGradient = LinearGradient(
+            colors: [Color.white.opacity(0.08), Color.clear],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        static let subtleGlow = Color.accentColor.opacity(0.15)
     }
 }
 
@@ -127,12 +145,50 @@ struct HoverEffectModifier: ViewModifier {
 
 
 struct GlassCardModifier: ViewModifier {
+    @State private var isHovered = false
+    
     func body(content: Content) -> some View {
         content
-            .background(.ultraThinMaterial)
-            .background(Theme.Gradients.glass)
+            .background(
+                ZStack {
+                    // Base material layer
+                    VisualEffectView(material: .underWindowBackground, blendingMode: .behindWindow)
+                    
+                    // Gradient overlay
+                    Theme.Gradients.glass
+                        .opacity(isHovered ? 0.8 : 0.5)
+                    
+                    // Additional tint layer
+                    Theme.Effects.ultraLight
+                }
+            )
             .cornerRadius(Theme.cornerRadius)
-            .shadow(color: Theme.Colors.shadowColor, radius: 8, x: 0, y: 4)
+            .shadow(
+                color: Theme.Colors.shadowColor.opacity(isHovered ? 0.2 : 0.1),
+                radius: isHovered ? 12 : 8,
+                x: 0,
+                y: isHovered ? 6 : 4
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.cornerRadius)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(isHovered ? 0.2 : 0.1),
+                                Color.clear
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 0.5
+                    )
+            )
+            .scaleEffect(isHovered ? 1.02 : 1.0)
+            .onHover { hovering in
+                withAnimation(Theme.smoothAnimation) {
+                    isHovered = hovering
+                }
+            }
     }
 }
 
@@ -161,6 +217,87 @@ struct FloatingButtonModifier: ViewModifier {
     }
 }
 
+// Enhanced glass effect modifier
+struct EnhancedGlassModifier: ViewModifier {
+    let material: NSVisualEffectView.Material
+    let tintColor: Color
+    let tintOpacity: Double
+    
+    func body(content: Content) -> some View {
+        content
+            .background(
+                ZStack {
+                    VisualEffectView(material: material, blendingMode: .behindWindow)
+                    tintColor.opacity(tintOpacity)
+                    Theme.Effects.glassGradient.opacity(0.3)
+                }
+            )
+    }
+}
+
+// Depth shadow modifier
+struct DepthShadowModifier: ViewModifier {
+    let isElevated: Bool
+    
+    func body(content: Content) -> some View {
+        content
+            .shadow(
+                color: Theme.Colors.shadowColor.opacity(isElevated ? 0.15 : 0.08),
+                radius: isElevated ? 12 : 6,
+                x: 0,
+                y: isElevated ? 6 : 3
+            )
+            .shadow(
+                color: Theme.Colors.primaryAccent.opacity(isElevated ? 0.05 : 0),
+                radius: 20,
+                x: 0,
+                y: 8
+            )
+    }
+}
+
+// Animated button style with micro-interactions
+struct AnimatedButtonStyle: ButtonStyle {
+    @State private var isPressed = false
+    @State private var isHovered = false
+    
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.92 : (isHovered ? 1.08 : 1.0))
+            .brightness(isHovered ? 0.1 : 0)
+            .animation(Theme.microInteraction, value: configuration.isPressed)
+            .animation(Theme.gentleSpring, value: isHovered)
+            .onHover { hovering in
+                isHovered = hovering
+            }
+    }
+}
+
+// Subtle pulse animation
+struct PulseEffect: ViewModifier {
+    @State private var isPulsing = false
+    let color: Color
+    let interval: Double
+    
+    func body(content: Content) -> some View {
+        content
+            .background(
+                Circle()
+                    .fill(color)
+                    .scaleEffect(isPulsing ? 1.5 : 1.0)
+                    .opacity(isPulsing ? 0 : 0.3)
+                    .animation(
+                        Animation.easeOut(duration: interval)
+                            .repeatForever(autoreverses: false),
+                        value: isPulsing
+                    )
+            )
+            .onAppear {
+                isPulsing = true
+            }
+    }
+}
+
 extension View {
     func cardStyle() -> some View {
         modifier(CardModifier())
@@ -176,5 +313,25 @@ extension View {
     
     func floatingButton() -> some View {
         modifier(FloatingButtonModifier())
+    }
+    
+    func enhancedGlass(
+        material: NSVisualEffectView.Material = .underWindowBackground,
+        tint: Color = .clear,
+        tintOpacity: Double = 0.05
+    ) -> some View {
+        modifier(EnhancedGlassModifier(
+            material: material,
+            tintColor: tint,
+            tintOpacity: tintOpacity
+        ))
+    }
+    
+    func depthShadow(elevated: Bool = false) -> some View {
+        modifier(DepthShadowModifier(isElevated: elevated))
+    }
+    
+    func pulseEffect(color: Color = .accentColor, interval: Double = 1.5) -> some View {
+        modifier(PulseEffect(color: color, interval: interval))
     }
 }
