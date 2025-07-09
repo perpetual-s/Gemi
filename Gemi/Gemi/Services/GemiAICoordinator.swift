@@ -387,35 +387,105 @@ final class GemiAICoordinator: ObservableObject {
             }
         }
         
-        // Parse JSON response
-        guard let data = fullResponse.data(using: .utf8) else {
-            throw OllamaError.invalidResponse("Invalid response format")
+        // Extract JSON from response (might have extra text around it)
+        let jsonPattern = #"\{[^{}]*"summary"[^{}]*"keyPoints"[^{}]*"prompts"[^{}]*\}"#
+        if let range = fullResponse.range(of: jsonPattern, options: .regularExpression) {
+            let jsonString = String(fullResponse[range])
+            
+            if let data = jsonString.data(using: .utf8) {
+                do {
+                    let decoder = JSONDecoder()
+                    let insights = try decoder.decode(InsightsResponse.self, from: data)
+                    return (insights.summary, insights.keyPoints, insights.prompts)
+                } catch {
+                    logger.warning("Failed to parse extracted JSON, using fallback parsing: \(error)")
+                }
+            }
         }
         
-        do {
-            let decoder = JSONDecoder()
-            let insights = try decoder.decode(InsightsResponse.self, from: data)
-            return (insights.summary, insights.keyPoints, insights.prompts)
-        } catch {
-            // Fallback to basic parsing if JSON fails
-            logger.warning("Failed to parse JSON response, using fallback parsing")
-            return parseInsightsFromText(fullResponse)
-        }
+        // Fallback to basic parsing if JSON extraction fails
+        logger.info("Using fallback parsing for AI insights")
+        return parseInsightsFromText(fullResponse)
     }
     
     private func parseInsightsFromText(_ text: String) -> (summary: String, keyPoints: [String], prompts: [String]) {
-        // Basic fallback parsing logic
-        let lines = text.components(separatedBy: .newlines).filter { !$0.isEmpty }
+        // Improved fallback parsing that looks for labeled sections
+        let lines = text.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
         
-        let summary = lines.first ?? "This entry reflects personal thoughts and experiences."
-        let keyPoints = Array(lines.prefix(4).dropFirst()).map { $0.trimmingCharacters(in: .whitespaces) }
-        let prompts = [
-            "What emotions stand out most in this entry?",
-            "How might these experiences shape your future actions?",
-            "What would you tell a friend in a similar situation?"
-        ]
+        var summary = "This entry reflects personal thoughts and experiences."
+        var keyPoints: [String] = []
+        var prompts: [String] = []
         
-        return (summary, keyPoints.isEmpty ? ["Personal reflection captured", "Emotional awareness demonstrated", "Growth mindset evident"] : keyPoints, prompts)
+        var currentSection = ""
+        
+        for line in lines {
+            let lowercased = line.lowercased()
+            
+            // Detect section headers
+            if lowercased.contains("summary") && lowercased.contains(":") {
+                currentSection = "summary"
+                // Extract summary if it's on the same line
+                if let colonIndex = line.firstIndex(of: ":") {
+                    let content = String(line[line.index(after: colonIndex)...]).trimmingCharacters(in: .whitespaces)
+                    if !content.isEmpty {
+                        summary = content.replacingOccurrences(of: "\"", with: "")
+                    }
+                }
+            } else if lowercased.contains("key point") || lowercased.contains("keypoint") {
+                currentSection = "keypoints"
+            } else if lowercased.contains("prompt") || lowercased.contains("question") {
+                currentSection = "prompts"
+            } else {
+                // Process content based on current section
+                let cleanedLine = line
+                    .replacingOccurrences(of: "^[-*•\\d.]\\s*", with: "", options: .regularExpression)
+                    .replacingOccurrences(of: "\"", with: "")
+                    .trimmingCharacters(in: .whitespaces)
+                
+                if !cleanedLine.isEmpty {
+                    switch currentSection {
+                    case "summary":
+                        if summary == "This entry reflects personal thoughts and experiences." {
+                            summary = cleanedLine
+                        }
+                    case "keypoints":
+                        if keyPoints.count < 4 && cleanedLine.count > 10 {
+                            keyPoints.append(cleanedLine)
+                        }
+                    case "prompts":
+                        if prompts.count < 3 && cleanedLine.contains("?") {
+                            prompts.append(cleanedLine)
+                        }
+                    default:
+                        // If no section detected yet, treat first good line as summary
+                        if summary == "This entry reflects personal thoughts and experiences." && cleanedLine.count > 20 {
+                            summary = cleanedLine
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Provide defaults if parsing didn't find enough content
+        if keyPoints.isEmpty {
+            keyPoints = [
+                "Personal reflection captured",
+                "Emotional awareness demonstrated",
+                "Growth mindset evident"
+            ]
+        }
+        
+        if prompts.isEmpty {
+            prompts = [
+                "What emotions stand out most in this entry?",
+                "How might these experiences shape your future actions?",
+                "What would you tell a friend in a similar situation?"
+            ]
+        }
+        
+        return (summary, keyPoints, prompts)
     }
 }
 
