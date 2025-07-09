@@ -552,7 +552,7 @@ struct EnhancedMoodDistributionRow: View {
     
     private func moodOrder(_ mood: Mood) -> Int {
         // Define order for animation delay
-        let order = [Mood.happy, .excited, .peaceful, .grateful, .neutral, .anxious, .sad, .frustrated]
+        let order = [Mood.happy, .excited, .peaceful, .grateful, .neutral, .anxious, .sad, .frustrated, .angry]
         return order.firstIndex(of: mood) ?? 0
     }
     
@@ -572,6 +572,8 @@ struct EnhancedMoodDistributionRow: View {
             return .purple
         case .accomplished:
             return .indigo
+        case .angry:
+            return .red
         }
     }
 }
@@ -691,12 +693,12 @@ struct MoodTrendCard: View {
             return .orange
         case .sad:
             return .purple
-        case .frustrated:
+        case .frustrated, .angry:
             return .red
         case .neutral:
             return .gray
-        default:
-            return Theme.Colors.primaryAccent
+        case .accomplished:
+            return .indigo
         }
     }
 }

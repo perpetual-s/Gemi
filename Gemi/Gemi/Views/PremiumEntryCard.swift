@@ -40,6 +40,7 @@ struct PremiumEntryCard: View {
         case .grateful: return [.purple.opacity(0.3), .pink.opacity(0.2)]
         case .accomplished: return [.blue.opacity(0.3), .cyan.opacity(0.2)]
         case .frustrated: return [.red.opacity(0.3), .orange.opacity(0.2)]
+        case .angry: return [.red.opacity(0.4), .red.opacity(0.2)]
         }
     }
     

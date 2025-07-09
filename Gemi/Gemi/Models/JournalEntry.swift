@@ -12,6 +12,7 @@ enum Mood: String, Codable, CaseIterable, Sendable {
     case grateful = "grateful"
     case accomplished = "accomplished"
     case frustrated = "frustrated"
+    case angry = "angry"
     
     var emoji: String {
         switch self {
@@ -24,6 +25,7 @@ enum Mood: String, Codable, CaseIterable, Sendable {
         case .grateful: return "🙏"
         case .accomplished: return "💪"
         case .frustrated: return "😤"
+        case .angry: return "😡"
         }
     }
 }
