@@ -540,12 +540,6 @@ struct FocusModeView: View {
         updateWordCount()
         settings.startSession()
         
-        // Debug output
-        print("Focus Mode initialized:")
-        print("  - Title: \(localTitle)")
-        print("  - Content length: \(localContent.count) characters")
-        print("  - Entry content length: \(entry.content.count) characters")
-        
         // Start UI auto-hide timer if enabled
         if settings.autoHideUI {
             startUIHideTimer()
