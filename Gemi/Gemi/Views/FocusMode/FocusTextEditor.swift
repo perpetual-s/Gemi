@@ -52,7 +52,13 @@ struct FocusTextEditor: NSViewRepresentable {
         
         // Make it first responder
         DispatchQueue.main.async {
-            textView.window?.makeFirstResponder(textView)
+            if let window = textView.window {
+                let success = window.makeFirstResponder(textView)
+                print("FocusTextEditor: makeFirstResponder success = \(success)")
+                print("FocusTextEditor: current first responder = \(String(describing: window.firstResponder))")
+            } else {
+                print("FocusTextEditor: window is nil, cannot make first responder")
+            }
         }
         
         return scrollView
@@ -97,6 +103,7 @@ struct FocusTextEditor: NSViewRepresentable {
             guard let textView = notification.object as? NSTextView else { return }
             guard !isUpdating else { return }
             
+            print("FocusTextEditor: textDidChange called, new text length: \(textView.string.count)")
             parent.text = textView.string
             parent.onTextChange(textView.string)
         }
