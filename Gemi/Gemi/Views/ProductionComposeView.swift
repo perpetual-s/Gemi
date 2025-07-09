@@ -32,7 +32,7 @@ struct ProductionComposeView: View {
     @State private var textEditorCoordinator: MacTextEditor.Coordinator?
     
     // AI Assistant states
-    @State private var showAIAssistant = false
+    @State private var showAIAssistant = true  // Show by default
     @State private var aiAssistantExpanded = false
     @State private var showWritersBlockBreaker = false
     @StateObject private var sentimentAnalyzer = SentimentAnalyzer()
@@ -214,10 +214,14 @@ struct ProductionComposeView: View {
                         }
                     }
                 } label: {
-                    Image(systemName: "wand.and.stars")
-                        .font(.system(size: 16))
-                        .foregroundColor(showAIAssistant ? Theme.Colors.primaryAccent : .secondary)
-                        .symbolEffect(.pulse, value: showAIAssistant)
+                    HStack(spacing: 4) {
+                        Image(systemName: "wand.and.stars")
+                            .font(.system(size: 14))
+                            .symbolEffect(.pulse, value: showAIAssistant)
+                        Text("Tools")
+                            .font(.system(size: 14))
+                    }
+                    .foregroundColor(showAIAssistant ? Theme.Colors.primaryAccent : .secondary)
                 }
                 .buttonStyle(.plain)
                 .help("Toggle AI Writing Assistant")

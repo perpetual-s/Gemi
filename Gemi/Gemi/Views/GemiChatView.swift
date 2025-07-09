@@ -171,7 +171,7 @@ struct GemiChatView: View {
     private var messagesScrollView: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                VStack(spacing: 12) {
+                LazyVStack(spacing: 12) {  // Use LazyVStack for better performance
                     if viewModel.messages.isEmpty {
                         emptyStateView
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -195,13 +195,21 @@ struct GemiChatView: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollDismissesKeyboard(.interactively)
-            .onChange(of: viewModel.messages.count) { _, _ in
-                scrollToBottom(proxy: proxy, animated: true)
+            .scrollBounceBehavior(.basedOnSize)  // Better bounce behavior
+            .onChange(of: viewModel.messages.count) { oldCount, newCount in
+                // Only scroll for new messages, not during streaming
+                if newCount > oldCount && !viewModel.isStreaming {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        scrollToBottom(proxy: proxy, animated: true)
+                    }
+                }
             }
-            .onChange(of: viewModel.messages.last?.content) { _, _ in
-                // Scroll smoothly as content streams in
-                if viewModel.isStreaming {
-                    scrollToBottom(proxy: proxy, animated: false)
+            .onChange(of: viewModel.isStreaming) { wasStreaming, isStreaming in
+                // Scroll to bottom when streaming completes
+                if wasStreaming && !isStreaming {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        scrollToBottom(proxy: proxy, animated: true)
+                    }
                 }
             }
             .onAppear {
@@ -220,11 +228,13 @@ struct GemiChatView: View {
                 message: message,
                 isStreaming: viewModel.isStreaming && message.id == viewModel.messages.last?.id
             )
+            .id(message.id)  // Stable ID for each message
             .transition(.asymmetric(
                 insertion: .scale(scale: 0.8, anchor: message.role == .user ? .bottomTrailing : .bottomLeading)
                     .combined(with: .opacity),
                 removal: .opacity
             ))
+            .animation(.easeOut(duration: 0.2), value: message.content)  // Smooth content updates
         }
         
         if viewModel.isTyping {
@@ -583,20 +593,31 @@ struct MessageBubble: View {
             }
             
             VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 4) {
-                // Message content
-                Text(message.content)
-                    .font(Theme.Typography.body)
-                    .foregroundColor(message.role == .user ? .white : .primary)
-                    .lineSpacing(2)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(bubbleBackground)
-                    .cornerRadius(18)
-                    .textSelection(.enabled)
-                    .fixedSize(horizontal: false, vertical: true)
+                // Message content with better streaming support
+                Group {
+                    if isStreaming && message.content.isEmpty {
+                        // Show placeholder while waiting for content
+                        Text(" ")
+                            .font(Theme.Typography.body)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                    } else {
+                        Text(message.content)
+                            .font(Theme.Typography.body)
+                            .foregroundColor(message.role == .user ? .white : .primary)
+                            .lineSpacing(2)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .background(bubbleBackground)
+                .cornerRadius(18)
+                .animation(nil, value: message.content)  // Disable animation for content changes
                 
                 // Timestamp (on hover)
-                if isHovered {
+                if isHovered && !isStreaming {
                     Text(message.timestamp.formatted(date: .omitted, time: .shortened))
                         .font(Theme.Typography.footnote)
                         .foregroundColor(Theme.Colors.tertiaryText)
@@ -617,8 +638,10 @@ struct MessageBubble: View {
         .padding(.horizontal, 20)
         .frame(maxWidth: .infinity, alignment: message.role == .user ? .trailing : .leading)
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.2)) {
-                isHovered = hovering
+            if !isStreaming {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isHovered = hovering
+                }
             }
         }
     }
