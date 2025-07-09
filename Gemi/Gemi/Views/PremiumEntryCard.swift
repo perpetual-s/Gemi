@@ -208,10 +208,14 @@ struct EnhancedCardButtonStyle: ButtonStyle {
         configuration.label
             .background(
                 ZStack {
-                    // Enhanced glass morphism
+                    // Enhanced glass morphism with better visibility
                     VisualEffectView.frostedGlass
-                        .opacity(0.6)
+                        .opacity(0.8)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
+                    
+                    // Subtle background tint for better contrast
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(NSColor.controlBackgroundColor).opacity(0.5))
                     
                     // Dynamic gradient overlay
                     RoundedRectangle(cornerRadius: 12)
@@ -258,6 +262,12 @@ struct EnhancedCardButtonStyle: ButtonStyle {
             )
             .depthShadow(elevated: isHovered || isSelected)
             .shadow(
+                color: Color.black.opacity(0.06),
+                radius: 8,
+                x: 0,
+                y: 2
+            )
+            .shadow(
                 color: isSelected ? Theme.Colors.primaryAccent.opacity(0.3) : Color.clear,
                 radius: 20,
                 x: 0,
@@ -266,7 +276,7 @@ struct EnhancedCardButtonStyle: ButtonStyle {
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
                     .strokeBorder(
-                        isSelected ? Theme.Colors.primaryAccent : (isHovered ? Color.white.opacity(0.1) : Color.clear),
+                        isSelected ? Theme.Colors.primaryAccent : (isHovered ? Color.primary.opacity(0.2) : Color.primary.opacity(0.1)),
                         lineWidth: isSelected ? 2 : 1
                     )
             )
