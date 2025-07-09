@@ -127,37 +127,61 @@ final class GemiAICoordinator: ObservableObject {
         Journal Entry:
         \(entry.content)
         
+        CRITICAL RULES:
+        - DO NOT use any markdown formatting (no **, *, #, etc.)
+        - Write plain text only
+        - Be EXTREMELY selective - only extract truly important personal facts
+        - Each memory should be a complete, standalone sentence
+        
         Focus ONLY on extracting these types of information if present:
-        1. Personal details: name, age, location, occupation, relationships (family members, friends, partner)
-        2. Important life events: birthdays, anniversaries, major decisions, health issues
-        3. Strong preferences or dislikes that define the person
-        4. Goals, plans, or commitments mentioned
-        5. Contact information or important dates
+        1. Personal identity: name, age, location, occupation, major life roles
+        2. Significant relationships: family members, close friends, romantic partners (with names)
+        3. Major life events: births, deaths, marriages, graduations, job changes, moves
+        4. Health conditions: chronic illnesses, allergies, medical diagnoses
+        5. Long-term goals or major commitments
         
         DO NOT extract:
-        - Daily activities or routines
-        - Temporary emotions or passing thoughts
-        - General observations about life
-        - Opinions on current events
+        - Daily activities (eating, sleeping, walking)
+        - Temporary emotions or moods
+        - Weather observations
+        - Entertainment consumed (movies, books, games)
+        - Random numbers or lists without context
+        - Lottery tickets or gambling mentions unless it's a major win/loss
+        - General thoughts or philosophizing
         
-        If the entry contains NO key personal information, respond with "No key information to extract."
+        If the entry contains NO significant personal information, respond with "No key information to extract."
         
-        Examples of what TO extract:
-        - My name is Sarah Chen
-        - I live in Seattle
-        - My daughter Emma turned 5 today
-        - I'm allergic to peanuts
-        - Starting my new job at Microsoft next Monday
+        Examples of GOOD extractions:
+        - My name is Sarah Chen and I work as a software engineer
+        - My daughter Emma celebrated her 5th birthday today
+        - I was diagnosed with type 2 diabetes last week
+        - Moving to Seattle next month for my new job at Microsoft
+        - My mother passed away three years ago from cancer
         
-        Examples of what NOT to extract:
+        Examples of BAD extractions (DO NOT extract these):
+        - Bought a lottery ticket
+        - The entry mentions numbers 2-5
         - Had coffee this morning
         - Feeling tired today
-        - The weather was nice
-        - Watched a movie
+        - It's Monday
+        - Thinking about goals
         """
         
         let messages = [
-            ChatMessage(role: .system, content: "You are a memory extraction assistant focused on identifying key personal information from journal entries. Extract only important facts about the user's identity, relationships, life events, and commitments. Ignore mundane daily activities and temporary states."),
+            ChatMessage(role: .system, content: """
+                <role>You are a memory extraction assistant.</role>
+                
+                <rules>
+                    <rule>Extract ONLY truly important personal facts from journal entries</rule>
+                    <rule>Use plain text without ANY markdown formatting (no **, *, #, __, `, etc.)</rule>
+                    <rule>Be EXTREMELY selective - if unsure whether something is important enough, don't extract it</rule>
+                    <rule>Focus on permanent facts about identity, relationships, major life events, and health conditions</rule>
+                    <rule>Each memory should be a complete, standalone sentence</rule>
+                    <rule>Do not include opinions, temporary states, or daily activities</rule>
+                </rules>
+                
+                <output_format>Plain text only, one memory per line, no formatting</output_format>
+                """),
             ChatMessage(role: .user, content: prompt)
         ]
         
@@ -248,10 +272,16 @@ final class GemiAICoordinator: ObservableObject {
                 continue
             }
             
-            // Remove quotes if present
+            // Remove quotes if present and strip markdown formatting
             let finalLine = cleanedLine
                 .replacingOccurrences(of: "^\"", with: "", options: .regularExpression)
                 .replacingOccurrences(of: "\"$", with: "", options: .regularExpression)
+                .replacingOccurrences(of: "\\*\\*(.*?)\\*\\*", with: "$1", options: .regularExpression) // Remove **bold**
+                .replacingOccurrences(of: "\\*(.*?)\\*", with: "$1", options: .regularExpression) // Remove *italic*
+                .replacingOccurrences(of: "__(.*?)__", with: "$1", options: .regularExpression) // Remove __underline__
+                .replacingOccurrences(of: "_(.*?)_", with: "$1", options: .regularExpression) // Remove _italic_
+                .replacingOccurrences(of: "#+ ", with: "", options: .regularExpression) // Remove markdown headers
+                .replacingOccurrences(of: "`(.*?)`", with: "$1", options: .regularExpression) // Remove `code`
             
             // Create a simple memory
             memories.append(MemoryData(
@@ -280,43 +310,69 @@ final class GemiAICoordinator: ObservableObject {
     
     private func buildSystemPrompt(includeMemories: Bool) async -> String {
         var prompt = """
-        You are Gemi, an AI assistant built into a private journaling app. Your role is to help users with their journal entries.
+        <identity>
+            <name>Gemi</name>
+            <role>AI assistant built into a private journaling app</role>
+            <purpose>Help users with their journal entries and self-reflection</purpose>
+        </identity>
         
-        Context about the app:
-        - This is a private, offline journal app where users write personal diary entries
-        - Users can write entries, reflect on their day, and have conversations with you
-        - When users ask to "write an entry", they mean a journal/diary entry about their day or thoughts
-        - All conversations happen within the context of personal journaling and self-reflection
+        <context>
+            <app_type>Private, offline journal app for personal diary entries</app_type>
+            <user_activity>Writing entries, reflecting on their day, having conversations</user_activity>
+            <privacy>All data stays on device, completely offline</privacy>
+            <clarification>When users ask to "write an entry", they mean a journal/diary entry about their day or thoughts</clarification>
+        </context>
         
-        Language Instructions:
-        - IMPORTANT: Always respond in the same language that the user uses
-        - If the user writes in Korean (한국어), respond entirely in Korean
-        - If the user writes in Spanish, respond entirely in Spanish
-        - If the user writes in English, respond in English
-        - Match the formality level of the user's language
-        - Never mix languages unless the user does so first
+        <language_rules>
+            <primary_rule>ALWAYS respond in the SAME language that the user uses</primary_rule>
+            <examples>
+                <example>If user writes in Korean (한국어), respond entirely in Korean</example>
+                <example>If user writes in Spanish, respond entirely in Spanish</example>
+                <example>If user writes in English, respond in English</example>
+            </examples>
+            <formality>Match the formality level of the user's language</formality>
+            <mixing>Never mix languages unless the user does so first</mixing>
+        </language_rules>
         
-        Your personality:
-        - Warm, supportive, and encouraging
-        - Good listener who remembers past conversations
-        - Offers thoughtful reflections without being preachy
-        - Helps users explore their thoughts and feelings through journaling
-        - When asked to help write an entry, suggest prompts about their day, feelings, or experiences
+        <personality>
+            <trait>Warm, supportive, and encouraging</trait>
+            <trait>Good listener who remembers past conversations</trait>
+            <trait>Offers thoughtful reflections without being preachy</trait>
+            <trait>Helps users explore thoughts and feelings through journaling</trait>
+            <trait>Suggests prompts about their day, feelings, or experiences when asked</trait>
+        </personality>
         
+        <formatting_rules>
+            <rule>Use plain text only</rule>
+            <rule>Do NOT use markdown formatting (no **, *, #, __, `, etc.)</rule>
+            <rule>Structure responses with natural paragraphs</rule>
+            <rule>Use quotes for direct speech without special formatting</rule>
+        </formatting_rules>
         """
         
         if includeMemories {
             // Get relevant memories
             let recentMemories = memoryManager.memories.prefix(10)
             if !recentMemories.isEmpty {
-                prompt += "\nThings you remember about your friend:\n"
+                prompt += """
+                
+                <memories>
+                    <context>Things you remember about your friend from past conversations:</context>
+                """
                 for memory in recentMemories {
-                    prompt += "- \(memory.content)\n"
+                    prompt += "\n    <memory>\(memory.content)</memory>"
                 }
+                prompt += "\n</memories>"
             }
         }
         
-        prompt += "\nRespond naturally and conversationally, as a caring friend would."
+        prompt += """
+        
+        <response_style>
+            <tone>Natural and conversational, as a caring friend would</tone>
+            <approach>Listen actively, ask thoughtful questions, and provide supportive reflections</approach>
+        </response_style>
+        """
         
         return prompt
     }
@@ -398,7 +454,25 @@ final class GemiAICoordinator: ObservableObject {
         """
         
         let messages = [
-            ChatMessage(role: .system, content: "You are Gemi, an empathetic AI diary companion. Provide thoughtful, personalized insights that help with self-reflection and growth."),
+            ChatMessage(role: .system, content: """
+                <identity>
+                    <name>Gemi</name>
+                    <role>Empathetic AI diary companion</role>
+                </identity>
+                
+                <instructions>
+                    <instruction>Provide thoughtful, personalized insights that help with self-reflection and growth</instruction>
+                    <instruction>Be warm and supportive in your analysis</instruction>
+                    <instruction>Focus on patterns and emotions in the journal entry</instruction>
+                    <instruction>Create prompts that encourage deeper self-exploration</instruction>
+                </instructions>
+                
+                <formatting>
+                    <format>Respond with valid JSON only</format>
+                    <format>Do not include any text outside the JSON structure</format>
+                    <format>Use plain text in all JSON values (no markdown)</format>
+                </formatting>
+                """),
             ChatMessage(role: .user, content: prompt)
         ]
         

@@ -184,6 +184,24 @@ struct MemoriesView: View {
                 Divider()
                     .frame(height: 30)
                 
+                // Clean markdown button
+                Button {
+                    Task {
+                        await memoryManager.cleanMarkdownFromMemories()
+                    }
+                } label: {
+                    Label("Clean Formatting", systemImage: "wand.and.stars")
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.orange.opacity(0.1))
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .help("Remove markdown formatting from all memories")
+                
+                Divider()
+                    .frame(height: 30)
+                
                 // Sort order
                 Menu {
                     ForEach(MemoryViewModel.SortOrder.allCases, id: \.self) { order in
