@@ -33,7 +33,7 @@ struct Sidebar: View {
                         Button(action: { selectedView = .compose }) {
                             ZStack {
                                 Circle()
-                                    .fill(Theme.Colors.primaryAccent.opacity(0.1))
+                                    .fill(Theme.Colors.primaryAccent.opacity(0.05))
                                     .frame(width: 32, height: 32)
                                 
                                 Image(systemName: "square.and.pencil")
@@ -63,24 +63,18 @@ struct Sidebar: View {
         .frame(width: Theme.sidebarWidth)
         .background(
             ZStack {
-                // Ultra transparent glass effect
+                // Maximum transparency glass effect
                 VisualEffectView(
-                    material: .sidebar,
+                    material: .underWindowBackground,
                     blendingMode: .behindWindow,
-                    vibrancy: 0.3
+                    vibrancy: 0.05
                 )
                 .ignoresSafeArea()
+                .opacity(0.5)
                 
-                // Very subtle gradient overlay
-                LinearGradient(
-                    colors: [
-                        Color.white.opacity(0.02),
-                        Color.clear
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                // Barely visible tint
+                Color.white.opacity(0.005)
+                    .ignoresSafeArea()
             }
         )
         .sheet(isPresented: $showingSettings) {
@@ -112,7 +106,7 @@ struct Sidebar: View {
             LinearGradient(
                 colors: [
                     Color.clear,
-                    Theme.Colors.divider.opacity(0.3),
+                    Theme.Colors.divider.opacity(0.15),
                     Color.clear
                 ],
                 startPoint: .leading,
@@ -153,7 +147,7 @@ struct Sidebar: View {
                 .padding(.vertical, 4)
                 .background(
                     Capsule()
-                        .fill(Theme.Colors.primaryAccent.opacity(0.1))
+                        .fill(Theme.Colors.primaryAccent.opacity(0.05))
                 )
             }
             .padding()
@@ -193,7 +187,7 @@ struct NavigationRow: View {
                         .padding(.vertical, 2)
                         .background(
                             Capsule()
-                                .fill(isSelected ? Theme.Colors.primaryAccent.opacity(0.2) : Theme.Colors.divider)
+                                .fill(isSelected ? Theme.Colors.primaryAccent.opacity(0.1) : Theme.Colors.divider.opacity(0.5))
                         )
                 }
             }
@@ -206,7 +200,7 @@ struct NavigationRow: View {
                     
                     if isSelected {
                         RoundedRectangle(cornerRadius: Theme.smallCornerRadius)
-                            .stroke(Theme.Colors.primaryAccent.opacity(0.3), lineWidth: 1)
+                            .stroke(Theme.Colors.primaryAccent.opacity(0.2), lineWidth: 0.5)
                     }
                 }
             )
@@ -223,9 +217,9 @@ struct NavigationRow: View {
     
     private var backgroundColor: Color {
         if isSelected {
-            return Theme.Colors.selectedBackground
+            return Theme.Colors.selectedBackground.opacity(0.5)
         } else if isHovered {
-            return Theme.Colors.hoverBackground
+            return Theme.Colors.hoverBackground.opacity(0.3)
         } else {
             return Color.clear
         }
