@@ -207,16 +207,18 @@ struct EnhancedCardButtonStyle: ButtonStyle {
         configuration.label
             .background(
                 ZStack {
-                    // Base layer with glass effect
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(NSColor.controlBackgroundColor))
+                    // Enhanced glass morphism
+                    VisualEffectView.frostedGlass
+                        .opacity(0.6)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     
-                    // Subtle glass overlay
+                    // Dynamic gradient overlay
                     RoundedRectangle(cornerRadius: 12)
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color.white.opacity(isHovered ? 0.08 : 0.04),
+                                    Color.white.opacity(isHovered ? 0.12 : 0.06),
+                                    Theme.Colors.glassTint.opacity(isHovered ? 0.08 : 0.04),
                                     Color.clear
                                 ],
                                 startPoint: .topLeading,
@@ -224,24 +226,47 @@ struct EnhancedCardButtonStyle: ButtonStyle {
                             )
                         )
                     
-                    // Ambient glow on hover
+                    // Chromatic aberration on hover
                     if isHovered {
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Theme.Colors.primaryAccent.opacity(0.03))
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Theme.Colors.chromaticRed,
+                                        Theme.Colors.chromaticGreen,
+                                        Theme.Colors.chromaticBlue
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .blur(radius: 2)
+                            .blendMode(.screen)
+                    }
+                    
+                    // Selection glow
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(
+                                Theme.Gradients.primary,
+                                lineWidth: 2
+                            )
+                            .blur(radius: 4)
                     }
                 }
             )
+            .depthShadow(elevated: isHovered || isSelected)
             .shadow(
-                color: isSelected ? Theme.Colors.primaryAccent.opacity(0.2) : Color.black.opacity(isHovered ? 0.1 : 0.05),
-                radius: isHovered ? 12 : 8,
+                color: isSelected ? Theme.Colors.primaryAccent.opacity(0.3) : Color.clear,
+                radius: 20,
                 x: 0,
-                y: isHovered ? 4 : 2
+                y: 0
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
                     .strokeBorder(
                         isSelected ? Theme.Colors.primaryAccent : (isHovered ? Color.white.opacity(0.1) : Color.clear),
-                        lineWidth: isSelected ? 2 : 0.5
+                        lineWidth: isSelected ? 2 : 1
                     )
             )
             .scaleEffect(configuration.isPressed ? 0.98 : (isHovered ? 1.02 : 1.0))
@@ -289,20 +314,39 @@ struct ActionButton: View {
     
     var body: some View {
         Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(isDestructive ? .red : .secondary)
-                .frame(width: 28, height: 28)
-                .background(
-                    Circle()
-                        .fill(Color.gray.opacity(0.1))
-                )
-                .scaleEffect(isPressed ? 0.9 : 1.0)
+            ZStack {
+                // Glass background
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.15),
+                                Color.white.opacity(0.05)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                
+                Circle()
+                    .strokeBorder(
+                        Color.white.opacity(0.2),
+                        lineWidth: 0.5
+                    )
+                
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(isDestructive ? .red : .primary)
+                    .rotationEffect(.degrees(isPressed ? 10 : 0))
+            }
+            .frame(width: 28, height: 28)
+            .scaleEffect(isPressed ? 0.9 : 1.0)
+            .shadow(color: .black.opacity(0.1), radius: 2, y: 1)
         }
         .buttonStyle(PlainButtonStyle())
         .help(tooltip)
         .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
-            withAnimation(.easeInOut(duration: 0.1)) {
+            withAnimation(Theme.microInteraction) {
                 isPressed = pressing
             }
         }, perform: {})

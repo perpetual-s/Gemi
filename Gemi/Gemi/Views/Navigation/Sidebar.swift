@@ -26,20 +26,34 @@ struct Sidebar: View {
         .frame(width: Theme.sidebarWidth)
         .background(
             ZStack {
-                // Base material
-                VisualEffectView.sidebar
+                // Enhanced layered glass effect
+                VisualEffectView.liquidGlass
                     .ignoresSafeArea()
                 
-                // Subtle gradient overlay
+                // Dynamic gradient overlay
                 LinearGradient(
                     colors: [
-                        Theme.Colors.glassTint,
+                        Theme.Colors.glassTint.opacity(0.8),
+                        Theme.Colors.ambientColor(for: Calendar.current.component(.hour, from: Date())).opacity(0.1),
                         Color.clear
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
-                .opacity(0.3)
+                .opacity(0.4)
+                .ignoresSafeArea()
+                
+                // Subtle shimmer effect
+                LinearGradient(
+                    colors: [
+                        Color.clear,
+                        Color.white.opacity(0.05),
+                        Color.clear
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .opacity(0.5)
                 .ignoresSafeArea()
             }
         )
@@ -84,37 +98,34 @@ struct Sidebar: View {
         }
         .padding()
         .background(
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Theme.Colors.windowBackground,
-                    Theme.Colors.windowBackground.opacity(0.8)
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            ZStack {
+                VisualEffectView.headerView
+                    .opacity(0.8)
+                
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Theme.Colors.windowBackground.opacity(0.9),
+                        Theme.Colors.windowBackground.opacity(0.5)
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                
+                // Subtle glow at the bottom
+                LinearGradient(
+                    colors: [
+                        Color.clear,
+                        Theme.Colors.primaryAccent.opacity(0.05)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            }
         )
     }
     
     private var searchBar: some View {
-        HStack {
-            Image(systemName: "magnifyingglass")
-                .foregroundColor(Theme.Colors.secondaryText)
-            
-            TextField("Search entries...", text: $searchText)
-                .textFieldStyle(.plain)
-        }
-        .padding(8)
-        .background(
-            ZStack {
-                Theme.Colors.cardBackground.opacity(0.5)
-                VisualEffectView.ultraThin
-            }
-        )
-        .cornerRadius(Theme.smallCornerRadius)
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.smallCornerRadius)
-                .stroke(Theme.Colors.divider, lineWidth: 0.5)
-        )
+        GlassTextField("Search entries...", text: $searchText, icon: "magnifyingglass")
     }
     
     private var navigationItems: some View {
