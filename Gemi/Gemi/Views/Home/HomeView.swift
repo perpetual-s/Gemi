@@ -346,7 +346,7 @@ struct HomeView: View {
             // Privacy features grid
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                 PrivacyFeatureCard(
-                    icon: "iphone.gen3",
+                    icon: "macbook",
                     title: "100% On-Device",
                     description: "Everything stays on your Mac"
                 )
