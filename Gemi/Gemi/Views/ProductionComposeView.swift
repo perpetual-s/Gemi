@@ -250,7 +250,7 @@ struct ProductionComposeView: View {
         }
         .background(
             ZStack {
-                ProductionVisualEffectView()
+                VisualEffectView.headerView
                 VStack {
                     Spacer()
                     Divider()
@@ -574,7 +574,7 @@ struct ProductionComposeView: View {
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 10)
-            .background(ProductionVisualEffectView())
+            .background(VisualEffectView.headerView)
         }
     }
     
@@ -908,19 +908,6 @@ struct ProductionFlowLayout: Layout {
     }
 }
 
-// MARK: - Visual Effect View
-
-struct ProductionVisualEffectView: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        view.material = .headerView
-        view.blendingMode = .withinWindow
-        view.state = .active
-        return view
-    }
-    
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
-}
 
 // MARK: - Custom Text Editor
 

@@ -142,7 +142,7 @@ struct SettingsView: View {
                 .padding(.bottom, 20)
             }
             .frame(width: 260)
-            .background(VisualEffectBlur())
+            .background(VisualEffectView.sidebar)
             
             // Content Area
             ZStack {
@@ -1086,17 +1086,6 @@ struct DataMetricView: View {
     }
 }
 
-struct VisualEffectBlur: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        view.material = .sidebar
-        view.blendingMode = .behindWindow
-        view.state = .active
-        return view
-    }
-    
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
-}
 
 // MARK: - Data Management View
 
@@ -1127,7 +1116,7 @@ struct DataManagementView: View {
                 .buttonStyle(PremiumButtonStyle())
             }
             .padding()
-            .background(VisualEffectBlur())
+            .background(VisualEffectView.sidebar)
             
             Divider()
             
@@ -1178,7 +1167,7 @@ struct DataManagementView: View {
                 Spacer()
             }
             .padding()
-            .background(VisualEffectBlur())
+            .background(VisualEffectView.sidebar)
         }
         .frame(width: 600, height: 500)
     }

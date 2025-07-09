@@ -153,7 +153,7 @@ struct WritersBlockBreaker: View {
             .buttonStyle(.plain)
         }
         .padding(20)
-        .background(VisualEffectBlur())
+        .background(VisualEffectView.windowBackground)
     }
     
     private var categorySelector: some View {
@@ -368,7 +368,7 @@ struct WritersBlockBreaker: View {
             }
         }
         .padding(20)
-        .background(VisualEffectBlur())
+        .background(VisualEffectView.windowBackground)
     }
     
     // MARK: - Helper Methods

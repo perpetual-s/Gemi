@@ -143,7 +143,7 @@ struct FocusModeView: View {
             
             // Optional blur of underlying content
             if settings.backgroundOpacity < 1.0 {
-                VisualEffectBlur()
+                VisualEffectView.windowBackground
                     .opacity(1.0 - settings.backgroundOpacity)
                     .ignoresSafeArea()
             }
