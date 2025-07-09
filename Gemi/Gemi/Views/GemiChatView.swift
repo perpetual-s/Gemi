@@ -196,8 +196,18 @@ struct GemiChatView: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .onChange(of: viewModel.messages.count) { _, _ in
-                withAnimation(.easeOut(duration: 0.3)) {
-                    proxy.scrollTo(bottomID, anchor: .bottom)
+                scrollToBottom(proxy: proxy, animated: true)
+            }
+            .onChange(of: viewModel.messages.last?.content) { _, _ in
+                // Scroll smoothly as content streams in
+                if viewModel.isStreaming {
+                    scrollToBottom(proxy: proxy, animated: false)
+                }
+            }
+            .onAppear {
+                // Initial scroll to bottom
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    scrollToBottom(proxy: proxy, animated: false)
                 }
             }
         }
@@ -540,6 +550,16 @@ struct GemiChatView: View {
         
         Task {
             await viewModel.sendMessage(trimmedMessage)
+        }
+    }
+    
+    private func scrollToBottom(proxy: ScrollViewProxy, animated: Bool) {
+        if animated {
+            withAnimation(.easeOut(duration: 0.3)) {
+                proxy.scrollTo(bottomID, anchor: .bottom)
+            }
+        } else {
+            proxy.scrollTo(bottomID, anchor: .bottom)
         }
     }
 }
