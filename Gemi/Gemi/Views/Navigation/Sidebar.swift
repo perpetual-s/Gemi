@@ -8,52 +8,78 @@ struct Sidebar: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            header
-            
             ScrollView {
                 VStack(spacing: Theme.spacing) {
+                    // Unified header section without background
+                    HStack {
+                        ZStack {
+                            // Gradient background for icon
+                            Circle()
+                                .fill(Theme.Gradients.primary)
+                                .frame(width: 36, height: 36)
+                                .shadow(color: Theme.Colors.primaryAccent.opacity(0.3), radius: 4, x: 0, y: 2)
+                            
+                            Image(systemName: "book.fill")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.white)
+                        }
+                        
+                        Text("Gemi")
+                            .font(Theme.Typography.title)
+                            .fontWeight(.bold)
+                        
+                        Spacer()
+                        
+                        Button(action: { selectedView = .compose }) {
+                            ZStack {
+                                Circle()
+                                    .fill(Theme.Colors.primaryAccent.opacity(0.1))
+                                    .frame(width: 32, height: 32)
+                                
+                                Image(systemName: "square.and.pencil")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Theme.Colors.primaryAccent)
+                            }
+                        }
+                        .buttonStyle(AnimatedButtonStyle())
+                        .help("New Entry (⌘N)")
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 20)
+                    .padding(.bottom, Theme.spacing)
+                    
                     searchBar
+                        .padding(.horizontal)
+                    
                     navigationItems
-                    Spacer()
+                        .padding(.horizontal)
+                    
+                    Spacer(minLength: 20)
                 }
-                .padding()
             }
-            
-            Divider()
             
             bottomSection
         }
         .frame(width: Theme.sidebarWidth)
         .background(
             ZStack {
-                // Enhanced layered glass effect
-                VisualEffectView.liquidGlass
-                    .ignoresSafeArea()
-                
-                // Dynamic gradient overlay
-                LinearGradient(
-                    colors: [
-                        Theme.Colors.glassTint.opacity(0.8),
-                        Theme.Colors.ambientColor(for: Calendar.current.component(.hour, from: Date())).opacity(0.1),
-                        Color.clear
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
+                // Ultra transparent glass effect
+                VisualEffectView(
+                    material: .sidebar,
+                    blendingMode: .behindWindow,
+                    vibrancy: 0.3
                 )
-                .opacity(0.4)
                 .ignoresSafeArea()
                 
-                // Subtle shimmer effect
+                // Very subtle gradient overlay
                 LinearGradient(
                     colors: [
-                        Color.clear,
-                        Color.white.opacity(0.05),
+                        Color.white.opacity(0.02),
                         Color.clear
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
-                .opacity(0.5)
                 .ignoresSafeArea()
             }
         )
@@ -62,67 +88,6 @@ struct Sidebar: View {
         }
     }
     
-    private var header: some View {
-        HStack {
-            ZStack {
-                // Gradient background for icon
-                Circle()
-                    .fill(Theme.Gradients.primary)
-                    .frame(width: 36, height: 36)
-                    .shadow(color: Theme.Colors.primaryAccent.opacity(0.3), radius: 4, x: 0, y: 2)
-                
-                Image(systemName: "book.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.white)
-            }
-            
-            Text("Gemi")
-                .font(Theme.Typography.title)
-                .fontWeight(.bold)
-            
-            Spacer()
-            
-            Button(action: { selectedView = .compose }) {
-                ZStack {
-                    Circle()
-                        .fill(Theme.Colors.primaryAccent.opacity(0.1))
-                        .frame(width: 32, height: 32)
-                    
-                    Image(systemName: "square.and.pencil")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Theme.Colors.primaryAccent)
-                }
-            }
-            .buttonStyle(AnimatedButtonStyle())
-            .help("New Entry (⌘N)")
-        }
-        .padding()
-        .background(
-            ZStack {
-                VisualEffectView.headerView
-                    .opacity(0.8)
-                
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Theme.Colors.windowBackground.opacity(0.9),
-                        Theme.Colors.windowBackground.opacity(0.5)
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                
-                // Subtle glow at the bottom
-                LinearGradient(
-                    colors: [
-                        Color.clear,
-                        Theme.Colors.primaryAccent.opacity(0.05)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            }
-        )
-    }
     
     private var searchBar: some View {
         GlassTextField("Search entries...", text: $searchText, icon: "magnifyingglass")
@@ -143,8 +108,18 @@ struct Sidebar: View {
     
     private var bottomSection: some View {
         VStack(spacing: 0) {
-            Divider()
-                .opacity(0.3)
+            // Subtle divider with gradient fade
+            LinearGradient(
+                colors: [
+                    Color.clear,
+                    Theme.Colors.divider.opacity(0.3),
+                    Color.clear
+                ],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+            .frame(height: 1)
+            .padding(.horizontal)
             
             HStack {
                 Button(action: { showingSettings = true }) {
@@ -161,11 +136,6 @@ struct Sidebar: View {
                 .buttonStyle(.plain)
                 .help("Settings (⌘,)")
                 .keyboardShortcut(",", modifiers: .command)
-                .onHover { hovering in
-                    withAnimation(Theme.quickAnimation) {
-                        // Hover effect handled by button
-                    }
-                }
                 
                 Spacer()
                 
@@ -188,10 +158,6 @@ struct Sidebar: View {
             }
             .padding()
         }
-        .background(
-            VisualEffectView.ultraThin
-                .opacity(0.5)
-        )
     }
 }
 
