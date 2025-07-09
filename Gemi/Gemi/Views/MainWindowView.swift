@@ -142,10 +142,6 @@ struct MainWindowView: View {
                     editingEntry = nil
                 },
                 onFocusMode: { entry in
-                    print("MainWindowView: Entering Focus mode with entry:")
-                    print("  - Entry ID: \(entry.id)")
-                    print("  - Title: \(entry.title)")
-                    print("  - Content length: \(entry.content.count)")
                     focusModeEntry = entry
                     withAnimation(.easeOut(duration: 0.4)) {
                         showingFocusMode = true
