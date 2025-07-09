@@ -15,70 +15,68 @@ struct FavoritesView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Enhanced Header
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 28))
-                            .foregroundColor(.yellow)
-                            .symbolRenderingMode(.multicolor)
+        ScrollView {
+            VStack(spacing: Theme.spacing) {
+                // Enhanced Header
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 28))
+                                .foregroundColor(.yellow)
+                                .symbolRenderingMode(.multicolor)
+                            
+                            Text("Favorites")
+                                .font(Theme.Typography.sectionHeader)
+                        }
                         
-                        Text("Favorites")
-                            .font(Theme.Typography.sectionHeader)
-                    }
-                    
-                    Text("\(favoriteEntries.count) starred \(favoriteEntries.count == 1 ? "entry" : "entries")")
-                        .font(Theme.Typography.caption)
-                        .foregroundColor(Theme.Colors.secondaryText)
-                }
-                Spacer()
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 20)
-            
-            Divider()
-            
-            if favoriteEntries.isEmpty {
-                // Enhanced empty state
-                VStack(spacing: Theme.largeSpacing) {
-                    ZStack {
-                        // Animated gradient background
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        Theme.Colors.primaryAccent.opacity(0.2),
-                                        Theme.Colors.primaryAccent.opacity(0.05)
-                                    ]),
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 120, height: 120)
-                            .shadow(color: Theme.Colors.primaryAccent.opacity(0.2), radius: 20, x: 0, y: 10)
-                        
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 56))
-                            .foregroundColor(.yellow)
-                            .symbolRenderingMode(.multicolor)
-                            .shadow(color: .yellow.opacity(0.3), radius: 10)
-                    }
-                    
-                    VStack(spacing: Theme.spacing) {
-                        Text("No favorites yet")
-                            .font(Theme.Typography.title)
-                        
-                        Text("Star your most meaningful entries to\nquickly access them here")
-                            .font(Theme.Typography.body)
+                        Text("\(favoriteEntries.count) starred \(favoriteEntries.count == 1 ? "entry" : "entries")")
+                            .font(Theme.Typography.caption)
                             .foregroundColor(Theme.Colors.secondaryText)
-                            .multilineTextAlignment(.center)
                     }
+                    Spacer()
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                ScrollView {
+                .padding(.horizontal, 24)
+                .padding(.vertical, 20)
+                
+                if favoriteEntries.isEmpty {
+                    // Enhanced empty state
+                    VStack(spacing: Theme.largeSpacing) {
+                        ZStack {
+                            // Animated gradient background
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            Theme.Colors.primaryAccent.opacity(0.2),
+                                            Theme.Colors.primaryAccent.opacity(0.05)
+                                        ]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 120, height: 120)
+                                .shadow(color: Theme.Colors.primaryAccent.opacity(0.2), radius: 20, x: 0, y: 10)
+                            
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 56))
+                                .foregroundColor(.yellow)
+                                .symbolRenderingMode(.multicolor)
+                                .shadow(color: .yellow.opacity(0.3), radius: 10)
+                        }
+                        
+                        VStack(spacing: Theme.spacing) {
+                            Text("No favorites yet")
+                                .font(Theme.Typography.title)
+                            
+                            Text("Star your most meaningful entries to\nquickly access them here")
+                                .font(Theme.Typography.body)
+                                .foregroundColor(Theme.Colors.secondaryText)
+                                .multilineTextAlignment(.center)
+                        }
+                    }
+                    .padding(.top, 60)
+                } else {
                     LazyVStack(spacing: Theme.spacing) {
                         ForEach(favoriteEntries) { entry in
                             PremiumEntryCard(
@@ -109,7 +107,8 @@ struct FavoritesView: View {
                             ))
                         }
                     }
-                    .padding()
+                    .padding(.horizontal, 24)
+                    .padding(.bottom)
                 }
             }
         }
