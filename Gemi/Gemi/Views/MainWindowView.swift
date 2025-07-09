@@ -12,14 +12,30 @@ struct MainWindowView: View {
     
     var body: some View {
         ZStack {
+            // Enhanced background with visual effects
+            ZStack {
+                // Base window background
+                VisualEffectView.windowBackground
+                    .ignoresSafeArea()
+                
+                // Subtle animated gradient overlay
+                Theme.Gradients.timeBasedGradient()
+                    .opacity(0.05)
+                    .ignoresSafeArea()
+                    .animation(.easeInOut(duration: 3), value: Date())
+            }
+            
             HSplitView {
                 Sidebar(selectedView: $selectedView, journalStore: journalStore)
                     .frame(minWidth: Theme.sidebarWidth, maxWidth: Theme.sidebarWidth)
                 
                 contentView
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(
+                        VisualEffectView.contentBackground
+                            .opacity(0.5)
+                    )
             }
-            .background(Theme.Colors.windowBackground)
             .frame(minWidth: Theme.minWindowWidth, minHeight: Theme.minWindowHeight)
             .onAppear {
                 Task {

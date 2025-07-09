@@ -34,6 +34,37 @@ struct Theme {
         static let glassTint = Color.white.opacity(0.05)
         static let shadowColor = Color.black.opacity(0.1)
         static let glowColor = Color.accentColor.opacity(0.3)
+        
+        // Enhanced color system
+        static let chromaticRed = Color.red.opacity(0.02)
+        static let chromaticGreen = Color.green.opacity(0.02)
+        static let chromaticBlue = Color.blue.opacity(0.02)
+        
+        // Ambient colors based on time
+        static func ambientColor(for hour: Int) -> Color {
+            switch hour {
+            case 5..<9: return Color.orange.opacity(0.2) // Morning
+            case 9..<12: return Color.yellow.opacity(0.15) // Late morning
+            case 12..<15: return Color.blue.opacity(0.1) // Afternoon
+            case 15..<18: return Color.indigo.opacity(0.15) // Late afternoon
+            case 18..<21: return Color.purple.opacity(0.2) // Evening
+            default: return Color.indigo.opacity(0.25) // Night
+            }
+        }
+        
+        // Gradient mesh colors
+        static let meshGradient1 = LinearGradient(
+            colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.2)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        
+        static let meshGradient2 = RadialGradient(
+            colors: [Color.pink.opacity(0.2), Color.clear],
+            center: .center,
+            startRadius: 50,
+            endRadius: 200
+        )
     }
     
     struct Typography {
@@ -71,6 +102,66 @@ struct Theme {
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
+        
+        // Advanced gradients
+        static let aurora = LinearGradient(
+            colors: [
+                Color.blue.opacity(0.3),
+                Color.purple.opacity(0.2),
+                Color.pink.opacity(0.1),
+                Color.clear
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        
+        static let sunset = RadialGradient(
+            colors: [
+                Color.orange.opacity(0.3),
+                Color.pink.opacity(0.2),
+                Color.purple.opacity(0.1),
+                Color.clear
+            ],
+            center: .topTrailing,
+            startRadius: 100,
+            endRadius: 400
+        )
+        
+        static let ocean = LinearGradient(
+            colors: [
+                Color.blue.opacity(0.2),
+                Color.cyan.opacity(0.15),
+                Color.teal.opacity(0.1),
+                Color.clear
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        
+        // Dynamic gradient based on time
+        static func timeBasedGradient(for date: Date = Date()) -> LinearGradient {
+            let hour = Calendar.current.component(.hour, from: date)
+            let colors: [Color]
+            
+            switch hour {
+            case 5..<9:
+                colors = [Color.orange.opacity(0.3), Color.yellow.opacity(0.2), Color.clear]
+            case 9..<12:
+                colors = [Color.blue.opacity(0.2), Color.cyan.opacity(0.15), Color.clear]
+            case 12..<17:
+                colors = [Color.blue.opacity(0.15), Color.green.opacity(0.1), Color.clear]
+            case 17..<21:
+                colors = [Color.purple.opacity(0.3), Color.pink.opacity(0.2), Color.clear]
+            default:
+                colors = [Color.indigo.opacity(0.4), Color.purple.opacity(0.3), Color.clear]
+            }
+            
+            return LinearGradient(
+                colors: colors,
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
     }
     
     struct Effects {
@@ -86,6 +177,38 @@ struct Theme {
             endPoint: .bottomTrailing
         )
         static let subtleGlow = Color.accentColor.opacity(0.15)
+        
+        // Advanced glass effects
+        static func chromaticAberration() -> some View {
+            ZStack {
+                Color.red.opacity(0.02).offset(x: -1, y: 0)
+                Color.green.opacity(0.02)
+                Color.blue.opacity(0.02).offset(x: 1, y: 0)
+            }
+        }
+        
+        // Depth shadows
+        static func depthShadow(elevation: Int) -> (color: Color, radius: CGFloat, y: CGFloat) {
+            switch elevation {
+            case 1: return (Color.black.opacity(0.08), 4, 2)
+            case 2: return (Color.black.opacity(0.12), 8, 4)
+            case 3: return (Color.black.opacity(0.16), 12, 6)
+            case 4: return (Color.black.opacity(0.20), 16, 8)
+            case 5: return (Color.black.opacity(0.24), 20, 10)
+            default: return (Color.black.opacity(0.08), 4, 2)
+            }
+        }
+        
+        // Animated shimmer
+        static let shimmer = LinearGradient(
+            colors: [
+                Color.clear,
+                Color.white.opacity(0.5),
+                Color.clear
+            ],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
     }
 }
 
