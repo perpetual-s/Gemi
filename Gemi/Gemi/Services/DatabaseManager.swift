@@ -405,10 +405,11 @@ actor DatabaseManager {
         }
         
         let searchPattern = "%\(query)%"
+        // Modified SQL to also search in mood field and get all entries for content search
         let sql = """
             SELECT id, title, content_encrypted, created_at, modified_at, is_favorite, mood, tags, location, weather
             FROM entries
-            WHERE title LIKE ? OR tags LIKE ?
+            WHERE title LIKE ? OR tags LIKE ? OR mood LIKE ?
             ORDER BY created_at DESC
         """
         
@@ -421,8 +422,10 @@ actor DatabaseManager {
         
         sqlite3_bind_text(statement, 1, searchPattern, -1, SQLITE_TRANSIENT)
         sqlite3_bind_text(statement, 2, searchPattern, -1, SQLITE_TRANSIENT)
+        sqlite3_bind_text(statement, 3, searchPattern, -1, SQLITE_TRANSIENT)
         
         var entries: [JournalEntry] = []
+        let lowercasedQuery = query.lowercased()
         
         while sqlite3_step(statement) == SQLITE_ROW {
             guard let idString = sqlite3_column_text(statement, 0),
@@ -454,20 +457,29 @@ actor DatabaseManager {
             let location = sqlite3_column_text(statement, 8).map { String(cString: $0) }
             let weather = sqlite3_column_text(statement, 9).map { String(cString: $0) }
             
-            let entry = JournalEntry(
-                id: id,
-                createdAt: createdAt,
-                modifiedAt: modifiedAt,
-                title: title,
-                content: content,
-                tags: tags,
-                mood: mood,
-                weather: weather,
-                location: location,
-                isFavorite: isFavorite
-            )
+            // Check if content contains the search query (case-insensitive)
+            let contentMatches = content.lowercased().contains(lowercasedQuery)
+            let titleMatches = title.lowercased().contains(lowercasedQuery)
+            let tagsMatch = tags.contains { $0.lowercased().contains(lowercasedQuery) }
+            let moodMatches = mood?.rawValue.lowercased().contains(lowercasedQuery) ?? false
             
-            entries.append(entry)
+            // Only include entry if it matches in title, tags, mood, or content
+            if titleMatches || tagsMatch || moodMatches || contentMatches {
+                let entry = JournalEntry(
+                    id: id,
+                    createdAt: createdAt,
+                    modifiedAt: modifiedAt,
+                    title: title,
+                    content: content,
+                    tags: tags,
+                    mood: mood,
+                    weather: weather,
+                    location: location,
+                    isFavorite: isFavorite
+                )
+                
+                entries.append(entry)
+            }
         }
         
         return entries

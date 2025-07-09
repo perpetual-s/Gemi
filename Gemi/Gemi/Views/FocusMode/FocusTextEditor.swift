@@ -181,33 +181,8 @@ class FocusTextView: NSTextView {
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
         
-        guard focusLevel != .none,
-              let textStorage = textStorage else { return }
-        
-        // Get current cursor position
-        let cursorLocation = selectedRange().location
-        
-        // Apply dimming based on focus level
-        let fullRange = NSRange(location: 0, length: textStorage.length)
-        let activeRanges = getActiveRanges(for: cursorLocation, in: textStorage.string)
-        
-        // Create a mutable attributed string for temporary display
-        let tempStorage = NSMutableAttributedString(attributedString: textStorage)
-        
-        // First, dim everything
-        let dimmedColor = (textColor ?? .labelColor).withAlphaComponent(1.0 - highlightIntensity)
-        tempStorage.addAttribute(.foregroundColor, value: dimmedColor, range: fullRange)
-        
-        // Then highlight active ranges
-        let activeColor = textColor ?? .labelColor
-        for range in activeRanges {
-            if range.location + range.length <= tempStorage.length {
-                tempStorage.addAttribute(.foregroundColor, value: activeColor, range: range)
-            }
-        }
-        
-        // Apply the temporary attributes for drawing
-        textStorage.setAttributedString(tempStorage)
+        // Skip focus highlighting for now to fix editing issues
+        // TODO: Implement proper focus highlighting without breaking text input
     }
     
     private func getActiveRanges(for cursorLocation: Int, in text: String) -> [NSRange] {
