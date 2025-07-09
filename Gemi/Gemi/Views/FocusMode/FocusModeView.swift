@@ -74,21 +74,9 @@ struct FocusModeView: View {
                                         .frame(height: 1)
                                         .frame(maxWidth: .infinity)
                                     
-                                    // Main content editor with clear visual bounds
-                                    ZStack(alignment: .topLeading) {
-                                        // Background to show content area
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(settings.effectiveTextColor.opacity(0.02))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 8)
-                                                    .stroke(settings.effectiveTextColor.opacity(0.05), lineWidth: 1)
-                                            )
-                                        
-                                        contentEditor
-                                            .padding(16)
-                                            .id("editor")
-                                    }
-                                    .frame(minHeight: 400)
+                                    // Main content editor
+                                    contentEditor
+                                        .id("editor")
                                 }
                                 .frame(maxWidth: settings.maxLineWidth)
                                 .padding(.horizontal, 40)
@@ -338,12 +326,8 @@ struct FocusModeView: View {
                     textEditorCoordinator = coordinator
                 }
             )
-            .frame(minHeight: 300)
+            .frame(minHeight: 400)
             .frame(maxHeight: .infinity)
-            .background(
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(settings.effectiveTextColor.opacity(0.02))
-            )
         }
     }
     
