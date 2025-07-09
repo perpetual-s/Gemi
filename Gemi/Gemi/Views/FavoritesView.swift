@@ -125,7 +125,7 @@ struct FavoritesView: View {
                     .frame(minWidth: 800, minHeight: 600)
             }
         }
-        .dismissableSheet(isPresented: $showingReadingView) {
+        .sheet(isPresented: $showingReadingView) {
             if let entry = readingEntry {
                 EnhancedEntryReadingView(
                     entry: entry,

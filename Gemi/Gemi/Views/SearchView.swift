@@ -173,7 +173,7 @@ struct SearchView: View {
             }
             .padding(.vertical)
         }
-        .dismissableSheet(isPresented: $showingReadingView) {
+        .sheet(isPresented: $showingReadingView) {
             if let entry = readingEntry {
                 EnhancedEntryReadingView(
                     entry: entry,
