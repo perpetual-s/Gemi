@@ -20,17 +20,6 @@ struct MemoriesView: View {
             }
         }
         .background(Theme.Colors.windowBackground)
-        .toolbar {
-            ToolbarItem(placement: .automatic) {
-                if !memoryManager.memories.isEmpty {
-                    Button {
-                        showingProcessingView = true
-                    } label: {
-                        Text("Process Entries")
-                    }
-                }
-            }
-        }
         .sheet(isPresented: $showingProcessingView) {
             ProcessEntriesView()
         }
@@ -142,17 +131,31 @@ struct MemoriesView: View {
                 
                 Spacer()
                 
-                // Simple count badge
-                if !memoryManager.memories.isEmpty {
-                    Text("\(memoryManager.memories.count)")
-                        .font(.system(size: 24, weight: .semibold))
-                        .foregroundColor(Theme.Colors.primaryAccent)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(
-                            Capsule()
-                                .fill(Theme.Colors.primaryAccent.opacity(0.1))
-                        )
+                HStack(spacing: 12) {
+                    // Process entries button
+                    if !memoryManager.memories.isEmpty {
+                        Button {
+                            showingProcessingView = true
+                        } label: {
+                            Label("Process Entries", systemImage: "arrow.triangle.2.circlepath")
+                                .font(Theme.Typography.body)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.regular)
+                    }
+                    
+                    // Simple count badge
+                    if !memoryManager.memories.isEmpty {
+                        Text("\(memoryManager.memories.count)")
+                            .font(.system(size: 24, weight: .semibold))
+                            .foregroundColor(Theme.Colors.primaryAccent)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(
+                                Capsule()
+                                    .fill(Theme.Colors.primaryAccent.opacity(0.1))
+                            )
+                    }
                 }
             }
             .padding(.horizontal, 24)
