@@ -33,7 +33,7 @@ struct Sidebar: View {
                         Button(action: { selectedView = .compose }) {
                             ZStack {
                                 Circle()
-                                    .fill(Theme.Colors.primaryAccent.opacity(0.05))
+                                    .fill(Theme.Colors.primaryAccent.opacity(0.02))
                                     .frame(width: 32, height: 32)
                                 
                                 Image(systemName: "square.and.pencil")
@@ -63,19 +63,48 @@ struct Sidebar: View {
         .frame(width: Theme.sidebarWidth)
         .background(
             ZStack {
-                // Maximum transparency glass effect
+                // Frosted glass effect with proper blur
                 VisualEffectView(
-                    material: .underWindowBackground,
+                    material: .hudWindow,
                     blendingMode: .behindWindow,
-                    vibrancy: 0.05
+                    vibrancy: 0.8
                 )
                 .ignoresSafeArea()
-                .opacity(0.5)
                 
-                // Barely visible tint
-                Color.white.opacity(0.005)
+                // Glass tint and shine
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(0.1),
+                        Color.white.opacity(0.05),
+                        Color.clear
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+                
+                // Subtle color overlay for glass effect
+                Color.blue.opacity(0.02)
                     .ignoresSafeArea()
+                    .blendMode(.overlay)
             }
+        )
+        .overlay(
+            // Glass edge highlight
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.3),
+                            Color.clear
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .frame(width: 1)
+                .frame(maxHeight: .infinity),
+            alignment: .trailing
         )
         .sheet(isPresented: $showingSettings) {
             SettingsView(journalStore: journalStore)
@@ -106,7 +135,7 @@ struct Sidebar: View {
             LinearGradient(
                 colors: [
                     Color.clear,
-                    Theme.Colors.divider.opacity(0.15),
+                    Theme.Colors.divider.opacity(0.2),
                     Color.clear
                 ],
                 startPoint: .leading,
@@ -123,8 +152,7 @@ struct Sidebar: View {
                         .frame(width: 28, height: 28)
                         .background(
                             Circle()
-                                .fill(Theme.Colors.hoverBackground)
-                                .opacity(0.01)
+                                .fill(Color.clear)
                         )
                 }
                 .buttonStyle(.plain)
@@ -147,7 +175,7 @@ struct Sidebar: View {
                 .padding(.vertical, 4)
                 .background(
                     Capsule()
-                        .fill(Theme.Colors.primaryAccent.opacity(0.05))
+                        .fill(Theme.Colors.primaryAccent.opacity(0.02))
                 )
             }
             .padding()
@@ -187,7 +215,11 @@ struct NavigationRow: View {
                         .padding(.vertical, 2)
                         .background(
                             Capsule()
-                                .fill(isSelected ? Theme.Colors.primaryAccent.opacity(0.1) : Theme.Colors.divider.opacity(0.5))
+                                .fill(isSelected ? Theme.Colors.primaryAccent.opacity(0.15) : Theme.Colors.divider.opacity(0.3))
+                                .background(
+                                    Capsule()
+                                        .fill(.ultraThinMaterial)
+                                )
                         )
                 }
             }
@@ -200,7 +232,12 @@ struct NavigationRow: View {
                     
                     if isSelected {
                         RoundedRectangle(cornerRadius: Theme.smallCornerRadius)
-                            .stroke(Theme.Colors.primaryAccent.opacity(0.2), lineWidth: 0.5)
+                            .stroke(Theme.Colors.primaryAccent.opacity(0.3), lineWidth: 1)
+                            .background(
+                                RoundedRectangle(cornerRadius: Theme.smallCornerRadius)
+                                    .fill(.ultraThinMaterial)
+                                    .opacity(0.3)
+                            )
                     }
                 }
             )
@@ -217,9 +254,9 @@ struct NavigationRow: View {
     
     private var backgroundColor: Color {
         if isSelected {
-            return Theme.Colors.selectedBackground.opacity(0.5)
+            return Theme.Colors.selectedBackground.opacity(0.4)
         } else if isHovered {
-            return Theme.Colors.hoverBackground.opacity(0.3)
+            return Theme.Colors.hoverBackground.opacity(0.2)
         } else {
             return Color.clear
         }
