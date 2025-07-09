@@ -437,8 +437,10 @@ struct EnhancedEntryReadingView: View {
                 // Use the real Gemma 3n API through GemiAICoordinator
                 let insights = try await GemiAICoordinator.shared.generateInsights(for: entry)
                 
-                await MainActor.run {
-                    withAnimation {
+                // Add small delay to prevent layout recursion
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
+                    withAnimation(.easeInOut(duration: 0.3)) {
                         self.aiSummary = insights.summary
                         self.aiKeyPoints = insights.keyPoints
                         self.aiSuggestedPrompts = insights.prompts

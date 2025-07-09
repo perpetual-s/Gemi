@@ -92,7 +92,6 @@ struct ProductionComposeView: View {
             // AI Assistant overlay
             if showAIAssistant {
                 VStack {
-                    Spacer()
                     HStack {
                         Spacer()
                         AIAssistantBubble(
@@ -101,16 +100,17 @@ struct ProductionComposeView: View {
                             onSuggestionAccepted: { suggestion in
                                 insertTextAtCursor(suggestion)
                             },
-                            position: .bottomRight
+                            position: .topRight
                         )
                     }
+                    Spacer()
                 }
                 .padding(.trailing, 30)
-                .padding(.bottom, 30)
+                .padding(.top, 80) // Position below the header
                 .allowsHitTesting(true)
                 .transition(.asymmetric(
-                    insertion: .scale(scale: 0.8, anchor: .bottomTrailing).combined(with: .opacity),
-                    removal: .scale(scale: 0.8, anchor: .bottomTrailing).combined(with: .opacity)
+                    insertion: .scale(scale: 0.8, anchor: .topTrailing).combined(with: .opacity),
+                    removal: .scale(scale: 0.8, anchor: .topTrailing).combined(with: .opacity)
                 ))
                 .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showAIAssistant)
             }

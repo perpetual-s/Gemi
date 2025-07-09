@@ -63,9 +63,15 @@ struct FocusModeView: View {
                                 }
                                 
                                 // Content container with max width
-                                VStack(spacing: 40) {
+                                VStack(spacing: 0) {
                                     // Title editor
                                     titleEditor
+                                    
+                                    // Visual separator between title and content
+                                    Rectangle()
+                                        .fill(settings.effectiveTextColor.opacity(0.1))
+                                        .frame(height: 1)
+                                        .padding(.vertical, 20)
                                     
                                     // Main content editor
                                     contentEditor
