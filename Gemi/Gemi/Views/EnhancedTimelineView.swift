@@ -92,7 +92,8 @@ struct EnhancedTimelineView: View {
                                     .frame(maxHeight: .infinity)
                             }
                             .frame(minHeight: geometry.size.height)
-                            .padding()
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 20)
                         } else {
                             // Entries - aligned from top without centering
                             LazyVStack(alignment: .leading, spacing: Theme.largeSpacing) {
@@ -100,7 +101,8 @@ struct EnhancedTimelineView: View {
                                     dateSection(for: date)
                                 }
                             }
-                            .padding()
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 20)
                         }
                     }
                 }
@@ -226,7 +228,18 @@ struct EnhancedTimelineView: View {
                 .buttonStyle(.borderedProminent)
             }
         }
-        .padding()
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
+        .background(
+            ZStack {
+                Theme.Colors.windowBackground
+                VStack {
+                    Spacer()
+                    Divider()
+                        .opacity(0.3)
+                }
+            }
+        )
     }
     
     

@@ -97,7 +97,7 @@ struct InsightsView: View {
     }
     
     private var enhancedHeader: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 0) {
             HStack {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 12) {
@@ -127,6 +127,11 @@ struct InsightsView: View {
                 .pickerStyle(.segmented)
                 .frame(width: 300)
             }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+            
+            Divider()
+                .opacity(0.3)
         }
     }
     

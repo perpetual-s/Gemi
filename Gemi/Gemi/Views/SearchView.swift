@@ -44,9 +44,11 @@ struct SearchView: View {
             HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(Theme.Colors.secondaryText)
+                    .font(.system(size: 16, weight: .medium))
                 
                 TextField("Search entries, tags, moods...", text: $searchQuery)
                     .textFieldStyle(.plain)
+                    .font(Theme.Typography.body)
                     .onChange(of: searchQuery) { _, newValue in
                         performRealtimeSearch(newValue)
                     }
@@ -67,7 +69,8 @@ struct SearchView: View {
             .background(Theme.Colors.cardBackground)
             .cornerRadius(Theme.smallCornerRadius)
         }
-        .padding()
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
     }
     
     private var emptySearchState: some View {
@@ -78,7 +81,7 @@ struct SearchView: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Theme.Colors.primaryAccent.opacity(0.1),
+                                Theme.Colors.primaryAccent.opacity(0.2),
                                 Theme.Colors.primaryAccent.opacity(0.05)
                             ],
                             startPoint: .topLeading,
@@ -86,6 +89,7 @@ struct SearchView: View {
                         )
                     )
                     .frame(width: 120, height: 120)
+                    .shadow(color: Theme.Colors.primaryAccent.opacity(0.2), radius: 20, x: 0, y: 10)
                 
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 56))
