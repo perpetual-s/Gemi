@@ -15,7 +15,7 @@ struct FocusTextEditor: NSViewRepresentable {
     func makeNSView(context: Context) -> NSScrollView {
         // Create scroll view manually
         let scrollView = NSScrollView()
-        scrollView.hasVerticalScroller = false
+        scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = false
         scrollView.autohidesScrollers = true
         scrollView.drawsBackground = false
@@ -54,6 +54,12 @@ struct FocusTextEditor: NSViewRepresentable {
         textView.highlightIntensity = highlightIntensity
         textView.isEditable = true  // Enable editing
         textView.isSelectable = true  // Enable text selection
+        textView.usesAdaptiveColorMappingForDarkAppearance = true
+        
+        // Set initial text
+        if text.isEmpty {
+            textView.string = ""
+        }
         
         // Set line spacing for readability
         let paragraphStyle = NSMutableParagraphStyle()
