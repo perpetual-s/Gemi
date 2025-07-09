@@ -13,6 +13,10 @@ struct FocusModeView: View {
     @State private var hasUnsavedChanges = false
     @State private var lastSavedContent = ""
     
+    // Local state for entry properties to work around class binding issues
+    @State private var localTitle: String = ""
+    @State private var localContent: String = ""
+    
     // UI visibility states
     @State private var showHeader = true
     @State private var showFooter = true
@@ -294,7 +298,11 @@ struct FocusModeView: View {
                 .foregroundColor(settings.effectiveTextColor.opacity(0.4))
                 .tracking(1)
             
-            TextField("Untitled", text: $entry.title, axis: .vertical)
+            TextField("Untitled", text: $localTitle, axis: .vertical)
+                .onChange(of: localTitle) { _, newValue in
+                    entry.title = newValue
+                    updateTrigger = UUID()
+                }
                 .textFieldStyle(.plain)
                 .font(.system(size: settings.fontSize + 12, weight: .bold, design: .serif))
                 .multilineTextAlignment(.leading)
@@ -311,21 +319,18 @@ struct FocusModeView: View {
                 .foregroundColor(settings.effectiveTextColor.opacity(0.4))
                 .tracking(1)
             
-            FocusTextEditor(
-                text: $entry.content,
-                fontSize: settings.fontSize,
-                textColor: settings.effectiveTextColor,
-                focusLevel: settings.focusLevel,
-                highlightIntensity: settings.highlightIntensity,
-                typewriterMode: settings.typewriterMode,
-                onTextChange: { _ in
+            // Temporarily use standard TextEditor to test if binding works
+            TextEditor(text: $localContent)
+                .font(.system(size: settings.fontSize, design: .serif))
+                .foregroundColor(settings.effectiveTextColor)
+                .scrollContentBackground(.hidden)
+                .background(Color.clear)
+                .onChange(of: localContent) { _, newContent in
+                    entry.content = newContent
                     updateWordCount()
-                    hasUnsavedChanges = (entry.content != lastSavedContent)
-                },
-                onCoordinatorReady: { coordinator in
-                    textEditorCoordinator = coordinator
+                    hasUnsavedChanges = (newContent != lastSavedContent)
+                    updateTrigger = UUID()
                 }
-            )
             .frame(minHeight: 400)
             .frame(maxHeight: .infinity)
         }
@@ -523,10 +528,18 @@ struct FocusModeView: View {
             uiOpacity = 1
         }
         
-        // Initialize state
+        // Initialize local state from entry
+        localTitle = entry.title
+        localContent = entry.content
         lastSavedContent = entry.content
         updateWordCount()
         settings.startSession()
+        
+        // Debug output
+        print("Focus Mode initialized:")
+        print("  - Title: \(localTitle)")
+        print("  - Content length: \(localContent.count) characters")
+        print("  - Entry content length: \(entry.content.count) characters")
         
         // Start UI auto-hide timer if enabled
         if settings.autoHideUI {
@@ -547,9 +560,9 @@ struct FocusModeView: View {
     }
     
     private func updateWordCount() {
-        let words = entry.content.split { $0.isWhitespace || $0.isNewline }
+        let words = localContent.split { $0.isWhitespace || $0.isNewline }
         wordCount = words.filter { !$0.isEmpty }.count
-        characterCount = entry.content.count
+        characterCount = localContent.count
     }
     
     private func formatSessionTime() -> String {
@@ -582,7 +595,7 @@ struct FocusModeView: View {
     }
     
     private func saveEntry() {
-        lastSavedContent = entry.content
+        lastSavedContent = localContent
         hasUnsavedChanges = false
         // The parent view should handle the actual save
     }
