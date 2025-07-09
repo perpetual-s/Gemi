@@ -80,11 +80,11 @@ struct GemiChatView: View {
             // Title
             VStack(alignment: .leading, spacing: 2) {
                 Text("Chat with Gemi")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(Theme.Typography.largeTitle)
                 
                 if viewModel.isStreaming {
                     Text("Thinking...")
-                        .font(.system(size: 12))
+                        .font(Theme.Typography.caption)
                         .foregroundColor(Theme.Colors.secondaryText)
                 }
             }
@@ -99,7 +99,7 @@ struct GemiChatView: View {
                 viewModel.startNewChat()
             } label: {
                 Image(systemName: "square.and.pencil")
-                    .font(.system(size: 16))
+                    .font(Theme.Typography.headline)
                     .foregroundColor(.primary)
             }
             .buttonStyle(.plain)
@@ -132,7 +132,7 @@ struct GemiChatView: View {
                 }
             
             Text(connectionStatusText)
-                .font(.system(size: 12))
+                .font(Theme.Typography.caption)
                 .foregroundColor(Theme.Colors.secondaryText)
         }
         .padding(.horizontal, 10)
@@ -240,10 +240,10 @@ struct GemiChatView: View {
             
             VStack(spacing: 8) {
                 Text("✨ Welcome to Gemi")
-                    .font(.system(size: 28, weight: .semibold, design: .rounded))
+                    .font(Theme.Typography.largeTitle)
                 
                 Text("Your thoughtful AI companion 🤗")
-                    .font(.system(size: 16))
+                    .font(Theme.Typography.headline)
                     .foregroundColor(Theme.Colors.secondaryText)
             }
             
@@ -251,7 +251,8 @@ struct GemiChatView: View {
             if !viewModel.suggestedPrompts.isEmpty {
                 VStack(spacing: 12) {
                     Text("Try asking:")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(Theme.Typography.body)
+                        .fontWeight(.medium)
                         .foregroundColor(Theme.Colors.secondaryText)
                     
                     ForEach(viewModel.suggestedPrompts, id: \.self) { prompt in
@@ -266,7 +267,7 @@ struct GemiChatView: View {
             
             // Attribution
             Text("Private conversations powered by Gemma 3n from Google DeepMind")
-                .font(.system(size: 12))
+                .font(Theme.Typography.caption)
                 .foregroundColor(Theme.Colors.tertiaryText)
                 .multilineTextAlignment(.center)
                 .padding(.top, 24)
@@ -301,14 +302,14 @@ struct GemiChatView: View {
                         // Subtle placeholder
                         if messageText.isEmpty && !isInputFocused {
                             Text("Message")
-                                .font(.system(size: 14))
+                                .font(Theme.Typography.body)
                                 .foregroundColor(Theme.Colors.tertiaryText.opacity(0.6))
                                 .allowsHitTesting(false)
                         }
                         
                         // Minimal text field
                         TextField("", text: $messageText, axis: .vertical)
-                            .font(.system(size: 14))
+                            .font(Theme.Typography.body)
                             .focused($isInputFocused)
                             .textFieldStyle(.plain)
                             .lineLimit(1...5)
@@ -402,7 +403,8 @@ struct GemiChatView: View {
                         .scaleEffect(0.7)
                 } else {
                     Image(systemName: "arrow.up")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(Theme.Typography.body)
+                        .fontWeight(.semibold)
                         .foregroundColor(.white)
                         .rotationEffect(.degrees(canSendMessage ? 0 : -90))
                         .animation(.spring(response: 0.3, dampingFraction: 0.6), value: canSendMessage)
@@ -433,7 +435,8 @@ struct GemiChatView: View {
                         .scaleEffect(0.6)
                 } else {
                     Image(systemName: "arrow.up")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(Theme.Typography.body)
+                        .fontWeight(.semibold)
                         .foregroundColor(.white)
                 }
             }
@@ -455,10 +458,11 @@ struct GemiChatView: View {
         VStack {
             HStack(spacing: 12) {
                 Image(systemName: "wifi.slash")
-                    .font(.system(size: 16))
+                    .font(Theme.Typography.headline)
                 
                 Text("Ollama is not connected")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(Theme.Typography.body)
+                    .fontWeight(.medium)
                 
                 Spacer()
                 
@@ -466,7 +470,8 @@ struct GemiChatView: View {
                     viewModel.checkOllamaConnection()
                 }
                 .buttonStyle(.plain)
-                .font(.system(size: 14, weight: .medium))
+                .font(Theme.Typography.body)
+                .fontWeight(.medium)
                 .foregroundColor(Theme.Colors.primaryAccent)
             }
             .padding(.horizontal, 16)
@@ -511,7 +516,7 @@ struct MessageBubble: View {
             if message.role == .assistant {
                 // Assistant avatar
                 Image(systemName: "sparkles")
-                    .font(.system(size: 14))
+                    .font(Theme.Typography.body)
                     .foregroundColor(.purple)
                     .frame(width: 28, height: 28)
                     .background(Circle().fill(Color.purple.opacity(0.1)))
@@ -520,7 +525,7 @@ struct MessageBubble: View {
             VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 4) {
                 // Message content
                 Text(message.content)
-                    .font(.system(size: 15))
+                    .font(Theme.Typography.body)
                     .foregroundColor(message.role == .user ? .white : .primary)
                     .lineSpacing(2)
                     .padding(.horizontal, 12)
@@ -533,7 +538,7 @@ struct MessageBubble: View {
                 // Timestamp (on hover)
                 if isHovered {
                     Text(message.timestamp.formatted(date: .omitted, time: .shortened))
-                        .font(.system(size: 11))
+                        .font(Theme.Typography.footnote)
                         .foregroundColor(Theme.Colors.tertiaryText)
                         .transition(.opacity.combined(with: .scale))
                 }
@@ -543,7 +548,7 @@ struct MessageBubble: View {
             if message.role == .user {
                 // User avatar
                 Image(systemName: "person.fill")
-                    .font(.system(size: 14))
+                    .font(Theme.Typography.body)
                     .foregroundColor(Theme.Colors.primaryAccent)
                     .frame(width: 28, height: 28)
                     .background(Circle().fill(Theme.Colors.primaryAccent.opacity(0.1)))
@@ -583,10 +588,10 @@ struct SuggestionChip: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 Image(systemName: "sparkle")
-                    .font(.system(size: 12))
+                    .font(Theme.Typography.caption)
                 
                 Text(prompt)
-                    .font(.system(size: 14))
+                    .font(Theme.Typography.body)
                     .lineLimit(1)
             }
             .padding(.horizontal, 16)
@@ -640,28 +645,7 @@ struct TypingIndicator: View {
 }
 
 // MARK: - Visual Effect View
-
-struct VisualEffectView: NSViewRepresentable {
-    let material: NSVisualEffectView.Material
-    let blendingMode: NSVisualEffectView.BlendingMode
-    
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        view.material = material
-        view.blendingMode = blendingMode
-        view.state = .active
-        return view
-    }
-    
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
-        if nsView.material != material {
-            nsView.material = material
-        }
-        if nsView.blendingMode != blendingMode {
-            nsView.blendingMode = blendingMode
-        }
-    }
-}
+// Note: VisualEffectView has been moved to Components/VisualEffectView.swift
 
 // MARK: - Preview
 

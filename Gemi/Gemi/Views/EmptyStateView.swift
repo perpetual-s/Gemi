@@ -165,7 +165,7 @@ struct EmptyStateView: View {
             }
             
             Text(timeOfDay.greeting)
-                .font(.system(size: 24, weight: .light, design: .rounded))
+                .font(Theme.Typography.greeting)
                 .foregroundColor(.primary.opacity(0.8))
         }
     }
@@ -173,11 +173,11 @@ struct EmptyStateView: View {
     private var welcomeSection: some View {
         VStack(spacing: 12) {
             Text("Your journal awaits")
-                .font(.system(size: 36, weight: .bold, design: .serif))
+                .font(Theme.Typography.heroTitle)
                 .foregroundColor(.primary)
             
             Text("Every great story begins with a single word")
-                .font(.system(size: 18, weight: .regular))
+                .font(Theme.Typography.subtitle)
                 .foregroundColor(.secondary)
         }
     }
