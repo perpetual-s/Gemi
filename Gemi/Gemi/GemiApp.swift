@@ -31,8 +31,7 @@ struct GemiApp: App {
             }
             .environmentObject(ollamaLauncher)
         }
-        .windowStyle(.titleBar)
-        .windowToolbarStyle(.unified(showsTitle: true))
+        .windowStyle(.hiddenTitleBar)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("New Entry") {

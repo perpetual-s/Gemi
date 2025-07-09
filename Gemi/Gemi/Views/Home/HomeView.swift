@@ -80,7 +80,7 @@ struct HomeView: View {
         ZStack {
             // Base gradient
             Theme.Gradients.timeBasedGradient()
-                .ignoresSafeArea()
+                .ignoresSafeArea(.all)
             
             // Animated mesh gradient
             GeometryReader { geometry in
