@@ -182,6 +182,7 @@ struct FocusModeView: View {
             }
             .buttonStyle(.plain)
             .help("Exit focus mode (Esc)")
+            .padding(.leading, 70) // Add space from traffic lights
             
             // Document info
             VStack(alignment: .leading, spacing: 2) {
@@ -463,7 +464,7 @@ struct FocusModeView: View {
             insertion: .scale(scale: 0.9).combined(with: .opacity),
             removal: .scale(scale: 0.9).combined(with: .opacity)
         ))
-        .position(x: 200, y: 250)
+        .position(x: NSScreen.main?.frame.width ?? 1400 - 200, y: 250)
     }
     
     private var focusSettingsPanel: some View {

@@ -15,8 +15,8 @@ struct ProductionComposeView: View {
     @State private var lastSavedContent = ""
     @State private var hasUnsavedChanges = false
     
-    // Force UI updates for class properties
-    @State private var updateTrigger = UUID()
+    // Separate state for mood to avoid class reference issues
+    @State private var selectedMood: Mood?
     
     // Animation states
     @State private var titleOpacity = 0.0
@@ -38,7 +38,9 @@ struct ProductionComposeView: View {
     @StateObject private var sentimentAnalyzer = SentimentAnalyzer()
     
     init(entry: JournalEntry? = nil, onSave: @escaping (JournalEntry) -> Void, onCancel: @escaping () -> Void, onFocusMode: ((JournalEntry) -> Void)? = nil) {
-        self._entry = State(initialValue: entry ?? JournalEntry(content: ""))
+        let initialEntry = entry ?? JournalEntry(content: "")
+        self._entry = State(initialValue: initialEntry)
+        self._selectedMood = State(initialValue: initialEntry.mood)
         self.onSave = onSave
         self.onCancel = onCancel
         self.onFocusMode = onFocusMode
@@ -121,7 +123,6 @@ struct ProductionComposeView: View {
             }
         }
         .background(Color(nsColor: .textBackgroundColor))
-        .id(updateTrigger) // Force view updates when trigger changes
         .sheet(isPresented: $showWritersBlockBreaker) {
             WritersBlockBreaker(
                 isPresented: $showWritersBlockBreaker,
@@ -446,7 +447,7 @@ struct ProductionComposeView: View {
                     Spacer()
                     
                     // Show selected mood prominently
-                    if let mood = entry.mood {
+                    if let mood = selectedMood {
                         HStack(spacing: 6) {
                             Text(mood.emoji)
                                 .font(.system(size: 20))
@@ -472,10 +473,10 @@ struct ProductionComposeView: View {
                 }
                 
                 ProductionMoodPicker(selectedMood: Binding(
-                    get: { entry.mood },
+                    get: { selectedMood },
                     set: { newMood in
+                        selectedMood = newMood
                         entry.mood = newMood
-                        updateTrigger = UUID() // Force UI update for class property
                     }
                 ))
             }
@@ -489,7 +490,6 @@ struct ProductionComposeView: View {
                     get: { entry.tags },
                     set: { newTags in
                         entry.tags = newTags
-                        updateTrigger = UUID() // Force UI update
                     }
                 ))
             }
@@ -500,7 +500,6 @@ struct ProductionComposeView: View {
                 Button {
                     // Direct toggle without animation wrapper
                     entry.isFavorite.toggle()
-                    updateTrigger = UUID() // Force UI update
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: entry.isFavorite ? "star.fill" : "star")
@@ -663,7 +662,7 @@ struct ProductionMoodPicker: View {
                     mood: mood,
                     isSelected: selectedMood == mood
                 ) {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(.easeInOut(duration: 0.15)) {
                         selectedMood = selectedMood == mood ? nil : mood
                     }
                 }
