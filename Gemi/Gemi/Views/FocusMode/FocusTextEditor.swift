@@ -74,6 +74,11 @@ struct FocusTextEditor: NSViewRepresentable {
         // Set up the scroll view
         scrollView.documentView = textView
         
+        // Make the text view focusable
+        DispatchQueue.main.async {
+            textView.window?.makeFirstResponder(textView)
+        }
+        
         return scrollView
     }
     
