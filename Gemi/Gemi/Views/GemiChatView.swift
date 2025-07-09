@@ -117,11 +117,6 @@ struct GemiChatView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 20)
-        .background(.ultraThinMaterial)
-        .overlay(alignment: .bottom) {
-            Divider()
-                .opacity(0.5)
-        }
     }
     
     private var connectionIndicator: some View {

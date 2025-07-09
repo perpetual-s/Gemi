@@ -29,8 +29,6 @@ struct EnhancedTimelineView: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
                 }
                 
-                Divider()
-                
                 GeometryReader { geometry in
                     ScrollView {
                         if groupedEntries.isEmpty {
@@ -230,16 +228,6 @@ struct EnhancedTimelineView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 20)
-        .background(
-            ZStack {
-                Theme.Colors.windowBackground
-                VStack {
-                    Spacer()
-                    Divider()
-                        .opacity(0.3)
-                }
-            }
-        )
     }
     
     
