@@ -8,7 +8,6 @@ struct SearchView: View {
     @State private var isSearching = false
     @State private var searchTask: Task<Void, Never>?
     @State private var selectedEntry: JournalEntry?
-    @State private var showingReadingView = false
     @State private var readingEntry: JournalEntry?
     @State private var showingComposeView = false
     @State private var editingEntry: JournalEntry?
@@ -156,7 +155,6 @@ struct SearchView: View {
                     onSelect: {
                         selectedEntry = entry
                         readingEntry = entry
-                        showingReadingView = true
                     },
                     onEdit: {
                         editingEntry = entry
@@ -178,31 +176,29 @@ struct SearchView: View {
             }
         }
         .padding(.bottom)
-        .sheet(isPresented: $showingReadingView) {
-            if let entry = readingEntry {
-                EnhancedEntryReadingView(
-                    entry: entry,
-                    onEdit: {
-                        showingReadingView = false
-                        editingEntry = entry
-                        showingComposeView = true
-                    },
-                    onDelete: {
-                        showingReadingView = false
-                        Task {
-                            await journalStore.deleteEntry(entry)
-                            // Re-run search after deletion
-                            performRealtimeSearch(searchQuery)
-                        }
-                    },
-                    onChat: {
-                        showingReadingView = false
-                        chatEntry = entry
-                        showingChat = true
+        .sheet(item: $readingEntry) { entry in
+            EnhancedEntryReadingView(
+                entry: entry,
+                onEdit: {
+                    readingEntry = nil
+                    editingEntry = entry
+                    showingComposeView = true
+                },
+                onDelete: {
+                    readingEntry = nil
+                    Task {
+                        await journalStore.deleteEntry(entry)
+                        // Re-run search after deletion
+                        performRealtimeSearch(searchQuery)
                     }
-                )
-                .frame(minWidth: 700, minHeight: 600)
-            }
+                },
+                onChat: {
+                    readingEntry = nil
+                    chatEntry = entry
+                    showingChat = true
+                }
+            )
+            .frame(minWidth: 700, minHeight: 600)
         }
         .sheet(isPresented: $showingComposeView) {
             if let entry = editingEntry {
