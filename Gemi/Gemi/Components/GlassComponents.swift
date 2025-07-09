@@ -321,8 +321,8 @@ struct GlassTextField: View {
             y: 0
         )
         .animation(Theme.smoothAnimation, value: isFocused)
-        .onChange(of: textFieldFocus) { focused in
-            isFocused = focused
+        .onChange(of: textFieldFocus) { _, newValue in
+            isFocused = newValue
         }
     }
 }
