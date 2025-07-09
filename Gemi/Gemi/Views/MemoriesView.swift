@@ -132,7 +132,7 @@ struct MemoriesView: View {
                             .symbolRenderingMode(.hierarchical)
                         
                         Text("AI Memories")
-                            .font(Theme.Typography.largeTitle)
+                            .font(Theme.Typography.sectionHeader)
                     }
                     
                     Text("\(memoryManager.memories.count) memories extracted from your journal")

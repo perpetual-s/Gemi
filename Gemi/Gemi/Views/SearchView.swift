@@ -38,7 +38,7 @@ struct SearchView: View {
     private var searchHeader: some View {
         VStack(spacing: Theme.spacing) {
             Text("Search Journal")
-                .font(Theme.Typography.largeTitle)
+                .font(Theme.Typography.sectionHeader)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
             HStack {

@@ -107,7 +107,7 @@ struct InsightsView: View {
                             .symbolRenderingMode(.hierarchical)
                         
                         Text("Journal Insights")
-                            .font(Theme.Typography.largeTitle)
+                            .font(Theme.Typography.sectionHeader)
                     }
                     
                     Text("Discover patterns and trends in your writing journey")

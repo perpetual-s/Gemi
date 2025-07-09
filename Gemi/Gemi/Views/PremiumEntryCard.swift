@@ -59,7 +59,7 @@ struct PremiumEntryCard: View {
                 }
             }
         }
-        .buttonStyle(CardButtonStyle(isSelected: isSelected, isHovered: isHovered))
+        .buttonStyle(EnhancedCardButtonStyle(isSelected: isSelected, isHovered: isHovered))
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.2)) {
                 isHovered = hovering
@@ -198,6 +198,57 @@ struct PremiumEntryCard: View {
 }
 
 // MARK: - Supporting Views
+
+struct EnhancedCardButtonStyle: ButtonStyle {
+    let isSelected: Bool
+    let isHovered: Bool
+    
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(
+                ZStack {
+                    // Base layer with glass effect
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(NSColor.controlBackgroundColor))
+                    
+                    // Subtle glass overlay
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(isHovered ? 0.08 : 0.04),
+                                    Color.clear
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                    
+                    // Ambient glow on hover
+                    if isHovered {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Theme.Colors.primaryAccent.opacity(0.03))
+                    }
+                }
+            )
+            .shadow(
+                color: isSelected ? Theme.Colors.primaryAccent.opacity(0.2) : Color.black.opacity(isHovered ? 0.1 : 0.05),
+                radius: isHovered ? 12 : 8,
+                x: 0,
+                y: isHovered ? 4 : 2
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(
+                        isSelected ? Theme.Colors.primaryAccent : (isHovered ? Color.white.opacity(0.1) : Color.clear),
+                        lineWidth: isSelected ? 2 : 0.5
+                    )
+            )
+            .scaleEffect(configuration.isPressed ? 0.98 : (isHovered ? 1.02 : 1.0))
+            .animation(Theme.microInteraction, value: configuration.isPressed)
+            .animation(Theme.gentleSpring, value: isHovered)
+    }
+}
 
 struct CardButtonStyle: ButtonStyle {
     let isSelected: Bool

@@ -192,7 +192,7 @@ struct EnhancedTimelineView: View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Journal Timeline")
-                    .font(Theme.Typography.largeTitle)
+                    .font(Theme.Typography.sectionHeader)
                 
                 HStack(spacing: Theme.smallSpacing) {
                     Text("\(journalStore.entries.count) entries")

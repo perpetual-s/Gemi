@@ -25,8 +25,23 @@ struct Sidebar: View {
         }
         .frame(width: Theme.sidebarWidth)
         .background(
-            VisualEffectView.sidebar
+            ZStack {
+                // Base material
+                VisualEffectView.sidebar
+                    .ignoresSafeArea()
+                
+                // Subtle gradient overlay
+                LinearGradient(
+                    colors: [
+                        Theme.Colors.glassTint,
+                        Color.clear
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .opacity(0.3)
                 .ignoresSafeArea()
+            }
         )
         .sheet(isPresented: $showingSettings) {
             SettingsView(journalStore: journalStore)
@@ -64,14 +79,8 @@ struct Sidebar: View {
                         .foregroundColor(Theme.Colors.primaryAccent)
                 }
             }
-            .buttonStyle(.plain)
+            .buttonStyle(AnimatedButtonStyle())
             .help("New Entry (⌘N)")
-            .scaleEffect(1.0)
-            .onHover { hovering in
-                withAnimation(Theme.bounceAnimation) {
-                    // Animation is handled by button style
-                }
-            }
         }
         .padding()
         .background(
@@ -191,7 +200,8 @@ struct NavigationRow: View {
                     .frame(width: 20)
                     .foregroundColor(isSelected ? Theme.Colors.primaryAccent : (isHovered ? Theme.Colors.primaryAccent.opacity(0.8) : Theme.Colors.secondaryText))
                     .scaleEffect(isHovered ? 1.1 : 1.0)
-                    .animation(Theme.bounceAnimation, value: isHovered)
+                    .rotationEffect(.degrees(isHovered && !isSelected ? 5 : 0))
+                    .animation(Theme.delightfulBounce, value: isHovered)
                 
                 Text(item.title)
                     .font(Theme.Typography.body)

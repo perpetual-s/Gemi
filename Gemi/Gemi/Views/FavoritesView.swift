@@ -26,7 +26,7 @@ struct FavoritesView: View {
                             .symbolRenderingMode(.multicolor)
                         
                         Text("Favorites")
-                            .font(Theme.Typography.largeTitle)
+                            .font(Theme.Typography.sectionHeader)
                     }
                     
                     Text("\(favoriteEntries.count) starred \(favoriteEntries.count == 1 ? "entry" : "entries")")

@@ -80,7 +80,7 @@ struct GemiChatView: View {
             // Title with more breathing room
             VStack(alignment: .leading, spacing: 4) {
                 Text("Chat with Gemi")
-                    .font(Theme.Typography.largeTitle)
+                    .font(Theme.Typography.sectionHeader)
                 
                 if viewModel.isStreaming {
                     Text("Thinking...")
