@@ -404,12 +404,10 @@ actor DatabaseManager {
             throw DatabaseError.notInitialized
         }
         
-        let searchPattern = "%\(query)%"
-        // Modified SQL to also search in mood field and get all entries for content search
+        // Get ALL entries and filter in code for comprehensive search
         let sql = """
             SELECT id, title, content_encrypted, created_at, modified_at, is_favorite, mood, tags, location, weather
             FROM entries
-            WHERE title LIKE ? OR tags LIKE ? OR mood LIKE ?
             ORDER BY created_at DESC
         """
         
@@ -420,14 +418,15 @@ actor DatabaseManager {
             throw DatabaseError.failedToPrepareStatement
         }
         
-        sqlite3_bind_text(statement, 1, searchPattern, -1, SQLITE_TRANSIENT)
-        sqlite3_bind_text(statement, 2, searchPattern, -1, SQLITE_TRANSIENT)
-        sqlite3_bind_text(statement, 3, searchPattern, -1, SQLITE_TRANSIENT)
-        
         var entries: [JournalEntry] = []
         let lowercasedQuery = query.lowercased()
         
+        // Debug: Print search query
+        print("Searching for: '\(query)'")
+        
+        var totalEntriesFound = 0
         while sqlite3_step(statement) == SQLITE_ROW {
+            totalEntriesFound += 1
             guard let idString = sqlite3_column_text(statement, 0),
                   let id = UUID(uuidString: String(cString: idString)) else {
                 continue
@@ -463,6 +462,12 @@ actor DatabaseManager {
             let tagsMatch = tags.contains { $0.lowercased().contains(lowercasedQuery) }
             let moodMatches = mood?.rawValue.lowercased().contains(lowercasedQuery) ?? false
             
+            // Debug: Print match results
+            if title.lowercased().contains("powerball") || content.lowercased().contains("powerball") {
+                print("Found Powerball entry - Title: \(title), Content preview: \(String(content.prefix(50)))")
+                print("Match results - Title: \(titleMatches), Content: \(contentMatches), Tags: \(tagsMatch), Mood: \(moodMatches)")
+            }
+            
             // Only include entry if it matches in title, tags, mood, or content
             if titleMatches || tagsMatch || moodMatches || contentMatches {
                 let entry = JournalEntry(
@@ -482,6 +487,7 @@ actor DatabaseManager {
             }
         }
         
+        print("Total entries in database: \(totalEntriesFound), Matching entries: \(entries.count)")
         return entries
     }
     
