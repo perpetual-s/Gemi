@@ -143,7 +143,7 @@ struct EnhancedTimelineView: View {
             GemiChatView()
                 .frame(width: 900, height: 600)
         }
-        .sheet(isPresented: $showingReadingView) {
+        .dismissableSheet(isPresented: $showingReadingView) {
             if let entry = readingEntry {
                 EnhancedEntryReadingView(
                     entry: entry,

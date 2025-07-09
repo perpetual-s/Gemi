@@ -122,28 +122,42 @@ final class GemiAICoordinator: ObservableObject {
         }
         
         let prompt = """
-        Extract literal facts from this journal entry. Only extract what is explicitly stated, not interpretations.
+        Extract ONLY key personal information that would be important to remember about the user from this journal entry.
         
         Journal Entry:
         \(entry.content)
         
-        List 2-5 factual statements from the entry. Be literal and specific.
-        DO NOT interpret or add meaning. Only extract what was actually written.
+        Focus ONLY on extracting these types of information if present:
+        1. Personal details: name, age, location, occupation, relationships (family members, friends, partner)
+        2. Important life events: birthdays, anniversaries, major decisions, health issues
+        3. Strong preferences or dislikes that define the person
+        4. Goals, plans, or commitments mentioned
+        5. Contact information or important dates
         
-        Examples of good extractions:
-        - Name is John
-        - Lives in California  
-        - Has a meeting on August 2nd
-        - Wants to check something out
+        DO NOT extract:
+        - Daily activities or routines
+        - Temporary emotions or passing thoughts
+        - General observations about life
+        - Opinions on current events
         
-        Examples of bad extractions (too interpretive):
-        - Seems curious about life
-        - Expresses desire for exploration
-        - Appears to be ambitious
+        If the entry contains NO key personal information, respond with "No key information to extract."
+        
+        Examples of what TO extract:
+        - My name is Sarah Chen
+        - I live in Seattle
+        - My daughter Emma turned 5 today
+        - I'm allergic to peanuts
+        - Starting my new job at Microsoft next Monday
+        
+        Examples of what NOT to extract:
+        - Had coffee this morning
+        - Feeling tired today
+        - The weather was nice
+        - Watched a movie
         """
         
         let messages = [
-            ChatMessage(role: .system, content: "You extract literal facts from journal entries. Never interpret or add meaning. Only state what is explicitly written."),
+            ChatMessage(role: .system, content: "You are a memory extraction assistant focused on identifying key personal information from journal entries. Extract only important facts about the user's identity, relationships, life events, and commitments. Ignore mundane daily activities and temporary states."),
             ChatMessage(role: .user, content: prompt)
         ]
         
@@ -164,18 +178,20 @@ final class GemiAICoordinator: ObservableObject {
         if fullResponse.lowercased().contains("please provide") || 
            fullResponse.lowercased().contains("paste the text") ||
            fullResponse.lowercased().contains("i'm ready") {
-            logger.warning("AI didn't receive journal content properly, using fallback extraction")
-            return extractBasicMemory(from: entry)
+            logger.warning("AI didn't receive journal content properly, skipping extraction")
+            return []
+        }
+        
+        // Check if no key information was found
+        if fullResponse.lowercased().contains("no key information") {
+            logger.info("No key personal information found in entry")
+            return []
         }
         
         // Parse the simple text response
         let memories = parseSimpleMemories(fullResponse, for: entry)
         
-        // If no memories extracted, use basic extraction
-        if memories.isEmpty {
-            return extractBasicMemory(from: entry)
-        }
-        
+        // Return whatever memories were found (could be empty)
         return memories
     }
     
@@ -210,11 +226,25 @@ final class GemiAICoordinator: ObservableObject {
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             
             // Skip empty lines, very short ones, or meta text
-            if cleanedLine.count < 5 ||
+            if cleanedLine.count < 10 ||
                cleanedLine.lowercased().contains("example") ||
                cleanedLine.lowercased().contains("extraction") ||
                cleanedLine.lowercased().contains("here are") ||
-               cleanedLine.lowercased().contains("facts from") {
+               cleanedLine.lowercased().contains("facts from") ||
+               cleanedLine.lowercased().contains("key information") ||
+               cleanedLine.lowercased().contains("personal information") {
+                continue
+            }
+            
+            // Additional filtering for non-key information
+            let lowercased = cleanedLine.lowercased()
+            if lowercased.contains("had coffee") ||
+               lowercased.contains("feeling tired") ||
+               lowercased.contains("weather") ||
+               lowercased.contains("watched") ||
+               lowercased.contains("ate breakfast") ||
+               lowercased.contains("went for a walk") {
+                logger.debug("Skipping non-key information: \(cleanedLine)")
                 continue
             }
             
@@ -237,19 +267,7 @@ final class GemiAICoordinator: ObservableObject {
             }
         }
         
-        // If no memories found, extract a simple summary
-        if memories.isEmpty && !entry.content.isEmpty {
-            let summary = String(entry.content.prefix(150))
-                .replacingOccurrences(of: "\n", with: " ")
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            
-            if !summary.isEmpty {
-                memories.append(MemoryData(
-                    content: summary,
-                    sourceEntryID: entry.id
-                ))
-            }
-        }
+        // No fallback extraction - we want to be selective about what we remember
         
         return memories
     }

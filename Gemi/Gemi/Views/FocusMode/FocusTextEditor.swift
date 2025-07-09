@@ -52,6 +52,8 @@ struct FocusTextEditor: NSViewRepresentable {
         textView.drawsBackground = false
         textView.focusLevel = focusLevel
         textView.highlightIntensity = highlightIntensity
+        textView.isEditable = true  // Enable editing
+        textView.isSelectable = true  // Enable text selection
         
         // Set line spacing for readability
         let paragraphStyle = NSMutableParagraphStyle()
