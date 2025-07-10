@@ -220,9 +220,8 @@ struct AIAssistantBubble: View {
                     ideasContent
                 }
             }
-            .frame(maxHeight: 320)
         }
-        .frame(width: 340)
+        .frame(width: 340, height: calculatePanelHeight())
         .background(
             ZStack {
                 // Glass morphism background
@@ -261,9 +260,9 @@ struct AIAssistantBubble: View {
     }
     
     private var toolsContent: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                if !suggestions.isEmpty {
+        VStack(spacing: 0) {
+            if !suggestions.isEmpty {
+                ScrollView {
                     // Show suggestions with refined design
                     VStack(spacing: 2) {
                         ForEach(suggestions) { suggestion in
@@ -281,7 +280,8 @@ struct AIAssistantBubble: View {
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
-                } else {
+                }
+            } else {
                     // Integrated action buttons without boxes
                     VStack(alignment: .leading, spacing: 0) {
                         ActionItem(
@@ -314,7 +314,7 @@ struct AIAssistantBubble: View {
                         ActionItem(
                             icon: "sparkles",
                             title: "Break writer's block",
-                            subtitle: "Get unstuck with prompts",
+                            subtitle: "Switch to Ideas tab for prompts",
                             color: .green
                         ) {
                             withAnimation(.easeInOut(duration: 0.2)) {
@@ -323,11 +323,11 @@ struct AIAssistantBubble: View {
                             }
                         }
                     }
-                    .padding(.vertical, 4)
-                }
+                    .padding(.top, 8)
+                    .padding(.bottom, 12)
+                    .padding(.horizontal, 8)
             }
         }
-        .scrollIndicators(.hidden)
     }
     
     private var ideasContent: some View {
@@ -355,19 +355,20 @@ struct AIAssistantBubble: View {
                 .opacity(0.5)
             
             // Writing prompts
-            ScrollView {
-                VStack(spacing: 8) {
-                    if writingPrompts.isEmpty && isThinking {
-                        HStack {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                            Text("Generating prompts...")
-                                .font(.system(size: 13))
-                                .foregroundColor(.secondary)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 40)
-                    } else {
+            if writingPrompts.isEmpty && isThinking {
+                Spacer()
+                HStack {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                    Text("Generating prompts...")
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                Spacer()
+            } else {
+                ScrollView {
+                    VStack(spacing: 8) {
                         ForEach(writingPrompts) { prompt in
                             WritingPromptCard(prompt: prompt) {
                                 onSuggestionAccepted(prompt.text)
@@ -377,10 +378,11 @@ struct AIAssistantBubble: View {
                             }
                         }
                     }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
                 }
-                .padding(12)
+                .scrollIndicators(.hidden)
             }
-            .scrollIndicators(.hidden)
         }
     }
     
@@ -590,6 +592,16 @@ struct AIAssistantBubble: View {
     
     // MARK: - Helper Methods
     
+    private func calculatePanelHeight() -> CGFloat {
+        if currentTab == .tools {
+            // Fixed height for tools to show all 4 options comfortably
+            return suggestions.isEmpty ? 220 : min(CGFloat(suggestions.count) * 55 + 40, 300)
+        } else {
+            // Dynamic height for ideas with category selector
+            return 280
+        }
+    }
+    
     private func loadWritingPrompts() {
         isThinking = true
         writingPrompts = []
@@ -674,37 +686,38 @@ struct ActionItem: View {
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 16) {
+            HStack(spacing: 12) {
                 // Icon with subtle background
                 ZStack {
-                    RoundedRectangle(cornerRadius: 10)
+                    RoundedRectangle(cornerRadius: 8)
                         .fill(color.opacity(isHovered ? 0.15 : 0.08))
-                        .frame(width: 40, height: 40)
+                        .frame(width: 36, height: 36)
                     
                     Image(systemName: icon)
-                        .font(.system(size: 18))
+                        .font(.system(size: 16))
                         .foregroundColor(color)
                 }
                 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 1) {
                     Text(title)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.primary)
                     
                     Text(subtitle)
-                        .font(.system(size: 12))
+                        .font(.system(size: 11))
                         .foregroundColor(.secondary)
+                        .lineLimit(1)
                 }
                 
                 Spacer()
                 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12))
+                    .font(.system(size: 11))
                     .foregroundColor(.secondary)
-                    .opacity(isHovered ? 1 : 0.5)
+                    .opacity(isHovered ? 1 : 0.3)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -753,34 +766,33 @@ struct WritingPromptCard: View {
     
     var body: some View {
         Button(action: onSelect) {
-            HStack {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 6) {
-                        Image(systemName: prompt.category.icon)
-                            .font(.system(size: 13))
-                            .foregroundColor(prompt.category.color)
-                        
-                        Text(prompt.category.rawValue)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(prompt.category.color)
-                    }
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    Image(systemName: prompt.category.icon)
+                        .font(.system(size: 12))
+                        .foregroundColor(prompt.category.color)
                     
-                    Text(prompt.text)
-                        .font(.system(size: 14))
-                        .foregroundColor(.primary)
-                        .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
+                    Text(prompt.category.rawValue)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(prompt.category.color)
+                    
+                    Spacer()
                 }
                 
-                Spacer()
+                Text(prompt.text)
+                    .font(.system(size: 13))
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(2)
             }
-            .padding(14)
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 10)
+                RoundedRectangle(cornerRadius: 8)
                     .fill(Color(NSColor.controlBackgroundColor).opacity(isHovered ? 0.8 : 0.5))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 10)
+                RoundedRectangle(cornerRadius: 8)
                     .stroke(prompt.category.color.opacity(isHovered ? 0.3 : 0.1), lineWidth: 1)
             )
         }
