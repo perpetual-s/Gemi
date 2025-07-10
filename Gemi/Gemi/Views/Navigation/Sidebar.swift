@@ -9,7 +9,7 @@ struct Sidebar: View {
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(spacing: Theme.spacing) {
+                VStack(spacing: 0) {
                     // Window controls area with padding for traffic lights
                     HStack {
                         // Space for traffic light buttons
@@ -18,7 +18,7 @@ struct Sidebar: View {
                         
                         Spacer()
                     }
-                    .padding(.top, 12)
+                    .padding(.top, 4)
                     .padding(.horizontal)
                     
                     // Unified header section
@@ -56,13 +56,14 @@ struct Sidebar: View {
                         .help("New Entry (⌘N)")
                     }
                     .padding(.horizontal)
-                    .padding(.bottom, Theme.spacing)
                     
                     searchBar
                         .padding(.horizontal)
+                        .padding(.top, Theme.spacing)
                     
                     navigationItems
                         .padding(.horizontal)
+                        .padding(.top, Theme.spacing)
                     
                     Spacer(minLength: 20)
                 }
