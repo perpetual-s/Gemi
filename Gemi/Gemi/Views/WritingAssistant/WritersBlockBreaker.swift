@@ -8,7 +8,6 @@ struct WritersBlockBreaker: View {
     @State private var selectedCategory: PromptCategory = .inspiration
     @State private var currentPrompt: WritingPrompt?
     @State private var isGenerating = false
-    @State private var showingAllPrompts = false
     
     struct WritingPrompt: Identifiable {
         let id = UUID()
@@ -108,12 +107,6 @@ struct WritersBlockBreaker: View {
                         .padding(.horizontal, 20)
                         .padding(.top, currentPrompt == nil ? 20 : 0)
                     
-                    // All prompts
-                    if showingAllPrompts {
-                        allPromptsSection
-                            .padding(.horizontal, 20)
-                            .padding(.bottom, 20)
-                    }
                 }
             }
             
@@ -309,52 +302,25 @@ struct WritersBlockBreaker: View {
         }
     }
     
-    private var allPromptsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("All \(selectedCategory.rawValue) Prompts")
-                    .font(.system(size: 16, weight: .semibold))
-                
-                Spacer()
-                
+    
+    private var footerActions: some View {
+        HStack {
+            // Regenerate button
+            if currentPrompt != nil {
                 Button {
-                    withAnimation {
-                        showingAllPrompts.toggle()
-                    }
+                    generatePrompt()
                 } label: {
-                    Image(systemName: "chevron.up")
-                        .rotationEffect(.degrees(showingAllPrompts ? 0 : 180))
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.clockwise")
+                        Text("New Prompt")
+                    }
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
                 }
                 .buttonStyle(.plain)
             }
             
-            // Prompt list would go here
-        }
-    }
-    
-    private var footerActions: some View {
-        HStack {
-            Button {
-                withAnimation {
-                    showingAllPrompts.toggle()
-                }
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: showingAllPrompts ? "chevron.up" : "chevron.down")
-                    Text(showingAllPrompts ? "Hide All" : "Show All Prompts")
-                }
-                .font(.system(size: 14))
-                .foregroundColor(.secondary)
-            }
-            .buttonStyle(.plain)
-            
             Spacer()
-            
-            if isGenerating {
-                ProgressView()
-                    .controlSize(.small)
-                    .scaleEffect(0.8)
-            }
         }
         .padding(20)
         .background(VisualEffectView.windowBackground)
