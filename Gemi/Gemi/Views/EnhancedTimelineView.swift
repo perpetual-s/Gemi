@@ -128,28 +128,27 @@ struct EnhancedTimelineView: View {
         .sheet(isPresented: $showingAIInsights) {
             AIInsightsView(entries: journalStore.entries)
         }
-        .sheet(isPresented: .constant(selectedEntryForChat != nil || showGeneralChat)) {
+        .sheet(isPresented: Binding(
+            get: { selectedEntryForChat != nil || showGeneralChat },
+            set: { newValue in
+                if !newValue {
+                    selectedEntryForChat = nil
+                    showGeneralChat = false
+                    selectedReflectionPrompt = nil
+                }
+            }
+        )) {
             if let entry = selectedEntryForChat {
                 // Entry-specific chat
                 if let prompt = selectedReflectionPrompt {
                     EnhancedChatSheet(journalEntry: entry, reflectionPrompt: prompt)
-                        .onDisappear {
-                            selectedReflectionPrompt = nil
-                            selectedEntryForChat = nil
-                        }
                 } else {
                     ChatSheet(journalEntry: entry)
-                        .onDisappear {
-                            selectedEntryForChat = nil
-                        }
                 }
             } else if showGeneralChat {
                 // General chat without entry context
                 GemiChatView()
                     .frame(width: 900, height: 600)
-                    .onDisappear {
-                        showGeneralChat = false
-                    }
             }
         }
         .sheet(item: $readingEntry) { entry in

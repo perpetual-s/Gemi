@@ -21,10 +21,19 @@ struct ChatSheet: View {
                 
                 Spacer()
                 
-                Button("Done") {
+                Button {
                     dismiss()
+                } label: {
+                    Text("Done")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 6)
+                        .background(Theme.Colors.primaryAccent)
+                        .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
+                .keyboardShortcut(.defaultAction)
             }
             .padding(Theme.spacing)
             
@@ -35,6 +44,10 @@ struct ChatSheet: View {
         }
         .frame(minWidth: 600, idealWidth: 700, maxWidth: 900, minHeight: 400, idealHeight: 500, maxHeight: 700)
         .background(Theme.Colors.windowBackground)
+        .onKeyPress(.escape) {
+            dismiss()
+            return .handled
+        }
     }
 }
 
