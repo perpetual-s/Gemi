@@ -799,9 +799,8 @@ struct ProductionTagEditor: View {
                 ProductionFlowLayout(spacing: 8) {
                     ForEach(tags, id: \.self) { tag in
                         ProductionTagChip(tag: tag) {
-                            // Use safer removal method
-                            if let index = tags.firstIndex(of: tag) {
-                                tags.remove(at: index)
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                tags.removeAll { $0 == tag }
                             }
                         }
                     }
@@ -886,33 +885,24 @@ struct ProductionTagChip: View {
     let tag: String
     let onRemove: () -> Void
     @State private var isHovered = false
-    @State private var isPressed = false
     
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             Text("#\(tag)")
                 .font(.system(size: 13))
                 .foregroundColor(Theme.Colors.primaryAccent)
             
-            Button(action: {
-                // Add haptic feedback
-                NSHapticFeedbackManager.defaultPerformer.perform(
-                    .levelChange,
-                    performanceTime: .default
-                )
+            Button {
                 onRemove()
-            }) {
+            } label: {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(isHovered ? Color.red : .secondary)
-                    .scaleEffect(isPressed ? 0.85 : 1.0)
-                    .animation(.easeInOut(duration: 0.1), value: isPressed)
+                    .font(.system(size: 14))
+                    .foregroundColor(isHovered ? Color.red : .secondary.opacity(0.7))
             }
-            .buttonStyle(PlainButtonStyle())
-            .contentShape(Rectangle()) // Ensure entire button area is clickable
-            .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
-                isPressed = pressing
-            }, perform: {})
+            .buttonStyle(.plain)
+            .onHover { hovering in
+                isHovered = hovering
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
