@@ -45,7 +45,6 @@ struct CommandBarAssistant: View {
         case continueWriting = "Continue"
         case ideas = "Ideas"
         case improve = "Improve"
-        case breakBlock = "Break Block"
         
         var title: String { rawValue }
         
@@ -54,7 +53,6 @@ struct CommandBarAssistant: View {
             case .continueWriting: return "arrow.right.circle"
             case .ideas: return "lightbulb"
             case .improve: return "text.quote"
-            case .breakBlock: return "sparkles"
             }
         }
         
@@ -63,16 +61,14 @@ struct CommandBarAssistant: View {
             case .continueWriting: return .blue
             case .ideas: return .orange
             case .improve: return .purple
-            case .breakBlock: return .green
             }
         }
         
         var description: String {
             switch self {
             case .continueWriting: return "Continue your thought naturally"
-            case .ideas: return "Explore new directions"
+            case .ideas: return "Get AI-powered ideas for your current context"
             case .improve: return "Enhance style and clarity"
-            case .breakBlock: return "Get unstuck with prompts"
             }
         }
     }
@@ -524,13 +520,6 @@ struct CommandBarAssistant: View {
     private func selectTool(_ tool: ToolType) {
         navigationStack.append(.tool(tool))
         selectedIndex = 0
-        
-        // Auto-generate for some tools
-        if tool == .breakBlock {
-            Task {
-                await generateSuggestions(for: tool)
-            }
-        }
     }
     
     private func handleSelection() {
@@ -588,8 +577,6 @@ struct CommandBarAssistant: View {
                 writingContext = .ideation
             case .improve:
                 writingContext = .styleImprovement
-            case .breakBlock:
-                writingContext = .writersBlock
             }
             
             let results = try await writingService.generateSuggestions(
@@ -652,7 +639,6 @@ struct CommandBarAssistant: View {
         case .continueWriting: return .continuation
         case .ideas: return .idea
         case .improve: return .improvement
-        case .breakBlock: return .prompt
         }
     }
     
