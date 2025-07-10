@@ -54,7 +54,11 @@ final class WritingAssistanceService: ObservableObject {
         do {
             // Use chat API for suggestions
             let messages = [
-                ChatMessage(role: .system, content: "You are a helpful writing assistant for a personal journal app."),
+                ChatMessage(role: .system, content: """
+                You are a helpful writing assistant for a personal journal app.
+                IMPORTANT: Never use markdown formatting like **bold** or *italic*.
+                Always respond in plain, natural language without any formatting symbols.
+                """),
                 ChatMessage(role: .user, content: prompt)
             ]
             
@@ -102,7 +106,11 @@ final class WritingAssistanceService: ObservableObject {
         """
         
         let messages = [
-            ChatMessage(role: .system, content: "You are an analytical writing assistant."),
+            ChatMessage(role: .system, content: """
+            You are an analytical writing assistant.
+            Never use markdown formatting symbols like asterisks.
+            Respond in clear, plain text only.
+            """),
             ChatMessage(role: .user, content: prompt)
         ]
         
@@ -139,7 +147,10 @@ final class WritingAssistanceService: ObservableObject {
         """
         
         let messages = [
-            ChatMessage(role: .system, content: "You are a creative writing assistant that continues journal entries naturally."),
+            ChatMessage(role: .system, content: """
+            You are a creative writing assistant that continues journal entries naturally.
+            Always use plain text without any markdown formatting or symbols.
+            """),
             ChatMessage(role: .user, content: prompt)
         ]
         
@@ -170,7 +181,10 @@ final class WritingAssistanceService: ObservableObject {
         """
         
         let messages = [
-            ChatMessage(role: .system, content: "You are a thoughtful writing assistant that asks deep, reflective questions."),
+            ChatMessage(role: .system, content: """
+            You are a thoughtful writing assistant that asks deep, reflective questions.
+            Format your responses in plain text without any markdown symbols.
+            """),
             ChatMessage(role: .user, content: prompt)
         ]
         
@@ -211,7 +225,11 @@ final class WritingAssistanceService: ObservableObject {
         """
         
         let messages = [
-            ChatMessage(role: .system, content: "You are a creative writing prompt generator."),
+            ChatMessage(role: .system, content: """
+            You are a creative writing prompt generator.
+            Never use asterisks or markdown formatting in your responses.
+            Write all prompts in clear, plain language.
+            """),
             ChatMessage(role: .user, content: prompt)
         ]
         
@@ -235,48 +253,77 @@ final class WritingAssistanceService: ObservableObject {
         context: WritingContext
     ) -> String {
         let basePrompt = """
+        <instructions>
         You are an intelligent writing assistant for a personal journal app.
         Provide helpful, specific suggestions based on the current writing context.
         Be encouraging and supportive while offering concrete ideas.
+        
+        <format_rules>
+        - DO NOT use markdown formatting like **bold** or *italic*
+        - DO NOT use asterisks for emphasis
+        - Write in plain, natural language
+        - Use simple punctuation and clear sentences
+        - Each suggestion should be a complete thought
+        </format_rules>
+        </instructions>
         
         """
         
         switch context {
         case .continuation:
             return basePrompt + """
+            <task>
             The user wants to continue their thought. Analyze the text and suggest 3 natural ways to continue.
+            </task>
             
+            <context>
             Current text: "\(currentText)"
             \(previousContext.map { "Previous paragraph: \"\($0)\"" } ?? "")
+            </context>
             
+            <requirements>
             Provide 3 different continuations that:
             1. Flow naturally from the existing text
             2. Maintain the same tone and style
             3. Help develop the thought further
             
             Format each continuation on a new line.
+            Remember: Use plain text only, no markdown formatting.
+            </requirements>
             """
             
         case .ideation:
             return basePrompt + """
+            <task>
             The user is looking for ideas to explore. Based on their current writing, suggest interesting angles or perspectives.
+            </task>
             
+            <context>
             Current text: "\(currentText)"
+            </context>
             
+            <requirements>
             Provide 3-4 specific ideas that:
             1. Connect to what they've written
             2. Encourage deeper reflection
             3. Open new avenues of thought
             
-            Format each idea on a new line starting with "- "
+            Format each idea on a new line starting with a simple dash.
+            Use plain language without any formatting symbols.
+            </requirements>
             """
             
         case .styleImprovement:
             return basePrompt + """
+            <task>
             Analyze the writing style and suggest specific improvements.
+            </task>
             
+            <context>
             Text: "\(currentText)"
+            </context>
             
+            <requirements>
             Provide 3 actionable suggestions to improve:
             1. Clarity and flow
             2. Emotional expression
@@ -284,34 +331,50 @@ final class WritingAssistanceService: ObservableObject {
             
             Be specific about what to change and why.
             Format each suggestion on a new line.
+            Write in clear, plain language without formatting marks.
+            </requirements>
             """
             
         case .emotionalExploration:
             return basePrompt + """
+            <task>
             Help the user explore the emotions in their writing more deeply.
+            </task>
             
+            <context>
             Text: "\(currentText)"
+            </context>
             
+            <requirements>
             Provide 3 prompts that:
             1. Help identify underlying feelings
             2. Explore physical sensations
             3. Connect to deeper meanings
             
             Format each prompt as a gentle question or suggestion.
+            Avoid all markdown symbols and formatting marks.
+            </requirements>
             """
             
         case .writersBlock:
             return basePrompt + """
+            <task>
             The user is experiencing writer's block. Provide gentle, creative prompts to get them writing again.
+            </task>
             
+            <context>
             Recent text (if any): "\(currentText)"
+            </context>
             
+            <requirements>
             Suggest 3 approaches:
             1. A sensory-based prompt
             2. A memory trigger
             3. A "what if" scenario
             
             Make each prompt specific and engaging.
+            Use natural language only - no asterisks or formatting symbols.
+            </requirements>
             """
         }
     }
