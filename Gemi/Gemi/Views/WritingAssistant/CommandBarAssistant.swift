@@ -186,28 +186,41 @@ struct CommandBarAssistant: View {
                     lineWidth: 1
                 )
         )
+        .focusable()
         .onAppear {
-            // Focus management would go here
+            // Reset selection to first item
+            selectedIndex = 0
         }
         .onKeyPress(.escape) {
             navigateBack()
             return .handled
         }
         .onKeyPress(.upArrow) {
-            if selectedIndex > 0 {
-                selectedIndex -= 1
+            withAnimation(.easeOut(duration: 0.15)) {
+                if selectedIndex > 0 {
+                    selectedIndex -= 1
+                }
             }
             return .handled
         }
         .onKeyPress(.downArrow) {
-            let maxIndex = currentLevel == .main ? ToolType.allCases.count - 1 : suggestions.count - 1
-            if selectedIndex < maxIndex {
-                selectedIndex += 1
+            withAnimation(.easeOut(duration: 0.15)) {
+                let maxIndex = currentLevel == .main ? ToolType.allCases.count - 1 : suggestions.count - 1
+                if selectedIndex < maxIndex {
+                    selectedIndex += 1
+                }
             }
             return .handled
         }
         .onKeyPress(.return) {
             handleSelection()
+            return .handled
+        }
+        .onKeyPress(.tab) {
+            withAnimation(.easeOut(duration: 0.15)) {
+                let maxIndex = currentLevel == .main ? ToolType.allCases.count - 1 : suggestions.count - 1
+                selectedIndex = (selectedIndex + 1) % (maxIndex + 1)
+            }
             return .handled
         }
     }
@@ -511,9 +524,11 @@ struct CommandBarAssistant: View {
             if let tool = ToolType.allCases[safe: selectedIndex] {
                 selectTool(tool)
             }
-        case .tool:
-            // Handle tool-specific selection
-            break
+        case .tool(let toolType):
+            // Trigger the generate button action
+            Task {
+                await generateSuggestions(for: toolType)
+            }
         case .suggestions:
             if let suggestion = suggestions[safe: selectedIndex] {
                 acceptSuggestion(suggestion)
