@@ -395,19 +395,22 @@ struct WritersBlockBreaker: View {
     }
     
     private func getPromptText(for category: PromptCategory) -> String {
+        // Use WritingPromptGenerator for dynamic prompts
+        let generator = WritingPromptGenerator.shared
+        
         switch category {
         case .inspiration:
-            return "Write about a moment when you felt completely at peace. What made that moment special?"
+            return generator.getPrompt(from: .reflection)
         case .freeWrite:
             return "Set a timer for 10 minutes and write continuously about whatever comes to mind. Don't stop to edit or think."
         case .memory:
-            return "Describe your childhood bedroom in vivid detail. What stories do those walls hold?"
+            return generator.getPrompt(from: .reflection)
         case .whatIf:
-            return "What if you woke up tomorrow with a completely different skill set? How would your day unfold?"
+            return generator.getPrompt(from: .creativity)
         case .sensory:
             return "Close your eyes and focus on the sounds around you. Write about each sound as if describing it to someone who has never heard before."
         case .dialogue:
-            return "Have a conversation with your future self. What questions would you ask? What advice might you receive?"
+            return generator.getPrompt(from: .emotional)
         }
     }
     

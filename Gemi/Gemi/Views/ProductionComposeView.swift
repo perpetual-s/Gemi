@@ -36,10 +36,12 @@ struct ProductionComposeView: View {
     @State private var editorBounds = CGRect.zero
     
     // AI Assistant states
-    @State private var showAIAssistant = true  // Show by default
+    @State private var showAIAssistant = false  // Changed to command bar style
     @State private var aiAssistantExpanded = false
     @State private var showWritersBlockBreaker = false
     @StateObject private var sentimentAnalyzer = SentimentAnalyzer()
+    @State private var showCommandBar = false
+    @State private var commandBarPosition = CGRect.zero
     
     // Computed display title that updates properly
     private var displayTitle: String {
@@ -112,24 +114,24 @@ struct ProductionComposeView: View {
                 productionFooter
             }
             
-            // AI Assistant overlay
-            if showAIAssistant {
-                AIAssistantBubble(
-                    isVisible: $showAIAssistant,
-                    isExpanded: $aiAssistantExpanded,
+            // Command Bar Assistant overlay
+            if showCommandBar {
+                CommandBarAssistant(
+                    isVisible: $showCommandBar,
                     currentText: $entry.content,
                     selectedRange: $selectedRange,
+                    cursorRect: $commandBarPosition,
                     onSuggestionAccepted: { suggestion in
                         insertTextAtCursor(suggestion)
-                    },
-                    editorBounds: editorBounds
+                    }
                 )
-                .allowsHitTesting(true)
+                .position(calculateCommandBarPosition())
                 .transition(.asymmetric(
-                    insertion: .scale(scale: 0.8, anchor: .topTrailing).combined(with: .opacity),
-                    removal: .scale(scale: 0.8, anchor: .topTrailing).combined(with: .opacity)
+                    insertion: .scale(scale: 0.95, anchor: .top).combined(with: .opacity),
+                    removal: .scale(scale: 0.95, anchor: .top).combined(with: .opacity)
                 ))
-                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showAIAssistant)
+                .animation(.spring(response: 0.25, dampingFraction: 0.85), value: showCommandBar)
+                .zIndex(1000)
             }
         }
         .background(Color(nsColor: .textBackgroundColor))
@@ -163,6 +165,13 @@ struct ProductionComposeView: View {
         .onChange(of: entry.title) { oldValue, newValue in
             // Force UI update when title changes
             hasUnsavedChanges = true
+        }
+        .onKeyPress(.init("k"), phases: .down) { keyPress in
+            if keyPress.modifiers.contains(.command) {
+                toggleCommandBar()
+                return .handled
+            }
+            return .ignored
         }
         // Focus mode shortcut handled via button
     }
@@ -215,26 +224,21 @@ struct ProductionComposeView: View {
                     .help("Enter distraction-free writing mode")
                 }
                 
-                // AI Assistant toggle
+                // AI Assistant toggle - Command Bar style
                 Button {
-                    withAnimation(.spring(response: 0.3)) {
-                        showAIAssistant.toggle()
-                        if showAIAssistant {
-                            aiAssistantExpanded = false
-                        }
-                    }
+                    toggleCommandBar()
                 } label: {
                     HStack(spacing: 4) {
-                        Image(systemName: "wand.and.stars")
+                        Image(systemName: "command")
                             .font(.system(size: 14))
-                            .symbolEffect(.pulse, value: showAIAssistant)
                         Text("Tools")
                             .font(.system(size: 14))
                     }
-                    .foregroundColor(showAIAssistant ? Theme.Colors.primaryAccent : .secondary)
+                    .foregroundColor(showCommandBar ? Theme.Colors.primaryAccent : .secondary)
                 }
                 .buttonStyle(.plain)
-                .help("Toggle AI Writing Assistant")
+                .keyboardShortcut("k", modifiers: .command)
+                .help("Open Writing Tools (⌘K)")
                 
                 // Writer's block breaker
                 Button {
@@ -661,6 +665,62 @@ struct ProductionComposeView: View {
     
     private func updateEditorBounds(_ geometry: GeometryProxy) {
         editorBounds = geometry.frame(in: .global)
+    }
+    
+    private func toggleCommandBar() {
+        if showCommandBar {
+            withAnimation(.easeOut(duration: 0.2)) {
+                showCommandBar = false
+            }
+        } else {
+            // Update cursor position before showing
+            updateCommandBarPosition()
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+                showCommandBar = true
+            }
+        }
+    }
+    
+    private func updateCommandBarPosition() {
+        // Get current cursor rect from text editor
+        if let coordinator = textEditorCoordinator,
+           let textView = coordinator.textView {
+            let selectedRange = textView.selectedRange()
+            let rect = textView.firstRect(forCharacterRange: selectedRange, actualRange: nil)
+            commandBarPosition = rect
+        }
+    }
+    
+    private func calculateCommandBarPosition() -> CGPoint {
+        // Position command bar near cursor but ensure it's visible
+        let padding: CGFloat = 20
+        let commandBarHeight: CGFloat = 300
+        let commandBarWidth: CGFloat = 480
+        
+        var x = commandBarPosition.midX
+        var y = commandBarPosition.maxY + 20
+        
+        // Ensure command bar stays within window bounds
+        if let window = NSApp.keyWindow {
+            let windowFrame = window.frame
+            
+            // Horizontal bounds
+            if x - commandBarWidth/2 < padding {
+                x = commandBarWidth/2 + padding
+            } else if x + commandBarWidth/2 > windowFrame.width - padding {
+                x = windowFrame.width - commandBarWidth/2 - padding
+            }
+            
+            // Vertical bounds - position above cursor if not enough space below
+            if y + commandBarHeight > windowFrame.height - padding {
+                y = commandBarPosition.minY - commandBarHeight - 20
+            }
+            
+            // Final safety check
+            y = max(commandBarHeight/2 + padding, min(windowFrame.height - commandBarHeight/2 - padding, y))
+        }
+        
+        return CGPoint(x: x, y: y)
     }
 }
 
