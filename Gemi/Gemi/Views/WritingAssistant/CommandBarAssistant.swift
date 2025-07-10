@@ -308,11 +308,19 @@ struct CommandBarAssistant: View {
             ForEach(Array(ToolType.allCases.enumerated()), id: \.element) { index, tool in
                 ToolMenuItem(
                     tool: tool,
-                    isSelected: index == selectedIndex,
+                    isSelected: index == selectedIndex && currentLevel == .main,
                     action: {
+                        selectedIndex = index
                         selectTool(tool)
                     }
                 )
+                .onHover { isHovering in
+                    if isHovering && currentLevel == .main {
+                        withAnimation(.easeOut(duration: 0.15)) {
+                            selectedIndex = index
+                        }
+                    }
+                }
             }
         }
         .padding(8)
@@ -349,6 +357,13 @@ struct CommandBarAssistant: View {
                             copySuggestion(suggestion)
                         }
                     )
+                    .onHover { isHovering in
+                        if isHovering && currentLevel == .suggestions {
+                            withAnimation(.easeOut(duration: 0.15)) {
+                                selectedIndex = index
+                            }
+                        }
+                    }
                 }
             }
             .padding(8)
