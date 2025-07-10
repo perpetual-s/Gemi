@@ -35,12 +35,13 @@ struct GlassCard<Content: View>: View {
         content
             .background(
                 ZStack {
-                    // Base glass layer
+                    // Base glass layer - more transparent
                     VisualEffectView.liquidGlass
+                        .opacity(0.6) // Make the glass effect more transparent
                         .overlay(
                             LinearGradient(
                                 colors: [
-                                    Color.white.opacity(isHovered ? 0.15 : 0.08),
+                                    Color.white.opacity(isHovered ? 0.08 : 0.04), // Reduced opacity
                                     Color.clear
                                 ],
                                 startPoint: .topLeading,
@@ -69,10 +70,10 @@ struct GlassCard<Content: View>: View {
             )
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
             .shadow(
-                color: Color.black.opacity(isPressed ? 0.2 : (isHovered ? 0.15 : 0.1)),
-                radius: isPressed ? 8 : (isHovered ? 20 : 12),
+                color: Color.black.opacity(isPressed ? 0.15 : (isHovered ? 0.08 : 0.05)), // Lighter shadows
+                radius: isPressed ? 6 : (isHovered ? 15 : 8),
                 x: 0,
-                y: isPressed ? 4 : (isHovered ? 10 : 6)
+                y: isPressed ? 3 : (isHovered ? 8 : 4)
             )
             .shadow(
                 color: glowColor.opacity(isHovered ? glowIntensity : 0),
@@ -85,14 +86,14 @@ struct GlassCard<Content: View>: View {
                     .strokeBorder(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(isHovered ? 0.3 : 0.15),
-                                Color.white.opacity(0.05),
+                                Color.white.opacity(isHovered ? 0.2 : 0.08), // More subtle borders
+                                Color.white.opacity(0.03),
                                 Color.clear
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        lineWidth: 1
+                        lineWidth: 0.5 // Thinner border
                     )
             )
             .scaleEffect(isPressed ? 0.98 : (isHovered ? 1.02 : 1.0))
