@@ -31,6 +31,10 @@ struct ProductionComposeView: View {
     @State private var selectedEmoji: String?
     @State private var textEditorCoordinator: MacTextEditor.Coordinator?
     
+    // Editor tracking for AI assistant
+    @State private var selectedRange = NSRange(location: 0, length: 0)
+    @State private var editorBounds = CGRect.zero
+    
     // AI Assistant states
     @State private var showAIAssistant = true  // Show by default
     @State private var aiAssistantExpanded = false
@@ -98,26 +102,16 @@ struct ProductionComposeView: View {
             
             // AI Assistant overlay
             if showAIAssistant {
-                GeometryReader { geometry in
-                    VStack {
-                        HStack {
-                            Spacer()
-                            AIAssistantBubble(
-                                isVisible: $showAIAssistant,
-                                isExpanded: $aiAssistantExpanded,
-                                onSuggestionAccepted: { suggestion in
-                                    insertTextAtCursor(suggestion)
-                                },
-                                position: .custom(
-                                    x: -30,
-                                    y: min(80, geometry.size.height * 0.1) // Responsive positioning
-                                )
-                            )
-                        }
-                        Spacer()
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
+                AIAssistantBubble(
+                    isVisible: $showAIAssistant,
+                    isExpanded: $aiAssistantExpanded,
+                    currentText: $entry.content,
+                    selectedRange: $selectedRange,
+                    onSuggestionAccepted: { suggestion in
+                        insertTextAtCursor(suggestion)
+                    },
+                    editorBounds: editorBounds
+                )
                 .allowsHitTesting(true)
                 .transition(.asymmetric(
                     insertion: .scale(scale: 0.8, anchor: .topTrailing).combined(with: .opacity),
@@ -328,10 +322,24 @@ struct ProductionComposeView: View {
                     },
                     onCoordinatorReady: { coordinator in
                         textEditorCoordinator = coordinator
+                    },
+                    onSelectionChange: { range in
+                        selectedRange = range
                     }
                 )
                 .frame(minHeight: 400)
                 .padding(.top, 20)
+                .background(
+                    GeometryReader { geometry in
+                        Color.clear
+                            .onAppear {
+                                updateEditorBounds(geometry)
+                            }
+                            .onChange(of: geometry.frame(in: .global)) { oldFrame, newFrame in
+                                updateEditorBounds(geometry)
+                            }
+                    }
+                )
             }
             .padding(.horizontal, 40)
             
@@ -633,6 +641,10 @@ struct ProductionComposeView: View {
             // Fallback: append to content
             entry.content += text
         }
+    }
+    
+    private func updateEditorBounds(_ geometry: GeometryProxy) {
+        editorBounds = geometry.frame(in: .global)
     }
 }
 
@@ -937,6 +949,7 @@ struct MacTextEditor: NSViewRepresentable {
     let lineSpacing: CGFloat
     let onTextChange: (String) -> Void
     var onCoordinatorReady: ((Coordinator) -> Void)?
+    var onSelectionChange: ((NSRange) -> Void)?
     
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSTextView.scrollableTextView()
@@ -1008,6 +1021,11 @@ struct MacTextEditor: NSViewRepresentable {
             
             parent.text = textView.string
             parent.onTextChange(textView.string)
+        }
+        
+        func textViewDidChangeSelection(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            parent.onSelectionChange?(textView.selectedRange())
         }
         
         @MainActor
