@@ -124,7 +124,7 @@ struct CommandBarAssistant: View {
             
             // Main content area
             contentView
-                .frame(maxHeight: 400)
+                .frame(minHeight: 200, maxHeight: 600)
             
             // Footer with controls
             if navigationStack.last != .main {
@@ -133,6 +133,7 @@ struct CommandBarAssistant: View {
             }
         }
         .frame(width: 480)
+        .fixedSize(horizontal: false, vertical: true)
         .background(
             ZStack {
                 // Base blur material
@@ -290,20 +291,18 @@ struct CommandBarAssistant: View {
     }
     
     private var mainMenuView: some View {
-        ScrollView {
-            VStack(spacing: 2) {
-                ForEach(Array(ToolType.allCases.enumerated()), id: \.element) { index, tool in
-                    ToolMenuItem(
-                        tool: tool,
-                        isSelected: index == selectedIndex,
-                        action: {
-                            selectTool(tool)
-                        }
-                    )
-                }
+        VStack(spacing: 2) {
+            ForEach(Array(ToolType.allCases.enumerated()), id: \.element) { index, tool in
+                ToolMenuItem(
+                    tool: tool,
+                    isSelected: index == selectedIndex,
+                    action: {
+                        selectTool(tool)
+                    }
+                )
             }
-            .padding(8)
         }
+        .padding(8)
     }
     
     private func toolView(for tool: ToolType) -> some View {
@@ -378,11 +377,9 @@ struct CommandBarAssistant: View {
                 )
             }
             .buttonStyle(.plain)
-            
-            Spacer()
+            .padding(.bottom, 20)
         }
         .frame(maxWidth: .infinity)
-        .padding(.bottom, 20)
     }
     
     private var loadingView: some View {
@@ -402,8 +399,9 @@ struct CommandBarAssistant: View {
             .buttonStyle(.plain)
             .foregroundColor(.secondary)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(40)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
+        .padding(.horizontal, 20)
     }
     
     // MARK: - Footer Controls
