@@ -33,7 +33,6 @@ struct ProductionComposeView: View {
     
     // Editor tracking for AI assistant
     @State private var selectedRange = NSRange(location: 0, length: 0)
-    @State private var editorBounds = CGRect.zero
     
     // AI Assistant states
     @State private var showAIAssistant = false  // Changed to command bar style
@@ -65,8 +64,9 @@ struct ProductionComposeView: View {
     }
     
     var body: some View {
-        ZStack {
-            VStack(spacing: 0) {
+        GeometryReader { rootGeometry in
+            ZStack {
+                VStack(spacing: 0) {
                 // Professional header
                 productionHeader
                 
@@ -116,16 +116,20 @@ struct ProductionComposeView: View {
             
             // Command Bar Assistant overlay
             if showCommandBar {
-                CommandBarAssistant(
-                    isVisible: $showCommandBar,
-                    currentText: $entry.content,
-                    selectedRange: $selectedRange,
-                    cursorRect: $commandBarPosition,
-                    onSuggestionAccepted: { suggestion in
-                        insertTextAtCursor(suggestion)
-                    }
-                )
-                .position(calculateCommandBarPosition())
+                VStack {
+                    Spacer()
+                    CommandBarAssistant(
+                        isVisible: $showCommandBar,
+                        currentText: $entry.content,
+                        selectedRange: $selectedRange,
+                        cursorRect: $commandBarPosition,
+                        onSuggestionAccepted: { suggestion in
+                            insertTextAtCursor(suggestion)
+                        }
+                    )
+                    .padding(.top, 100) // Ensure space from top
+                    Spacer()
+                }
                 .transition(.asymmetric(
                     insertion: .scale(scale: 0.95, anchor: .top).combined(with: .opacity),
                     removal: .scale(scale: 0.95, anchor: .top).combined(with: .opacity)
@@ -133,6 +137,8 @@ struct ProductionComposeView: View {
                 .animation(.spring(response: 0.25, dampingFraction: 0.85), value: showCommandBar)
                 .zIndex(1000)
             }
+        }
+        .frame(width: rootGeometry.size.width, height: rootGeometry.size.height)
         }
         .background(Color(nsColor: .textBackgroundColor))
         .sheet(isPresented: $showWritersBlockBreaker) {
@@ -349,17 +355,6 @@ struct ProductionComposeView: View {
                 )
                 .frame(minHeight: 400)
                 .padding(.top, 20)
-                .background(
-                    GeometryReader { geometry in
-                        Color.clear
-                            .onAppear {
-                                updateEditorBounds(geometry)
-                            }
-                            .onChange(of: geometry.frame(in: .global)) { oldFrame, newFrame in
-                                updateEditorBounds(geometry)
-                            }
-                    }
-                )
             }
             .padding(.horizontal, 40)
             
@@ -663,9 +658,6 @@ struct ProductionComposeView: View {
         }
     }
     
-    private func updateEditorBounds(_ geometry: GeometryProxy) {
-        editorBounds = geometry.frame(in: .global)
-    }
     
     private func toggleCommandBar() {
         if showCommandBar {
@@ -691,31 +683,6 @@ struct ProductionComposeView: View {
         }
     }
     
-    private func calculateCommandBarPosition() -> CGPoint {
-        // Position command bar at center of editor view
-        let commandBarHeight: CGFloat = 300
-        let commandBarWidth: CGFloat = 480
-        
-        // If we have valid editor bounds, center within the editor
-        if editorBounds.width > 0 && editorBounds.height > 0 {
-            return CGPoint(
-                x: editorBounds.midX,
-                y: editorBounds.midY
-            )
-        }
-        
-        // Fallback to window center if editor bounds not available
-        if let window = NSApp.keyWindow {
-            let windowFrame = window.frame
-            return CGPoint(
-                x: windowFrame.width / 2,
-                y: windowFrame.height / 2
-            )
-        }
-        
-        // Last resort fallback
-        return CGPoint(x: 400, y: 300)
-    }
 }
 
 // MARK: - Supporting Views
