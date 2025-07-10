@@ -11,7 +11,7 @@ struct EnhancedTimelineView: View {
     @State private var showingAIInsights = false
     @State private var moodTrend: MoodTrend?
     @State private var selectedEntryForChat: JournalEntry?
-    @State private var showingFloatingChat = false
+    @State private var showGeneralChat = false
     @State private var readingEntry: JournalEntry?
     @State private var selectedReflectionPrompt: String?
     
@@ -111,7 +111,7 @@ struct EnhancedTimelineView: View {
                 Spacer()
                 HStack {
                     Spacer()
-                    ChatFloatingButton(showingChat: $showingFloatingChat)
+                    ChatFloatingButton(showingChat: $showGeneralChat)
                         .padding(Theme.largeSpacing)
                         .transition(.scale.combined(with: .opacity))
                 }
@@ -128,19 +128,29 @@ struct EnhancedTimelineView: View {
         .sheet(isPresented: $showingAIInsights) {
             AIInsightsView(entries: journalStore.entries)
         }
-        .sheet(item: $selectedEntryForChat) { entry in
-            if let prompt = selectedReflectionPrompt {
-                EnhancedChatSheet(journalEntry: entry, reflectionPrompt: prompt)
+        .sheet(isPresented: .constant(selectedEntryForChat != nil || showGeneralChat)) {
+            if let entry = selectedEntryForChat {
+                // Entry-specific chat
+                if let prompt = selectedReflectionPrompt {
+                    EnhancedChatSheet(journalEntry: entry, reflectionPrompt: prompt)
+                        .onDisappear {
+                            selectedReflectionPrompt = nil
+                            selectedEntryForChat = nil
+                        }
+                } else {
+                    ChatSheet(journalEntry: entry)
+                        .onDisappear {
+                            selectedEntryForChat = nil
+                        }
+                }
+            } else if showGeneralChat {
+                // General chat without entry context
+                GemiChatView()
+                    .frame(width: 900, height: 600)
                     .onDisappear {
-                        selectedReflectionPrompt = nil
+                        showGeneralChat = false
                     }
-            } else {
-                ChatSheet(journalEntry: entry)
             }
-        }
-        .sheet(isPresented: $showingFloatingChat) {
-            GemiChatView()
-                .frame(width: 900, height: 600)
         }
         .sheet(item: $readingEntry) { entry in
             // Ensure the entry is captured properly
