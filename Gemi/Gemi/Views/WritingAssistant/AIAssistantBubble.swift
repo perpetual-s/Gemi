@@ -15,17 +15,8 @@ struct AIAssistantBubble: View {
     @State private var scale: Double = 0.8
     @State private var dragOffset: CGSize = .zero
     @State private var position: CGPoint = .zero
-    @State private var anchorPosition: AnchorPosition = .auto
-    
     let onSuggestionAccepted: (String) -> Void
     let editorBounds: CGRect
-    
-    enum AnchorPosition {
-        case auto
-        case aboveCursor
-        case belowCursor
-        case rightOfCursor
-    }
     
     struct Suggestion: Identifiable {
         let id = UUID()
@@ -45,23 +36,15 @@ struct AIAssistantBubble: View {
     
     var body: some View {
         GeometryReader { geometry in
-            HStack(spacing: 0) {
-                if isExpanded && anchorPosition == .rightOfCursor {
-                    expandedContent
-                        .transition(.asymmetric(
-                            insertion: .scale(scale: 0.8, anchor: .trailing).combined(with: .opacity),
-                            removal: .scale(scale: 0.8, anchor: .trailing).combined(with: .opacity)
-                        ))
-                }
-                
+            HStack(spacing: 12) {
                 // Main bubble button
                 bubbleButton
                 
-                if isExpanded && anchorPosition != .rightOfCursor {
+                if isExpanded {
                     expandedContent
                         .transition(.asymmetric(
-                            insertion: .scale(scale: 0.8, anchor: anchorEdge).combined(with: .opacity),
-                            removal: .scale(scale: 0.8, anchor: anchorEdge).combined(with: .opacity)
+                            insertion: .scale(scale: 0.8, anchor: .leading).combined(with: .opacity),
+                            removal: .scale(scale: 0.8, anchor: .leading).combined(with: .opacity)
                         ))
                 }
             }
@@ -111,22 +94,32 @@ struct AIAssistantBubble: View {
             }
         } label: {
             ZStack {
-                // Background gradient
+                // Glass morphism background
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Theme.Colors.primaryAccent, Theme.Colors.primaryAccent.opacity(0.8)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
+                    .fill(.ultraThinMaterial)
+                    .frame(width: 56, height: 56)
+                    .overlay(
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Theme.Colors.primaryAccent.opacity(0.3), Theme.Colors.primaryAccent.opacity(0.15)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
                     )
-                    .frame(width: 56, height: 56)
-                
-                // Shadow and glow
-                Circle()
-                    .stroke(Theme.Colors.primaryAccent.opacity(0.3), lineWidth: 1)
-                    .frame(width: 56, height: 56)
-                    .shadow(color: Theme.Colors.primaryAccent.opacity(0.4), radius: 10, x: 0, y: 4)
+                    .overlay(
+                        Circle()
+                            .stroke(
+                                LinearGradient(
+                                    colors: [Color.white.opacity(0.3), Color.white.opacity(0.1)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1
+                            )
+                    )
+                    .shadow(color: Theme.Colors.primaryAccent.opacity(0.2), radius: 12, x: 0, y: 4)
                 
                 // Icon with animation
                 if isThinking {
@@ -157,6 +150,24 @@ struct AIAssistantBubble: View {
                 if isThinking {
                     ProgressView()
                         .scaleEffect(0.7)
+                } else {
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            isExpanded = false
+                            suggestions = []
+                        }
+                    } label: {
+                        Text("Done")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 4)
+                            .background(
+                                Capsule()
+                                    .fill(Theme.Colors.primaryAccent)
+                            )
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 16)
@@ -224,51 +235,74 @@ struct AIAssistantBubble: View {
         }
         .frame(width: 320)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(NSColor.controlBackgroundColor))
-                .shadow(color: .black.opacity(0.15), radius: 20, y: 10)
+            ZStack {
+                // Glass morphism background
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(.ultraThinMaterial)
+                
+                // Subtle gradient overlay
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(NSColor.controlBackgroundColor).opacity(0.3),
+                                Color(NSColor.controlBackgroundColor).opacity(0.1)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            }
+            .shadow(color: .black.opacity(0.1), radius: 16, x: 0, y: 8)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.secondary.opacity(0.1), lineWidth: 1)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.2),
+                            Color.white.opacity(0.05)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
         )
     }
     
     // MARK: - Positioning
     
     private func calculateOptimalPosition(in geometry: GeometryProxy) -> CGPoint {
-        // Get cursor position in editor coordinates
-        let cursorY = getCursorYPosition()
         let bubbleSize = CGSize(width: 56, height: 56)
         let expandedWidth: CGFloat = isExpanded ? 320 : 0
         
-        var x: CGFloat = editorBounds.maxX - 80 // Default right side
-        var y: CGFloat = cursorY
+        // Position in the middle-right area of the window
+        let windowWidth = geometry.size.width
+        let windowHeight = geometry.size.height
         
-        // Determine anchor position based on available space
-        let spaceRight = geometry.size.width - (editorBounds.maxX + 20)
-        let spaceBelow = geometry.size.height - cursorY - 100
-        let spaceAbove = cursorY - 100
+        // Default to middle-right position (between upper and middle)
+        var x: CGFloat = windowWidth - 100 // More centered from right edge
+        var y: CGFloat = windowHeight * 0.35 // 35% from top (between upper and middle)
         
+        // When expanded, adjust position to ensure full visibility
         if isExpanded {
-            if spaceRight > expandedWidth + 80 {
-                // Enough space on the right
-                anchorPosition = .rightOfCursor
-                x = editorBounds.maxX + 40
-            } else if spaceBelow > 300 {
-                // Place below cursor
-                anchorPosition = .belowCursor
-                y = cursorY + 60
-                x = editorBounds.midX
-            } else if spaceAbove > 300 {
-                // Place above cursor
-                anchorPosition = .aboveCursor
-                y = cursorY - 60
-                x = editorBounds.midX
-            } else {
-                // Fallback to right side, adjusted
-                anchorPosition = .rightOfCursor
-                x = editorBounds.maxX - expandedWidth - 20
+            // Ensure the expanded panel fits within the window
+            let rightEdgeSpace = windowWidth - x - expandedWidth/2
+            
+            if rightEdgeSpace < 20 {
+                // Too close to right edge, move left
+                x = windowWidth - expandedWidth/2 - 30
+            }
+            
+            // Ensure vertical position keeps panel visible
+            let expandedHeight: CGFloat = 300 // Approximate height
+            if y + expandedHeight/2 > windowHeight - 20 {
+                // Too low, move up
+                y = windowHeight - expandedHeight/2 - 30
+            } else if y - expandedHeight/2 < 20 {
+                // Too high, move down
+                y = expandedHeight/2 + 30
             }
         }
         
@@ -279,26 +313,10 @@ struct AIAssistantBubble: View {
         )
     }
     
-    private func getCursorYPosition() -> CGFloat {
-        // Calculate Y position based on selected range in the text
-        // This is a simplified calculation - in production, you'd get actual cursor coordinates
-        let lineHeight: CGFloat = 20
-        let linesBeforeCursor = currentText.prefix(selectedRange.location).filter { $0 == "\n" }.count
-        return CGFloat(linesBeforeCursor) * lineHeight + 100 // Offset from top
-    }
-    
-    private var anchorEdge: UnitPoint {
-        switch anchorPosition {
-        case .auto, .rightOfCursor: return .leading
-        case .aboveCursor: return .bottom
-        case .belowCursor: return .top
-        }
-    }
     
     private func updatePosition() {
-        withAnimation(.easeOut(duration: 0.2)) {
-            position = getCursorYPosition().cgPoint(x: editorBounds.maxX - 80)
-        }
+        // Keep the bubble in a fixed, pleasant position
+        // No need to follow cursor for better UX
     }
     
     private func animateIn() {
@@ -486,7 +504,11 @@ struct SuggestionRow: View {
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isHovered ? suggestion.color.opacity(0.1) : Color.clear)
+                    .fill(isHovered ? suggestion.color.opacity(0.08) : Color.clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(suggestion.color.opacity(isHovered ? 0.2 : 0), lineWidth: 1)
+                    )
             )
         }
         .buttonStyle(.plain)
@@ -524,12 +546,17 @@ struct QuickActionButton: View {
             .padding(.vertical, 10)
             .frame(width: 200)
             .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(color.opacity(0.1))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(color.opacity(0.2), lineWidth: 1)
-                    )
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(.ultraThinMaterial)
+                    
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(color.opacity(0.08))
+                }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(color.opacity(0.15), lineWidth: 1)
+                )
             )
             .scaleEffect(isPressed ? 0.95 : 1)
         }
