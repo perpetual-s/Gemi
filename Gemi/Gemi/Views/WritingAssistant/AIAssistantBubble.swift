@@ -14,7 +14,9 @@ struct AIAssistantBubble: View {
     @State private var bubbleOpacity: Double = 0
     @State private var scale: Double = 0.8
     @State private var dragOffset: CGSize = .zero
+    @State private var draggedPosition: CGSize = .zero
     @State private var position: CGPoint = .zero
+    @State private var isDragging: Bool = false
     let onSuggestionAccepted: (String) -> Void
     let editorBounds: CGRect
     
@@ -60,11 +62,21 @@ struct AIAssistantBubble: View {
                 DragGesture()
                     .onChanged { value in
                         if !isExpanded {
-                            dragOffset = value.translation
+                            dragOffset = CGSize(
+                                width: draggedPosition.width + value.translation.width,
+                                height: draggedPosition.height + value.translation.height
+                            )
                         }
                     }
-                    .onEnded { _ in
-                        // Keep the dragged position
+                    .onEnded { value in
+                        if !isExpanded {
+                            // Save the final position
+                            draggedPosition = CGSize(
+                                width: draggedPosition.width + value.translation.width,
+                                height: draggedPosition.height + value.translation.height
+                            )
+                            dragOffset = draggedPosition
+                        }
                     }
             )
         }
@@ -118,31 +130,45 @@ struct AIAssistantBubble: View {
                     .stroke(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(0.2),
+                                Color.white.opacity(isDragging ? 0.4 : 0.2),
                                 Color.white.opacity(0.05)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        lineWidth: 1
+                        lineWidth: isDragging ? 2 : 1
                     )
                     .frame(width: 56, height: 56)
-                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                    .shadow(color: isDragging ? Theme.Colors.primaryAccent.opacity(0.3) : .black.opacity(0.1), 
+                            radius: isDragging ? 12 : 8, x: 0, y: 4)
+                    .animation(.easeInOut(duration: 0.2), value: isDragging)
                 
                 // Icon with animation
                 if isThinking {
                     ThinkingIndicator()
                         .frame(width: 28, height: 28)
                 } else {
-                    Image(systemName: isExpanded ? "xmark" : "wand.and.stars")
-                        .font(.system(size: 22, weight: .medium))
-                        .foregroundColor(Theme.Colors.primaryAccent)
-                        .symbolEffect(.pulse, value: !isExpanded && suggestions.isEmpty)
+                    ZStack {
+                        Image(systemName: isExpanded ? "xmark" : "wand.and.stars")
+                            .font(.system(size: 22, weight: .medium))
+                            .foregroundColor(Theme.Colors.primaryAccent)
+                            .symbolEffect(.pulse, value: !isExpanded && suggestions.isEmpty)
+                        
+                        // Subtle move indicator in corner when not expanded and not moved
+                        if !isExpanded && draggedPosition == .zero {
+                            Image(systemName: "arrow.up.and.down.and.arrow.left.and.right")
+                                .font(.system(size: 8, weight: .medium))
+                                .foregroundColor(Theme.Colors.primaryAccent.opacity(0.3))
+                                .offset(x: 16, y: -16)
+                        }
+                    }
                 }
             }
         }
         .buttonStyle(BubbleButtonStyle())
-        .help("AI Writing Assistant")
+        .help("AI Writing Assistant - Drag to move")
+        .scaleEffect(isDragging ? 1.1 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isDragging)
     }
     
     private var expandedContent: some View {
