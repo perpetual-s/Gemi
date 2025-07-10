@@ -94,32 +94,22 @@ struct AIAssistantBubble: View {
             }
         } label: {
             ZStack {
-                // Glass morphism background
+                // Solid gradient background for bubble
                 Circle()
-                    .fill(.ultraThinMaterial)
+                    .fill(
+                        LinearGradient(
+                            colors: [Theme.Colors.primaryAccent, Theme.Colors.primaryAccent.opacity(0.8)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
                     .frame(width: 56, height: 56)
-                    .overlay(
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [Theme.Colors.primaryAccent.opacity(0.3), Theme.Colors.primaryAccent.opacity(0.15)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                    )
-                    .overlay(
-                        Circle()
-                            .stroke(
-                                LinearGradient(
-                                    colors: [Color.white.opacity(0.3), Color.white.opacity(0.1)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 1
-                            )
-                    )
-                    .shadow(color: Theme.Colors.primaryAccent.opacity(0.2), radius: 12, x: 0, y: 4)
+                
+                // Shadow and glow effect
+                Circle()
+                    .stroke(Theme.Colors.primaryAccent.opacity(0.3), lineWidth: 1)
+                    .frame(width: 56, height: 56)
+                    .shadow(color: Theme.Colors.primaryAccent.opacity(0.4), radius: 10, x: 0, y: 4)
                 
                 // Icon with animation
                 if isThinking {
