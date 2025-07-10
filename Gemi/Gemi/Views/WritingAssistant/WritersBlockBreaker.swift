@@ -164,8 +164,12 @@ struct WritersBlockBreaker: View {
                         category: category,
                         isSelected: selectedCategory == category
                     ) {
-                        withAnimation(.spring(response: 0.3)) {
+                        // Use simpler animation to prevent glitching
+                        withAnimation(.easeInOut(duration: 0.2)) {
                             selectedCategory = category
+                        }
+                        // Generate prompt after animation completes
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                             generatePrompt()
                         }
                     }
@@ -377,17 +381,16 @@ struct WritersBlockBreaker: View {
         isGenerating = true
         
         // Simulate AI generation
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            withAnimation {
-                currentPrompt = WritingPrompt(
-                    category: selectedCategory,
-                    prompt: getPromptText(for: selectedCategory),
-                    technique: getTechnique(for: selectedCategory),
-                    estimatedTime: Int.random(in: 5...15),
-                    difficulty: WritingPrompt.Difficulty.allCases.randomElement() ?? .medium
-                )
-                isGenerating = false
-            }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            // Update state without nested animations
+            currentPrompt = WritingPrompt(
+                category: selectedCategory,
+                prompt: getPromptText(for: selectedCategory),
+                technique: getTechnique(for: selectedCategory),
+                estimatedTime: Int.random(in: 5...15),
+                difficulty: WritingPrompt.Difficulty.allCases.randomElement() ?? .medium
+            )
+            isGenerating = false
         }
     }
     
@@ -453,7 +456,7 @@ struct CategoryButton: View {
                     .multilineTextAlignment(.center)
                     .frame(width: 80)
             }
-            .scaleEffect(isSelected ? 1.05 : 1)
+            .scaleEffect(isSelected ? 1.02 : 1)
         }
         .buttonStyle(.plain)
     }
@@ -497,11 +500,11 @@ struct QuickExerciseCard: View {
                             .stroke(color.opacity(isHovered ? 0.3 : 0), lineWidth: 1)
                     )
             )
-            .scaleEffect(isHovered ? 1.02 : 1)
+            .scaleEffect(isHovered ? 1.01 : 1)
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            withAnimation(.easeOut(duration: 0.2)) {
+            withAnimation(.easeOut(duration: 0.15)) {
                 isHovered = hovering
             }
         }
