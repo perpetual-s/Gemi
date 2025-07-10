@@ -13,9 +13,10 @@ struct AIAssistantBubble: View {
     @State private var isThinking: Bool = false
     @State private var bubbleOpacity: Double = 0
     @State private var scale: Double = 0.8
-    @State private var savedPosition: CGSize = .zero
+    @State private var savedPosition: CGPoint = CGPoint(x: 0, y: 0)
     @State private var isDragging: Bool = false
-    @GestureState private var dragState: CGSize = .zero
+    @GestureState private var dragLocation: CGPoint = .zero
+    @State private var initialDragOffset: CGSize = .zero
     let onSuggestionAccepted: (String) -> Void
     let editorBounds: CGRect
     
@@ -50,26 +51,46 @@ struct AIAssistantBubble: View {
                         ))
                 }
             }
-            .position(calculateOptimalPosition(in: geometry))
-            .offset(x: savedPosition.width + dragState.width,
-                    y: savedPosition.height + dragState.height)
+            .position(isDragging && !isExpanded ? dragLocation : calculateOptimalPosition(in: geometry).applying(savedPosition))
             .opacity(bubbleOpacity)
             .scaleEffect(scale)
             .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isExpanded)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: scale)
             .animation(.easeOut(duration: 0.3), value: bubbleOpacity)
             .animation(isDragging ? nil : .interactiveSpring(response: 0.3, dampingFraction: 0.85), value: savedPosition)
+            .animation(isDragging ? nil : .interactiveSpring(response: 0.3, dampingFraction: 0.85), value: dragLocation)
             .gesture(
-                DragGesture(minimumDistance: 2)
-                    .updating($dragState) { value, state, _ in
+                DragGesture(minimumDistance: 2, coordinateSpace: .local)
+                    .updating($dragLocation) { value, state, _ in
                         if !isExpanded {
-                            state = value.translation
+                            // Convert to local coordinates and apply constraints
+                            let proposedLocation = value.location
+                            
+                            // Bubble radius for boundary calculation
+                            let bubbleRadius: CGFloat = 28
+                            let padding: CGFloat = 10
+                            
+                            // Constrain to window bounds
+                            let constrainedX = max(bubbleRadius + padding, 
+                                                 min(geometry.size.width - bubbleRadius - padding, proposedLocation.x))
+                            let constrainedY = max(bubbleRadius + padding, 
+                                                 min(geometry.size.height - bubbleRadius - padding, proposedLocation.y))
+                            
+                            state = CGPoint(x: constrainedX, y: constrainedY)
                         }
                     }
-                    .onChanged { _ in
-                        if !isExpanded && !isDragging {
-                            withAnimation(.easeOut(duration: 0.1)) {
-                                isDragging = true
+                    .onChanged { value in
+                        if !isExpanded {
+                            if !isDragging {
+                                // Calculate initial offset between bubble center and cursor
+                                let currentCenter = calculateOptimalPosition(in: geometry).applying(savedPosition)
+                                initialDragOffset = CGSize(
+                                    width: currentCenter.x - value.startLocation.x,
+                                    height: currentCenter.y - value.startLocation.y
+                                )
+                                withAnimation(.easeOut(duration: 0.1)) {
+                                    isDragging = true
+                                }
                             }
                         }
                     }
@@ -79,19 +100,24 @@ struct AIAssistantBubble: View {
                                 isDragging = false
                             }
                             
-                            // Calculate new position with constraints
-                            let newX = savedPosition.width + value.translation.width
-                            let newY = savedPosition.height + value.translation.height
+                            // Calculate final position with proper constraints
+                            let basePosition = calculateOptimalPosition(in: geometry)
+                            let finalWithOffset = value.location.applying(initialDragOffset)
                             
-                            // Get window bounds
-                            let maxX = geometry.size.width - 180 // Keep some distance from edges
-                            let maxY = geometry.size.height - 150
-                            let minX: CGFloat = -geometry.size.width + 180
-                            let minY: CGFloat = -geometry.size.height * 0.3
+                            // Calculate offset from base position
+                            let offsetX = finalWithOffset.x - basePosition.x
+                            let offsetY = finalWithOffset.y - basePosition.y
                             
-                            savedPosition = CGSize(
-                                width: max(minX, min(maxX, newX)),
-                                height: max(minY, min(maxY, newY))
+                            // Ensure bubble stays fully visible
+                            let bubbleRadius: CGFloat = 28
+                            let maxX = geometry.size.width - basePosition.x - bubbleRadius - 10
+                            let minX = -basePosition.x + bubbleRadius + 10
+                            let maxY = geometry.size.height - basePosition.y - bubbleRadius - 10
+                            let minY = -basePosition.y + bubbleRadius + 10
+                            
+                            savedPosition = CGPoint(
+                                x: max(minX, min(maxX, offsetX)),
+                                y: max(minY, min(maxY, offsetY))
                             )
                         }
                     }
@@ -103,9 +129,10 @@ struct AIAssistantBubble: View {
             animateIn()
         }
         .onChange(of: selectedRange) { oldRange, newRange in
-            if !savedPosition.isZero { return } // Don't update if user has dragged
+            if savedPosition != .zero { return } // Don't update if user has dragged
             updatePosition()
         }
+        .coordinateSpace(name: "bubbleSpace")
         .onKeyPress(.escape) {
             if isExpanded {
                 withAnimation {
@@ -124,7 +151,7 @@ struct AIAssistantBubble: View {
             }
         } label: {
             ZStack {
-                // Glass morphism background matching sidebar style
+                // Enhanced glass morphism with beautiful blue gradient
                 Circle()
                     .fill(.ultraThinMaterial)
                     .frame(width: 56, height: 56)
@@ -133,31 +160,50 @@ struct AIAssistantBubble: View {
                             .fill(
                                 LinearGradient(
                                     colors: [
-                                        Theme.Colors.primaryAccent.opacity(0.15),
-                                        Theme.Colors.primaryAccent.opacity(0.05)
+                                        Theme.Colors.primaryAccent.opacity(0.35),
+                                        Theme.Colors.primaryAccent.opacity(0.25),
+                                        Color.blue.opacity(0.2)
                                     ],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
                             )
                     )
+                    .overlay(
+                        // Inner glow effect
+                        Circle()
+                            .stroke(
+                                RadialGradient(
+                                    colors: [
+                                        Theme.Colors.primaryAccent.opacity(0.4),
+                                        Color.clear
+                                    ],
+                                    center: .center,
+                                    startRadius: 20,
+                                    endRadius: 28
+                                ),
+                                lineWidth: 2
+                            )
+                            .blur(radius: 2)
+                    )
                 
-                // Subtle border and shadow
+                // Beautiful border with enhanced shadow
                 Circle()
                     .stroke(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(isDragging ? 0.4 : 0.2),
-                                Color.white.opacity(0.05)
+                                Color.white.opacity(isDragging ? 0.6 : 0.3),
+                                Theme.Colors.primaryAccent.opacity(isDragging ? 0.4 : 0.2)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        lineWidth: isDragging ? 2 : 1
+                        lineWidth: isDragging ? 2.5 : 1.5
                     )
                     .frame(width: 56, height: 56)
-                    .shadow(color: isDragging ? Theme.Colors.primaryAccent.opacity(0.3) : .black.opacity(0.1), 
-                            radius: isDragging ? 12 : 8, x: 0, y: 4)
+                    .shadow(color: Theme.Colors.primaryAccent.opacity(isDragging ? 0.5 : 0.3), 
+                            radius: isDragging ? 16 : 10, x: 0, y: isDragging ? 6 : 4)
+                    .shadow(color: Color.blue.opacity(0.2), radius: 20, x: 0, y: 8)
                     .animation(.easeInOut(duration: 0.2), value: isDragging)
                 
                 // Icon with animation
@@ -167,9 +213,19 @@ struct AIAssistantBubble: View {
                 } else {
                     ZStack {
                         Image(systemName: isExpanded ? "xmark" : "wand.and.stars")
-                            .font(.system(size: 22, weight: .medium))
-                            .foregroundColor(Theme.Colors.primaryAccent)
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [
+                                        Theme.Colors.primaryAccent,
+                                        Color.blue
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
                             .symbolEffect(.pulse, value: !isExpanded && suggestions.isEmpty)
+                            .shadow(color: Theme.Colors.primaryAccent.opacity(0.3), radius: 4)
                         
                         // Subtle move indicator in corner when not expanded and not moved
                         if !isExpanded && savedPosition == .zero {
@@ -186,7 +242,7 @@ struct AIAssistantBubble: View {
         }
         .buttonStyle(BubbleButtonStyle())
         .help("AI Writing Assistant - Drag to move")
-        .scaleEffect(isDragging ? 1.03 : 1.0)
+        .scaleEffect(isDragging ? 1.05 : 1.0)
         .animation(.interactiveSpring(response: 0.2, dampingFraction: 0.7), value: isDragging)
     }
     
@@ -783,5 +839,19 @@ extension CGFloat {
 extension CGSize {
     var isZero: Bool {
         width == 0 && height == 0
+    }
+}
+
+extension CGPoint {
+    func applying(_ offset: CGPoint) -> CGPoint {
+        CGPoint(x: x + offset.x, y: y + offset.y)
+    }
+    
+    func applying(_ size: CGSize) -> CGPoint {
+        CGPoint(x: x + size.width, y: y + size.height)
+    }
+    
+    static var zero: CGPoint {
+        CGPoint(x: 0, y: 0)
     }
 }
