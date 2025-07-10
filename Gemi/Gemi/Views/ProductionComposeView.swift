@@ -41,6 +41,18 @@ struct ProductionComposeView: View {
     @State private var showWritersBlockBreaker = false
     @StateObject private var sentimentAnalyzer = SentimentAnalyzer()
     
+    // Computed display title that updates properly
+    private var displayTitle: String {
+        if !entry.title.isEmpty {
+            return entry.title
+        } else if !entry.content.isEmpty {
+            let firstLine = entry.content.components(separatedBy: .newlines).first ?? ""
+            return String(firstLine.prefix(50))
+        } else {
+            return "Untitled Entry"
+        }
+    }
+    
     init(entry: JournalEntry? = nil, onSave: @escaping (JournalEntry) -> Void, onCancel: @escaping () -> Void, onFocusMode: ((JournalEntry) -> Void)? = nil) {
         let initialEntry = entry ?? JournalEntry(content: "")
         self._entry = State(initialValue: initialEntry)
@@ -148,6 +160,10 @@ struct ProductionComposeView: View {
             // Analyze sentiment
             sentimentAnalyzer.analyzeText(newValue)
         }
+        .onChange(of: entry.title) { oldValue, newValue in
+            // Force UI update when title changes
+            hasUnsavedChanges = true
+        }
         // Focus mode shortcut handled via button
     }
     
@@ -171,7 +187,7 @@ struct ProductionComposeView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(entry.displayTitle)
+                    Text(displayTitle)
                         .font(.system(size: 16, weight: .semibold))
                         .lineLimit(1)
                     
