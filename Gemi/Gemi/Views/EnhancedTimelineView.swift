@@ -159,7 +159,6 @@ struct EnhancedTimelineView: View {
                 onChat: {
                     readingEntry = nil
                     selectedEntryForChat = entry
-                    showingFloatingChat = true
                 }
             )
             .frame(minWidth: 700, idealWidth: 800, minHeight: 600, idealHeight: 700)
@@ -273,7 +272,6 @@ struct EnhancedTimelineView: View {
                 },
                 onChat: {
                     selectedEntryForChat = entry
-                    showingFloatingChat = true
                 }
             )
         }
