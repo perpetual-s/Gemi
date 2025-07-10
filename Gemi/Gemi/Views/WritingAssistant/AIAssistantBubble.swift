@@ -15,47 +15,9 @@ struct AIAssistantBubble: View {
     @State private var scale: Double = 0.8
     @State private var dragOffset: CGSize = .zero
     @State private var position: CGPoint = .zero
-    @State private var currentTab: AssistantTab = .tools
-    @State private var writingPrompts: [WritingPrompt] = []
-    @State private var selectedPromptCategory: PromptCategory = .inspiration
     let onSuggestionAccepted: (String) -> Void
     let editorBounds: CGRect
     
-    enum AssistantTab {
-        case tools
-        case ideas
-    }
-    
-    struct WritingPrompt: Identifiable {
-        let id = UUID()
-        let text: String
-        let category: PromptCategory
-    }
-    
-    enum PromptCategory: String, CaseIterable {
-        case inspiration = "Inspiration"
-        case memory = "Memory"
-        case sensory = "Sensory"
-        case whatIf = "What If"
-        
-        var icon: String {
-            switch self {
-            case .inspiration: return "sparkles"
-            case .memory: return "clock.arrow.circlepath"
-            case .sensory: return "eye"
-            case .whatIf: return "questionmark.bubble"
-            }
-        }
-        
-        var color: Color {
-            switch self {
-            case .inspiration: return .purple
-            case .memory: return .orange
-            case .sensory: return .pink
-            case .whatIf: return .green
-            }
-        }
-    }
     
     struct Suggestion: Identifiable {
         let id = UUID()
@@ -75,15 +37,15 @@ struct AIAssistantBubble: View {
     
     var body: some View {
         GeometryReader { geometry in
-            HStack(spacing: 12) {
+            VStack(spacing: 8) {
                 // Main bubble button
                 bubbleButton
                 
                 if isExpanded {
                     expandedContent
                         .transition(.asymmetric(
-                            insertion: .scale(scale: 0.8, anchor: .leading).combined(with: .opacity),
-                            removal: .scale(scale: 0.8, anchor: .leading).combined(with: .opacity)
+                            insertion: .scale(scale: 0.95, anchor: .top).combined(with: .opacity),
+                            removal: .scale(scale: 0.95, anchor: .top).combined(with: .opacity)
                         ))
                 }
             }
@@ -91,7 +53,7 @@ struct AIAssistantBubble: View {
             .offset(dragOffset)
             .opacity(bubbleOpacity)
             .scaleEffect(scale)
-            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isExpanded)
+            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isExpanded)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: scale)
             .animation(.easeOut(duration: 0.3), value: bubbleOpacity)
             .gesture(
@@ -185,43 +147,42 @@ struct AIAssistantBubble: View {
     
     private var expandedContent: some View {
         VStack(spacing: 0) {
-            // Minimal header with tab navigation
-            HStack(spacing: 16) {
-                AssistantTabButton(title: "Tools", icon: "wand.and.stars", isSelected: currentTab == .tools) {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        currentTab = .tools
-                        suggestions = []
-                    }
-                }
-                
-                AssistantTabButton(title: "Ideas", icon: "lightbulb", isSelected: currentTab == .ideas) {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        currentTab = .ideas
-                        loadWritingPrompts()
-                    }
-                }
+            // Simple header for Tools
+            HStack {
+                Label("Writing Tools", systemImage: "wand.and.stars")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.secondary)
                 
                 Spacer()
                 
                 if isThinking {
                     ProgressView()
                         .scaleEffect(0.7)
-                        .padding(.trailing, 8)
+                } else {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            isExpanded = false
+                        }
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.secondary)
+                            .symbolRenderingMode(.hierarchical)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.vertical, 10)
             
-            // Content based on current tab
-            Group {
-                if currentTab == .tools {
-                    toolsContent
-                } else {
-                    ideasContent
-                }
-            }
+            Divider()
+                .opacity(0.5)
+            
+            // Tools content
+            toolsContent
         }
-        .frame(width: 340, height: calculatePanelHeight())
+        .frame(width: 340)
+        .fixedSize(horizontal: false, vertical: true)
         .background(
             ZStack {
                 // Glass morphism background
@@ -314,13 +275,10 @@ struct AIAssistantBubble: View {
                         ActionItem(
                             icon: "sparkles",
                             title: "Break writer's block",
-                            subtitle: "Switch to Ideas tab for prompts",
+                            subtitle: "Get writing prompts",
                             color: .green
                         ) {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                currentTab = .ideas
-                                loadWritingPrompts()
-                            }
+                            Task { await breakWritersBlock() }
                         }
                     }
                     .padding(.top, 8)
@@ -330,101 +288,50 @@ struct AIAssistantBubble: View {
         }
     }
     
-    private var ideasContent: some View {
-        VStack(spacing: 0) {
-            // Category selector
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(PromptCategory.allCases, id: \.self) { category in
-                        CategoryPill(
-                            category: category,
-                            isSelected: selectedPromptCategory == category
-                        ) {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                selectedPromptCategory = category
-                                loadWritingPrompts()
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-            }
-            
-            Divider()
-                .opacity(0.5)
-            
-            // Writing prompts
-            if writingPrompts.isEmpty && isThinking {
-                Spacer()
-                HStack {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                    Text("Generating prompts...")
-                        .font(.system(size: 13))
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-                Spacer()
-            } else {
-                ScrollView {
-                    VStack(spacing: 8) {
-                        ForEach(writingPrompts) { prompt in
-                            WritingPromptCard(prompt: prompt) {
-                                onSuggestionAccepted(prompt.text)
-                                withAnimation(.easeOut(duration: 0.2)) {
-                                    isExpanded = false
-                                }
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                }
-                .scrollIndicators(.hidden)
-            }
-        }
-    }
     
     // MARK: - Positioning
     
     private func calculateOptimalPosition(in geometry: GeometryProxy) -> CGPoint {
         let bubbleSize = CGSize(width: 56, height: 56)
-        let expandedWidth: CGFloat = isExpanded ? 320 : 0
+        let panelWidth: CGFloat = 340
+        let panelHeight: CGFloat = 220 // Fixed height for tools
         
         // Position in the middle-right area of the window
         let windowWidth = geometry.size.width
         let windowHeight = geometry.size.height
         
-        // Default to middle-right position (between upper and middle)
-        var x: CGFloat = windowWidth - 100 // More centered from right edge
-        var y: CGFloat = windowHeight * 0.35 // 35% from top (between upper and middle)
+        // Keep bubble on the right side
+        var x: CGFloat = windowWidth - 60 // Much closer to right edge
+        var y: CGFloat = windowHeight * 0.35
         
-        // When expanded, adjust position to ensure full visibility
+        // When expanded, ensure panel fits below bubble
         if isExpanded {
-            // Ensure the expanded panel fits within the window
-            let rightEdgeSpace = windowWidth - x - expandedWidth/2
+            // Calculate total height needed (bubble + spacing + panel)
+            let totalHeight = bubbleSize.height + 8 + panelHeight
             
-            if rightEdgeSpace < 20 {
-                // Too close to right edge, move left
-                x = windowWidth - expandedWidth/2 - 30
+            // Ensure horizontal fit
+            if x + panelWidth/2 > windowWidth - 20 {
+                x = windowWidth - panelWidth/2 - 20
+            } else if x - panelWidth/2 < 20 {
+                x = panelWidth/2 + 20
             }
             
-            // Ensure vertical position keeps panel visible
-            let expandedHeight: CGFloat = 300 // Approximate height
-            if y + expandedHeight/2 > windowHeight - 20 {
-                // Too low, move up
-                y = windowHeight - expandedHeight/2 - 30
-            } else if y - expandedHeight/2 < 20 {
-                // Too high, move down
-                y = expandedHeight/2 + 30
+            // Ensure vertical fit - panel opens below
+            if y + totalHeight/2 > windowHeight - 20 {
+                // Not enough space below, move bubble up
+                y = windowHeight - totalHeight/2 - 20
+            }
+            
+            // Ensure minimum space from top
+            if y - bubbleSize.height/2 < 20 {
+                y = bubbleSize.height/2 + 20
             }
         }
         
         // Apply drag offset
         return CGPoint(
-            x: max(bubbleSize.width/2, min(geometry.size.width - bubbleSize.width/2, x)),
-            y: max(bubbleSize.height/2, min(geometry.size.height - bubbleSize.height/2, y))
+            x: max(panelWidth/2 + 20, min(geometry.size.width - panelWidth/2 - 20, x)),
+            y: max(bubbleSize.height/2 + 20, min(geometry.size.height - (isExpanded ? panelHeight + bubbleSize.height/2 + 28 : bubbleSize.height/2 + 20), y))
         )
     }
     
@@ -590,90 +497,9 @@ struct AIAssistantBubble: View {
         return startIndex..<endIndex
     }
     
-    // MARK: - Helper Methods
-    
-    private func calculatePanelHeight() -> CGFloat {
-        if currentTab == .tools {
-            // Fixed height for tools to show all 4 options comfortably
-            return suggestions.isEmpty ? 220 : min(CGFloat(suggestions.count) * 55 + 40, 300)
-        } else {
-            // Dynamic height for ideas with category selector
-            return 280
-        }
-    }
-    
-    private func loadWritingPrompts() {
-        isThinking = true
-        writingPrompts = []
-        
-        // Simulate AI-powered prompt generation
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            writingPrompts = generatePromptsForCategory(selectedPromptCategory)
-            isThinking = false
-        }
-    }
-    
-    private func generatePromptsForCategory(_ category: PromptCategory) -> [WritingPrompt] {
-        switch category {
-        case .inspiration:
-            return [
-                WritingPrompt(text: "Write about a moment when you felt completely at peace. What made it special?", category: category),
-                WritingPrompt(text: "Describe a person who changed your perspective on life.", category: category),
-                WritingPrompt(text: "What would you tell your younger self if you could?", category: category)
-            ]
-        case .memory:
-            return [
-                WritingPrompt(text: "Recall your earliest memory. What details can you remember?", category: category),
-                WritingPrompt(text: "Describe a place from your childhood that no longer exists.", category: category),
-                WritingPrompt(text: "Write about a tradition that shaped who you are.", category: category)
-            ]
-        case .sensory:
-            return [
-                WritingPrompt(text: "Close your eyes. What do you hear right now? Describe each sound.", category: category),
-                WritingPrompt(text: "Describe the last meal you truly savored.", category: category),
-                WritingPrompt(text: "Write about a texture that brings back memories.", category: category)
-            ]
-        case .whatIf:
-            return [
-                WritingPrompt(text: "What if you woke up with a completely different skill?", category: category),
-                WritingPrompt(text: "Imagine your life if you'd made that other choice.", category: category),
-                WritingPrompt(text: "What if you could relive one day? Which would it be?", category: category)
-            ]
-        }
-    }
 }
 
 // MARK: - Supporting Views
-
-struct AssistantTabButton: View {
-    let title: String
-    let icon: String
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 14))
-                Text(title)
-                    .font(.system(size: 14, weight: .medium))
-            }
-            .foregroundColor(isSelected ? Theme.Colors.primaryAccent : .secondary)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Theme.Colors.primaryAccent.opacity(0.1) : Color.clear)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(isSelected ? Theme.Colors.primaryAccent.opacity(0.2) : Color.clear, lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-    }
-}
 
 struct ActionItem: View {
     let icon: String
@@ -719,82 +545,6 @@ struct ActionItem: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
             .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering in
-            withAnimation(.easeOut(duration: 0.15)) {
-                isHovered = hovering
-            }
-        }
-    }
-}
-
-struct CategoryPill: View {
-    let category: AIAssistantBubble.PromptCategory
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: category.icon)
-                    .font(.system(size: 13))
-                Text(category.rawValue)
-                    .font(.system(size: 13, weight: .medium))
-            }
-            .foregroundColor(isSelected ? .white : category.color)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(
-                Capsule()
-                    .fill(isSelected ? category.color : category.color.opacity(0.1))
-            )
-            .overlay(
-                Capsule()
-                    .stroke(category.color.opacity(isSelected ? 0 : 0.3), lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-struct WritingPromptCard: View {
-    let prompt: AIAssistantBubble.WritingPrompt
-    let onSelect: () -> Void
-    
-    @State private var isHovered = false
-    
-    var body: some View {
-        Button(action: onSelect) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 6) {
-                    Image(systemName: prompt.category.icon)
-                        .font(.system(size: 12))
-                        .foregroundColor(prompt.category.color)
-                    
-                    Text(prompt.category.rawValue)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(prompt.category.color)
-                    
-                    Spacer()
-                }
-                
-                Text(prompt.text)
-                    .font(.system(size: 13))
-                    .foregroundColor(.primary)
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(2)
-            }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(NSColor.controlBackgroundColor).opacity(isHovered ? 0.8 : 0.5))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(prompt.category.color.opacity(isHovered ? 0.3 : 0.1), lineWidth: 1)
-            )
         }
         .buttonStyle(.plain)
         .onHover { hovering in
