@@ -300,25 +300,31 @@ struct AIAssistantBubble: View {
         let windowWidth = geometry.size.width
         let windowHeight = geometry.size.height
         
-        // Keep bubble on the right side
-        var x: CGFloat = windowWidth - 60 // Much closer to right edge
+        // Always keep bubble on the right side
+        let bubbleX: CGFloat = windowWidth - 40 // Fixed distance from right edge
         var y: CGFloat = windowHeight * 0.35
         
-        // When expanded, ensure panel fits below bubble
+        // Calculate x position for the VStack center
+        var x = bubbleX
+        
+        // When expanded, adjust x to center the VStack (bubble + panel)
         if isExpanded {
+            // The VStack is centered, but we want the bubble to stay at bubbleX
+            // So we need to shift the entire VStack left by half the panel width
+            x = bubbleX - (panelWidth - bubbleSize.width) / 2
+            
+            // Ensure the panel doesn't go off screen
+            let minX = panelWidth / 2 + 20
+            if x < minX {
+                x = minX
+            }
+            
             // Calculate total height needed (bubble + spacing + panel)
             let totalHeight = bubbleSize.height + 8 + panelHeight
             
-            // Ensure horizontal fit
-            if x + panelWidth/2 > windowWidth - 20 {
-                x = windowWidth - panelWidth/2 - 20
-            } else if x - panelWidth/2 < 20 {
-                x = panelWidth/2 + 20
-            }
-            
             // Ensure vertical fit - panel opens below
             if y + totalHeight/2 > windowHeight - 20 {
-                // Not enough space below, move bubble up
+                // Not enough space below, move up
                 y = windowHeight - totalHeight/2 - 20
             }
             
@@ -328,10 +334,13 @@ struct AIAssistantBubble: View {
             }
         }
         
-        // Apply drag offset
+        // Apply drag offset and constraints
+        let finalX = x + dragOffset.width
+        let finalY = y + dragOffset.height
+        
         return CGPoint(
-            x: max(panelWidth/2 + 20, min(geometry.size.width - panelWidth/2 - 20, x)),
-            y: max(bubbleSize.height/2 + 20, min(geometry.size.height - (isExpanded ? panelHeight + bubbleSize.height/2 + 28 : bubbleSize.height/2 + 20), y))
+            x: max(bubbleSize.width/2 + 20, min(geometry.size.width - bubbleSize.width/2 - 20, finalX)),
+            y: max(bubbleSize.height/2 + 20, min(geometry.size.height - bubbleSize.height/2 - 20, finalY))
         )
     }
     
