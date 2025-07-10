@@ -234,11 +234,20 @@ struct ProductionComposeView: View {
                 Button {
                     toggleCommandBar()
                 } label: {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 6) {
                         Image(systemName: "command")
                             .font(.system(size: 14))
                         Text("Tools")
                             .font(.system(size: 14))
+                        Text("⌘K")
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .foregroundColor(showCommandBar ? Theme.Colors.primaryAccent.opacity(0.8) : .secondary.opacity(0.7))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(showCommandBar ? Theme.Colors.primaryAccent.opacity(0.1) : Color.secondary.opacity(0.1))
+                            )
                     }
                     .foregroundColor(showCommandBar ? Theme.Colors.primaryAccent : .secondary)
                 }
