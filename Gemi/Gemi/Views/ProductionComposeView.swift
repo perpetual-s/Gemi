@@ -246,20 +246,20 @@ struct ProductionComposeView: View {
                 .keyboardShortcut("k", modifiers: .command)
                 .help("Open Writing Tools (⌘K)")
                 
-                // Writer's block breaker
+                // Writing prompts library
                 Button {
                     showWritersBlockBreaker.toggle()
                 } label: {
                     HStack(spacing: 4) {
-                        Image(systemName: "lightbulb")
+                        Image(systemName: "books.vertical")
                             .font(.system(size: 14))
-                        Text("Ideas")
+                        Text("Prompts")
                             .font(.system(size: 14))
                     }
-                    .foregroundColor(.secondary)
+                    .foregroundColor(showWritersBlockBreaker ? Theme.Colors.primaryAccent : .secondary)
                 }
                 .buttonStyle(.plain)
-                .help("Get writing ideas and break through writer's block")
+                .help("Browse writing prompts and exercises")
                 
                 Divider()
                     .frame(height: 20)

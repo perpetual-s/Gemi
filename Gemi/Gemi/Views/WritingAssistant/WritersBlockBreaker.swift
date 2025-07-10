@@ -132,10 +132,10 @@ struct WritersBlockBreaker: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Writer's Block Breaker")
+                Text("Writing Prompt Library")
                     .font(.system(size: 20, weight: .semibold))
                 
-                Text("Get unstuck with creative exercises")
+                Text("Explore prompts and exercises to inspire your writing")
                     .font(.system(size: 14))
                     .foregroundColor(.secondary)
             }
