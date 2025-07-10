@@ -13,10 +13,9 @@ struct AIAssistantBubble: View {
     @State private var isThinking: Bool = false
     @State private var bubbleOpacity: Double = 0
     @State private var scale: Double = 0.8
-    @State private var dragOffset: CGSize = .zero
-    @State private var draggedPosition: CGSize = .zero
-    @State private var position: CGPoint = .zero
+    @State private var savedPosition: CGSize = .zero
     @State private var isDragging: Bool = false
+    @GestureState private var dragState: CGSize = .zero
     let onSuggestionAccepted: (String) -> Void
     let editorBounds: CGRect
     
@@ -52,30 +51,48 @@ struct AIAssistantBubble: View {
                 }
             }
             .position(calculateOptimalPosition(in: geometry))
-            .offset(dragOffset)
+            .offset(x: savedPosition.width + dragState.width,
+                    y: savedPosition.height + dragState.height)
             .opacity(bubbleOpacity)
             .scaleEffect(scale)
             .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isExpanded)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: scale)
             .animation(.easeOut(duration: 0.3), value: bubbleOpacity)
+            .animation(isDragging ? nil : .interactiveSpring(response: 0.3, dampingFraction: 0.85), value: savedPosition)
             .gesture(
-                DragGesture()
-                    .onChanged { value in
+                DragGesture(minimumDistance: 2)
+                    .updating($dragState) { value, state, _ in
                         if !isExpanded {
-                            dragOffset = CGSize(
-                                width: draggedPosition.width + value.translation.width,
-                                height: draggedPosition.height + value.translation.height
-                            )
+                            state = value.translation
+                        }
+                    }
+                    .onChanged { _ in
+                        if !isExpanded && !isDragging {
+                            withAnimation(.easeOut(duration: 0.1)) {
+                                isDragging = true
+                            }
                         }
                     }
                     .onEnded { value in
                         if !isExpanded {
-                            // Save the final position
-                            draggedPosition = CGSize(
-                                width: draggedPosition.width + value.translation.width,
-                                height: draggedPosition.height + value.translation.height
+                            withAnimation(.easeOut(duration: 0.1)) {
+                                isDragging = false
+                            }
+                            
+                            // Calculate new position with constraints
+                            let newX = savedPosition.width + value.translation.width
+                            let newY = savedPosition.height + value.translation.height
+                            
+                            // Get window bounds
+                            let maxX = geometry.size.width - 180 // Keep some distance from edges
+                            let maxY = geometry.size.height - 150
+                            let minX: CGFloat = -geometry.size.width + 180
+                            let minY: CGFloat = -geometry.size.height * 0.3
+                            
+                            savedPosition = CGSize(
+                                width: max(minX, min(maxX, newX)),
+                                height: max(minY, min(maxY, newY))
                             )
-                            dragOffset = draggedPosition
                         }
                     }
             )
@@ -86,7 +103,7 @@ struct AIAssistantBubble: View {
             animateIn()
         }
         .onChange(of: selectedRange) { oldRange, newRange in
-            if !dragOffset.isZero { return } // Don't update if user has dragged
+            if !savedPosition.isZero { return } // Don't update if user has dragged
             updatePosition()
         }
         .onKeyPress(.escape) {
@@ -155,11 +172,13 @@ struct AIAssistantBubble: View {
                             .symbolEffect(.pulse, value: !isExpanded && suggestions.isEmpty)
                         
                         // Subtle move indicator in corner when not expanded and not moved
-                        if !isExpanded && draggedPosition == .zero {
+                        if !isExpanded && savedPosition == .zero {
                             Image(systemName: "arrow.up.and.down.and.arrow.left.and.right")
                                 .font(.system(size: 8, weight: .medium))
                                 .foregroundColor(Theme.Colors.primaryAccent.opacity(0.3))
                                 .offset(x: 16, y: -16)
+                                .opacity(isDragging ? 0 : 1)
+                                .animation(.easeOut(duration: 0.15), value: isDragging)
                         }
                     }
                 }
@@ -167,8 +186,8 @@ struct AIAssistantBubble: View {
         }
         .buttonStyle(BubbleButtonStyle())
         .help("AI Writing Assistant - Drag to move")
-        .scaleEffect(isDragging ? 1.1 : 1.0)
-        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isDragging)
+        .scaleEffect(isDragging ? 1.03 : 1.0)
+        .animation(.interactiveSpring(response: 0.2, dampingFraction: 0.7), value: isDragging)
     }
     
     private var expandedContent: some View {
@@ -360,14 +379,8 @@ struct AIAssistantBubble: View {
             }
         }
         
-        // Apply drag offset and constraints
-        let finalX = x + dragOffset.width
-        let finalY = y + dragOffset.height
-        
-        return CGPoint(
-            x: max(bubbleSize.width/2 + 20, min(geometry.size.width - bubbleSize.width/2 - 20, finalX)),
-            y: max(bubbleSize.height/2 + 20, min(geometry.size.height - bubbleSize.height/2 - 20, finalY))
-        )
+        // Return the base position (drag offset handled by .offset modifier)
+        return CGPoint(x: x, y: y)
     }
     
     
