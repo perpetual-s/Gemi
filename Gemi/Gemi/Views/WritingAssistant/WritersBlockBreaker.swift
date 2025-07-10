@@ -38,7 +38,7 @@ struct WritersBlockBreaker: View {
         case freeWrite = "Free Write"
         case memory = "Memory Lane"
         case whatIf = "What If..."
-        case sensory = "Sensory Details"
+        case sensory = "Senses"
         case dialogue = "Inner Dialogue"
         
         var icon: String {
@@ -164,14 +164,10 @@ struct WritersBlockBreaker: View {
                         category: category,
                         isSelected: selectedCategory == category
                     ) {
-                        // Use simpler animation to prevent glitching
                         withAnimation(.easeInOut(duration: 0.2)) {
                             selectedCategory = category
                         }
-                        // Generate prompt after animation completes
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                            generatePrompt()
-                        }
+                        generatePrompt()
                     }
                 }
             }
@@ -278,48 +274,37 @@ struct WritersBlockBreaker: View {
     
     private var quickExercises: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Quick Exercises")
+            Text("Writing Tips")
                 .font(.system(size: 16, weight: .semibold))
             
-            LazyVGrid(columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible())
-            ], spacing: 12) {
-                QuickExerciseCard(
-                    title: "Word Association",
-                    icon: "link",
-                    color: .blue,
-                    duration: "2 min"
-                ) {
-                    // Start word association
-                }
-                
-                QuickExerciseCard(
-                    title: "Stream of Consciousness",
-                    icon: "waveform",
-                    color: .purple,
-                    duration: "5 min"
-                ) {
-                    // Start stream writing
-                }
-                
-                QuickExerciseCard(
-                    title: "Picture Prompt",
-                    icon: "photo",
-                    color: .green,
-                    duration: "3 min"
-                ) {
-                    // Show random image
-                }
-                
-                QuickExerciseCard(
-                    title: "Music & Mood",
-                    icon: "music.note",
+            VStack(spacing: 10) {
+                WritingTipCard(
+                    icon: "lightbulb",
                     color: .orange,
-                    duration: "10 min"
-                ) {
-                    // Start music writing
-                }
+                    title: "Start Small",
+                    tip: "Begin with just one sentence. Sometimes the hardest part is starting."
+                )
+                
+                WritingTipCard(
+                    icon: "timer",
+                    color: .blue,
+                    title: "Set a Timer",
+                    tip: "Write for just 5 minutes without stopping. Let your thoughts flow freely."
+                )
+                
+                WritingTipCard(
+                    icon: "questionmark.circle",
+                    color: .purple,
+                    title: "Ask Yourself",
+                    tip: "What's one thing that made you smile today? Start there."
+                )
+                
+                WritingTipCard(
+                    icon: "heart",
+                    color: .pink,
+                    title: "Be Kind",
+                    tip: "Write to yourself like you would to a good friend."
+                )
             }
         }
     }
@@ -378,20 +363,14 @@ struct WritersBlockBreaker: View {
     // MARK: - Helper Methods
     
     private func generatePrompt() {
-        isGenerating = true
-        
-        // Simulate AI generation
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            // Update state without nested animations
-            currentPrompt = WritingPrompt(
-                category: selectedCategory,
-                prompt: getPromptText(for: selectedCategory),
-                technique: getTechnique(for: selectedCategory),
-                estimatedTime: Int.random(in: 5...15),
-                difficulty: WritingPrompt.Difficulty.allCases.randomElement() ?? .medium
-            )
-            isGenerating = false
-        }
+        // Update immediately without delay
+        currentPrompt = WritingPrompt(
+            category: selectedCategory,
+            prompt: getPromptText(for: selectedCategory),
+            technique: getTechnique(for: selectedCategory),
+            estimatedTime: Int.random(in: 5...15),
+            difficulty: WritingPrompt.Difficulty.allCases.randomElement() ?? .medium
+        )
     }
     
     private func getPromptText(for category: PromptCategory) -> String {
@@ -465,51 +444,36 @@ struct CategoryButton: View {
     }
 }
 
-struct QuickExerciseCard: View {
-    let title: String
+struct WritingTipCard: View {
     let icon: String
     let color: Color
-    let duration: String
-    let action: () -> Void
-    
-    @State private var isHovered = false
+    let title: String
+    let tip: String
     
     var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Image(systemName: icon)
-                        .font(.system(size: 20))
-                        .foregroundColor(color)
-                    
-                    Spacer()
-                    
-                    Text(duration)
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                }
-                
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 18))
+                .foregroundColor(color)
+                .frame(width: 24, height: 24)
+            
+            VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.primary)
+                
+                Text(tip)
+                    .font(.system(size: 13))
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(16)
-            .frame(maxWidth: .infinity)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(color.opacity(isHovered ? 0.15 : 0.1))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(color.opacity(isHovered ? 0.3 : 0), lineWidth: 1)
-                    )
-            )
-            .scaleEffect(isHovered ? 1.01 : 1)
+            
+            Spacer()
         }
-        .buttonStyle(.plain)
-        .onHover { hovering in
-            withAnimation(.easeOut(duration: 0.15)) {
-                isHovered = hovering
-            }
-        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.secondary.opacity(0.05))
+        )
     }
 }
