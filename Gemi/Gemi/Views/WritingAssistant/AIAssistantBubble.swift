@@ -1,78 +1,106 @@
 import SwiftUI
+import Combine
 
-/// Floating AI assistant bubble that provides intelligent writing suggestions
+/// Enhanced AI assistant bubble with intelligent positioning and real AI integration
 struct AIAssistantBubble: View {
     @Binding var isVisible: Bool
     @Binding var isExpanded: Bool
-    @State private var suggestion: String = ""
+    @Binding var currentText: String
+    @Binding var selectedRange: NSRange
+    
+    @StateObject private var writingService = WritingAssistanceService()
+    @State private var suggestions: [Suggestion] = []
     @State private var isThinking: Bool = false
     @State private var bubbleOpacity: Double = 0
     @State private var scale: Double = 0.8
-    @State private var offset: CGSize = .zero
-    @State private var isDragging: Bool = false
+    @State private var dragOffset: CGSize = .zero
+    @State private var position: CGPoint = .zero
+    @State private var anchorPosition: AnchorPosition = .auto
     
     let onSuggestionAccepted: (String) -> Void
-    let position: BubblePosition
+    let editorBounds: CGRect
     
-    enum BubblePosition {
-        case topRight
-        case bottomRight
-        case custom(x: CGFloat, y: CGFloat)
+    enum AnchorPosition {
+        case auto
+        case aboveCursor
+        case belowCursor
+        case rightOfCursor
+    }
+    
+    struct Suggestion: Identifiable {
+        let id = UUID()
+        let text: String
+        let type: SuggestionType
+        let icon: String
+        let color: Color
         
-        var offset: CGSize {
-            switch self {
-            case .topRight:
-                return CGSize(width: -30, height: 30)
-            case .bottomRight:
-                return CGSize(width: -30, height: -30)
-            case .custom(let x, let y):
-                return CGSize(width: x, height: y)
-            }
+        enum SuggestionType {
+            case continuation
+            case idea
+            case style
+            case emotion
+            case question
         }
     }
     
     var body: some View {
-        HStack(spacing: 0) {
-            if isExpanded {
-                expandedContent
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.8, anchor: .trailing).combined(with: .opacity),
-                        removal: .scale(scale: 0.8, anchor: .trailing).combined(with: .opacity)
-                    ))
+        GeometryReader { geometry in
+            HStack(spacing: 0) {
+                if isExpanded && anchorPosition == .rightOfCursor {
+                    expandedContent
+                        .transition(.asymmetric(
+                            insertion: .scale(scale: 0.8, anchor: .trailing).combined(with: .opacity),
+                            removal: .scale(scale: 0.8, anchor: .trailing).combined(with: .opacity)
+                        ))
+                }
+                
+                // Main bubble button
+                bubbleButton
+                
+                if isExpanded && anchorPosition != .rightOfCursor {
+                    expandedContent
+                        .transition(.asymmetric(
+                            insertion: .scale(scale: 0.8, anchor: anchorEdge).combined(with: .opacity),
+                            removal: .scale(scale: 0.8, anchor: anchorEdge).combined(with: .opacity)
+                        ))
+                }
             }
-            
-            // Main bubble button
-            bubbleButton
-        }
-        .offset(isDragging ? offset : position.offset)
-        .opacity(bubbleOpacity)
-        .scaleEffect(scale)
-        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isExpanded)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: scale)
-        .animation(.easeOut(duration: 0.3), value: bubbleOpacity)
-        .gesture(
-            DragGesture()
-                .onChanged { value in
-                    if !isExpanded {
-                        isDragging = true
-                        offset = CGSize(
-                            width: position.offset.width + value.translation.width,
-                            height: position.offset.height + value.translation.height
-                        )
+            .position(calculateOptimalPosition(in: geometry))
+            .offset(dragOffset)
+            .opacity(bubbleOpacity)
+            .scaleEffect(scale)
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isExpanded)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: scale)
+            .animation(.easeOut(duration: 0.3), value: bubbleOpacity)
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        if !isExpanded {
+                            dragOffset = value.translation
+                        }
                     }
-                }
-                .onEnded { _ in
-                    // Optional: Save custom position
-                }
-        )
+                    .onEnded { _ in
+                        // Keep the dragged position
+                    }
+            )
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
-            // Delay slightly to ensure view is properly laid out
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                withAnimation(.easeOut(duration: 0.4)) {
-                    bubbleOpacity = 1
-                    scale = 1
+            updatePosition()
+            animateIn()
+        }
+        .onChange(of: selectedRange) { oldRange, newRange in
+            if !dragOffset.isZero { return } // Don't update if user has dragged
+            updatePosition()
+        }
+        .onKeyPress(.escape) {
+            if isExpanded {
+                withAnimation {
+                    isExpanded = false
                 }
+                return .handled
             }
+            return .ignored
         }
     }
     
@@ -108,7 +136,7 @@ struct AIAssistantBubble: View {
                     Image(systemName: isExpanded ? "xmark" : "wand.and.stars")
                         .font(.system(size: 22, weight: .medium))
                         .foregroundColor(.white)
-                        .symbolEffect(.pulse, value: !isExpanded)
+                        .symbolEffect(.pulse, value: !isExpanded && suggestions.isEmpty)
                 }
             }
         }
@@ -117,33 +145,54 @@ struct AIAssistantBubble: View {
     }
     
     private var expandedContent: some View {
-        VStack(alignment: .trailing, spacing: 12) {
-            // Suggestion card
-            if !suggestion.isEmpty && !isThinking {
-                SuggestionCard(
-                    suggestion: suggestion,
-                    onAccept: {
-                        onSuggestionAccepted(suggestion)
-                        withAnimation {
-                            suggestion = ""
-                            isExpanded = false
-                        }
-                    },
-                    onRegenerate: {
-                        generateSuggestion()
-                    }
-                )
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Label("AI Writing Assistant", systemImage: "wand.and.stars")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                if isThinking {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
             
-            // Quick action buttons
-            ScrollView {
+            Divider()
+            
+            // Suggestions or actions
+            if !suggestions.isEmpty {
+                ScrollView {
+                    VStack(spacing: 4) {
+                        ForEach(suggestions) { suggestion in
+                            SuggestionRow(
+                                suggestion: suggestion,
+                                onTap: {
+                                    onSuggestionAccepted(suggestion.text)
+                                    withAnimation {
+                                        suggestions = []
+                                        isExpanded = false
+                                    }
+                                }
+                            )
+                        }
+                    }
+                    .padding(8)
+                }
+                .frame(maxHeight: 240)
+            } else {
+                // Quick action buttons
                 VStack(spacing: 8) {
                     QuickActionButton(
                         icon: "arrow.right.circle",
                         title: "Continue writing",
                         color: .blue
                     ) {
-                        generateContinuation()
+                        Task { await generateContinuation() }
                     }
                     
                     QuickActionButton(
@@ -151,7 +200,7 @@ struct AIAssistantBubble: View {
                         title: "Get ideas",
                         color: .orange
                     ) {
-                        generateIdeas()
+                        Task { await generateIdeas() }
                     }
                     
                     QuickActionButton(
@@ -159,7 +208,7 @@ struct AIAssistantBubble: View {
                         title: "Improve style",
                         color: .purple
                     ) {
-                        improveStyle()
+                        Task { await improveStyle() }
                     }
                     
                     QuickActionButton(
@@ -167,186 +216,282 @@ struct AIAssistantBubble: View {
                         title: "Break writer's block",
                         color: .green
                     ) {
-                        breakWritersBlock()
+                        Task { await breakWritersBlock() }
                     }
                 }
+                .padding(12)
             }
-            .frame(maxHeight: 200) // Limit height to ensure visibility
         }
-        .padding(.trailing, 12)
+        .frame(width: 320)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(NSColor.controlBackgroundColor))
+                .shadow(color: .black.opacity(0.15), radius: 20, y: 10)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.secondary.opacity(0.1), lineWidth: 1)
+        )
+    }
+    
+    // MARK: - Positioning
+    
+    private func calculateOptimalPosition(in geometry: GeometryProxy) -> CGPoint {
+        // Get cursor position in editor coordinates
+        let cursorY = getCursorYPosition()
+        let bubbleSize = CGSize(width: 56, height: 56)
+        let expandedWidth: CGFloat = isExpanded ? 320 : 0
+        
+        var x: CGFloat = editorBounds.maxX - 80 // Default right side
+        var y: CGFloat = cursorY
+        
+        // Determine anchor position based on available space
+        let spaceRight = geometry.size.width - (editorBounds.maxX + 20)
+        let spaceBelow = geometry.size.height - cursorY - 100
+        let spaceAbove = cursorY - 100
+        
+        if isExpanded {
+            if spaceRight > expandedWidth + 80 {
+                // Enough space on the right
+                anchorPosition = .rightOfCursor
+                x = editorBounds.maxX + 40
+            } else if spaceBelow > 300 {
+                // Place below cursor
+                anchorPosition = .belowCursor
+                y = cursorY + 60
+                x = editorBounds.midX
+            } else if spaceAbove > 300 {
+                // Place above cursor
+                anchorPosition = .aboveCursor
+                y = cursorY - 60
+                x = editorBounds.midX
+            } else {
+                // Fallback to right side, adjusted
+                anchorPosition = .rightOfCursor
+                x = editorBounds.maxX - expandedWidth - 20
+            }
+        }
+        
+        // Apply drag offset
+        return CGPoint(
+            x: max(bubbleSize.width/2, min(geometry.size.width - bubbleSize.width/2, x)),
+            y: max(bubbleSize.height/2, min(geometry.size.height - bubbleSize.height/2, y))
+        )
+    }
+    
+    private func getCursorYPosition() -> CGFloat {
+        // Calculate Y position based on selected range in the text
+        // This is a simplified calculation - in production, you'd get actual cursor coordinates
+        let lineHeight: CGFloat = 20
+        let linesBeforeCursor = currentText.prefix(selectedRange.location).filter { $0 == "\n" }.count
+        return CGFloat(linesBeforeCursor) * lineHeight + 100 // Offset from top
+    }
+    
+    private var anchorEdge: UnitPoint {
+        switch anchorPosition {
+        case .auto, .rightOfCursor: return .leading
+        case .aboveCursor: return .bottom
+        case .belowCursor: return .top
+        }
+    }
+    
+    private func updatePosition() {
+        withAnimation(.easeOut(duration: 0.2)) {
+            position = getCursorYPosition().cgPoint(x: editorBounds.maxX - 80)
+        }
+    }
+    
+    private func animateIn() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                bubbleOpacity = 1
+                scale = 1
+            }
+        }
     }
     
     // MARK: - AI Actions
     
-    private func generateSuggestion() {
+    private func generateContinuation() async {
         isThinking = true
+        suggestions = []
         
-        // Generate contextual suggestions - will be replaced with actual AI service
-        let suggestions = [
-            "Perhaps you could explore how this experience shaped your perspective on...",
-            "Consider diving deeper into the emotions you felt during...",
-            "What if you described the sensory details of this moment - the sights, sounds, and feelings?",
-            "Try reflecting on how this connects to other experiences in your life...",
-            "You might want to explore what this reveals about your values and beliefs..."
-        ]
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            withAnimation {
-                self.suggestion = suggestions.randomElement() ?? ""
-                self.isThinking = false
+        do {
+            let context = extractContext()
+            let continuations = try await writingService.generateSuggestions(
+                for: context.current,
+                previousContext: context.previous,
+                context: .continuation
+            )
+            
+            await MainActor.run {
+                suggestions = continuations.prefix(3).map { text in
+                    Suggestion(
+                        text: text,
+                        type: .continuation,
+                        icon: "arrow.right.circle",
+                        color: .blue
+                    )
+                }
+                isThinking = false
+            }
+        } catch {
+            await MainActor.run {
+                isThinking = false
+                // Show error state
             }
         }
     }
     
-    private func generateContinuation() {
+    private func generateIdeas() async {
         isThinking = true
+        suggestions = []
         
-        // Mock suggestions for now - will be replaced with actual AI service
-        let continuations = [
-            "As I reflected on this moment, I realized...",
-            "This experience taught me something valuable about...",
-            "Looking back now, I can see how this shaped...",
-            "What struck me most was the way...",
-            "In that instant, everything became clear..."
-        ]
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            withAnimation {
-                self.suggestion = continuations.randomElement() ?? ""
-                self.isThinking = false
+        do {
+            let context = extractContext()
+            let ideas = try await writingService.generateSuggestions(
+                for: context.current,
+                previousContext: context.previous,
+                context: .ideation
+            )
+            
+            await MainActor.run {
+                suggestions = ideas.prefix(4).map { text in
+                    Suggestion(
+                        text: text,
+                        type: .idea,
+                        icon: "lightbulb",
+                        color: .orange
+                    )
+                }
+                isThinking = false
+            }
+        } catch {
+            await MainActor.run {
+                isThinking = false
             }
         }
     }
     
-    private func generateIdeas() {
+    private func improveStyle() async {
         isThinking = true
+        suggestions = []
         
-        let ideas = [
-            "Have you considered exploring how this made you feel physically? Sometimes our bodies hold memories in unexpected ways.",
-            "What would you tell your younger self about this experience?",
-            "Try describing this moment as if you were painting it - what colors, textures, and shapes come to mind?",
-            "If this experience were a song, what would it sound like? Fast or slow? Major or minor key?",
-            "Consider the other perspectives involved. How might others have experienced this same moment?"
-        ]
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            withAnimation {
-                self.suggestion = ideas.randomElement() ?? ""
-                self.isThinking = false
+        do {
+            let context = extractContext()
+            let improvements = try await writingService.generateSuggestions(
+                for: context.current,
+                previousContext: context.previous,
+                context: .styleImprovement
+            )
+            
+            await MainActor.run {
+                suggestions = improvements.map { text in
+                    Suggestion(
+                        text: text,
+                        type: .style,
+                        icon: "text.quote",
+                        color: .purple
+                    )
+                }
+                isThinking = false
+            }
+        } catch {
+            await MainActor.run {
+                isThinking = false
             }
         }
     }
     
-    private func improveStyle() {
+    private func breakWritersBlock() async {
         isThinking = true
+        suggestions = []
         
-        let styleAdvice = [
-            "Try using more sensory details to bring your writing to life. What did you see, hear, smell, taste, or touch?",
-            "Consider varying your sentence length. Mix short, punchy sentences with longer, flowing ones for better rhythm.",
-            "Show, don't tell. Instead of saying 'I was happy,' describe what that happiness felt like in your body.",
-            "Use active voice to make your writing more immediate and engaging.",
-            "Add specific details rather than general descriptions. 'The old oak tree' is more vivid than 'a tree.'"
-        ]
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            withAnimation {
-                self.suggestion = styleAdvice.randomElement() ?? ""
-                self.isThinking = false
+        do {
+            let prompts = try await writingService.getWritersBlockPrompts()
+            
+            await MainActor.run {
+                suggestions = prompts.prefix(4).map { prompt in
+                    Suggestion(
+                        text: prompt.prompt,
+                        type: .question,
+                        icon: "sparkles",
+                        color: .green
+                    )
+                }
+                isThinking = false
+            }
+        } catch {
+            await MainActor.run {
+                isThinking = false
             }
         }
     }
     
-    private func breakWritersBlock() {
-        isThinking = true
+    private func extractContext() -> (current: String, previous: String?) {
+        // Extract current paragraph
+        let paragraphRange = findParagraphRange(in: currentText, at: selectedRange.location)
+        let currentParagraph = String(currentText[paragraphRange])
         
-        let prompts = [
-            "Write about the last thing that made you laugh unexpectedly.",
-            "Describe a small moment from today that you might otherwise forget.",
-            "If your current mood were a weather pattern, what would it be and why?",
-            "Write a letter to yourself one year from now. What do you hope has changed?",
-            "Think of an object in your room. Tell its story - where it came from and why it matters."
-        ]
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            withAnimation {
-                self.suggestion = prompts.randomElement() ?? ""
-                self.isThinking = false
-            }
+        // Extract previous paragraph if available
+        var previousParagraph: String? = nil
+        if paragraphRange.lowerBound > currentText.startIndex {
+            let beforeIndex = currentText.index(before: paragraphRange.lowerBound)
+            let prevRange = findParagraphRange(in: currentText, at: beforeIndex.utf16Offset(in: currentText))
+            previousParagraph = String(currentText[prevRange])
         }
+        
+        return (currentParagraph, previousParagraph)
+    }
+    
+    private func findParagraphRange(in text: String, at location: Int) -> Range<String.Index> {
+        let nsString = text as NSString
+        var paragraphStart = location
+        var paragraphEnd = location
+        
+        nsString.getParagraphStart(&paragraphStart, end: &paragraphEnd, contentsEnd: nil, for: NSRange(location: location, length: 0))
+        
+        let startIndex = text.index(text.startIndex, offsetBy: min(paragraphStart, text.count))
+        let endIndex = text.index(text.startIndex, offsetBy: min(paragraphEnd, text.count))
+        
+        return startIndex..<endIndex
     }
 }
 
 // MARK: - Supporting Views
 
-struct SuggestionCard: View {
-    let suggestion: String
-    let onAccept: () -> Void
-    let onRegenerate: () -> Void
+struct SuggestionRow: View {
+    let suggestion: AIAssistantBubble.Suggestion
+    let onTap: () -> Void
     
     @State private var isHovered = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(suggestion)
-                .font(.system(size: 14))
-                .foregroundColor(.primary)
-                .multilineTextAlignment(.leading)
-                .fixedSize(horizontal: false, vertical: true)
-            
-            HStack(spacing: 8) {
-                Button {
-                    onAccept()
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 12, weight: .medium))
-                        Text("Use")
-                            .font(.system(size: 13, weight: .medium))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14)
-                            .fill(Color.green)
-                    )
-                }
-                .buttonStyle(.plain)
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                Image(systemName: suggestion.icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(suggestion.color)
+                    .frame(width: 24, height: 24)
                 
-                Button {
-                    onRegenerate()
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
-                        .padding(6)
-                        .background(
-                            Circle()
-                                .fill(Color.secondary.opacity(0.1))
-                        )
-                }
-                .buttonStyle(.plain)
+                Text(suggestion.text)
+                    .font(.system(size: 13))
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(3)
+                
+                Spacer()
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isHovered ? suggestion.color.opacity(0.1) : Color.clear)
+            )
         }
-        .padding(16)
-        .frame(maxWidth: 280)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(NSColor.controlBackgroundColor))
-                .shadow(
-                    color: Color.black.opacity(isHovered ? 0.15 : 0.1),
-                    radius: isHovered ? 12 : 8,
-                    x: 0,
-                    y: 4
-                )
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.secondary.opacity(0.1), lineWidth: 1)
-        )
-        .scaleEffect(isHovered ? 1.02 : 1)
+        .buttonStyle(.plain)
         .onHover { hovering in
-            withAnimation(.easeOut(duration: 0.2)) {
+            withAnimation(.easeOut(duration: 0.15)) {
                 isHovered = hovering
             }
         }
@@ -422,5 +567,19 @@ struct BubbleButtonStyle: ButtonStyle {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.9 : 1)
             .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
+    }
+}
+
+// MARK: - Extensions
+
+extension CGFloat {
+    func cgPoint(x: CGFloat) -> CGPoint {
+        CGPoint(x: x, y: self)
+    }
+}
+
+extension CGSize {
+    var isZero: Bool {
+        width == 0 && height == 0
     }
 }
