@@ -43,7 +43,7 @@ struct GemiChatView: View {
                 let contextMessage = """
                 I'd like to discuss this journal entry with you:
                 
-                **\(entry.displayTitle)**
+                Title: \(entry.displayTitle)
                 
                 \(entry.content)
                 
