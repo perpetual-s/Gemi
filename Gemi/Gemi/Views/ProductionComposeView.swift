@@ -692,35 +692,29 @@ struct ProductionComposeView: View {
     }
     
     private func calculateCommandBarPosition() -> CGPoint {
-        // Position command bar near cursor but ensure it's visible
-        let padding: CGFloat = 20
+        // Position command bar at center of editor view
         let commandBarHeight: CGFloat = 300
         let commandBarWidth: CGFloat = 480
         
-        var x = commandBarPosition.midX
-        var y = commandBarPosition.maxY + 20
-        
-        // Ensure command bar stays within window bounds
-        if let window = NSApp.keyWindow {
-            let windowFrame = window.frame
-            
-            // Horizontal bounds
-            if x - commandBarWidth/2 < padding {
-                x = commandBarWidth/2 + padding
-            } else if x + commandBarWidth/2 > windowFrame.width - padding {
-                x = windowFrame.width - commandBarWidth/2 - padding
-            }
-            
-            // Vertical bounds - position above cursor if not enough space below
-            if y + commandBarHeight > windowFrame.height - padding {
-                y = commandBarPosition.minY - commandBarHeight - 20
-            }
-            
-            // Final safety check
-            y = max(commandBarHeight/2 + padding, min(windowFrame.height - commandBarHeight/2 - padding, y))
+        // If we have valid editor bounds, center within the editor
+        if editorBounds.width > 0 && editorBounds.height > 0 {
+            return CGPoint(
+                x: editorBounds.midX,
+                y: editorBounds.midY
+            )
         }
         
-        return CGPoint(x: x, y: y)
+        // Fallback to window center if editor bounds not available
+        if let window = NSApp.keyWindow {
+            let windowFrame = window.frame
+            return CGPoint(
+                x: windowFrame.width / 2,
+                y: windowFrame.height / 2
+            )
+        }
+        
+        // Last resort fallback
+        return CGPoint(x: 400, y: 300)
     }
 }
 

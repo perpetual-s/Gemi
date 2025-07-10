@@ -134,13 +134,56 @@ struct CommandBarAssistant: View {
         }
         .frame(width: 480)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(.regularMaterial)
-                .shadow(color: .black.opacity(0.15), radius: 20, y: 10)
+            ZStack {
+                // Base blur material
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(.ultraThinMaterial)
+                
+                // Gradient overlay with blue tint
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.blue.opacity(0.08),
+                                Color.blue.opacity(0.04),
+                                Color.purple.opacity(0.03),
+                                Color.clear
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                
+                // Radial gradient for depth
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color.blue.opacity(0.05),
+                                Color.clear
+                            ],
+                            center: .top,
+                            startRadius: 20,
+                            endRadius: 200
+                        )
+                    )
+            }
+            .shadow(color: Color.blue.opacity(0.08), radius: 20, x: 0, y: 10)
+            .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.15),
+                            Color.blue.opacity(0.1)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
         )
         .onAppear {
             // Focus management would go here
@@ -220,6 +263,16 @@ struct CommandBarAssistant: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+        .background(
+            LinearGradient(
+                colors: [
+                    Color.white.opacity(0.05),
+                    Color.clear
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
     }
     
     // MARK: - Content Views
@@ -388,6 +441,16 @@ struct CommandBarAssistant: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
+        .background(
+            LinearGradient(
+                colors: [
+                    Color.clear,
+                    Color.black.opacity(0.03)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
     }
     
     private var responseLengthSelector: some View {
@@ -601,18 +664,31 @@ struct ToolMenuItem: View {
     let isSelected: Bool
     let action: () -> Void
     
+    @State private var isHovered = false
+    
     var body: some View {
         Button(action: action) {
             HStack(spacing: 12) {
                 // Icon with colored background
                 ZStack {
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(tool.color.opacity(isSelected ? 0.15 : 0.08))
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    tool.color.opacity(isSelected ? 0.18 : 0.1),
+                                    tool.color.opacity(isSelected ? 0.12 : 0.06)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
                         .frame(width: 36, height: 36)
                     
                     Image(systemName: tool.icon)
                         .font(.system(size: 16))
                         .foregroundColor(tool.color)
+                        .scaleEffect(isSelected ? 1.05 : 1.0)
+                        .animation(.easeOut(duration: 0.15), value: isSelected)
                 }
                 
                 VStack(alignment: .leading, spacing: 2) {
@@ -636,11 +712,51 @@ struct ToolMenuItem: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
             .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(isSelected ? Color.primary.opacity(0.05) : Color.clear)
+                ZStack {
+                    if isSelected {
+                        // Selected state with gradient
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color.blue.opacity(0.12),
+                                        Color.blue.opacity(0.06)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                        
+                        // Glow effect for selected
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                            .blur(radius: 2)
+                    } else if isHovered {
+                        // Hover state with subtle gradient
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(0.05),
+                                        Color.white.opacity(0.02)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                        
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    }
+                }
             )
         }
         .buttonStyle(.plain)
+        .onHover { hovering in
+            withAnimation(.easeOut(duration: 0.15)) {
+                isHovered = hovering
+            }
+        }
     }
 }
 
