@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Gemi Inference Server - Multimodal AI Backend for Gemma 3n
-Replaces Ollama with direct HuggingFace integration for full multimodal support
+Direct HuggingFace integration for full multimodal support
 """
 
 import asyncio
@@ -56,7 +56,7 @@ TEMPERATURE = 0.7
 TOP_P = 0.9
 TOP_K = 40
 
-# API Models matching Ollama's interface
+# API Models for compatibility
 class ChatMessage(BaseModel):
     role: str
     content: str
@@ -317,7 +317,7 @@ async def generate_stream(messages: List[ChatMessage], options: Dict[str, Any]) 
         for token in streamer:
             generated_text += token
             
-            # Create response matching Ollama format
+            # Create response in compatible format
             response = ChatResponse(
                 model=MODEL_ID,
                 created_at=datetime.utcnow().isoformat() + "Z",
@@ -376,7 +376,7 @@ async def health_check():
 
 @app.get("/api/tags", response_model=ModelsResponse)
 async def list_models():
-    """List available models (Ollama compatibility)"""
+    """List available models"""
     if not model_loaded:
         return ModelsResponse(models=[])
     
@@ -460,7 +460,7 @@ async def chat(request: ChatRequest):
 
 @app.post("/api/pull")
 async def pull_model(request: PullRequest):
-    """Pull model endpoint (for Ollama compatibility)"""
+    """Pull model endpoint (for compatibility)"""
     # Since we auto-load on startup, just return success
     if model_loaded:
         return {"status": "Model already loaded"}
@@ -472,7 +472,7 @@ async def pull_model(request: PullRequest):
 
 @app.post("/api/show")
 async def show_model(request: Dict[str, str]):
-    """Show model details (Ollama compatibility)"""
+    """Show model details"""
     if not model_loaded:
         raise HTTPException(status_code=503, detail="Model not loaded")
     
