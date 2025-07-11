@@ -1,87 +1,68 @@
 #!/bin/bash
-# Gemi Inference Server Launcher
-# This script sets up the Python environment and launches the inference server
+# Gemi Inference Server Launcher - UV Edition
+# This script uses UV for ultra-fast Python package management
 
 set -e  # Exit on error
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-VENV_DIR="$SCRIPT_DIR/venv"
-PYTHON_VERSION="3.9"
 
-echo "🚀 Gemi Inference Server Launcher"
-echo "================================"
+echo "🚀 Gemi AI Server (UV Edition)"
+echo "=============================="
 
-# Check Python version
-check_python() {
-    if command -v python3 &> /dev/null; then
-        PYTHON_CMD="python3"
-    elif command -v python &> /dev/null; then
-        PYTHON_CMD="python"
-    else
-        echo "❌ Error: Python not found. Please install Python $PYTHON_VERSION or later."
-        exit 1
+# Check if UV is installed
+check_uv() {
+    # Check common UV installation paths
+    UV_PATHS=(
+        "$HOME/.local/bin/uv"
+        "/usr/local/bin/uv"
+        "/opt/homebrew/bin/uv"
+        "$HOME/.cargo/bin/uv"
+        "/usr/bin/uv"
+    )
+    
+    # Check if UV is in PATH
+    if command -v uv &> /dev/null; then
+        UV_CMD="uv"
+        echo "✓ Found UV in PATH: $(which uv)"
+        return 0
     fi
     
-    # Verify Python version
-    PYTHON_VERSION_CHECK=$($PYTHON_CMD -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
-    echo "✓ Found Python $PYTHON_VERSION_CHECK"
-}
-
-# Create virtual environment if it doesn't exist
-setup_venv() {
-    if [ ! -d "$VENV_DIR" ]; then
-        echo "📦 Creating virtual environment..."
-        $PYTHON_CMD -m venv "$VENV_DIR"
-        echo "✓ Virtual environment created"
-    else
-        echo "✓ Virtual environment already exists"
-    fi
-}
-
-# Activate virtual environment
-activate_venv() {
-    echo "🔧 Activating virtual environment..."
-    source "$VENV_DIR/bin/activate"
-    echo "✓ Virtual environment activated"
-}
-
-# Install/update dependencies
-install_dependencies() {
-    echo "📥 Checking dependencies..."
-    
-    # Upgrade pip first
-    pip install --upgrade pip > /dev/null 2>&1
-    
-    # Check if requirements are already installed
-    if pip show torch transformers fastapi > /dev/null 2>&1; then
-        echo "✓ Core dependencies already installed"
-        
-        # Check if we need to update
-        if [ -f "$SCRIPT_DIR/.last_requirements_hash" ]; then
-            CURRENT_HASH=$(shasum -a 256 "$SCRIPT_DIR/requirements.txt" | cut -d' ' -f1)
-            LAST_HASH=$(cat "$SCRIPT_DIR/.last_requirements_hash" 2>/dev/null || echo "")
-            
-            if [ "$CURRENT_HASH" != "$LAST_HASH" ]; then
-                echo "📦 Requirements changed, updating..."
-                pip install -r "$SCRIPT_DIR/requirements.txt"
-                echo "$CURRENT_HASH" > "$SCRIPT_DIR/.last_requirements_hash"
-            fi
-        else
-            # First run, save hash
-            shasum -a 256 "$SCRIPT_DIR/requirements.txt" | cut -d' ' -f1 > "$SCRIPT_DIR/.last_requirements_hash"
+    # Check known locations
+    for path in "${UV_PATHS[@]}"; do
+        if [ -f "$path" ] && [ -x "$path" ]; then
+            UV_CMD="$path"
+            echo "✓ Found UV at: $path"
+            return 0
         fi
-    else
-        echo "📦 Installing dependencies (this may take a few minutes)..."
-        pip install -r "$SCRIPT_DIR/requirements.txt"
-        shasum -a 256 "$SCRIPT_DIR/requirements.txt" | cut -d' ' -f1 > "$SCRIPT_DIR/.last_requirements_hash"
-        echo "✓ Dependencies installed"
-    fi
+    done
+    
+    echo "❌ UV not found!"
+    echo ""
+    echo "Please install UV first:"
+    echo "  curl -LsSf https://astral.sh/uv/install.sh | sh"
+    echo ""
+    echo "After installation, run this script again."
+    exit 1
 }
 
-# Check MPS availability
-check_mps() {
+# Sync dependencies with UV
+sync_dependencies() {
+    echo "📦 Syncing dependencies with UV..."
+    echo "   This is MUCH faster than pip!"
+    
+    cd "$SCRIPT_DIR"
+    
+    # UV automatically manages the virtual environment
+    $UV_CMD sync
+    
+    echo "✓ Dependencies synced successfully"
+}
+
+# Check hardware acceleration
+check_hardware() {
     echo "🖥️ Checking hardware acceleration..."
-    python -c "
+    
+    $UV_CMD run python -c "
 import torch
 if torch.backends.mps.is_available():
     print('✓ Metal Performance Shaders (MPS) available - GPU acceleration enabled')
@@ -92,32 +73,33 @@ else:
 "
 }
 
-# Model download notice
-model_notice() {
+# Model information
+model_info() {
     echo ""
     echo "📊 Model Information"
     echo "===================="
-    echo "Model: google/gemma-3n-e4b-it (4B parameters)"
-    echo "Size: ~8GB download on first run"
+    echo "Model: google/gemma-3n-e4b-it"
+    echo "Parameters: 4B (runs like 2B thanks to MatFormer)"
+    echo "Features: Text + Images + Audio + Video"
     echo ""
     
-    # Check if model is already cached
+    # Check if model is cached
     CACHE_DIR="$HOME/.cache/huggingface/hub"
     if [ -d "$CACHE_DIR" ] && find "$CACHE_DIR" -name "*gemma-3n-e4b*" -type d | grep -q .; then
-        echo "✓ Model appears to be cached"
+        echo "✓ Model appears to be cached locally"
     else
         echo "⚠️  First run will download the model (~8GB)"
-        echo "   This is a one-time download that may take 10-30 minutes"
-        echo "   The model will be cached for future use"
+        echo "   This is a one-time download (10-30 minutes)"
+        echo "   Subsequent launches will be instant!"
     fi
     echo ""
 }
 
-# Launch server
+# Launch the server
 launch_server() {
     echo "🚀 Starting Gemi Inference Server..."
     echo "===================================="
-    echo "Server will be available at: http://127.0.0.1:11435"
+    echo "Server URL: http://127.0.0.1:11435"
     echo "Press Ctrl+C to stop the server"
     echo ""
     
@@ -125,34 +107,36 @@ launch_server() {
     export PYTORCH_ENABLE_MPS_FALLBACK=1
     export TOKENIZERS_PARALLELISM=false
     export HF_HUB_DISABLE_SYMLINKS_WARNING=1
+    export HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
     
-    # Run the server
+    # Change to script directory
     cd "$SCRIPT_DIR"
-    python inference_server.py
+    
+    # Run with UV - no activation needed!
+    echo "Starting server with UV..."
+    $UV_CMD run python inference_server.py
 }
 
-# Cleanup function
+# Cleanup on exit
 cleanup() {
     echo ""
-    echo "🛑 Shutting down server..."
-    # Deactivate virtual environment if active
-    if [[ "$VIRTUAL_ENV" != "" ]]; then
-        deactivate 2>/dev/null || true
-    fi
+    echo "🛑 Shutting down Gemi AI Server..."
+    echo "Thank you for using Gemi!"
     exit 0
 }
 
 # Set up signal handlers
 trap cleanup SIGINT SIGTERM
 
-# Main execution
+# Main execution flow
 main() {
-    check_python
-    setup_venv
-    activate_venv
-    install_dependencies
-    check_mps
-    model_notice
+    echo "UV-powered setup - 10-100x faster than pip! 🚄"
+    echo ""
+    
+    check_uv
+    sync_dependencies
+    check_hardware
+    model_info
     launch_server
 }
 
