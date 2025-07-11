@@ -11,6 +11,9 @@ echo "=============================="
 
 # Check if UV is installed
 check_uv() {
+    # Add UV's default installation directory to PATH
+    export PATH="$HOME/.local/bin:$PATH"
+    
     # Check common UV installation paths
     UV_PATHS=(
         "$HOME/.local/bin/uv"

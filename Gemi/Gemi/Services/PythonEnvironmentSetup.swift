@@ -626,7 +626,7 @@ class PythonEnvironmentSetup: ObservableObject {
         echo ""
         
         # Add UV to PATH in case it's not there
-        export PATH="$HOME/.local/bin:$PATH"
+        export PATH="$HOME/.local/bin:$HOME/.cargo/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"
         
         # Set environment variables
         export PYTORCH_ENABLE_MPS_FALLBACK=1
@@ -670,7 +670,7 @@ class PythonEnvironmentSetup: ObservableObject {
         echo ""
         
         # Run with UV - no activation needed!
-        $UV_CMD run python simple_server.py
+        $UV_CMD run python inference_server.py
         """
     }
 }
