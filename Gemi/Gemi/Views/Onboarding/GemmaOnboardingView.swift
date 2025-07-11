@@ -398,7 +398,17 @@ struct GemmaOnboardingView: View {
             // Action buttons
             VStack(spacing: 16) {
                 Button {
-                    modelManager.startSetup()
+                    // First check if server is already running
+                    Task {
+                        let isRunning = await PythonServerManager.shared.isServerRunning()
+                        if isRunning {
+                            // Server is already running, just update status
+                            modelManager.checkStatus()
+                        } else {
+                            // Launch the server
+                            modelManager.startSetup()
+                        }
+                    }
                 } label: {
                     HStack {
                         Image(systemName: "arrow.down.circle.fill")
@@ -549,39 +559,57 @@ struct GemmaOnboardingView: View {
                     .foregroundColor(.white)
                 
                 Text(message)
-                    .font(.system(size: 18))
+                    .font(.system(size: 16))
                     .foregroundColor(.white.opacity(0.8))
                     .multilineTextAlignment(.center)
+                    .frame(maxWidth: 500)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             
-            HStack(spacing: 16) {
-                Button {
-                    modelManager.retry()
-                } label: {
-                    Text("Try Again")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white)
+            VStack(spacing: 12) {
+                HStack(spacing: 16) {
+                    Button {
+                        modelManager.retry()
+                    } label: {
+                        Text("Try Again")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 12)
+                            .background(
+                                Capsule()
+                                    .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    
+                    Button {
+                        ModelSetupHelper.openManualSetup()
+                    } label: {
+                        HStack {
+                            Image(systemName: "terminal")
+                                .font(.system(size: 14))
+                            Text("Open Terminal")
+                                .font(.system(size: 16, weight: .medium))
+                        }
+                        .foregroundColor(.black)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 12)
                         .background(
                             Capsule()
-                                .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
+                                .fill(Color.white)
                         )
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
                 
                 Button {
-                    modelManager.openDocumentation()
+                    // Skip for now
+                    onComplete()
                 } label: {
-                    Text("Get Help")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 12)
-                        .background(
-                            Capsule()
-                                .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
-                        )
+                    Text("Set up later")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.6))
                 }
                 .buttonStyle(.plain)
             }

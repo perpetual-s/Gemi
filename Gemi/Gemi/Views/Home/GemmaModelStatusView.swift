@@ -796,12 +796,20 @@ class GemmaModelManager: ObservableObject {
     
     func startSetup() {
         Task {
+            await MainActor.run {
+                self.status = .downloading(progress: 0.0)
+            }
+            
             do {
                 try await pythonServerManager.launchServer()
+                
+                // Start monitoring for progress updates
                 startStatusMonitoring()
             } catch {
                 await MainActor.run {
-                    self.status = .error(message: error.localizedDescription)
+                    // Use helper for better error messages
+                    let errorMessage = ModelSetupHelper.getSetupErrorMessage(for: error)
+                    self.status = .error(message: errorMessage)
                 }
             }
         }
