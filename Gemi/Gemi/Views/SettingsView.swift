@@ -207,7 +207,7 @@ struct SettingsView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(width: 900, height: 650)
+        .frame(width: 900, height: 550)
         .background(Color(NSColor.windowBackgroundColor))
         .onAppear {
             checkConnection()
@@ -457,8 +457,7 @@ struct SettingsView: View {
                 VStack(spacing: 20) {
                     // Status indicator
                     HStack {
-                        GemmaModelStatusView()
-                            .frame(maxHeight: 100)
+                        GemmaModelStatusView(isCompact: true)
                     }
                     
                     Divider()
