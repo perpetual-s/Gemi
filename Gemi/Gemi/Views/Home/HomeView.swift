@@ -59,6 +59,10 @@ struct HomeView: View {
                     privacySection
                         .padding(.horizontal, 40)
                     
+                    // Gemma 3n features section
+                    gemmaFeaturesSection
+                        .padding(.horizontal, 40)
+                    
                     // Recent activity
                     if !journalStore.entries.isEmpty {
                         recentActivitySection
@@ -462,7 +466,7 @@ struct HomeView: View {
                         .font(.system(size: 22, weight: .semibold, design: .rounded))
                         .foregroundColor(.primary)
                     
-                    Text("Powered by Gemma 3n from Google DeepMind")
+                    Text("Everything stays on your Mac")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
                 }
@@ -526,6 +530,96 @@ struct HomeView: View {
                 )
         )
         .shadow(color: Color.green.opacity(0.1), radius: 20, x: 0, y: 10)
+        .opacity(heroOpacity)
+    }
+    
+    private var gemmaFeaturesSection: some View {
+        VStack(spacing: 20) {
+            // Header
+            HStack(spacing: 12) {
+                Image(systemName: "cpu.fill")
+                    .font(.system(size: 32, weight: .medium))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color.purple, Color.purple.opacity(0.7)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Powered by Gemma 3n")
+                        .font(.system(size: 22, weight: .semibold, design: .rounded))
+                        .foregroundColor(.primary)
+                    
+                    Text("Google DeepMind's latest multimodal AI")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+            }
+            
+            // Features grid with fun icons
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
+                GemmaFeatureCard(
+                    emoji: "🐰",
+                    title: "Lightning Fast",
+                    description: "8GB model, runs like 4GB",
+                    color: .orange
+                )
+                
+                GemmaFeatureCard(
+                    emoji: "🌍",
+                    title: "140+ Languages",
+                    description: "Express yourself naturally",
+                    color: .blue
+                )
+                
+                GemmaFeatureCard(
+                    emoji: "🎨",
+                    title: "Multimodal Magic",
+                    description: "Text, images, and audio",
+                    color: .pink
+                )
+                
+                GemmaFeatureCard(
+                    emoji: "🧠",
+                    title: "Context Aware",
+                    description: "32K token memory",
+                    color: .purple
+                )
+            }
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: Theme.cornerRadius * 1.5)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.purple.opacity(0.05),
+                            Color.purple.opacity(0.02)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: Theme.cornerRadius * 1.5)
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [
+                                    Color.purple.opacity(0.3),
+                                    Color.purple.opacity(0.1)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+        )
+        .shadow(color: Color.purple.opacity(0.1), radius: 20, x: 0, y: 10)
         .opacity(heroOpacity)
     }
     
@@ -740,6 +834,71 @@ struct PrivacyFeatureCard: View {
         .animation(Theme.smoothAnimation, value: isHovered)
         .onHover { hovering in
             isHovered = hovering
+        }
+    }
+}
+
+// MARK: - Gemma Feature Card
+
+struct GemmaFeatureCard: View {
+    let emoji: String
+    let title: String
+    let description: String
+    let color: Color
+    @State private var isHovered = false
+    @State private var isAnimating = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Emoji with playful animation
+            Text(emoji)
+                .font(.system(size: 32))
+                .scaleEffect(isHovered ? 1.2 : 1.0)
+                .rotationEffect(.degrees(isHovered ? 10 : 0))
+                .offset(y: isAnimating ? -5 : 0)
+                .animation(
+                    isHovered ? 
+                    Animation.spring(response: 0.4, dampingFraction: 0.6) :
+                    Animation.easeInOut(duration: 2).repeatForever(autoreverses: true),
+                    value: isHovered
+                )
+                .animation(
+                    Animation.easeInOut(duration: 2).repeatForever(autoreverses: true),
+                    value: isAnimating
+                )
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundColor(.primary)
+                
+                Text(description)
+                    .font(.system(size: 13))
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: Theme.smallCornerRadius)
+                .fill(color.opacity(isHovered ? 0.12 : 0.08))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Theme.smallCornerRadius)
+                        .strokeBorder(color.opacity(isHovered ? 0.4 : 0.2), lineWidth: 1)
+                )
+        )
+        .scaleEffect(isHovered ? 1.02 : 1.0)
+        .shadow(color: isHovered ? color.opacity(0.2) : Color.clear, radius: 8, y: 4)
+        .animation(Theme.smoothAnimation, value: isHovered)
+        .onHover { hovering in
+            isHovered = hovering
+        }
+        .onAppear {
+            // Slight delay for each card animation
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double.random(in: 0...0.5)) {
+                isAnimating = true
+            }
         }
     }
 }
