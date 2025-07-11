@@ -560,33 +560,33 @@ struct HomeView: View {
                 Spacer()
             }
             
-            // Features grid with fun icons
+            // Features grid with SF Symbols matching onboarding
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                 GemmaFeatureCard(
-                    emoji: "🐰",
-                    title: "Lightning Fast",
-                    description: "8GB model, runs like 4GB",
-                    color: .orange
+                    icon: "lock.shield.fill",
+                    title: "100% Private",
+                    description: "Runs entirely on your Mac",
+                    color: .green
                 )
                 
                 GemmaFeatureCard(
-                    emoji: "🌍",
-                    title: "140+ Languages",
-                    description: "Express yourself naturally",
+                    icon: "photo.on.rectangle.angled",
+                    title: "Multimodal AI",
+                    description: "Understands text, images, and audio",
                     color: .blue
                 )
                 
                 GemmaFeatureCard(
-                    emoji: "🎨",
-                    title: "Multimodal Magic",
-                    description: "Text, images, and audio",
-                    color: .pink
+                    icon: "globe",
+                    title: "140+ Languages",
+                    description: "Express yourself in any language",
+                    color: .orange
                 )
                 
                 GemmaFeatureCard(
-                    emoji: "🧠",
-                    title: "Context Aware",
-                    description: "32K token memory",
+                    icon: "hare.fill",
+                    title: "Optimized Performance",
+                    description: "8GB model, runs like 4GB",
                     color: .purple
                 )
             }
@@ -841,7 +841,7 @@ struct PrivacyFeatureCard: View {
 // MARK: - Gemma Feature Card
 
 struct GemmaFeatureCard: View {
-    let emoji: String
+    let icon: String
     let title: String
     let description: String
     let color: Color
@@ -850,20 +850,22 @@ struct GemmaFeatureCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Emoji with playful animation
-            Text(emoji)
-                .font(.system(size: 32))
-                .scaleEffect(isHovered ? 1.2 : 1.0)
-                .rotationEffect(.degrees(isHovered ? 10 : 0))
-                .offset(y: isAnimating ? -5 : 0)
-                .animation(
-                    isHovered ? 
-                    Animation.spring(response: 0.4, dampingFraction: 0.6) :
-                    Animation.easeInOut(duration: 2).repeatForever(autoreverses: true),
-                    value: isHovered
+            // SF Symbol with elegant animation
+            Image(systemName: icon)
+                .font(.system(size: 24, weight: .medium))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [color, color.opacity(0.7)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
                 )
+                .scaleEffect(isHovered ? 1.15 : 1.0)
+                .rotationEffect(.degrees(isHovered ? 5 : 0))
+                .shadow(color: color.opacity(isHovered ? 0.3 : 0), radius: 8)
+                .animation(Theme.smoothAnimation, value: isHovered)
                 .animation(
-                    Animation.easeInOut(duration: 2).repeatForever(autoreverses: true),
+                    Animation.easeInOut(duration: 3).repeatForever(autoreverses: true),
                     value: isAnimating
                 )
             
