@@ -63,7 +63,7 @@ final class WritingAssistanceService: ObservableObject {
             ]
             
             var fullResponse = ""
-            let stream = await OllamaService.shared.chat(messages: messages)
+            let stream = await AIService.shared.chat(messages: messages)
             
             for try await response in stream {
                 if let content = response.message?.content {
@@ -115,7 +115,7 @@ final class WritingAssistanceService: ObservableObject {
         ]
         
         var response = ""
-        let stream = await OllamaService.shared.chat(messages: messages)
+        let stream = await AIService.shared.chat(messages: messages)
         
         for try await chunk in stream {
             if let content = chunk.message?.content {
@@ -155,7 +155,7 @@ final class WritingAssistanceService: ObservableObject {
         ]
         
         var response = ""
-        let stream = await OllamaService.shared.chat(messages: messages)
+        let stream = await AIService.shared.chat(messages: messages)
         
         for try await chunk in stream {
             if let content = chunk.message?.content {
@@ -189,7 +189,7 @@ final class WritingAssistanceService: ObservableObject {
         ]
         
         var response = ""
-        let stream = await OllamaService.shared.chat(messages: messages)
+        let stream = await AIService.shared.chat(messages: messages)
         
         for try await chunk in stream {
             if let content = chunk.message?.content {
@@ -234,7 +234,7 @@ final class WritingAssistanceService: ObservableObject {
         ]
         
         var response = ""
-        let stream = await OllamaService.shared.chat(messages: messages)
+        let stream = await AIService.shared.chat(messages: messages)
         
         for try await chunk in stream {
             if let content = chunk.message?.content {
