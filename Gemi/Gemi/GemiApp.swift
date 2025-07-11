@@ -10,6 +10,9 @@ import SwiftUI
 @main
 struct GemiApp: App {
     @StateObject private var authManager = AuthenticationManager.shared
+    @StateObject private var modelManager = GemmaModelManager()
+    @AppStorage("hasCompletedGemmaOnboarding") private var hasCompletedOnboarding = false
+    @State private var showingOnboarding = false
     
     var body: some Scene {
         WindowGroup {
@@ -17,16 +20,33 @@ struct GemiApp: App {
                 if authManager.requiresInitialSetup {
                     InitialSetupView()
                 } else if authManager.isAuthenticated {
-                    MainWindowView()
+                    if showingOnboarding {
+                        GemmaOnboardingView {
+                            withAnimation(.easeInOut(duration: 0.5)) {
+                                hasCompletedOnboarding = true
+                                showingOnboarding = false
+                            }
+                        }
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 1.1)),
+                            removal: .opacity.combined(with: .scale(scale: 0.9))
+                        ))
+                    } else {
+                        MainWindowView()
+                            .onAppear {
+                                checkOnboardingNeeded()
+                            }
+                    }
                 } else {
                     AuthenticationView()
                 }
             }
             .animation(.easeInOut(duration: 0.3), value: authManager.isAuthenticated)
             .animation(.easeInOut(duration: 0.3), value: authManager.requiresInitialSetup)
+            .animation(.easeInOut(duration: 0.5), value: showingOnboarding)
             .task {
-                // Note: Launch Python inference server separately
-                // Run: cd python-inference-server && ./launch_server.sh
+                // Check model status on launch
+                modelManager.checkStatus()
             }
         }
         .windowStyle(.hiddenTitleBar)
@@ -67,6 +87,19 @@ struct GemiApp: App {
                 }
                 .keyboardShortcut("l", modifiers: [.command, .control])
                 .disabled(!authManager.isAuthenticated)
+            }
+        }
+    }
+    
+    private func checkOnboardingNeeded() {
+        // Show onboarding if:
+        // 1. User hasn't completed onboarding before
+        // 2. Gemma 3n is not installed
+        if !hasCompletedOnboarding && modelManager.status != .ready {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                withAnimation {
+                    showingOnboarding = true
+                }
             }
         }
     }
