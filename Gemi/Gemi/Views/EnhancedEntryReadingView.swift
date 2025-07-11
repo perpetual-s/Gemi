@@ -450,10 +450,10 @@ struct EnhancedEntryReadingView: View {
             } catch {
                 // Handle errors gracefully
                 await MainActor.run {
-                    self.aiSummary = "Unable to generate AI insights at this time. Please ensure Ollama is running with the Gemma 3n model."
+                    self.aiSummary = "Unable to generate AI insights at this time. Please ensure Gemma 3n is running."
                     self.aiKeyPoints = [
                         "AI analysis temporarily unavailable",
-                        "Check Ollama connection in settings",
+                        "Check AI server connection in settings",
                         "Your journal entry has been saved successfully"
                     ]
                     self.aiSuggestedPrompts = [
