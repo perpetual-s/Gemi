@@ -476,13 +476,26 @@ struct SettingsView: View {
                             
                             Spacer()
                             
-                            Button {
-                                showingGemmaSetup = true
-                            } label: {
-                                Text("Open Setup")
-                                    .font(.system(size: 13, weight: .medium))
+                            HStack(spacing: 12) {
+                                Button {
+                                    showingGemmaSetup = true
+                                } label: {
+                                    Text("Open Setup")
+                                        .font(.system(size: 13, weight: .medium))
+                                }
+                                .buttonStyle(.borderedProminent)
+                                
+                                Button {
+                                    // Reset onboarding state
+                                    UserDefaults.standard.set(false, forKey: "hasCompletedGemmaOnboarding")
+                                    showingGemmaSetup = true
+                                } label: {
+                                    Image(systemName: "arrow.counterclockwise")
+                                        .font(.system(size: 12))
+                                }
+                                .buttonStyle(.bordered)
+                                .help("Reset onboarding")
                             }
-                            .buttonStyle(.borderedProminent)
                         }
                         
                         // Manual setup option
