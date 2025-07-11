@@ -29,9 +29,11 @@ struct GemmaOnboardingView: View {
                     ))
             }
         }
+        .frame(width: 900, height: 700) // Fixed window size
         .ignoresSafeArea()
         .onAppear {
-            modelManager.checkStatus()
+            // Don't check status immediately - server isn't running yet
+            modelManager.status = .notInstalled
         }
     }
     
@@ -384,6 +386,10 @@ struct GemmaOnboardingView: View {
                 Label("Stable internet connection", systemImage: "wifi")
                     .font(.system(size: 18))
                     .foregroundColor(.white.opacity(0.9))
+                
+                Label("Terminal will open for setup", systemImage: "terminal")
+                    .font(.system(size: 18))
+                    .foregroundColor(.white.opacity(0.9))
             }
             .padding(24)
             .background(
@@ -398,22 +404,12 @@ struct GemmaOnboardingView: View {
             // Action buttons
             VStack(spacing: 16) {
                 Button {
-                    // First check if server is already running
-                    Task {
-                        let isRunning = await PythonServerManager.shared.isServerRunning()
-                        if isRunning {
-                            // Server is already running, just update status
-                            modelManager.checkStatus()
-                        } else {
-                            // Launch the server
-                            modelManager.startSetup()
-                        }
-                    }
+                    modelManager.startSetup()
                 } label: {
                     HStack {
-                        Image(systemName: "arrow.down.circle.fill")
+                        Image(systemName: "terminal.fill")
                             .font(.system(size: 20))
-                        Text("Download Gemma 3n")
+                        Text("Set Up Gemma 3n")
                             .font(.system(size: 18, weight: .semibold))
                     }
                     .foregroundColor(.black)

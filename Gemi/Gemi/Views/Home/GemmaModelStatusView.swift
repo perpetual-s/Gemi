@@ -778,41 +778,53 @@ class GemmaModelManager: ObservableObject {
     
     func checkStatus() {
         Task {
-            let serverStatus = await pythonServerManager.getServerStatus()
-            
-            await MainActor.run {
-                switch serverStatus {
-                case .notRunning:
+            do {
+                // First check if server is even reachable
+                let isRunning = await pythonServerManager.isServerRunning()
+                
+                if !isRunning {
+                    await MainActor.run {
+                        self.status = .notInstalled
+                    }
+                    return
+                }
+                
+                // If running, get detailed status
+                let serverStatus = await pythonServerManager.getServerStatus()
+                
+                await MainActor.run {
+                    switch serverStatus {
+                    case .notRunning:
+                        self.status = .notInstalled
+                    case .loading(let progress):
+                        self.status = .downloading(progress: Double(progress) / 100.0)
+                        self.updateTimeEstimate(progress: Double(progress) / 100.0)
+                    case .ready:
+                        self.status = .ready
+                        // Stop monitoring when ready
+                        self.checkTimer?.invalidate()
+                        self.checkTimer = nil
+                    }
+                }
+            } catch {
+                // Ignore errors during status check - server might not be running
+                await MainActor.run {
                     self.status = .notInstalled
-                case .loading(let progress):
-                    self.status = .downloading(progress: Double(progress) / 100.0)
-                    self.updateTimeEstimate(progress: Double(progress) / 100.0)
-                case .ready:
-                    self.status = .ready
                 }
             }
         }
     }
     
     func startSetup() {
-        Task {
-            await MainActor.run {
-                self.status = .downloading(progress: 0.0)
-            }
-            
-            do {
-                try await pythonServerManager.launchServer()
-                
-                // Start monitoring for progress updates
-                startStatusMonitoring()
-            } catch {
-                await MainActor.run {
-                    // Use helper for better error messages
-                    let errorMessage = ModelSetupHelper.getSetupErrorMessage(for: error)
-                    self.status = .error(message: errorMessage)
-                }
-            }
-        }
+        // Simply open Terminal with the setup script
+        // This is more reliable than trying to launch programmatically
+        ModelSetupHelper.openManualSetup()
+        
+        // Update status to show we're setting up
+        status = .downloading(progress: 0.0)
+        
+        // Start monitoring for when the server comes online
+        startStatusMonitoring()
     }
     
     func retry() {
