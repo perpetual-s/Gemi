@@ -133,13 +133,17 @@ class PythonEnvironmentSetup: ObservableObject {
         statusMessage = "Checking for UV installation..."
         progress = 0.1
         
-        // Verify server files exist
-        let requiredFiles = ["inference_server.py", "launch_server.sh", "pyproject.toml"]
-        for file in requiredFiles {
-            let filePath = serverPath + "/" + file
-            guard FileManager.default.fileExists(atPath: filePath) else {
-                throw SetupError.serverNotFound
-            }
+        // Check if server directory exists first
+        guard FileManager.default.fileExists(atPath: serverPath) else {
+            throw SetupError.serverNotFound
+        }
+        
+        // Check for key required files more gracefully
+        let keyFile = serverPath + "/pyproject.toml"
+        guard FileManager.default.fileExists(atPath: keyFile) else {
+            // Directory exists but missing key files
+            statusMessage = "Server directory found but missing configuration files"
+            throw SetupError.serverNotFound
         }
         
         progress = 0.2

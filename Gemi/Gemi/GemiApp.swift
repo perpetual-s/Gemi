@@ -28,7 +28,8 @@ struct GemiApp: App {
                                 showingOnboarding = false
                             }
                         }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .frame(width: 900, height: 700)
+                        .frame(maxWidth: 900, maxHeight: 700)
                         .background(Color.black)
                     } else {
                         MainWindowView()
@@ -45,6 +46,7 @@ struct GemiApp: App {
             }
         }
         .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("New Entry") {
