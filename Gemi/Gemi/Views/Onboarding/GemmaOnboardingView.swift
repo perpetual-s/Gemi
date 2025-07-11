@@ -179,30 +179,7 @@ struct GemmaOnboardingView: View {
     private var welcomePage1: some View {
         VStack(spacing: 32) {
             // Animated logo
-            ZStack {
-                ForEach(0..<3) { index in
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 80))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [Color.purple, Color.blue],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .rotationEffect(.degrees(Double(index * 120)))
-                        .scaleEffect(1.0 + Double(index) * 0.2)
-                        .opacity(0.6 - Double(index) * 0.2)
-                        .rotationEffect(.degrees(Date().timeIntervalSince1970 * 30))
-                        .animation(
-                            .linear(duration: 10).repeatForever(autoreverses: false),
-                            value: Date()
-                        )
-                }
-                
-                Text("✨")
-                    .font(.system(size: 100))
-            }
+            SparkleAnimationView()
             
             VStack(spacing: 16) {
                 Text("Welcome to Gemi")
