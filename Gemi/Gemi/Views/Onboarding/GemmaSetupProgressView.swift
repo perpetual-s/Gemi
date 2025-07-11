@@ -283,9 +283,9 @@ struct GemmaSetupProgressView: View {
         switch setupManager.currentStep {
         case .checkingEnvironment, .installingUV:
             return .blue
-        case .creatingProject, .installingDependencies:
+        case .installingDependencies:
             return .purple
-        case .creatingServer, .launchingServer:
+        case .launchingServer:
             return .indigo
         case .downloadingModel, .complete:
             return .green
@@ -366,12 +366,10 @@ extension PythonEnvironmentSetup.SetupStep {
         switch self {
         case .checkingEnvironment: return 0
         case .installingUV: return 1
-        case .creatingProject: return 2
-        case .installingDependencies: return 3
-        case .creatingServer: return 4
-        case .launchingServer: return 5
-        case .downloadingModel: return 6
-        case .complete: return 7
+        case .installingDependencies: return 2
+        case .launchingServer: return 3
+        case .downloadingModel: return 4
+        case .complete: return 5
         }
     }
 }
