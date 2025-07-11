@@ -97,6 +97,24 @@ class PythonEnvironmentSetup: ObservableObject {
             // Step 2: Install UV if needed
             if !isUVInstalled() {
                 try await installUV()
+                
+                // Verify UV was installed successfully before proceeding
+                statusMessage = "Verifying UV installation..."
+                var uvReady = false
+                for _ in 1...10 {
+                    if isUVInstalled() {
+                        uvReady = true
+                        break
+                    }
+                    try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                }
+                
+                guard uvReady else {
+                    throw SetupError.uvInstallFailed
+                }
+            } else {
+                statusMessage = "UV already installed!"
+                progress = 0.3
             }
             
             // Step 3: Install dependencies with UV
@@ -193,10 +211,11 @@ class PythonEnvironmentSetup: ObservableObject {
         try chmodProcess.run()
         chmodProcess.waitUntilExit()
         
-        // Run installer
+        // Run installer with environment to ensure UV is installed to expected location
         let installProcess = Process()
         installProcess.executableURL = URL(fileURLWithPath: "/bin/bash")
         installProcess.arguments = [scriptPath]
+        installProcess.environment = ProcessInfo.processInfo.environment
         
         try installProcess.run()
         installProcess.waitUntilExit()
@@ -208,11 +227,24 @@ class PythonEnvironmentSetup: ObservableObject {
         // Clean up
         try? FileManager.default.removeItem(atPath: scriptPath)
         
-        // Wait a moment for UV to be fully installed
-        try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+        // Wait longer for UV to be fully installed and filesystem to sync
+        try await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
         
-        progress = 0.3
-        statusMessage = "UV installed successfully!"
+        // Verify UV was installed successfully
+        let expectedUVPath = NSHomeDirectory() + "/.local/bin/uv"
+        var attempts = 0
+        while attempts < 10 {
+            if FileManager.default.fileExists(atPath: expectedUVPath) {
+                progress = 0.3
+                statusMessage = "UV installed successfully!"
+                return
+            }
+            try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+            attempts += 1
+        }
+        
+        // If we still can't find UV after waiting, throw error
+        throw SetupError.uvInstallFailed
     }
     
     private func installDependencies() async throws {
@@ -220,10 +252,47 @@ class PythonEnvironmentSetup: ObservableObject {
         statusMessage = "Installing PyTorch and dependencies..."
         progress = 0.4
         
-        // Find UV path
-        guard let uvPath = findUVPath() else {
+        // Find UV path with better error handling
+        statusMessage = "Locating UV package manager..."
+        
+        // Try multiple times in case UV is still being written to disk
+        var uvPath: String? = nil
+        for attempt in 1...5 {
+            if let foundPath = findUVPath() {
+                uvPath = foundPath
+                break
+            }
+            statusMessage = "Looking for UV... (attempt \(attempt)/5)"
+            try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+        }
+        
+        guard let uvPath = uvPath else {
+            // Provide more diagnostic information
+            let searchedPaths = getUVPaths().joined(separator: "\n  ")
+            print("UV not found in any of these locations:\n  \(searchedPaths)")
+            statusMessage = "UV not found. Please install manually."
             throw SetupError.uvInstallFailed
         }
+        
+        // Verify UV file exists and is executable
+        guard FileManager.default.fileExists(atPath: uvPath) else {
+            print("UV path found but file doesn't exist: \(uvPath)")
+            throw SetupError.uvInstallFailed
+        }
+        
+        // Double-check it's executable
+        guard FileManager.default.isExecutableFile(atPath: uvPath) else {
+            print("UV exists but is not executable: \(uvPath)")
+            // Try to make it executable
+            let chmodProcess = Process()
+            chmodProcess.executableURL = URL(fileURLWithPath: "/bin/chmod")
+            chmodProcess.arguments = ["+x", uvPath]
+            try? chmodProcess.run()
+            chmodProcess.waitUntilExit()
+            throw SetupError.uvInstallFailed
+        }
+        
+        statusMessage = "Found UV at: \(uvPath)"
         
         // Change to server directory and sync
         let syncProcess = Process()
@@ -233,8 +302,23 @@ class PythonEnvironmentSetup: ObservableObject {
         
         statusMessage = "Installing all dependencies (this is fast with UV!)..."
         
-        try syncProcess.run()
-        syncProcess.waitUntilExit()
+        do {
+            try syncProcess.run()
+            syncProcess.waitUntilExit()
+        } catch let processError as NSError {
+            // More detailed error information
+            print("Failed to run UV sync at path: \(uvPath)")
+            print("Error: \(processError.localizedDescription)")
+            print("Error code: \(processError.code)")
+            
+            // Check if it's a "file not found" error
+            if processError.code == 4 { // NSFileNoSuchFileError
+                statusMessage = "UV binary not found at expected location"
+                throw SetupError.uvInstallFailed
+            } else {
+                throw SetupError.dependencyInstallFailed
+            }
+        }
         
         if syncProcess.terminationStatus != 0 {
             throw SetupError.dependencyInstallFailed

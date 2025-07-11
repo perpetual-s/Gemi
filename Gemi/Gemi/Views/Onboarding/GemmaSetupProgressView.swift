@@ -26,44 +26,6 @@ struct GemmaSetupProgressView: View {
             VStack(spacing: 40) {
                 // Header
                 VStack(spacing: 16) {
-                    ZStack {
-                        // Animated background circles
-                        ForEach(0..<3) { index in
-                            Circle()
-                                .fill(
-                                    RadialGradient(
-                                        colors: [
-                                            currentStepColor().opacity(0.3 - Double(index) * 0.1),
-                                            Color.clear
-                                        ],
-                                        center: .center,
-                                        startRadius: 30,
-                                        endRadius: 80
-                                    )
-                                )
-                                .frame(width: 160 + CGFloat(index * 30), height: 160 + CGFloat(index * 30))
-                                .scaleEffect(pulseAnimation ? 1.05 : 0.95)
-                                .animation(
-                                    .easeInOut(duration: 2 + Double(index))
-                                    .repeatForever(autoreverses: true),
-                                    value: pulseAnimation
-                                )
-                        }
-                        
-                        // Current step icon
-                        Image(systemName: setupManager.currentStep.icon)
-                            .font(.system(size: 60, weight: .medium))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [currentStepColor(), currentStepColor().opacity(0.8)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .shadow(color: currentStepColor().opacity(0.5), radius: 20)
-                            .symbolEffect(.pulse, value: setupManager.currentStep)
-                    }
-                    
                     Text("Setting Up Gemma 3n")
                         .font(.system(size: 36, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
