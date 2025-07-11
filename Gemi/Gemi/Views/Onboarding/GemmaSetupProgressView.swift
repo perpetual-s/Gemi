@@ -23,10 +23,7 @@ struct GemmaSetupProgressView: View {
             .ignoresSafeArea()
             
             // Content
-            VStack(spacing: 30) {
-                Spacer()
-                    .frame(height: 20)
-                
+            VStack(spacing: 24) {
                 // Header
                 VStack(spacing: 16) {
                     Text("Setting Up Gemma 3n")
@@ -144,7 +141,7 @@ struct GemmaSetupProgressView: View {
                 }
                 
                 Spacer()
-                    .frame(minHeight: 20, maxHeight: 40)
+                    .frame(minHeight: 10, maxHeight: 20)
                 
                 // Action buttons
                 HStack(spacing: 16) {
@@ -216,9 +213,9 @@ struct GemmaSetupProgressView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.bottom, 30)
             }
             .padding(.horizontal, 40)
+            .padding(.vertical, 50)
         }
         .onAppear {
             pulseAnimation = true
