@@ -94,14 +94,21 @@ struct GemiApp: App {
         // Don't re-check if already done
         guard !hasCheckedOnboarding else { return }
         
-        // Check model status
-        modelManager.checkStatus()
+        // First, check if we've completed onboarding before
+        if hasCompletedOnboarding {
+            // If yes, no need to show onboarding
+            hasCheckedOnboarding = true
+            showingOnboarding = false
+            return
+        }
         
-        // Wait a moment for status to update
-        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        // If not completed, check if server is running
+        let isServerRunning = await PythonServerManager.shared.isServerRunning()
         
-        // Determine if onboarding is needed
-        let needsOnboarding = !hasCompletedOnboarding && modelManager.status != .ready
+        // Show onboarding if:
+        // 1. Never completed onboarding AND
+        // 2. Server is not running (model not installed)
+        let needsOnboarding = !hasCompletedOnboarding && !isServerRunning
         
         // Update state
         hasCheckedOnboarding = true
