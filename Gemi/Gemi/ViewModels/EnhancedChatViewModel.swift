@@ -48,7 +48,7 @@ final class EnhancedChatViewModel: ObservableObject {
     
     // MARK: - Public Methods
     
-    /// Start monitoring the connection to Ollama
+    /// Start monitoring the connection to AI server
     func startConnectionMonitoring() {
         // Cancel any existing monitoring
         connectionMonitorTask?.cancel()
@@ -58,10 +58,10 @@ final class EnhancedChatViewModel: ObservableObject {
             while !Task.isCancelled {
                 // Check immediately if disconnected
                 if self?.lastKnownConnectionStatus == .disconnected {
-                    self?.checkOllamaConnection()
+                    self?.checkAIConnection()
                 } else if let self = self, Date().timeIntervalSince(self.lastConnectionCheck) >= self.connectionCheckInterval {
                     // Only check periodically if connected
-                    self.checkOllamaConnectionSilently()
+                    self.checkAIConnectionSilently()
                 }
                 
                 // Wait 30 seconds between checks to reduce frequency
@@ -71,12 +71,12 @@ final class EnhancedChatViewModel: ObservableObject {
         
         // Check immediately
         Task {
-            checkOllamaConnection()
+            checkAIConnection()
         }
     }
     
-    /// Check the connection to Ollama silently (without updating UI unless status changes)
-    private func checkOllamaConnectionSilently() {
+    /// Check the connection to AI server silently (without updating UI unless status changes)
+    private func checkAIConnectionSilently() {
         Task {
             lastConnectionCheck = Date()
             
@@ -99,8 +99,8 @@ final class EnhancedChatViewModel: ObservableObject {
         }
     }
     
-    /// Check the connection to Ollama
-    func checkOllamaConnection() {
+    /// Check the connection to AI server
+    func checkAIConnection() {
         Task {
             guard lastKnownConnectionStatus != .connecting else { return }
             
@@ -122,7 +122,7 @@ final class EnhancedChatViewModel: ObservableObject {
                 }
                 
                 if !isHealthy {
-                    print("Ollama health check failed")
+                    print("AI server health check failed")
                 } else {
                     // Check if current model supports multimodal
                     let isMultimodal = await aiService.isMultimodalModel()
@@ -138,7 +138,7 @@ final class EnhancedChatViewModel: ObservableObject {
                     lastKnownConnectionStatus = .disconnected
                     connectionStatus = .disconnected
                 }
-                print("Ollama connection error: \(error)")
+                print("AI server connection error: \(error)")
                 
                 // Don't show error alerts for connection checks
                 // The UI will show the connection status

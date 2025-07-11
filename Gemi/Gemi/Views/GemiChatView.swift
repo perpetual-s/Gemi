@@ -24,8 +24,8 @@ struct GemiChatView: View {
                 // Header bar
                 chatHeader
                 
-                // Multimodal support notification
-                if !viewModel.isMultimodalSupported && !attachmentManager.attachments.isEmpty {
+                // Multimodal support notification - show when attachments are present
+                if viewModel.isMultimodalSupported && !attachmentManager.attachments.isEmpty {
                     MultimodalNotificationBanner()
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
@@ -540,14 +540,14 @@ struct GemiChatView: View {
                 Image(systemName: "wifi.slash")
                     .font(Theme.Typography.headline)
                 
-                Text("Ollama is not connected")
+                Text("Gemma 3n is not connected")
                     .font(Theme.Typography.body)
                     .fontWeight(.medium)
                 
                 Spacer()
                 
                 Button("Retry") {
-                    viewModel.checkOllamaConnection()
+                    viewModel.checkAIConnection()
                 }
                 .buttonStyle(.plain)
                 .font(Theme.Typography.body)

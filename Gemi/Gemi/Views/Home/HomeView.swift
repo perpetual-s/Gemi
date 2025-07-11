@@ -15,6 +15,7 @@ struct HomeView: View {
     @State private var currentQuote = InspirationQuotes.random()
     @State private var isAnimatingGradient = false
     @State private var hoveredCard: String? = nil
+    @StateObject private var modelManager = GemmaModelManager()
     
     let currentHour = Calendar.current.component(.hour, from: Date())
     
@@ -51,9 +52,23 @@ struct HomeView: View {
                     heroSection
                         .padding(.top, 60)
                     
-                    // Quick actions grid
-                    quickActionsGrid
-                        .padding(.horizontal, 40)
+                    // Model status (shows when model needs setup)
+                    if modelManager.status != .ready {
+                        GemmaModelStatusView()
+                            .padding(.horizontal, 40)
+                            .transition(.asymmetric(
+                                insertion: .scale(scale: 0.9).combined(with: .opacity),
+                                removal: .scale(scale: 0.9).combined(with: .opacity)
+                            ))
+                    } else {
+                        // Quick actions grid (only show when model is ready)
+                        quickActionsGrid
+                            .padding(.horizontal, 40)
+                            .transition(.asymmetric(
+                                insertion: .scale(scale: 0.9).combined(with: .opacity),
+                                removal: .scale(scale: 0.9).combined(with: .opacity)
+                            ))
+                    }
                     
                     // Privacy promise section
                     privacySection
