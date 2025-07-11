@@ -45,6 +45,9 @@ Models/
 *.temp
 *~
 
+# Scripts
+reset_gemi.sh
+
 # Log files
 *.log
 
