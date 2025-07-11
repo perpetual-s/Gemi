@@ -1,12 +1,15 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Main chat interface for conversations with Gemi
 /// Rebuilt from scratch with proper layout and beautiful UI
 struct GemiChatView: View {
     @StateObject private var viewModel = EnhancedChatViewModel()
+    @StateObject private var attachmentManager = AttachmentManager.shared
     @State private var messageText = ""
     @FocusState private var isInputFocused: Bool
     @Namespace private var bottomID
+    @State private var showAudioRecorder = false
     
     let contextEntry: JournalEntry?
     
@@ -21,13 +24,31 @@ struct GemiChatView: View {
                 // Header bar
                 chatHeader
                 
+                // Multimodal support notification
+                if !viewModel.isMultimodalSupported && !attachmentManager.attachments.isEmpty {
+                    MultimodalNotificationBanner()
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+                
                 // Messages area
                 messagesScrollView
+                
+                // Attachment preview
+                AttachmentPreviewView(attachmentManager: attachmentManager)
+                
+                // Progress indicator for processing attachments
+                AttachmentProgressView(attachmentManager: attachmentManager)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
                 
                 // Input area at bottom
                 messageInputArea
             }
             .background(Theme.Colors.windowBackground)
+            .onDrop(of: [.image, .fileURL], isTargeted: nil) { providers in
+                handleDrop(providers: providers)
+                return true
+            }
             
             // Connection status overlay
             if viewModel.connectionStatus != .connected {
@@ -69,6 +90,12 @@ struct GemiChatView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
             viewModel.saveMessages()
+        }
+        .sheet(isPresented: $showAudioRecorder) {
+            AudioRecordingView(
+                attachmentManager: attachmentManager,
+                isPresented: $showAudioRecorder
+            )
         }
     }
     
@@ -344,17 +371,11 @@ struct GemiChatView: View {
             HStack(spacing: 8) {
                 // Refined Apple-style input field with integrated elements
                 HStack(spacing: 6) {
-                    // Plus button for attachments
-                    Button {
-                        // Future: Add attachment functionality
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 22, weight: .regular))
-                            .foregroundColor(Theme.Colors.secondaryText)
-                            .symbolRenderingMode(.hierarchical)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Add attachment")
+                    // Attachment button with menu
+                    AttachmentButton(
+                        attachmentManager: attachmentManager,
+                        showAudioRecorder: $showAudioRecorder
+                    )
                     
                     // Compact text field
                     ZStack(alignment: .leading) {
@@ -557,8 +578,14 @@ struct GemiChatView: View {
         
         messageText = ""
         
+        // Get base64 images from attachments
+        let images = attachmentManager.getBase64Images()
+        
+        // Clear attachments after getting images
+        attachmentManager.clearAttachments()
+        
         Task {
-            await viewModel.sendMessage(trimmedMessage)
+            await viewModel.sendMessage(trimmedMessage, images: images.isEmpty ? nil : images)
         }
     }
     
@@ -569,6 +596,49 @@ struct GemiChatView: View {
             }
         } else {
             proxy.scrollTo(bottomID, anchor: .bottom)
+        }
+    }
+    
+    private func handleDrop(providers: [NSItemProvider]) {
+        for provider in providers {
+            // Handle images
+            if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
+                provider.loadItem(forTypeIdentifier: UTType.image.identifier, options: nil) { item, error in
+                    if let url = item as? URL {
+                        Task {
+                            do {
+                                try await attachmentManager.addAttachment(from: url)
+                            } catch {
+                                print("Failed to add dropped image: \(error)")
+                            }
+                        }
+                    } else if let data = item as? Data {
+                        Task {
+                            do {
+                                if let image = NSImage(data: data) {
+                                    try await attachmentManager.addImage(image, fileName: "Dropped Image.png")
+                                }
+                            } catch {
+                                print("Failed to add dropped image: \(error)")
+                            }
+                        }
+                    }
+                }
+            }
+            // Handle file URLs
+            else if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
+                provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, error in
+                    if let url = item as? URL {
+                        Task {
+                            do {
+                                try await attachmentManager.addAttachment(from: url)
+                            } catch {
+                                print("Failed to add dropped file: \(error)")
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -591,7 +661,30 @@ struct MessageBubble: View {
                     .background(Circle().fill(Color.purple.opacity(0.1)))
             }
             
-            VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 4) {
+            VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 8) {
+                // Images if present
+                if let images = message.images, !images.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(images, id: \.self) { base64Image in
+                                if let data = Data(base64Encoded: base64Image),
+                                   let image = NSImage(data: data) {
+                                    Image(nsImage: image)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(maxHeight: 200)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Theme.Colors.divider.opacity(0.3), lineWidth: 1)
+                                        )
+                                }
+                            }
+                        }
+                    }
+                    .frame(maxWidth: 400)
+                }
+                
                 // Message content with better streaming support
                 Group {
                     if isStreaming && message.content.isEmpty {

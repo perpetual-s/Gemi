@@ -105,6 +105,43 @@ actor OllamaService {
         }
     }
     
+    /// Check if the current model supports multimodal input
+    func isMultimodalModel() async -> Bool {
+        // Known multimodal models
+        let multimodalModels = ["llava", "bakllava", "llama3.2-vision", "smolvlm"]
+        
+        // Check if current model contains any multimodal model name
+        let lowercasedModel = modelName.lowercased()
+        return multimodalModels.contains { model in
+            lowercasedModel.contains(model)
+        }
+    }
+    
+    /// Get available multimodal models
+    func getAvailableMultimodalModels() async throws -> [String] {
+        let url = URL(string: await OllamaConfiguration.shared.apiTagsURL)!
+        let (data, response) = try await session.data(from: url)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw OllamaError.invalidResponse("Failed to fetch models")
+        }
+        
+        let models = try JSONDecoder().decode(ModelsResponse.self, from: data)
+        
+        // Filter for known multimodal models
+        let multimodalKeywords = ["llava", "bakllava", "vision", "smolvlm", "multimodal"]
+        
+        return models.models
+            .map { $0.name }
+            .filter { modelName in
+                let lowercased = modelName.lowercased()
+                return multimodalKeywords.contains { keyword in
+                    lowercased.contains(keyword)
+                }
+            }
+    }
+    
     private func performChatRequest(messages: [ChatMessage], continuation: AsyncThrowingStream<ChatResponse, Error>.Continuation) async {
         var retryCount = 0
         
@@ -239,11 +276,18 @@ actor OllamaService {
 struct ChatMessage: Codable, Sendable {
     let role: Role
     let content: String
+    let images: [String]? // Base64 encoded images for multimodal
     
     enum Role: String, Codable, Sendable {
         case system
         case user
         case assistant
+    }
+    
+    init(role: Role, content: String, images: [String]? = nil) {
+        self.role = role
+        self.content = content
+        self.images = images
     }
 }
 
