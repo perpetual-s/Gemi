@@ -28,6 +28,8 @@ struct GemiApp: App {
                                 showingOnboarding = false
                             }
                         }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color.black)
                     } else {
                         MainWindowView()
                     }
