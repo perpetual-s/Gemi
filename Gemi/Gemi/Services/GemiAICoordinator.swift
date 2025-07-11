@@ -11,7 +11,7 @@ final class GemiAICoordinator: ObservableObject {
     @Published var lastError: Error?
     
     private let logger = Logger(subsystem: "com.gemi", category: "GemiAICoordinator")
-    private let ollamaService = OllamaService.shared
+    private let aiService = AIService.shared
     private let memoryManager = MemoryManager.shared
     private let databaseManager = DatabaseManager.shared
     
@@ -59,7 +59,7 @@ final class GemiAICoordinator: ObservableObject {
                     }
                     
                     // Stream the response
-                    for try await response in await ollamaService.chat(messages: contextMessages) {
+                    for try await response in await aiService.chat(messages: contextMessages) {
                         continuation.yield(response)
                         
                         if response.done {
@@ -188,7 +188,7 @@ final class GemiAICoordinator: ObservableObject {
         var fullResponse = ""
         
         // Collect the full response
-        for try await response in await ollamaService.chat(messages: messages) {
+        for try await response in await aiService.chat(messages: messages) {
             fullResponse += response.message?.content ?? ""
             
             if response.done {
@@ -479,7 +479,7 @@ final class GemiAICoordinator: ObservableObject {
         var fullResponse = ""
         
         // Collect the full response
-        for try await response in await ollamaService.chat(messages: messages) {
+        for try await response in await aiService.chat(messages: messages) {
             fullResponse += response.message?.content ?? ""
             
             if response.done {

@@ -8,8 +8,8 @@ struct SettingsView: View {
     @State private var showBackupError = false
     @State private var errorMessage = ""
     let journalStore: JournalStore
-    @AppStorage("ollamaHost") private var ollamaHost = OllamaConfiguration.shared.host
-    @AppStorage("ollamaPort") private var ollamaPort = OllamaConfiguration.shared.port
+    @AppStorage("aiHost") private var aiHost = AIConfiguration.shared.host
+    @AppStorage("aiPort") private var aiPort = AIConfiguration.shared.port
     @AppStorage("selectedModel") private var selectedModel = "gemma3n:latest"
     @AppStorage("autoSaveInterval") private var autoSaveInterval = 3.0
     @AppStorage("enableMarkdown") private var enableMarkdown = true
@@ -18,7 +18,7 @@ struct SettingsView: View {
     @AppStorage("sessionTimeout") private var sessionTimeout = 30.0
     @AppStorage("requireAuthentication") private var requireAuthentication = true
     
-    private let ollamaService = OllamaService.shared
+    private let aiService = AIService.shared
     @State private var isCheckingConnection = false
     @State private var connectionStatus: ConnectionStatus = .unknown
     @State private var availableModels: [String] = []
@@ -321,7 +321,7 @@ struct SettingsView: View {
         VStack(spacing: 24) {
             // Connection Status Card
             PremiumSettingsCard(
-                title: "Ollama Connection",
+                title: "AI Server Connection",
                 icon: "network",
                 iconColor: connectionStatus.color
             ) {
@@ -370,7 +370,7 @@ struct SettingsView: View {
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(.secondary)
                             
-                            TextField("localhost", text: $ollamaHost)
+                            TextField("localhost", text: $aiHost)
                                 .textFieldStyle(PremiumTextFieldStyle())
                                 .frame(width: 200)
                         }
@@ -380,7 +380,7 @@ struct SettingsView: View {
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(.secondary)
                             
-                            TextField("11434", value: $ollamaPort, format: .number)
+                            TextField("11435", value: $aiPort, format: .number)
                                 .textFieldStyle(PremiumTextFieldStyle())
                                 .frame(width: 100)
                         }
@@ -453,7 +453,7 @@ struct SettingsView: View {
                         .font(.system(size: 14, weight: .semibold))
                     
                     HStack {
-                        Text("ollama pull gemma3n:latest")
+                        Text("cd python-inference-server && ./launch_server.sh")
                             .font(.system(size: 13, design: .monospaced))
                             .padding(12)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -465,7 +465,7 @@ struct SettingsView: View {
                         
                         Button(action: {
                             NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString("ollama pull gemma3n:latest", forType: .string)
+                            NSPasteboard.general.setString("cd python-inference-server && ./launch_server.sh", forType: .string)
                         }) {
                             Image(systemName: "doc.on.clipboard")
                                 .font(.system(size: 14))
@@ -800,7 +800,7 @@ struct SettingsView: View {
         
         Task {
             do {
-                let isHealthy = try await ollamaService.checkHealth()
+                let isHealthy = try await aiService.checkHealth()
                 await MainActor.run {
                     connectionStatus = isHealthy ? .connected : .disconnected
                     isCheckingConnection = false

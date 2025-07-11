@@ -30,8 +30,8 @@ actor DiagnosticService {
         // 2. Test Network Permissions
         results.append(await testNetworkPermissions())
         
-        // 3. Test Ollama Connectivity
-        results.append(await testOllamaConnectivity())
+        // 3. Test AI Server Connectivity
+        results.append(await testAIServerConnectivity())
         
         // 4. Test File System Access
         results.append(await testFileSystemAccess())
@@ -93,8 +93,8 @@ actor DiagnosticService {
     
     private func testNetworkPermissions() async -> DiagnosticResult {
         do {
-            // Test connection to Ollama server
-            let url = URL(string: await OllamaConfiguration.shared.baseURL)!
+            // Test connection to AI server
+            let url = URL(string: await AIConfiguration.shared.baseURL)!
             var request = URLRequest(url: url)
             request.httpMethod = "HEAD"
             request.timeoutInterval = 5
@@ -106,8 +106,8 @@ actor DiagnosticService {
                     return DiagnosticResult(
                         component: "Network Permissions",
                         status: .success,
-                        message: "Network access to Ollama server is allowed",
-                        details: "Successfully connected to \(await OllamaConfiguration.shared.baseURL)"
+                        message: "Network access to AI server is allowed",
+                        details: "Successfully connected to \(await AIConfiguration.shared.baseURL)"
                     )
                 } else {
                     return DiagnosticResult(
@@ -135,70 +135,72 @@ actor DiagnosticService {
                 return DiagnosticResult(
                     component: "Network Permissions",
                     status: .success,
-                    message: "Network access to Ollama server is allowed",
-                    details: "Connection refused (expected if Ollama not running)"
+                    message: "Network access to AI server is allowed",
+                    details: "Connection refused (expected if AI server not running)"
                 )
             }
             
             return DiagnosticResult(
                 component: "Network Permissions",
                 status: .failure,
-                message: "Network access to Ollama server may be blocked",
+                message: "Network access to AI server may be blocked",
                 details: error.localizedDescription
             )
         }
     }
     
-    private func testOllamaConnectivity() async -> DiagnosticResult {
-        // First check if Ollama is installed
-        let processManager = OllamaProcessManager.shared
-        
-        guard await processManager.isOllamaInstalled() else {
-            return DiagnosticResult(
-                component: "Ollama",
-                status: .warning,
-                message: "Ollama is not installed",
-                details: "Please install Ollama from https://ollama.ai"
-            )
-        }
-        
-        // Check if server is running
-        let isRunning = await processManager.isOllamaServerRunning()
-        
-        if isRunning {
-            // Test API endpoint
-            do {
-                let hasModel = try await OllamaService.shared.checkHealth()
-                
-                if hasModel {
-                    return DiagnosticResult(
-                        component: "Ollama",
-                        status: .success,
-                        message: "Ollama is running and model is available",
-                        details: "gemma3n model is ready for use"
-                    )
-                } else {
-                    return DiagnosticResult(
-                        component: "Ollama",
-                        status: .warning,
-                        message: "Ollama is running but model not found",
-                        details: "Need to pull gemma3n model"
-                    )
-                }
-            } catch {
+    private func testAIServerConnectivity() async -> DiagnosticResult {
+        // Test API endpoint
+        do {
+            let isHealthy = try await AIService.shared.checkHealth()
+            
+            if isHealthy {
                 return DiagnosticResult(
-                    component: "Ollama",
-                    status: .failure,
-                    message: "Ollama API error",
-                    details: error.localizedDescription
+                    component: "AI Server",
+                    status: .success,
+                    message: "AI server is running and model is loaded",
+                    details: "Gemma 3n model is ready for use"
+                )
+            } else {
+                return DiagnosticResult(
+                    component: "AI Server",
+                    status: .warning,
+                    message: "AI server is running but model not loaded",
+                    details: "Model is being downloaded or loaded"
                 )
             }
-        } else {
+        } catch {
+            if let aiError = error as? AIServiceError {
+                switch aiError {
+                case .modelLoading(let details):
+                    return DiagnosticResult(
+                        component: "AI Server",
+                        status: .warning,
+                        message: "Model is loading",
+                        details: details
+                    )
+                case .serviceUnavailable:
+                    return DiagnosticResult(
+                        component: "AI Server",
+                        status: .warning,
+                        message: "AI server is not running",
+                        details: "Run './launch_server.sh' in python-inference-server directory"
+                    )
+                default:
+                    return DiagnosticResult(
+                        component: "AI Server",
+                        status: .failure,
+                        message: "AI server error",
+                        details: error.localizedDescription
+                    )
+                }
+            }
+            
             return DiagnosticResult(
-                component: "Ollama",
-                status: .warning,
-                message: "Ollama server is not running",
-                details: "Start Ollama to enable AI features"
+                component: "AI Server",
+                status: .failure,
+                message: "AI server error",
+                details: error.localizedDescription
             )
         }
     }
@@ -386,8 +388,8 @@ actor DiagnosticService {
             report += "• Fix critical failures before proceeding\n"
         }
         
-        if results.contains(where: { $0.component == "Ollama" && $0.status == .warning }) {
-            report += "• Install or start Ollama for AI features\n"
+        if results.contains(where: { $0.component == "AI Server" && $0.status == .warning }) {
+            report += "• Start the AI server: cd python-inference-server && ./launch_server.sh\n"
         }
         
         if results.contains(where: { $0.component == "Network Permissions" && $0.status == .failure }) {

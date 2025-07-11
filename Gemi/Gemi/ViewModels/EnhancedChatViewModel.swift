@@ -16,7 +16,7 @@ final class EnhancedChatViewModel: ObservableObject {
     
     // MARK: - Private Properties
     
-    private let ollamaService = OllamaService.shared
+    private let aiService = AIService.shared
     private let memoryManager = MemoryManager.shared
     private let aiCoordinator = GemiAICoordinator.shared
     private var connectionMonitorTask: Task<Void, Never>?
@@ -81,7 +81,7 @@ final class EnhancedChatViewModel: ObservableObject {
             lastConnectionCheck = Date()
             
             do {
-                let isHealthy = try await ollamaService.checkHealth()
+                let isHealthy = try await aiService.checkHealth()
                 let newStatus: ConnectionStatus = isHealthy ? .connected : .disconnected
                 
                 // Only update if status actually changed
@@ -112,7 +112,7 @@ final class EnhancedChatViewModel: ObservableObject {
             }
             
             do {
-                let isHealthy = try await ollamaService.checkHealth()
+                let isHealthy = try await aiService.checkHealth()
                 let newStatus: ConnectionStatus = isHealthy ? .connected : .disconnected
                 
                 // Only update if status actually changed
@@ -125,7 +125,7 @@ final class EnhancedChatViewModel: ObservableObject {
                     print("Ollama health check failed")
                 } else {
                     // Check if current model supports multimodal
-                    let isMultimodal = await ollamaService.isMultimodalModel()
+                    let isMultimodal = await aiService.isMultimodalModel()
                     isMultimodalSupported = isMultimodal
                     
                     if !isMultimodal {
@@ -150,7 +150,7 @@ final class EnhancedChatViewModel: ObservableObject {
     func sendMessage(_ content: String, images: [String]? = nil) async {
         guard !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         guard connectionStatus == .connected else {
-            error = OllamaError.serviceUnavailable("Please wait for connection to Ollama")
+            error = AIServiceError.serviceUnavailable("Please wait for connection to AI server")
             return
         }
         
@@ -208,7 +208,7 @@ final class EnhancedChatViewModel: ObservableObject {
             var accumulatedContent = ""
             
             do {
-                for try await response in await self.ollamaService.chat(messages: ollamaMessages) {
+                for try await response in await self.aiService.chat(messages: ollamaMessages) {
                     if Task.isCancelled { break }
                     
                     if let message = response.message {
@@ -264,10 +264,10 @@ final class EnhancedChatViewModel: ObservableObject {
                     }
                     
                     // Set appropriate error
-                    if error is OllamaError {
+                    if error is AIServiceError {
                         self.error = error
                     } else {
-                        self.error = OllamaError.connectionFailed(error.localizedDescription)
+                        self.error = AIServiceError.connectionFailed(error.localizedDescription)
                     }
                 }
             }
@@ -427,7 +427,7 @@ final class EnhancedChatViewModel: ObservableObject {
     
     /// Get a user-friendly error message
     func errorMessage(for error: Error) -> String {
-        if let ollamaError = error as? OllamaError {
+        if let ollamaError = error as? AIServiceError {
             return ollamaError.localizedDescription
         }
         return "An unexpected error occurred. Please try again."
@@ -435,7 +435,7 @@ final class EnhancedChatViewModel: ObservableObject {
     
     /// Get recovery suggestion for an error
     func recoverySuggestion(for error: Error) -> String? {
-        if let ollamaError = error as? OllamaError {
+        if let ollamaError = error as? AIServiceError {
             return ollamaError.recoverySuggestion
         }
         return nil

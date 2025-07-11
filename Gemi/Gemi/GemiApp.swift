@@ -10,7 +10,6 @@ import SwiftUI
 @main
 struct GemiApp: App {
     @StateObject private var authManager = AuthenticationManager.shared
-    @StateObject private var ollamaLauncher = OllamaLauncher.shared
     
     var body: some Scene {
         WindowGroup {
@@ -26,10 +25,9 @@ struct GemiApp: App {
             .animation(.easeInOut(duration: 0.3), value: authManager.isAuthenticated)
             .animation(.easeInOut(duration: 0.3), value: authManager.requiresInitialSetup)
             .task {
-                // Auto-launch Ollama on app startup
-                await ollamaLauncher.checkAndLaunchOllama()
+                // Note: Launch Python inference server separately
+                // Run: cd python-inference-server && ./launch_server.sh
             }
-            .environmentObject(ollamaLauncher)
         }
         .windowStyle(.hiddenTitleBar)
         .commands {

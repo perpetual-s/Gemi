@@ -1,9 +1,9 @@
 import Foundation
 
-/// Configuration manager for Ollama settings
+/// Configuration manager for AI inference server settings
 @MainActor
-final class OllamaConfiguration: ObservableObject {
-    static let shared = OllamaConfiguration()
+final class AIConfiguration: ObservableObject {
+    static let shared = AIConfiguration()
     
     // MARK: - Published Properties
     @Published var host: String {
@@ -26,14 +26,14 @@ final class OllamaConfiguration: ObservableObject {
     
     // MARK: - Constants
     private enum Keys {
-        static let host = "com.gemi.ollama.host"
-        static let port = "com.gemi.ollama.port"
-        static let useCustomURL = "com.gemi.ollama.useCustomURL"
+        static let host = "com.gemi.ai.host"
+        static let port = "com.gemi.ai.port"
+        static let useCustomURL = "com.gemi.ai.useCustomURL"
     }
     
     private enum Defaults {
         static let host = "127.0.0.1"
-        static let port = 11434
+        static let port = 11435  // Python inference server port
         static let useCustomURL = false
     }
     
@@ -46,8 +46,8 @@ final class OllamaConfiguration: ObservableObject {
         }
     }
     
-    var apiGenerateURL: String {
-        return "\(baseURL)/api/generate"
+    var apiHealthURL: String {
+        return "\(baseURL)/api/health"
     }
     
     var apiChatURL: String {
@@ -97,21 +97,23 @@ final class OllamaConfiguration: ObservableObject {
         return isValidIP || isValidHostname
     }
     
-    /// Test connection to Ollama server
+    /// Test connection to AI server
     func testConnection() async -> (success: Bool, error: String?) {
-        let url = URL(string: apiTagsURL)!
+        let url = URL(string: apiHealthURL)!
         
         do {
             let (_, response) = try await URLSession.shared.data(from: url)
             
             if let httpResponse = response as? HTTPURLResponse,
                httpResponse.statusCode == 200 {
+                // Server is responding
                 return (true, nil)
             } else {
                 return (false, "Invalid response from server")
             }
         } catch {
-            return (false, error.localizedDescription)
+            return (false, "Server not running. Run './launch_server.sh' in python-inference-server directory")
         }
     }
 }
+

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.gemi.ai-server</string>
+    
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>cd "$HOME/Library/Application Support/Gemi/python-inference-server" && source venv/bin/activate && python inference_server.py</string>
+    </array>
+    
+    <key>WorkingDirectory</key>
+    <string>~/Library/Application Support/Gemi/python-inference-server</string>
+    
+    <key>RunAtLoad</key>
+    <false/>
+    
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+        <key>Crashed</key>
+        <true/>
+    </dict>
+    
+    <key>StandardOutPath</key>
+    <string>~/Library/Logs/Gemi/ai-server.log</string>
+    
+    <key>StandardErrorPath</key>
+    <string>~/Library/Logs/Gemi/ai-server-error.log</string>
+    
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PYTORCH_ENABLE_MPS_FALLBACK</key>
+        <string>1</string>
+        <key>TOKENIZERS_PARALLELISM</key>
+        <string>false</string>
+        <key>HF_HUB_DISABLE_SYMLINKS_WARNING</key>
+        <string>1</string>
+    </dict>
+    
+    <key>ProcessType</key>
+    <string>Background</string>
+    
+    <key>Nice</key>
+    <integer>10</integer>
+    
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+    
+    <key>ExitTimeOut</key>
+    <integer>60</integer>
+</dict>
+</plist>

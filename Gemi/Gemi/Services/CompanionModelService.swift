@@ -26,7 +26,7 @@ struct MemoryData: Sendable {
 actor CompanionModelService {
     static let shared = CompanionModelService()
     
-    private let ollamaService = OllamaService.shared
+    private let aiService = AIService.shared
     private let modelName = "gemi-companion"
     
     private init() {}
@@ -70,15 +70,15 @@ actor CompanionModelService {
     /// Setup companion model (now just verifies the model exists)
     func setupCompanionModel() async throws {
         // Since we're using gemma3n:latest directly, we just need to verify it exists
-        let exists = try await ollamaService.checkHealth()
+        let exists = try await aiService.checkHealth()
         if !exists {
-            throw OllamaError.modelNotFound("gemma3n:latest")
+            throw AIServiceError.serviceUnavailable("Model not found")
         }
     }
     
     /// Check if the companion model exists
     func checkModelExists() async throws -> Bool {
-        let health = try await ollamaService.checkHealth()
+        let health = try await aiService.checkHealth()
         return health // This checks if either gemma3n:latest or gemi-companion exists
     }
     
