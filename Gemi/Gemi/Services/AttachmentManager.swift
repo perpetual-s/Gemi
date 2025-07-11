@@ -172,7 +172,7 @@ final class AttachmentManager: ObservableObject {
         attachments.removeAll()
     }
     
-    /// Get base64 encoded images for Ollama API
+    /// Get base64 encoded images for AI API
     func getBase64Images() -> [String] {
         attachments.compactMap { attachment in
             switch attachment.type {

@@ -179,20 +179,20 @@ final class EnhancedChatViewModel: ObservableObject {
         let assistantIndex = messages.count - 1
         
         // Build context with system prompts and memories
-        var ollamaMessages: [ChatMessage] = []
+        var aiMessages: [ChatMessage] = []
         
         // Add system prompt with Gemi's personality and context
         let systemPrompt = buildSystemPrompt()
-        ollamaMessages.append(ChatMessage(role: .system, content: systemPrompt))
+        aiMessages.append(ChatMessage(role: .system, content: systemPrompt))
         
         // Add relevant memories if available
         let relevantMemories = memoryManager.searchMemories(for: content)
         if !relevantMemories.isEmpty {
             let memoryContext = "Based on your journal entries, here's what I know about you:\n\n" + relevantMemories.map { "- " + $0.content }.joined(separator: "\n")
-            ollamaMessages.append(ChatMessage(role: .system, content: memoryContext))
+            aiMessages.append(ChatMessage(role: .system, content: memoryContext))
         }
         
-        // Convert existing messages to Ollama format
+        // Convert existing messages to AI format
         let existingMessages = messages.dropLast().map { msg in
             ChatMessage(
                 role: ChatMessage.Role(rawValue: msg.role.rawValue) ?? .user,
@@ -200,7 +200,7 @@ final class EnhancedChatViewModel: ObservableObject {
                 images: msg.images
             )
         }
-        ollamaMessages.append(contentsOf: existingMessages)
+        aiMessages.append(contentsOf: existingMessages)
         
         // Stream the response
         currentStreamingTask = Task { [weak self] in
@@ -208,7 +208,7 @@ final class EnhancedChatViewModel: ObservableObject {
             var accumulatedContent = ""
             
             do {
-                for try await response in await self.aiService.chat(messages: ollamaMessages) {
+                for try await response in await self.aiService.chat(messages: aiMessages) {
                     if Task.isCancelled { break }
                     
                     if let message = response.message {
@@ -427,16 +427,16 @@ final class EnhancedChatViewModel: ObservableObject {
     
     /// Get a user-friendly error message
     func errorMessage(for error: Error) -> String {
-        if let ollamaError = error as? AIServiceError {
-            return ollamaError.localizedDescription
+        if let aiError = error as? AIServiceError {
+            return aiError.localizedDescription
         }
         return "An unexpected error occurred. Please try again."
     }
     
     /// Get recovery suggestion for an error
     func recoverySuggestion(for error: Error) -> String? {
-        if let ollamaError = error as? AIServiceError {
-            return ollamaError.recoverySuggestion
+        if let aiError = error as? AIServiceError {
+            return aiError.recoverySuggestion
         }
         return nil
     }
