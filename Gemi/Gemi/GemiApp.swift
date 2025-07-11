@@ -13,6 +13,7 @@ struct GemiApp: App {
     @StateObject private var modelManager = GemmaModelManager()
     @AppStorage("hasCompletedGemmaOnboarding") private var hasCompletedOnboarding = false
     @State private var showingOnboarding = false
+    @State private var hasCheckedOnboarding = false
     
     var body: some Scene {
         WindowGroup {
@@ -20,22 +21,15 @@ struct GemiApp: App {
                 if authManager.requiresInitialSetup {
                     InitialSetupView()
                 } else if authManager.isAuthenticated {
-                    if showingOnboarding {
+                    if shouldShowOnboarding {
                         GemmaOnboardingView {
                             withAnimation(.easeInOut(duration: 0.5)) {
                                 hasCompletedOnboarding = true
                                 showingOnboarding = false
                             }
                         }
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .scale(scale: 1.1)),
-                            removal: .opacity.combined(with: .scale(scale: 0.9))
-                        ))
                     } else {
                         MainWindowView()
-                            .onAppear {
-                                checkOnboardingNeeded()
-                            }
                     }
                 } else {
                     AuthenticationView()
@@ -43,10 +37,9 @@ struct GemiApp: App {
             }
             .animation(.easeInOut(duration: 0.3), value: authManager.isAuthenticated)
             .animation(.easeInOut(duration: 0.3), value: authManager.requiresInitialSetup)
-            .animation(.easeInOut(duration: 0.5), value: showingOnboarding)
             .task {
-                // Check model status on launch
-                modelManager.checkStatus()
+                // Check onboarding needs immediately
+                await checkOnboardingStatus()
             }
         }
         .windowStyle(.hiddenTitleBar)
@@ -91,17 +84,28 @@ struct GemiApp: App {
         }
     }
     
-    private func checkOnboardingNeeded() {
-        // Show onboarding if:
-        // 1. User hasn't completed onboarding before
-        // 2. Gemma 3n is not installed
-        if !hasCompletedOnboarding && modelManager.status != .ready {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                withAnimation {
-                    showingOnboarding = true
-                }
-            }
-        }
+    var shouldShowOnboarding: Bool {
+        // Only show onboarding if we've checked and determined it's needed
+        hasCheckedOnboarding && showingOnboarding
+    }
+    
+    @MainActor
+    private func checkOnboardingStatus() async {
+        // Don't re-check if already done
+        guard !hasCheckedOnboarding else { return }
+        
+        // Check model status
+        modelManager.checkStatus()
+        
+        // Wait a moment for status to update
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        
+        // Determine if onboarding is needed
+        let needsOnboarding = !hasCompletedOnboarding && modelManager.status != .ready
+        
+        // Update state
+        hasCheckedOnboarding = true
+        showingOnboarding = needsOnboarding
     }
 }
 
