@@ -536,37 +536,50 @@ struct GemiChatView: View {
     
     private var connectionStatusOverlay: some View {
         VStack {
-            HStack(spacing: 12) {
-                Image(systemName: "wifi.slash")
-                    .font(Theme.Typography.headline)
-                
-                Text("Gemma 3n is not connected")
-                    .font(Theme.Typography.body)
-                    .fontWeight(.medium)
-                
-                Spacer()
-                
-                Button("Retry") {
-                    viewModel.checkAIConnection()
-                }
-                .buttonStyle(.plain)
-                .font(Theme.Typography.body)
-                .fontWeight(.medium)
-                .foregroundColor(Theme.Colors.primaryAccent)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.orange.opacity(0.1))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.orange.opacity(0.3), lineWidth: 1)
-                    )
-            )
-            .padding(16)
-            
             Spacer()
+            
+            // Subtle connection notice at bottom
+            VStack(spacing: 12) {
+                // Small indicator
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 8, height: 8)
+                    
+                    Text("AI server disconnected")
+                        .font(Theme.Typography.caption)
+                        .foregroundColor(Theme.Colors.secondaryText)
+                    
+                    Text("•")
+                        .font(Theme.Typography.caption)
+                        .foregroundColor(Theme.Colors.tertiaryText)
+                    
+                    Button("Reconnect") {
+                        viewModel.checkAIConnection()
+                    }
+                    .font(Theme.Typography.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(Theme.Colors.primaryAccent)
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    Capsule()
+                        .fill(Theme.Colors.cardBackground.opacity(0.9))
+                        .overlay(
+                            Capsule()
+                                .strokeBorder(Theme.Colors.divider.opacity(0.3), lineWidth: 1)
+                        )
+                )
+                .shadow(color: Color.black.opacity(0.1), radius: 8, y: 4)
+                
+                Text("Messages won't be sent until connection is restored")
+                    .font(Theme.Typography.footnote)
+                    .foregroundColor(Theme.Colors.tertiaryText)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.bottom, 20)
         }
     }
     

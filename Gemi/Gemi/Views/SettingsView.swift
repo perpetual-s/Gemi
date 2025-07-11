@@ -24,6 +24,7 @@ struct SettingsView: View {
     @State private var availableModels: [String] = []
     @State private var showingDataManagement = false
     @State private var showingAbout = false
+    @State private var showingGemmaSetup = false
     @State private var isLoadingModels = false
     @State private var selectedTabAnimation = false
     
@@ -235,6 +236,11 @@ struct SettingsView: View {
         .sheet(isPresented: $showingDataManagement) {
             DataManagementView(journalStore: journalStore)
         }
+        .sheet(isPresented: $showingGemmaSetup) {
+            GemmaOnboardingView {
+                showingGemmaSetup = false
+            }
+        }
     }
     
     // MARK: - General Settings
@@ -442,41 +448,72 @@ struct SettingsView: View {
                 }
             }
             
-            // Installation Help Card
+            // Gemma 3n Setup Card
             PremiumSettingsCard(
-                title: "Model Installation",
-                icon: "arrow.down.circle",
-                iconColor: .green
+                title: "Gemma 3n Setup",
+                icon: "cpu",
+                iconColor: .purple
             ) {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Install Gemma 3n model")
-                        .font(.system(size: 14, weight: .semibold))
-                    
+                VStack(spacing: 20) {
+                    // Status indicator
                     HStack {
-                        Text("cd python-inference-server && ./launch_server.sh")
-                            .font(.system(size: 13, design: .monospaced))
-                            .padding(12)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color(NSColor.secondarySystemFill))
-                            )
-                            .textSelection(.enabled)
-                        
-                        Button(action: {
-                            NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString("cd python-inference-server && ./launch_server.sh", forType: .string)
-                        }) {
-                            Image(systemName: "doc.on.clipboard")
-                                .font(.system(size: 14))
-                        }
-                        .buttonStyle(.plain)
-                        .help("Copy to clipboard")
+                        GemmaModelStatusView()
+                            .frame(maxHeight: 100)
                     }
                     
-                    Text("Run this command in Terminal to install the model")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
+                    Divider()
+                    
+                    // Setup actions
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Model Management")
+                                    .font(.system(size: 14, weight: .semibold))
+                                Text("Download or update Gemma 3n model")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            Button {
+                                showingGemmaSetup = true
+                            } label: {
+                                Text("Open Setup")
+                                    .font(.system(size: 13, weight: .medium))
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                        
+                        // Manual setup option
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Advanced: Manual Setup")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.secondary)
+                            
+                            HStack {
+                                Text("cd python-inference-server && ./launch_server.sh")
+                                    .font(.system(size: 11, design: .monospaced))
+                                    .padding(8)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .fill(Color(NSColor.tertiarySystemFill))
+                                    )
+                                    .textSelection(.enabled)
+                                
+                                Button(action: {
+                                    NSPasteboard.general.clearContents()
+                                    NSPasteboard.general.setString("cd python-inference-server && ./launch_server.sh", forType: .string)
+                                }) {
+                                    Image(systemName: "doc.on.clipboard")
+                                        .font(.system(size: 12))
+                                }
+                                .buttonStyle(.plain)
+                                .help("Copy to clipboard")
+                            }
+                        }
+                    }
                 }
             }
         }
