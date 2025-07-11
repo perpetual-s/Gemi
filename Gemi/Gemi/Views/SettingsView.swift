@@ -17,6 +17,7 @@ struct SettingsView: View {
     @AppStorage("defaultFontSize") private var defaultFontSize = 14.0
     @AppStorage("sessionTimeout") private var sessionTimeout = 30.0
     @AppStorage("requireAuthentication") private var requireAuthentication = true
+    @AppStorage("autoStartAIServer") private var autoStartAIServer = true
     
     private let aiService = AIService.shared
     @State private var isCheckingConnection = false
@@ -459,6 +460,25 @@ struct SettingsView: View {
                     HStack {
                         GemmaModelStatusView(isCompact: true)
                     }
+                    
+                    Divider()
+                    
+                    // Auto-start toggle
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Auto-start AI Server")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text("Launch AI server when Gemi opens")
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        Toggle("", isOn: $autoStartAIServer)
+                            .toggleStyle(.switch)
+                    }
+                    .padding(.vertical, 8)
                     
                     Divider()
                     
