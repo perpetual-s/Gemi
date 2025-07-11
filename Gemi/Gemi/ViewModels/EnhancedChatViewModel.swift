@@ -12,6 +12,7 @@ final class EnhancedChatViewModel: ObservableObject {
     @Published var connectionStatus: ConnectionStatus = .disconnected
     @Published var suggestedPrompts: [String] = []
     @Published var error: Error?
+    @Published var isMultimodalSupported = false
     
     // MARK: - Private Properties
     
@@ -122,6 +123,14 @@ final class EnhancedChatViewModel: ObservableObject {
                 
                 if !isHealthy {
                     print("Ollama health check failed")
+                } else {
+                    // Check if current model supports multimodal
+                    let isMultimodal = await ollamaService.isMultimodalModel()
+                    isMultimodalSupported = isMultimodal
+                    
+                    if !isMultimodal {
+                        print("Note: Current model does not support multimodal input. Images will be ignored.")
+                    }
                 }
             } catch {
                 // Only update if not already disconnected
@@ -138,7 +147,7 @@ final class EnhancedChatViewModel: ObservableObject {
     }
     
     /// Send a message to the AI
-    func sendMessage(_ content: String) async {
+    func sendMessage(_ content: String, images: [String]? = nil) async {
         guard !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         guard connectionStatus == .connected else {
             error = OllamaError.serviceUnavailable("Please wait for connection to Ollama")
@@ -151,8 +160,8 @@ final class EnhancedChatViewModel: ObservableObject {
         // Clear error
         error = nil
         
-        // Add user message
-        let userMessage = ChatHistoryMessage(role: .user, content: content)
+        // Add user message with images if provided
+        let userMessage = ChatHistoryMessage(role: .user, content: content, images: images)
         messages.append(userMessage)
         
         // Start typing indicator
@@ -187,7 +196,8 @@ final class EnhancedChatViewModel: ObservableObject {
         let existingMessages = messages.dropLast().map { msg in
             ChatMessage(
                 role: ChatMessage.Role(rawValue: msg.role.rawValue) ?? .user,
-                content: msg.content
+                content: msg.content,
+                images: msg.images
             )
         }
         ollamaMessages.append(contentsOf: existingMessages)
