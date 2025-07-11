@@ -42,8 +42,8 @@ struct GemmaOnboardingView: View {
                     ))
             }
         }
-        .frame(width: 900, height: 600) // Fixed window size
-        .ignoresSafeArea()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea(.all)
         .onAppear {
             // Don't check status immediately - server isn't running yet
             modelManager.status = .notInstalled
@@ -63,6 +63,7 @@ struct GemmaOnboardingView: View {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
+            .ignoresSafeArea(.all)
             
             // Animated mesh gradient overlay
             GeometryReader { geometry in
@@ -100,20 +101,6 @@ struct GemmaOnboardingView: View {
     
     private var welcomeFlow: some View {
         VStack(spacing: 0) {
-            // Skip button
-            HStack {
-                Spacer()
-                
-                Button("Skip") {
-                    withAnimation(.spring(response: 0.4)) {
-                        showingSetup = true
-                    }
-                }
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.white.opacity(0.8))
-                .padding()
-            }
-            
             Spacer()
             
             // Page content with custom transitions
