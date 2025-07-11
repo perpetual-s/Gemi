@@ -8,6 +8,8 @@ struct GemmaModelStatusView: View {
     @State private var showingDetails = false
     @State private var pulseAnimation = false
     
+    var isCompact: Bool = false
+    
     var body: some View {
         VStack(spacing: 0) {
             switch modelManager.status {
@@ -32,6 +34,63 @@ struct GemmaModelStatusView: View {
     // MARK: - Setup Required View
     
     private var setupRequiredView: some View {
+        Group {
+            if isCompact {
+                compactSetupView
+            } else {
+                fullSetupView
+            }
+        }
+    }
+    
+    private var compactSetupView: some View {
+        HStack(spacing: 16) {
+            // Small icon
+            Image(systemName: "cpu.fill")
+                .font(.system(size: 24))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [Color.purple, Color.purple.opacity(0.8)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            
+            // Compact text
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Gemma 3n Not Installed")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Text("Set up required for AI features")
+                    .font(.system(size: 13))
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            // Small setup button
+            Button {
+                modelManager.startSetup()
+            } label: {
+                Text("Set Up")
+                    .font(.system(size: 13, weight: .medium))
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.purple.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(Color.purple.opacity(0.2), lineWidth: 1)
+                )
+        )
+    }
+    
+    private var fullSetupView: some View {
         VStack(spacing: 24) {
             // Header with animated icon
             ZStack {
@@ -206,6 +265,65 @@ struct GemmaModelStatusView: View {
     // MARK: - Downloading View
     
     private func downloadingView(progress: Double) -> some View {
+        Group {
+            if isCompact {
+                compactDownloadingView(progress: progress)
+            } else {
+                fullDownloadingView(progress: progress)
+            }
+        }
+    }
+    
+    private func compactDownloadingView(progress: Double) -> some View {
+        HStack(spacing: 16) {
+            // Small progress indicator
+            ZStack {
+                Circle()
+                    .stroke(Color.purple.opacity(0.2), lineWidth: 3)
+                    .frame(width: 32, height: 32)
+                
+                Circle()
+                    .trim(from: 0, to: progress)
+                    .stroke(
+                        LinearGradient(
+                            colors: [Color.purple, Color.blue],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ),
+                        style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                    )
+                    .frame(width: 32, height: 32)
+                    .rotationEffect(.degrees(-90))
+                
+                Text("\(Int(progress * 100))%")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundColor(.purple)
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Downloading Gemma 3n")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Text(modelManager.downloadTimeEstimate)
+                    .font(.system(size: 13))
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.purple.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(Color.purple.opacity(0.2), lineWidth: 1)
+                )
+        )
+    }
+    
+    private func fullDownloadingView(progress: Double) -> some View {
         VStack(spacing: 24) {
             // Animated download icon
             ZStack {

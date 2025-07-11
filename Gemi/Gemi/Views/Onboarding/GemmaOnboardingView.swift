@@ -5,6 +5,7 @@ struct GemmaOnboardingView: View {
     @StateObject private var modelManager = GemmaModelManager()
     @State private var currentPage = 0
     @State private var showingSetup = false
+    @State private var showingProgressSetup = false
     @Environment(\.dismiss) var dismiss
     
     let onComplete: () -> Void
@@ -15,7 +16,19 @@ struct GemmaOnboardingView: View {
             backgroundGradient
             
             // Content based on state
-            if showingSetup {
+            if showingProgressSetup {
+                GemmaSetupProgressView(
+                    onComplete: onComplete,
+                    onSkip: {
+                        showingProgressSetup = false
+                        onComplete()
+                    }
+                )
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .leading).combined(with: .opacity)
+                ))
+            } else if showingSetup {
                 setupView
                     .transition(.asymmetric(
                         insertion: .move(edge: .trailing).combined(with: .opacity),
@@ -29,7 +42,7 @@ struct GemmaOnboardingView: View {
                     ))
             }
         }
-        .frame(width: 900, height: 700) // Fixed window size
+        .frame(width: 900, height: 600) // Fixed window size
         .ignoresSafeArea()
         .onAppear {
             // Don't check status immediately - server isn't running yet
@@ -404,10 +417,12 @@ struct GemmaOnboardingView: View {
             // Action buttons
             VStack(spacing: 16) {
                 Button {
-                    modelManager.startSetup()
+                    withAnimation(.spring(response: 0.4)) {
+                        showingProgressSetup = true
+                    }
                 } label: {
                     HStack {
-                        Image(systemName: "terminal.fill")
+                        Image(systemName: "arrow.down.circle.fill")
                             .font(.system(size: 20))
                         Text("Set Up Gemma 3n")
                             .font(.system(size: 18, weight: .semibold))
