@@ -25,7 +25,7 @@ from PIL import Image
 from pydantic import BaseModel, Field
 from transformers import (
     AutoProcessor,
-    Gemma3nForConditionalGeneration,
+    AutoModelForCausalLM,
     TextIteratorStreamer,
 )
 from threading import Thread
@@ -172,7 +172,7 @@ async def load_model_async():
         logger.info("Loading model weights... This may take several minutes on first run.")
         download_progress = 0.3
         
-        model = Gemma3nForConditionalGeneration.from_pretrained(
+        model = AutoModelForCausalLM.from_pretrained(
             MODEL_ID,
             cache_dir=cache_dir,
             torch_dtype=torch_dtype,

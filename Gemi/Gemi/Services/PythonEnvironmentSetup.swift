@@ -1,7 +1,7 @@
 import Foundation
 import AppKit
 
-/// Manages Python environment setup for Gemma 3n
+/// Manages Python environment setup for Gemma 3n using UV
 @MainActor
 class PythonEnvironmentSetup: ObservableObject {
     @Published var currentStep: SetupStep = .checkingEnvironment
@@ -12,30 +12,30 @@ class PythonEnvironmentSetup: ObservableObject {
     
     enum SetupStep: String, CaseIterable {
         case checkingEnvironment = "Checking Environment"
-        case installingConda = "Installing Conda"
-        case creatingEnvironment = "Creating Environment"
+        case installingUV = "Installing UV"
+        case creatingProject = "Creating Project"
         case installingDependencies = "Installing Dependencies"
-        case downloadingModel = "Downloading Model"
         case creatingServer = "Creating Server"
         case launchingServer = "Launching Server"
+        case downloadingModel = "Downloading Model"
         case complete = "Complete"
         
         var description: String {
             switch self {
             case .checkingEnvironment:
-                return "Checking for Python and Conda installation..."
-            case .installingConda:
-                return "Installing Miniconda for Python environment management..."
-            case .creatingEnvironment:
-                return "Creating isolated Python environment for Gemi..."
+                return "Checking for UV installation..."
+            case .installingUV:
+                return "Installing UV package manager..."
+            case .creatingProject:
+                return "Setting up Python project with UV..."
             case .installingDependencies:
-                return "Installing PyTorch, Transformers, and other dependencies..."
-            case .downloadingModel:
-                return "Downloading Gemma 3n model from HuggingFace..."
+                return "Installing PyTorch, Transformers, and dependencies..."
             case .creatingServer:
-                return "Setting up inference server..."
+                return "Creating inference server files..."
             case .launchingServer:
                 return "Starting the AI server..."
+            case .downloadingModel:
+                return "Downloading Gemma 3n model from HuggingFace..."
             case .complete:
                 return "Setup complete! Gemma 3n is ready."
             }
@@ -44,38 +44,32 @@ class PythonEnvironmentSetup: ObservableObject {
         var icon: String {
             switch self {
             case .checkingEnvironment: return "magnifyingglass"
-            case .installingConda: return "square.and.arrow.down"
-            case .creatingEnvironment: return "folder.badge.plus"
+            case .installingUV: return "bolt.fill"
+            case .creatingProject: return "folder.badge.plus"
             case .installingDependencies: return "puzzlepiece.extension"
-            case .downloadingModel: return "icloud.and.arrow.down"
             case .creatingServer: return "server.rack"
             case .launchingServer: return "play.circle"
+            case .downloadingModel: return "icloud.and.arrow.down"
             case .complete: return "checkmark.circle.fill"
             }
         }
     }
     
     enum SetupError: LocalizedError {
-        case pythonNotFound
-        case condaInstallFailed
-        case environmentCreationFailed
+        case uvInstallFailed
+        case projectCreationFailed
         case dependencyInstallFailed
-        case modelDownloadFailed
         case serverCreationFailed
         case launchFailed(String)
         
         var errorDescription: String? {
             switch self {
-            case .pythonNotFound:
-                return "Python is not installed on your system"
-            case .condaInstallFailed:
-                return "Failed to install Conda"
-            case .environmentCreationFailed:
-                return "Failed to create Python environment"
+            case .uvInstallFailed:
+                return "Failed to install UV package manager"
+            case .projectCreationFailed:
+                return "Failed to create UV project"
             case .dependencyInstallFailed:
                 return "Failed to install required packages"
-            case .modelDownloadFailed:
-                return "Failed to download Gemma 3n model"
             case .serverCreationFailed:
                 return "Failed to create inference server"
             case .launchFailed(let reason):
@@ -85,16 +79,12 @@ class PythonEnvironmentSetup: ObservableObject {
         
         var recoverySuggestion: String? {
             switch self {
-            case .pythonNotFound:
-                return "Please install Python 3.9 or later from python.org"
-            case .condaInstallFailed:
-                return "Try installing Miniconda manually from conda.io/miniconda"
-            case .environmentCreationFailed:
-                return "Check disk space and permissions"
+            case .uvInstallFailed:
+                return "Try installing UV manually: curl -LsSf https://astral.sh/uv/install.sh | sh"
+            case .projectCreationFailed:
+                return "Check disk space and permissions in the project directory"
             case .dependencyInstallFailed:
-                return "Check internet connection and try again"
-            case .modelDownloadFailed:
-                return "Ensure you have ~20GB free disk space and stable internet"
+                return "Check internet connection and try: uv sync --refresh"
             case .serverCreationFailed:
                 return "Check file permissions in the project directory"
             case .launchFailed:
@@ -116,30 +106,33 @@ class PythonEnvironmentSetup: ObservableObject {
     
     private func performSetup() async {
         do {
-            // Step 1: Check environment
+            // Step 1: Check if UV is installed
             try await checkEnvironment()
             
-            // Step 2: Install Conda if needed
-            if !isCondaInstalled() {
-                try await installConda()
+            // Step 2: Install UV if needed
+            if !isUVInstalled() {
+                try await installUV()
             }
             
-            // Step 3: Create conda environment
-            try await createCondaEnvironment()
+            // Step 3: Create project with pyproject.toml
+            try await createUVProject()
             
-            // Step 4: Install dependencies
+            // Step 4: Install dependencies with UV
             try await installDependencies()
             
             // Step 5: Create server files
             try await createServerFiles()
             
-            // Step 6: Download model (this happens on first server launch)
-            currentStep = .downloadingModel
-            statusMessage = "Model will download on first launch..."
-            progress = 0.8
-            
-            // Step 7: Launch server
+            // Step 6: Launch server
             try await launchServer()
+            
+            // Step 7: Model downloads on first run
+            currentStep = .downloadingModel
+            statusMessage = "Gemma 3n model downloading (one-time)..."
+            progress = 0.9
+            
+            // Wait a bit for model to start downloading
+            try await Task.sleep(nanoseconds: 5_000_000_000) // 5 seconds
             
             // Complete
             currentStep = .complete
@@ -158,37 +151,23 @@ class PythonEnvironmentSetup: ObservableObject {
     
     private func checkEnvironment() async throws {
         currentStep = .checkingEnvironment
-        statusMessage = "Checking Python installation..."
+        statusMessage = "Checking for UV installation..."
         progress = 0.05
         
-        // Check if Python is installed
-        let pythonCheck = Process()
-        pythonCheck.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        pythonCheck.arguments = ["python3", "--version"]
-        
-        do {
-            try pythonCheck.run()
-            pythonCheck.waitUntilExit()
-            
-            if pythonCheck.terminationStatus != 0 {
-                throw SetupError.pythonNotFound
-            }
-        } catch {
-            throw SetupError.pythonNotFound
-        }
-        
+        // UV handles Python automatically, so we just check for UV
         progress = 0.1
     }
     
-    private func isCondaInstalled() -> Bool {
-        let condaPaths = [
-            NSHomeDirectory() + "/miniconda3/bin/conda",
-            "/opt/miniconda3/bin/conda",
-            "/usr/local/miniconda3/bin/conda",
-            "/opt/homebrew/Caskroom/miniconda/base/bin/conda"
+    private func isUVInstalled() -> Bool {
+        let uvPaths = [
+            "/usr/local/bin/uv",
+            "/opt/homebrew/bin/uv",
+            NSHomeDirectory() + "/.cargo/bin/uv",
+            NSHomeDirectory() + "/.local/bin/uv",
+            "/usr/bin/uv"
         ]
         
-        for path in condaPaths {
+        for path in uvPaths {
             if FileManager.default.fileExists(atPath: path) {
                 return true
             }
@@ -197,85 +176,71 @@ class PythonEnvironmentSetup: ObservableObject {
         return false
     }
     
-    private func installConda() async throws {
-        currentStep = .installingConda
-        statusMessage = "Downloading Miniconda installer..."
+    private func installUV() async throws {
+        currentStep = .installingUV
+        statusMessage = "Installing UV package manager..."
         progress = 0.15
         
-        // Download Miniconda installer
-        let installerURL: URL
-        #if arch(arm64)
-        installerURL = URL(string: "https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh")!
-        #else
-        installerURL = URL(string: "https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh")!
-        #endif
+        // Install UV using the official installer script
+        let script = """
+        #!/bin/bash
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        """
         
-        let installerPath = NSTemporaryDirectory() + "miniconda_installer.sh"
+        let scriptPath = NSTemporaryDirectory() + "install_uv.sh"
+        try script.write(to: URL(fileURLWithPath: scriptPath), atomically: true, encoding: .utf8)
         
-        // Download installer
-        let (downloadURL, _) = try await URLSession.shared.download(from: installerURL)
-        try FileManager.default.moveItem(at: downloadURL, to: URL(fileURLWithPath: installerPath))
-        
-        progress = 0.25
-        statusMessage = "Installing Miniconda..."
+        // Make script executable
+        let chmodProcess = Process()
+        chmodProcess.executableURL = URL(fileURLWithPath: "/bin/chmod")
+        chmodProcess.arguments = ["+x", scriptPath]
+        try chmodProcess.run()
+        chmodProcess.waitUntilExit()
         
         // Run installer
         let installProcess = Process()
         installProcess.executableURL = URL(fileURLWithPath: "/bin/bash")
-        installProcess.arguments = [installerPath, "-b", "-p", NSHomeDirectory() + "/miniconda3"]
+        installProcess.arguments = [scriptPath]
         
         try installProcess.run()
         installProcess.waitUntilExit()
         
         if installProcess.terminationStatus != 0 {
-            throw SetupError.condaInstallFailed
+            throw SetupError.uvInstallFailed
         }
         
         // Clean up
-        try? FileManager.default.removeItem(atPath: installerPath)
+        try? FileManager.default.removeItem(atPath: scriptPath)
         
-        progress = 0.3
+        // Wait a moment for UV to be fully installed
+        try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+        
+        progress = 0.2
+        statusMessage = "UV installed successfully!"
     }
     
-    private func createCondaEnvironment() async throws {
-        currentStep = .creatingEnvironment
-        statusMessage = "Creating Gemi Python environment..."
-        progress = 0.35
+    private func createUVProject() async throws {
+        currentStep = .creatingProject
+        statusMessage = "Setting up Python project..."
+        progress = 0.25
         
-        // Find conda executable
-        let condaPath = findCondaPath()
-        guard let condaPath = condaPath else {
-            throw SetupError.environmentCreationFailed
-        }
+        // Create server directory if it doesn't exist
+        try FileManager.default.createDirectory(
+            atPath: serverPath,
+            withIntermediateDirectories: true,
+            attributes: nil
+        )
         
-        // Create environment with Python 3.11
-        let createEnvProcess = Process()
-        createEnvProcess.executableURL = URL(fileURLWithPath: condaPath)
-        createEnvProcess.arguments = ["create", "-n", "gemi", "python=3.11", "-y"]
-        
-        try createEnvProcess.run()
-        createEnvProcess.waitUntilExit()
-        
-        if createEnvProcess.terminationStatus != 0 {
-            throw SetupError.environmentCreationFailed
-        }
-        
-        progress = 0.4
-    }
-    
-    private func installDependencies() async throws {
-        currentStep = .installingDependencies
-        statusMessage = "Installing PyTorch and dependencies..."
-        progress = 0.45
-        
-        let condaPath = findCondaPath()!
-        let condaDir = URL(fileURLWithPath: condaPath).deletingLastPathComponent().deletingLastPathComponent()
-        let pipPath = condaDir.appendingPathComponent("envs/gemi/bin/pip").path
-        
-        // Install packages
-        let packages = [
-            "torch",
+        // Create pyproject.toml
+        let pyprojectContent = """
+        [project]
+        name = "gemi-inference-server"
+        version = "1.0.0"
+        requires-python = ">=3.11"
+        dependencies = [
+            "torch>=2.0.0",
             "torchvision",
+            "torchaudio",
             "transformers>=4.53.0",
             "accelerate",
             "fastapi",
@@ -284,26 +249,56 @@ class PythonEnvironmentSetup: ObservableObject {
             "soundfile",
             "librosa",
             "python-multipart",
-            "sse-starlette"
+            "sse-starlette",
         ]
         
-        for (index, package) in packages.enumerated() {
-            statusMessage = "Installing \(package)..."
-            progress = 0.45 + (0.25 * Double(index) / Double(packages.count))
-            
-            let installProcess = Process()
-            installProcess.executableURL = URL(fileURLWithPath: pipPath)
-            installProcess.arguments = ["install", package]
-            
-            try installProcess.run()
-            installProcess.waitUntilExit()
-            
-            if installProcess.terminationStatus != 0 {
-                throw SetupError.dependencyInstallFailed
-            }
+        [tool.uv]
+        dev-dependencies = []
+        """
+        
+        let pyprojectPath = serverPath + "/pyproject.toml"
+        try pyprojectContent.write(
+            to: URL(fileURLWithPath: pyprojectPath),
+            atomically: true,
+            encoding: .utf8
+        )
+        
+        progress = 0.3
+        statusMessage = "Project created successfully!"
+    }
+    
+    private func installDependencies() async throws {
+        currentStep = .installingDependencies
+        statusMessage = "Installing PyTorch and dependencies..."
+        progress = 0.35
+        
+        // Find UV path - check if it exists first
+        guard let uvPath = findUVPath() else {
+            throw SetupError.uvInstallFailed
         }
         
-        progress = 0.7
+        // Verify UV executable exists
+        guard FileManager.default.fileExists(atPath: uvPath) else {
+            throw SetupError.uvInstallFailed
+        }
+        
+        // Change to server directory
+        let syncProcess = Process()
+        syncProcess.executableURL = URL(fileURLWithPath: uvPath)
+        syncProcess.arguments = ["sync"]
+        syncProcess.currentDirectoryURL = URL(fileURLWithPath: serverPath)
+        
+        statusMessage = "Installing all dependencies (this is fast with UV!)..."
+        
+        try syncProcess.run()
+        syncProcess.waitUntilExit()
+        
+        if syncProcess.terminationStatus != 0 {
+            throw SetupError.dependencyInstallFailed
+        }
+        
+        progress = 0.6
+        statusMessage = "Dependencies installed successfully!"
     }
     
     private func createServerFiles() async throws {
@@ -321,7 +316,7 @@ class PythonEnvironmentSetup: ObservableObject {
         // Create inference server Python file
         let serverCode = generateServerCode()
         try serverCode.write(
-            to: URL(fileURLWithPath: serverPath + "/inference_server.py"),
+            to: URL(fileURLWithPath: serverPath + "/simple_server.py"),
             atomically: true,
             encoding: .utf8
         )
@@ -401,15 +396,16 @@ class PythonEnvironmentSetup: ObservableObject {
         return false
     }
     
-    private func findCondaPath() -> String? {
-        let condaPaths = [
-            NSHomeDirectory() + "/miniconda3/bin/conda",
-            "/opt/miniconda3/bin/conda",
-            "/usr/local/miniconda3/bin/conda",
-            "/opt/homebrew/Caskroom/miniconda/base/bin/conda"
+    private func findUVPath() -> String? {
+        let uvPaths = [
+            NSHomeDirectory() + "/.local/bin/uv", // UV installer default location
+            "/usr/local/bin/uv",
+            "/opt/homebrew/bin/uv",
+            NSHomeDirectory() + "/.cargo/bin/uv",
+            "/usr/bin/uv"
         ]
         
-        for path in condaPaths {
+        for path in uvPaths {
             if FileManager.default.fileExists(atPath: path) {
                 return path
             }
@@ -615,8 +611,7 @@ class PythonEnvironmentSetup: ObservableObject {
     }
     
     private func generateLaunchScript() -> String {
-        let condaPath = findCondaPath() ?? "~/miniconda3/bin/conda"
-        let condaDir = URL(fileURLWithPath: condaPath).deletingLastPathComponent().deletingLastPathComponent().path
+        let uvPath = findUVPath() ?? NSHomeDirectory() + "/.local/bin/uv"
         
         return """
         #!/bin/bash
@@ -627,14 +622,20 @@ class PythonEnvironmentSetup: ObservableObject {
         echo "Starting Gemma 3n inference server..."
         echo ""
         
-        # Activate conda environment
-        source "\(condaDir)/etc/profile.d/conda.sh"
-        conda activate gemi
+        # Add UV to PATH in case it's not there
+        export PATH="$HOME/.local/bin:$PATH"
         
         # Set environment variables
         export PYTORCH_ENABLE_MPS_FALLBACK=1
         export TOKENIZERS_PARALLELISM=false
         export HF_HOME=~/.cache/huggingface
+        
+        # Check if UV exists
+        if ! command -v uv &> /dev/null && ! [ -f "\(uvPath)" ]; then
+            echo "Error: UV not found. Please install UV first."
+            echo "Run: curl -LsSf https://astral.sh/uv/install.sh | sh"
+            exit 1
+        fi
         
         # Check if model is already downloaded
         if [ -d "$HF_HOME/hub/models--google--gemma-3n-e4b-it" ]; then
@@ -645,8 +646,12 @@ class PythonEnvironmentSetup: ObservableObject {
             echo ""
         fi
         
-        # Run the server
-        python inference_server.py
+        # Run the server with UV (no activation needed!)
+        if command -v uv &> /dev/null; then
+            uv run python simple_server.py
+        else
+            \(uvPath) run python simple_server.py
+        fi
         """
     }
 }
