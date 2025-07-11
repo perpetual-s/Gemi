@@ -24,6 +24,9 @@ struct GemmaSetupProgressView: View {
             
             // Content
             VStack(spacing: 40) {
+                Spacer()
+                    .frame(height: 40)
+                
                 // Header
                 VStack(spacing: 16) {
                     Text("Setting Up Gemma 3n")
@@ -215,6 +218,7 @@ struct GemmaSetupProgressView: View {
                 .padding(.bottom, 40)
             }
             .padding(.horizontal, 40)
+            .padding(.top, 20)
         }
         .onAppear {
             pulseAnimation = true

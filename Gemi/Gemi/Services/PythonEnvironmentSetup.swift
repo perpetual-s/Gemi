@@ -56,7 +56,7 @@ class PythonEnvironmentSetup: ObservableObject {
         var errorDescription: String? {
             switch self {
             case .uvInstallFailed:
-                return "Failed to install UV package manager"
+                return "UV package manager not found"
             case .dependencyInstallFailed:
                 return "Failed to install required packages"
             case .serverNotFound:
@@ -69,7 +69,7 @@ class PythonEnvironmentSetup: ObservableObject {
         var recoverySuggestion: String? {
             switch self {
             case .uvInstallFailed:
-                return "Try installing UV manually: curl -LsSf https://astral.sh/uv/install.sh | sh"
+                return "UV is required for Gemi. Click 'Manual Setup' to install it via Terminal"
             case .dependencyInstallFailed:
                 return "Check internet connection and try: uv sync --refresh"
             case .serverNotFound:
@@ -195,37 +195,20 @@ class PythonEnvironmentSetup: ObservableObject {
         statusMessage = "Installing UV package manager..."
         progress = 0.25
         
-        // Install UV using the official installer script
-        let script = """
-        #!/bin/bash
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        """
-        
-        let scriptPath = NSTemporaryDirectory() + "install_uv.sh"
-        try script.write(to: URL(fileURLWithPath: scriptPath), atomically: true, encoding: .utf8)
-        
-        // Make script executable
-        let chmodProcess = Process()
-        chmodProcess.executableURL = URL(fileURLWithPath: "/bin/chmod")
-        chmodProcess.arguments = ["+x", scriptPath]
-        try chmodProcess.run()
-        chmodProcess.waitUntilExit()
-        
-        // Run installer with environment to ensure UV is installed to expected location
-        let installProcess = Process()
-        installProcess.executableURL = URL(fileURLWithPath: "/bin/bash")
-        installProcess.arguments = [scriptPath]
-        installProcess.environment = ProcessInfo.processInfo.environment
-        
-        try installProcess.run()
-        installProcess.waitUntilExit()
-        
-        if installProcess.terminationStatus != 0 {
-            throw SetupError.uvInstallFailed
+        // For sandboxed apps, we need to handle UV installation differently
+        // First check if UV is already installed outside the sandbox
+        if isUVInstalled() {
+            statusMessage = "UV already installed!"
+            progress = 0.3
+            return
         }
         
-        // Clean up
-        try? FileManager.default.removeItem(atPath: scriptPath)
+        // If not installed, we need to guide the user to install it manually
+        // because sandboxed apps cannot install executables
+        statusMessage = "UV not found. Opening manual setup..."
+        
+        // Create a more informative error that will trigger manual setup
+        throw SetupError.uvInstallFailed
         
         // Wait longer for UV to be fully installed and filesystem to sync
         try await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds

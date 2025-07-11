@@ -22,22 +22,26 @@ struct ModelSetupHelper {
             do script "clear" in newWindow
             do script "echo '=== Gemi - Gemma 3n Setup ==='" in newWindow
             do script "echo ''" in newWindow
-            do script "echo 'To set up Gemma 3n for Gemi, run these commands:'" in newWindow
+            do script "echo 'First, we need to install UV (Python package manager):'" in newWindow
             do script "echo ''" in newWindow
-            do script "echo '1. Navigate to the server directory:'" in newWindow
+            do script "echo 'Step 1: Install UV by running this command:'" in newWindow
+            do script "echo '   curl -LsSf https://astral.sh/uv/install.sh | sh'" in newWindow
+            do script "echo ''" in newWindow
+            do script "echo 'Step 2: After UV installs, close and reopen Terminal'" in newWindow
+            do script "echo ''" in newWindow
+            do script "echo 'Step 3: Then run these commands:'" in newWindow
             do script "echo '   cd ~/Documents/project-Gemi/python-inference-server'" in newWindow
-            do script "echo ''" in newWindow
-            do script "echo '2. Launch the server (this will download Gemma 3n if needed):'" in newWindow
             do script "echo '   ./launch_server.sh'" in newWindow
             do script "echo ''" in newWindow
-            do script "echo '3. Wait for the model to download (one-time, ~8GB)'" in newWindow
-            do script "echo ''" in newWindow
-            do script "echo 'Press ENTER to start setup...'" in newWindow
+            do script "echo 'Press ENTER to install UV now...'" in newWindow
             do script "read -p ''" in newWindow
             
-            -- Actually run the commands
-            do script "cd ~/Documents/project-Gemi/python-inference-server" in newWindow
-            do script "./launch_server.sh" in newWindow
+            -- Install UV
+            do script "curl -LsSf https://astral.sh/uv/install.sh | sh" in newWindow
+            do script "echo ''" in newWindow
+            do script "echo 'After UV finishes installing, please:'" in newWindow
+            do script "echo '1. Close this Terminal window'" in newWindow
+            do script "echo '2. Return to Gemi and click Retry Setup'" in newWindow
         end tell
         """
         
