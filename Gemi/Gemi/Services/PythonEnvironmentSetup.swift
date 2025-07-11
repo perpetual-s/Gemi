@@ -615,11 +615,14 @@ class PythonEnvironmentSetup: ObservableObject {
         
         return """
         #!/bin/bash
+        # Gemi Inference Server Launch Script - UV Edition
         
-        # Gemi Inference Server Launch Script
+        set -e  # Exit on error
         
-        echo "=== Gemi AI Server ==="
-        echo "Starting Gemma 3n inference server..."
+        SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+        
+        echo "🚀 Gemi AI Server (UV Edition)"
+        echo "=============================="
         echo ""
         
         # Add UV to PATH in case it's not there
@@ -629,29 +632,45 @@ class PythonEnvironmentSetup: ObservableObject {
         export PYTORCH_ENABLE_MPS_FALLBACK=1
         export TOKENIZERS_PARALLELISM=false
         export HF_HOME=~/.cache/huggingface
+        export HF_HUB_DISABLE_SYMLINKS_WARNING=1
         
         # Check if UV exists
         if ! command -v uv &> /dev/null && ! [ -f "\(uvPath)" ]; then
-            echo "Error: UV not found. Please install UV first."
-            echo "Run: curl -LsSf https://astral.sh/uv/install.sh | sh"
+            echo "❌ UV not found!"
+            echo "Please install UV first:"
+            echo "  curl -LsSf https://astral.sh/uv/install.sh | sh"
             exit 1
         fi
         
+        # Use UV command or explicit path
+        if command -v uv &> /dev/null; then
+            UV_CMD="uv"
+        else
+            UV_CMD="\(uvPath)"
+        fi
+        
+        # Sync dependencies with UV (ultra-fast!)
+        echo "📦 Syncing dependencies with UV..."
+        cd "$SCRIPT_DIR"
+        $UV_CMD sync
+        echo "✓ Dependencies ready!"
+        
         # Check if model is already downloaded
         if [ -d "$HF_HOME/hub/models--google--gemma-3n-e4b-it" ]; then
-            echo "Model already downloaded, starting server..."
+            echo "✓ Model already cached locally"
         else
-            echo "First time setup - downloading Gemma 3n model (~8GB)"
-            echo "This is a one-time download that may take 10-20 minutes..."
+            echo "⚠️  First run will download Gemma 3n model (~8GB)"
+            echo "   This is a one-time download (10-30 minutes)"
             echo ""
         fi
         
-        # Run the server with UV (no activation needed!)
-        if command -v uv &> /dev/null; then
-            uv run python simple_server.py
-        else
-            \(uvPath) run python simple_server.py
-        fi
+        # Launch server
+        echo "Starting server at http://127.0.0.1:11435"
+        echo "Press Ctrl+C to stop"
+        echo ""
+        
+        # Run with UV - no activation needed!
+        $UV_CMD run python simple_server.py
         """
     }
 }
