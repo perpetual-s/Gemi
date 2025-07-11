@@ -52,6 +52,7 @@ class PythonEnvironmentSetup: ObservableObject {
         case dependencyInstallFailed
         case serverNotFound
         case launchFailed(String)
+        case modelAuthRequired
         
         var errorDescription: String? {
             switch self {
@@ -63,6 +64,8 @@ class PythonEnvironmentSetup: ObservableObject {
                 return "Server files not found in project"
             case .launchFailed(let reason):
                 return "Failed to launch server: \(reason)"
+            case .modelAuthRequired:
+                return "HuggingFace authentication required for Gemma 3n model"
             }
         }
         
@@ -76,6 +79,8 @@ class PythonEnvironmentSetup: ObservableObject {
                 return "Ensure python-inference-server directory exists in project"
             case .launchFailed:
                 return "Check Terminal output for detailed error messages"
+            case .modelAuthRequired:
+                return "You need to authenticate with HuggingFace to access the Gemma 3n model. Click 'Manual Setup' for instructions."
             }
         }
     }
@@ -123,13 +128,25 @@ class PythonEnvironmentSetup: ObservableObject {
             // Step 4: Launch server
             try await launchServer()
             
-            // Step 5: Model downloads on first run
+            // Step 5: Model setup
             currentStep = .downloadingModel
-            statusMessage = "Gemma 3n model downloading (one-time)..."
+            statusMessage = "Setting up Gemma 3n model..."
             progress = 0.9
             
-            // Wait a bit for model to start downloading
-            try await Task.sleep(nanoseconds: 5_000_000_000) // 5 seconds
+            // Wait for server to be ready
+            try await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
+            
+            // Check server health to see if model is loaded
+            let serverStatus = await PythonServerManager.shared.getServerStatus()
+            
+            switch serverStatus {
+            case .notRunning:
+                throw SetupError.launchFailed("Server failed to start")
+            case .loading:
+                statusMessage = "Model downloading... This may take 10-30 minutes"
+            case .ready:
+                statusMessage = "Model ready!"
+            }
             
             // Complete
             currentStep = .complete
@@ -208,25 +225,6 @@ class PythonEnvironmentSetup: ObservableObject {
         statusMessage = "UV not found. Opening manual setup..."
         
         // Create a more informative error that will trigger manual setup
-        throw SetupError.uvInstallFailed
-        
-        // Wait longer for UV to be fully installed and filesystem to sync
-        try await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
-        
-        // Verify UV was installed successfully
-        let expectedUVPath = NSHomeDirectory() + "/.local/bin/uv"
-        var attempts = 0
-        while attempts < 10 {
-            if FileManager.default.fileExists(atPath: expectedUVPath) {
-                progress = 0.3
-                statusMessage = "UV installed successfully!"
-                return
-            }
-            try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-            attempts += 1
-        }
-        
-        // If we still can't find UV after waiting, throw error
         throw SetupError.uvInstallFailed
     }
     

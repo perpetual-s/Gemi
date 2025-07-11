@@ -22,26 +22,27 @@ struct ModelSetupHelper {
             do script "clear" in newWindow
             do script "echo '=== Gemi - Gemma 3n Setup ==='" in newWindow
             do script "echo ''" in newWindow
-            do script "echo 'First, we need to install UV (Python package manager):'" in newWindow
+            do script "echo '=== Two-Step Setup Process ==='" in newWindow
             do script "echo ''" in newWindow
-            do script "echo 'Step 1: Install UV by running this command:'" in newWindow
-            do script "echo '   curl -LsSf https://astral.sh/uv/install.sh | sh'" in newWindow
+            do script "echo 'STEP 1: HuggingFace Authentication (Required for Gemma 3n)'" in newWindow
+            do script "echo '--------------------------------------------------------'" in newWindow
+            do script "echo '1. Go to: https://huggingface.co/google/gemma-3n-e4b-it'" in newWindow
+            do script "echo '2. Click \"Access repository\" and accept the terms'" in newWindow
+            do script "echo '3. Get your token from: https://huggingface.co/settings/tokens'" in newWindow
+            do script "echo '4. Run: huggingface-cli login'" in newWindow
+            do script "echo '   (Enter your token when prompted)'" in newWindow
             do script "echo ''" in newWindow
-            do script "echo 'Step 2: After UV installs, close and reopen Terminal'" in newWindow
+            do script "echo 'STEP 2: Install UV & Launch Server'" in newWindow
+            do script "echo '-----------------------------------'" in newWindow
+            do script "echo '1. Install UV: curl -LsSf https://astral.sh/uv/install.sh | sh'" in newWindow
+            do script "echo '2. Close and reopen Terminal after UV installs'" in newWindow
+            do script "echo '3. Launch server: cd ~/Documents/project-Gemi/python-inference-server && ./launch_server.sh'" in newWindow
             do script "echo ''" in newWindow
-            do script "echo 'Step 3: Then run these commands:'" in newWindow
-            do script "echo '   cd ~/Documents/project-Gemi/python-inference-server'" in newWindow
-            do script "echo '   ./launch_server.sh'" in newWindow
-            do script "echo ''" in newWindow
-            do script "echo 'Press ENTER to install UV now...'" in newWindow
+            do script "echo 'Press ENTER to start the setup process...'" in newWindow
             do script "read -p ''" in newWindow
             
-            -- Install UV
-            do script "curl -LsSf https://astral.sh/uv/install.sh | sh" in newWindow
-            do script "echo ''" in newWindow
-            do script "echo 'After UV finishes installing, please:'" in newWindow
-            do script "echo '1. Close this Terminal window'" in newWindow
-            do script "echo '2. Return to Gemi and click Retry Setup'" in newWindow
+            -- First, check if UV is installed
+            do script "if command -v uv &> /dev/null; then echo 'UV is already installed!'; else echo 'Installing UV...'; curl -LsSf https://astral.sh/uv/install.sh | sh; fi" in newWindow
         end tell
         """
         
