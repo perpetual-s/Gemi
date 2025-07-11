@@ -281,13 +281,13 @@ struct GemmaSetupProgressView: View {
         }
         
         switch setupManager.currentStep {
-        case .checkingEnvironment, .installingConda:
+        case .checkingEnvironment, .installingUV:
             return .blue
-        case .creatingEnvironment, .installingDependencies:
+        case .creatingProject, .installingDependencies:
             return .purple
-        case .downloadingModel, .creatingServer:
+        case .creatingServer, .launchingServer:
             return .indigo
-        case .launchingServer, .complete:
+        case .downloadingModel, .complete:
             return .green
         }
     }
@@ -365,12 +365,12 @@ extension PythonEnvironmentSetup.SetupStep {
     var ordinalValue: Int {
         switch self {
         case .checkingEnvironment: return 0
-        case .installingConda: return 1
-        case .creatingEnvironment: return 2
+        case .installingUV: return 1
+        case .creatingProject: return 2
         case .installingDependencies: return 3
-        case .downloadingModel: return 4
-        case .creatingServer: return 5
-        case .launchingServer: return 6
+        case .creatingServer: return 4
+        case .launchingServer: return 5
+        case .downloadingModel: return 6
         case .complete: return 7
         }
     }
