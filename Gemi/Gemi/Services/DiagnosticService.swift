@@ -184,7 +184,7 @@ actor DiagnosticService {
                         component: "AI Server",
                         status: .warning,
                         message: "AI server is not running",
-                        details: "Run './launch_server.sh' in python-inference-server directory"
+                        details: "The inference server will start automatically"
                     )
                 default:
                     return DiagnosticResult(
@@ -389,7 +389,7 @@ actor DiagnosticService {
         }
         
         if results.contains(where: { $0.component == "AI Server" && $0.status == .warning }) {
-            report += "• Start the AI server: cd python-inference-server && ./launch_server.sh\n"
+            report += "• The AI server will start automatically when needed\n"
         }
         
         if results.contains(where: { $0.component == "Network Permissions" && $0.status == .failure }) {

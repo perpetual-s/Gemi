@@ -112,7 +112,7 @@ final class AIConfiguration: ObservableObject {
                 return (false, "Invalid response from server")
             }
         } catch {
-            return (false, "Server not running. Run './launch_server.sh' in python-inference-server directory")
+            return (false, "Server not running. The inference server will start automatically")
         }
     }
 }

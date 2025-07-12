@@ -940,7 +940,7 @@ class GemmaModelManager: ObservableObject {
         let script = """
         tell application "Terminal"
             activate
-            do script "cd ~/Documents/project-Gemi/python-inference-server && tail -f gemi_inference_server.log"
+            do script "cd ~/Library/Application\\ Support/Gemi && tail -f server.log"
         end tell
         """
         
@@ -951,7 +951,7 @@ class GemmaModelManager: ObservableObject {
     }
     
     func viewLogs() {
-        let logPath = NSHomeDirectory() + "/Documents/project-Gemi/python-inference-server/gemi_inference_server.log"
+        let logPath = NSHomeDirectory() + "/Library/Application Support/Gemi/server.log"
         NSWorkspace.shared.open(URL(fileURLWithPath: logPath))
     }
     

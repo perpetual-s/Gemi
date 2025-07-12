@@ -276,7 +276,7 @@ enum AIServiceError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .serviceUnavailable(let details):
-            return "AI service is not running. \(details)\n\nPlease ensure:\n1. Python server is running\n2. Run './launch_server.sh' in python-inference-server directory"
+            return "AI service is not running. \(details)\n\nPlease ensure:\n1. Inference server is running\n2. The server will start automatically when needed"
             
         case .connectionFailed(let details):
             return "Failed to connect to AI service: \(details)"
@@ -295,13 +295,13 @@ enum AIServiceError: LocalizedError {
     var recoverySuggestion: String? {
         switch self {
         case .serviceUnavailable:
-            return "Open Terminal and run: cd python-inference-server && ./launch_server.sh"
+            return "The inference server will start automatically when needed"
             
         case .modelLoading:
             return "Please wait for the model to finish downloading"
             
         default:
-            return "Try restarting the Python server or check your network connection"
+            return "Try restarting the inference server or check your network connection"
         }
     }
 }

@@ -32,17 +32,15 @@ struct ModelSetupHelper {
             do script "echo '4. Run: huggingface-cli login'" in newWindow
             do script "echo '   (Enter your token when prompted)'" in newWindow
             do script "echo ''" in newWindow
-            do script "echo 'STEP 2: Install UV & Launch Server'" in newWindow
+            do script "echo 'STEP 2: Launch Server'" in newWindow
             do script "echo '-----------------------------------'" in newWindow
-            do script "echo '1. Install UV: curl -LsSf https://astral.sh/uv/install.sh | sh'" in newWindow
-            do script "echo '2. Close and reopen Terminal after UV installs'" in newWindow
-            do script "echo '3. Launch server: cd ~/Documents/project-Gemi/python-inference-server && ./launch_server.sh'" in newWindow
+            do script "echo 'The inference server will start automatically when needed.'" in newWindow
             do script "echo ''" in newWindow
             do script "echo 'Press ENTER to start the setup process...'" in newWindow
             do script "read -p ''" in newWindow
             
-            -- First, check if UV is installed
-            do script "if command -v uv &> /dev/null; then echo 'UV is already installed!'; else echo 'Installing UV...'; curl -LsSf https://astral.sh/uv/install.sh | sh; fi" in newWindow
+            -- Setup complete
+            do script "echo 'Setup instructions complete. You can now close this window.'" in newWindow
         end tell
         """
         

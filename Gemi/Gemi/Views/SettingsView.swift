@@ -561,7 +561,7 @@ struct SettingsView: View {
                                 .foregroundColor(.secondary)
                             
                             HStack {
-                                Text("cd python-inference-server && ./launch_server.sh")
+                                Text("The inference server starts automatically")
                                     .font(.system(size: 11, design: .monospaced))
                                     .padding(8)
                                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -573,7 +573,7 @@ struct SettingsView: View {
                                 
                                 Button(action: {
                                     NSPasteboard.general.clearContents()
-                                    NSPasteboard.general.setString("cd python-inference-server && ./launch_server.sh", forType: .string)
+                                    NSPasteboard.general.setString("The inference server starts automatically", forType: .string)
                                 }) {
                                     Image(systemName: "doc.on.clipboard")
                                         .font(.system(size: 12))
