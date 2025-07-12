@@ -1,5 +1,6 @@
 import SwiftUI
 import LocalAuthentication
+import AppKit
 
 struct SettingsView: View {
     @State private var showExportSuccess = false
@@ -25,7 +26,6 @@ struct SettingsView: View {
     @State private var availableModels: [String] = []
     @State private var showingDataManagement = false
     @State private var showingAbout = false
-    @State private var showingGemmaSetup = false
     @State private var isLoadingModels = false
     @State private var selectedTabAnimation = false
     
@@ -159,65 +159,107 @@ struct SettingsView: View {
                 )
                 .ignoresSafeArea()
                 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
-                        // Content Header
-                        HStack {
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text(selectedTab.rawValue)
-                                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                ScrollViewReader { scrollProxy in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 0) {
+                            // Content Header with scroll anchor
+                            HStack {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text(selectedTab.rawValue)
+                                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                                    
+                                    Text(selectedTab.description)
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.secondary)
+                                }
                                 
-                                Text(selectedTab.description)
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.secondary)
+                                Spacer()
                             }
+                            .padding(.horizontal, 40)
+                            .padding(.top, 40)
+                            .padding(.bottom, 32)
+                            .id("scrollTop") // Anchor for scrolling
                             
-                            Spacer()
-                        }
-                        .padding(.horizontal, 40)
-                        .padding(.top, 40)
-                        .padding(.bottom, 32)
-                        
-                        // Tab Content
-                        Group {
-                            switch selectedTab {
-                            case .general:
-                                generalSettings
-                            case .ai:
-                                aiSettings
-                            case .appearance:
-                                appearanceSettings
-                            case .security:
-                                securitySettings
-                            case .data:
-                                dataSettings
+                            // Tab Content
+                            Group {
+                                switch selectedTab {
+                                case .general:
+                                    generalSettings
+                                case .ai:
+                                    aiSettings
+                                case .appearance:
+                                    appearanceSettings
+                                case .security:
+                                    securitySettings
+                                case .data:
+                                    dataSettings
+                                }
                             }
+                            .padding(.horizontal, 40)
+                            .padding(.bottom, 40)
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .move(edge: .trailing)),
+                                removal: .opacity.combined(with: .move(edge: .leading))
+                            ))
+                            .id(selectedTab)
                         }
-                        .padding(.horizontal, 40)
-                        .padding(.bottom, 40)
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .move(edge: .trailing)),
-                            removal: .opacity.combined(with: .move(edge: .leading))
-                        ))
-                        .id(selectedTab)
+                        .frame(maxWidth: 700, alignment: .leading)
+                        .frame(maxWidth: .infinity, alignment: .center)
                     }
-                    .frame(maxWidth: 700, alignment: .leading)
-                    .frame(maxWidth: .infinity, alignment: .center)
+                    .scrollIndicators(.hidden)
+                    .onChange(of: selectedTab) { _ in
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            scrollProxy.scrollTo("scrollTop", anchor: .top)
+                        }
+                    }
+                    .onAppear {
+                        // Ensure we start at the top when the view first appears
+                        scrollProxy.scrollTo("scrollTop", anchor: .top)
+                    }
                 }
-                .scrollIndicators(.hidden)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(width: 900, height: 550)
         .background(Color(NSColor.windowBackgroundColor))
+        .overlay(
+            // Done button in the top-right corner
+            VStack {
+                HStack {
+                    Spacer()
+                    
+                    Button(action: { dismiss() }) {
+                        Text("Done")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 8)
+                            .background(
+                                Capsule()
+                                    .fill(Color.accentColor)
+                                    .shadow(color: Color.accentColor.opacity(0.3), radius: 6, x: 0, y: 2)
+                            )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .keyboardShortcut(.escape, modifiers: [])
+                    .keyboardShortcut(.return, modifiers: .command)
+                    .help("Close Settings (Esc or ⌘↩)")
+                    .padding(.trailing, 24)
+                    .padding(.top, 20)
+                }
+                
+                Spacer()
+            }
+            .zIndex(1) // Ensure the button stays on top
+        )
         .onAppear {
             checkConnection()
             loadAvailableModels()
         }
-        .alert("Export Successful", isPresented: $showExportSuccess) {
+        .alert("Success", isPresented: $showExportSuccess) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text("Your journal entries have been exported successfully.")
+            Text("Operation completed successfully.")
         }
         .alert("Export Failed", isPresented: $showExportError) {
             Button("OK", role: .cancel) { }
@@ -236,11 +278,6 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingDataManagement) {
             DataManagementView(journalStore: journalStore)
-        }
-        .sheet(isPresented: $showingGemmaSetup) {
-            GemmaOnboardingView {
-                showingGemmaSetup = false
-            }
         }
     }
     
@@ -497,7 +534,7 @@ struct SettingsView: View {
                             
                             HStack(spacing: 12) {
                                 Button {
-                                    showingGemmaSetup = true
+                                    openGemmaSetupWindow()
                                 } label: {
                                     Text("Open Setup")
                                         .font(.system(size: 13, weight: .medium))
@@ -507,7 +544,7 @@ struct SettingsView: View {
                                 Button {
                                     // Reset onboarding state
                                     UserDefaults.standard.set(false, forKey: "hasCompletedGemmaOnboarding")
-                                    showingGemmaSetup = true
+                                    openGemmaSetupWindow()
                                 } label: {
                                     Image(systemName: "arrow.counterclockwise")
                                         .font(.system(size: 12))
@@ -826,35 +863,81 @@ struct SettingsView: View {
                 }
             }
             
-            // Automatic Backup Card
+            // Quick Actions Card
             PremiumSettingsCard(
-                title: "Automatic Backups",
-                icon: "clock.arrow.circlepath",
+                title: "Quick Actions",
+                icon: "bolt.circle",
                 iconColor: .orange
             ) {
-                VStack(spacing: 16) {
+                VStack(spacing: 20) {
+                    // Import/Export Row
                     HStack {
-                        Image(systemName: "clock.badge.checkmark")
-                            .font(.system(size: 32))
-                            .foregroundColor(.orange)
-                        
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Coming Soon")
-                                .font(.system(size: 16, weight: .semibold))
-                            
-                            Text("Automatic encrypted backups to your chosen location")
-                                .font(.system(size: 13))
+                            Text("Import & Export")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text("Transfer entries between devices or backup formats")
+                                .font(.system(size: 12))
                                 .foregroundColor(.secondary)
                         }
                         
                         Spacer()
+                        
+                        HStack(spacing: 8) {
+                            Button(action: importEntries) {
+                                Label("Import", systemImage: "square.and.arrow.down")
+                                    .font(.system(size: 12, weight: .medium))
+                            }
+                            .buttonStyle(PremiumButtonStyle(style: .secondary))
+                            
+                            Button(action: exportEntries) {
+                                Label("Export", systemImage: "square.and.arrow.up")
+                                    .font(.system(size: 12, weight: .medium))
+                            }
+                            .buttonStyle(PremiumButtonStyle(style: .secondary))
+                        }
                     }
                     
-                    PremiumToggle(
-                        title: "Enable automatic backups",
-                        subtitle: "Back up your journal daily",
-                        isOn: .constant(false),
-                        isDisabled: true
+                    Divider()
+                    
+                    // Database Location Row
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Database Location")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text(getDatabasePath())
+                                .font(.system(size: 11, design: .monospaced))
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                        
+                        Spacer()
+                        
+                        Button(action: showDatabaseInFinder) {
+                            Label("Show in Finder", systemImage: "folder")
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                        .buttonStyle(PremiumButtonStyle(style: .secondary))
+                    }
+                    
+                    Divider()
+                    
+                    // Backup Reminder
+                    HStack(spacing: 12) {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 14))
+                            .foregroundColor(.blue)
+                        
+                        Text("Remember to regularly backup your database to prevent data loss")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
+                    }
+                    .padding(12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.blue.opacity(0.05))
                     )
                 }
             }
@@ -862,6 +945,118 @@ struct SettingsView: View {
     }
     
     // MARK: - Helper Methods
+    
+    private func importEntries() {
+        let openPanel = NSOpenPanel()
+        openPanel.allowedContentTypes = [.json]
+        openPanel.message = "Select a Gemi export file to import"
+        
+        if openPanel.runModal() == .OK, let url = openPanel.url {
+            Task {
+                do {
+                    let data = try Data(contentsOf: url)
+                    let decoder = JSONDecoder()
+                    decoder.dateDecodingStrategy = .iso8601
+                    
+                    let entries = try decoder.decode([JournalEntry].self, from: data)
+                    
+                    // Import entries
+                    for entry in entries {
+                        await journalStore.saveEntry(entry)
+                    }
+                    
+                    await MainActor.run {
+                        showExportSuccess = true // Reuse for import success
+                    }
+                } catch {
+                    await MainActor.run {
+                        errorMessage = "Failed to import entries: \(error.localizedDescription)"
+                        showExportError = true
+                    }
+                }
+            }
+        }
+    }
+    
+    private func getDatabasePath() -> String {
+        do {
+            let appSupportURL = try FileManager.default.url(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask,
+                appropriateFor: nil,
+                create: false
+            )
+            let bundleID = Bundle.main.bundleIdentifier ?? "com.gemi.app"
+            return appSupportURL
+                .appendingPathComponent(bundleID)
+                .appendingPathComponent("gemi.db")
+                .path
+        } catch {
+            return "~/Library/Application Support/Gemi/gemi.db"
+        }
+    }
+    
+    private func showDatabaseInFinder() {
+        do {
+            let appSupportURL = try FileManager.default.url(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask,
+                appropriateFor: nil,
+                create: false
+            )
+            let bundleID = Bundle.main.bundleIdentifier ?? "com.gemi.app"
+            let dbURL = appSupportURL
+                .appendingPathComponent(bundleID)
+                .appendingPathComponent("gemi.db")
+            
+            NSWorkspace.shared.selectFile(dbURL.path, inFileViewerRootedAtPath: "")
+        } catch {
+            // Fallback: just open Application Support folder
+            if let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+                NSWorkspace.shared.open(appSupportURL)
+            }
+        }
+    }
+    
+    private func openGemmaSetupWindow() {
+        // Create a new window for Gemma setup
+        let setupWindow = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 900, height: 700),
+            styleMask: [.titled, .closable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        
+        // Configure window appearance to match initial setup
+        setupWindow.titlebarAppearsTransparent = true
+        setupWindow.titleVisibility = .hidden
+        setupWindow.isMovableByWindowBackground = true
+        setupWindow.backgroundColor = NSColor.black
+        
+        // Create the content view
+        let contentView = GemmaOnboardingView {
+            // Close the window when setup is completed
+            setupWindow.close()
+        }
+        .frame(width: 900, height: 700)
+        .frame(maxWidth: 900, maxHeight: 700)
+        .background(Color.black)
+        
+        // Set the content view
+        setupWindow.contentView = NSHostingView(rootView: contentView)
+        
+        // Center the window on screen
+        setupWindow.center()
+        
+        // Make the window key and bring it to front
+        setupWindow.makeKeyAndOrderFront(nil)
+        setupWindow.level = .floating
+        
+        // Remove the window level after a short delay to allow normal window behavior
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            setupWindow.level = .normal
+        }
+    }
     
     private func checkConnection() {
         isCheckingConnection = true
@@ -901,9 +1096,27 @@ struct SettingsView: View {
         let formatter = ByteCountFormatter()
         formatter.countStyle = .file
         
-        // TODO: Get actual database size
-        let fileSize: Int64 = 1024 * 1024
-        return formatter.string(fromByteCount: fileSize)
+        do {
+            let appSupportURL = try FileManager.default.url(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask,
+                appropriateFor: nil,
+                create: false
+            )
+            let bundleID = Bundle.main.bundleIdentifier ?? "com.gemi.app"
+            let dbURL = appSupportURL
+                .appendingPathComponent(bundleID)
+                .appendingPathComponent("gemi.db")
+            
+            if let attributes = try? FileManager.default.attributesOfItem(atPath: dbURL.path),
+               let fileSize = attributes[.size] as? Int64 {
+                return formatter.string(fromByteCount: fileSize)
+            }
+        } catch {
+            // Ignore error
+        }
+        
+        return "Unknown"
     }
     
     private func exportEntries() {
@@ -1182,7 +1395,9 @@ struct DataManagementView: View {
                 Button("Done") {
                     dismiss()
                 }
-                .buttonStyle(PremiumButtonStyle())
+                .buttonStyle(.borderedProminent)
+                .controlSize(.regular)
+                .keyboardShortcut(.escape, modifiers: [])
             }
             .padding()
             .background(VisualEffectView.sidebar)
