@@ -107,7 +107,7 @@ struct GemiApp: App {
         }
         
         // If not completed, check if server is running
-        let isServerRunning = await PythonServerManager.shared.isServerRunning()
+        let isServerRunning = await BundledServerManager.shared.checkHealth()
         
         // Show onboarding if:
         // 1. Never completed onboarding AND

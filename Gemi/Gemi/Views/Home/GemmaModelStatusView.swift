@@ -871,7 +871,7 @@ class GemmaModelManager: ObservableObject {
     @Published var status: ModelStatus = .checking
     @Published var downloadTimeEstimate = "Calculating..."
     
-    private let pythonServerManager = PythonServerManager.shared
+    private let serverManager = BundledServerManager.shared
     private var checkTimer: Timer?
     
     enum ModelStatus: Equatable {
@@ -896,37 +896,13 @@ class GemmaModelManager: ObservableObject {
     
     func checkStatus() {
         Task {
-            do {
-                // First check if server is even reachable
-                let isRunning = await pythonServerManager.isServerRunning()
-                
-                if !isRunning {
-                    await MainActor.run {
-                        self.status = .notInstalled
-                    }
-                    return
-                }
-                
-                // If running, get detailed status
-                let serverStatus = await pythonServerManager.getServerStatus()
-                
-                await MainActor.run {
-                    switch serverStatus {
-                    case .notRunning:
-                        self.status = .notInstalled
-                    case .loading(let progress):
-                        self.status = .downloading(progress: Double(progress) / 100.0)
-                        self.updateTimeEstimate(progress: Double(progress) / 100.0)
-                    case .ready:
-                        self.status = .ready
-                        // Stop monitoring when ready
-                        self.checkTimer?.invalidate()
-                        self.checkTimer = nil
-                    }
-                }
-            } catch {
-                // Ignore errors during status check - server might not be running
-                await MainActor.run {
+            // Check if server is reachable
+            let isRunning = await serverManager.checkHealth()
+            
+            await MainActor.run {
+                if isRunning {
+                    self.status = .ready
+                } else {
                     self.status = .notInstalled
                 }
             }
@@ -952,7 +928,10 @@ class GemmaModelManager: ObservableObject {
     
     func openDocumentation() {
         Task {
-            await pythonServerManager.openDocumentation()
+            // Open documentation URL
+            if let url = URL(string: "https://github.com/gemi-app/gemi") {
+                NSWorkspace.shared.open(url)
+            }
         }
     }
     

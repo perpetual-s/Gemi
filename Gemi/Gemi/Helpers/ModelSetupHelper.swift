@@ -74,42 +74,33 @@ struct ModelSetupHelper {
             """
         }
         
-        if let pythonError = error as? PythonServerError {
-            switch pythonError {
+        if let serverError = error as? ServerError {
+            switch serverError {
             case .serverNotFound:
                 return """
-                The inference server directory wasn't found.
+                GemiServer.app not found.
                 
-                Make sure the python-inference-server folder exists in your project directory.
+                Please reinstall Gemi from the DMG installer.
                 
-                Click "Open Terminal" below for manual setup.
+                The AI server should be installed alongside Gemi in your Applications folder.
                 """
                 
-            case .launchScriptNotFound:
+            case .launchFailed(let reason):
                 return """
-                The launch script is missing.
+                Failed to launch the AI server: \(reason)
                 
-                The file 'launch_server.sh' should be in the python-inference-server directory.
+                Try restarting Gemi or check if port 11435 is in use.
                 
-                Click "Open Terminal" below for manual setup.
+                Click "Open Terminal" for troubleshooting.
                 """
                 
-            case .failedToLaunch(let reason):
+            case .connectionFailed(let reason):
                 return """
-                Failed to launch the server: \(reason)
+                Cannot connect to the AI server: \(reason)
                 
-                This might be a permission issue. Try running the setup manually.
+                The server may still be starting up. Please wait a moment and try again.
                 
-                Click "Open Terminal" below for manual setup.
-                """
-                
-            case .startupTimeout:
-                return """
-                The server is taking longer than expected to start.
-                
-                This usually means the model is still downloading. The download can take 10-20 minutes depending on your internet speed.
-                
-                Click "Open Terminal" to check the download progress.
+                Click "Open Terminal" to check server status.
                 """
             }
         }

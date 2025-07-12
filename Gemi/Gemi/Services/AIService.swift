@@ -122,7 +122,9 @@ actor AIService {
                 
                 if httpResponse.statusCode == 503 {
                     // Model still loading
-                    if let data = try? await bytes.reduce(into: Data()) { _ = $1 },
+                    if let data = try? await bytes.reduce(into: Data(), { data, byte in
+                        data.append(byte)
+                    }),
                        let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data),
                        errorResponse.detail.contains("Progress:") {
                         throw AIServiceError.modelLoading(errorResponse.detail)
@@ -135,7 +137,7 @@ actor AIService {
                 }
                 
                 // Process streaming response
-                var buffer = ""
+                // Process streaming response line by line
                 
                 for try await line in bytes.lines {
                     guard !line.isEmpty else { continue }
