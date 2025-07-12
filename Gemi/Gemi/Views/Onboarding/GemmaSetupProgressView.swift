@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Beautiful setup progress view for Gemma 3n installation
 struct GemmaSetupProgressView: View {
-    @StateObject private var setupManager = PythonEnvironmentSetup()
+    @StateObject private var setupManager = ModelSetupService()
     let onComplete: () -> Void
     let onSkip: () -> Void
     
@@ -120,7 +120,7 @@ struct GemmaSetupProgressView: View {
                     
                     // Step indicators
                     VStack(alignment: .leading, spacing: 12) {
-                        ForEach(PythonEnvironmentSetup.SetupStep.allCases.filter { $0 != .complete }, id: \.self) { step in
+                        ForEach(ModelSetupService.SetupStep.allCases.filter { $0 != .complete }, id: \.self) { step in
                             StepIndicator(
                                 step: step,
                                 currentStep: setupManager.currentStep,
@@ -244,10 +244,8 @@ struct GemmaSetupProgressView: View {
         }
         
         switch setupManager.currentStep {
-        case .checkingEnvironment, .installingUV:
+        case .checkingServer:
             return .blue
-        case .installingDependencies:
-            return .purple
         case .launchingServer:
             return .indigo
         case .downloadingModel, .complete:
@@ -259,8 +257,8 @@ struct GemmaSetupProgressView: View {
 // MARK: - Supporting Views
 
 struct StepIndicator: View {
-    let step: PythonEnvironmentSetup.SetupStep
-    let currentStep: PythonEnvironmentSetup.SetupStep
+    let step: ModelSetupService.SetupStep
+    let currentStep: ModelSetupService.SetupStep
     let isComplete: Bool
     
     var isActive: Bool {
@@ -324,15 +322,13 @@ struct StepIndicator: View {
 }
 
 // Extension to get ordinal value for steps
-extension PythonEnvironmentSetup.SetupStep {
+extension ModelSetupService.SetupStep {
     var ordinalValue: Int {
         switch self {
-        case .checkingEnvironment: return 0
-        case .installingUV: return 1
-        case .installingDependencies: return 2
-        case .launchingServer: return 3
-        case .downloadingModel: return 4
-        case .complete: return 5
+        case .checkingServer: return 0
+        case .launchingServer: return 1
+        case .downloadingModel: return 2
+        case .complete: return 3
         }
     }
 }
