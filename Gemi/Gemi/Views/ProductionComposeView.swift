@@ -39,6 +39,7 @@ struct ProductionComposeView: View {
     @State private var aiAssistantExpanded = false
     @State private var showWritersBlockBreaker = false
     @StateObject private var sentimentAnalyzer = SentimentAnalyzer()
+    @StateObject private var analytics = AnalyticsService.shared
     @State private var showCommandBar = false
     @State private var commandBarPosition = CGRect.zero
     
@@ -160,6 +161,9 @@ struct ProductionComposeView: View {
             metadataOpacity = 1
             lastSavedContent = entry.content
             updateWordCount()
+            
+            // Start analytics session
+            analytics.startSession()
         }
         .onChange(of: entry.content) { oldValue, newValue in
             updateWordCount()
@@ -180,6 +184,12 @@ struct ProductionComposeView: View {
             return .ignored
         }
         // Focus mode shortcut handled via button
+        .onDisappear {
+            // Ensure session is ended if view disappears unexpectedly
+            if analytics.sessionStartTime != nil {
+                analytics.endSession()
+            }
+        }
     }
     
     // MARK: - Header
@@ -275,6 +285,9 @@ struct ProductionComposeView: View {
                 
                 // Action buttons
                 Button("Cancel") {
+                    // End analytics session without saving
+                    analytics.endSession()
+                    
                     if hasUnsavedChanges {
                         // Show confirmation dialog
                         onCancel()
@@ -642,6 +655,11 @@ struct ProductionComposeView: View {
     private func saveEntry() {
         lastSavedContent = entry.content
         hasUnsavedChanges = false
+        
+        // Track session analytics
+        analytics.updateSessionWithWords(entry.wordCount)
+        analytics.endSession()
+        
         onSave(entry)
     }
     

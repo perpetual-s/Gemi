@@ -4,6 +4,7 @@ struct InsightsView: View {
     let entries: [JournalEntry]
     @State private var selectedTimeRange = TimeRange.allTime
     @State private var animateCharts = false
+    @StateObject private var analytics = AnalyticsService.shared
     
     enum TimeRange: String, CaseIterable {
         case week = "Week"
@@ -321,8 +322,8 @@ struct InsightsView: View {
     }
     
     private var averageSessionLength: String {
-        // Placeholder - in real app would track actual session time
-        return "15-20 min"
+        let duration = analytics.averageSessionDuration(for: selectedTimeRange)
+        return AnalyticsService.formatSessionDuration(duration)
     }
     
     private var mostActiveDay: String {
@@ -352,13 +353,14 @@ struct InsightsView: View {
     
     private var entriesTrend: String? {
         guard selectedTimeRange != .allTime else { return nil }
-        // Calculate trend based on previous period
-        return "+12%"
+        let trend = analytics.calculateTrend(for: entries, timeRange: selectedTimeRange)
+        return AnalyticsService.formatTrend(trend)
     }
     
     private var wordsTrend: String? {
         guard selectedTimeRange != .allTime else { return nil }
-        return "+8%"
+        let trend = analytics.calculateWordsTrend(for: entries, timeRange: selectedTimeRange)
+        return AnalyticsService.formatTrend(trend)
     }
     
     private var streakMessage: String {
