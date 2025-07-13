@@ -1,5 +1,13 @@
 # HuggingFace Token for Gemma Model Access
+#
+# ===== IMPORTANT =====
+# If you downloaded Gemi.dmg from the official release, you DON'T need to worry about this!
+# The token is already included in the app bundle for a zero-friction experience.
 # 
+# This file is only for developers who are building Gemi from source code.
+# ====================
+#
+# For developers building from source:
 # To use Gemi, you need a HuggingFace token with access to google/gemma-3n-e4b-it
 #
 # Steps:
