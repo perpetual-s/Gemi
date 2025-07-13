@@ -44,6 +44,14 @@ Models/
 *.tmp
 *.temp
 *~
+default.profraw
+temp_icon/
+
+# Sensitive files
+*token*.txt
+*credential*
+*secret*
+hf-access-token.txt
 
 # Scripts
 reset_gemi.sh
