@@ -21,7 +21,7 @@ struct InitialSetupView: View {
                     .font(.largeTitle)
                     .fontWeight(.semibold)
                 
-                Text("Set up authentication to protect your private thoughts")
+                Text("Create a password to protect your thoughts")
                     .font(.title3)
                     .foregroundColor(Theme.Colors.secondaryText)
                     .multilineTextAlignment(.center)
@@ -70,16 +70,12 @@ struct InitialSetupView: View {
                 HStack {
                     Spacer()
                     
-                    Button("Set Up Later") {
-                        skipSetup()
-                    }
-                    .buttonStyle(.plain)
-                    
                     Button("Complete Setup") {
                         completeSetup()
                     }
                     .buttonStyle(.borderedProminent)
                     .disabled(!isValidSetup)
+                    .keyboardShortcut(.return, modifiers: [])
                 }
             }
             .frame(maxWidth: 400)
@@ -139,10 +135,4 @@ struct InitialSetupView: View {
         }
     }
     
-    private func skipSetup() {
-        // Allow skipping setup but mark it as required for next launch
-        UserDefaults.standard.set(true, forKey: "hasCompletedInitialSetup")
-        authManager.requiresInitialSetup = false
-        authManager.isAuthenticated = true
-    }
 }

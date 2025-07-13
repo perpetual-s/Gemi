@@ -439,20 +439,6 @@ struct GemmaOnboardingView: View {
             }
             .frame(maxWidth: 400)
             
-            // Skip option
-            Button {
-                // Skip password setup but allow continuing
-                password = ""
-                confirmPassword = ""
-                withAnimation(.spring(response: 0.4)) {
-                    currentPage = 3
-                }
-            } label: {
-                Text("Set up later")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.white.opacity(0.5))
-            }
-            .buttonStyle(.plain)
         }
         .padding(.horizontal, 40)
         .onChange(of: password) { 
@@ -502,12 +488,12 @@ struct GemmaOnboardingView: View {
                     }
                 }
             } else if shouldShowPasswordPage && password.isEmpty {
-                // New user skipping password
-                UserDefaults.standard.set(true, forKey: "hasCompletedInitialSetup")
-                authManager.requiresInitialSetup = false
-                authManager.isAuthenticated = true
+                // Password is required - show error
+                passwordError = "Password is required to secure your journal"
+                showPasswordError = true
+                // Go back to password page
                 withAnimation(.spring(response: 0.4)) {
-                    showingSetup = true
+                    currentPage = totalPages - 2 // Go back to password page
                 }
             } else {
                 // Existing user from Settings
