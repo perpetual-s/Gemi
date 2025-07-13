@@ -18,22 +18,19 @@ struct GemiApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if authManager.requiresInitialSetup {
-                    InitialSetupView()
-                } else if authManager.isAuthenticated {
-                    if shouldShowOnboarding {
-                        GemmaOnboardingView {
-                            withAnimation(.easeInOut(duration: 0.5)) {
-                                hasCompletedOnboarding = true
-                                showingOnboarding = false
-                            }
+                // New users go directly to beautiful onboarding (which includes password setup)
+                if authManager.requiresInitialSetup || shouldShowOnboarding {
+                    GemmaOnboardingView {
+                        withAnimation(.easeInOut(duration: 0.5)) {
+                            hasCompletedOnboarding = true
+                            showingOnboarding = false
                         }
-                        .frame(width: 900, height: 700)
-                        .frame(maxWidth: 900, maxHeight: 700)
-                        .background(Color.black)
-                    } else {
-                        MainWindowView()
                     }
+                    .frame(width: 900, height: 700)
+                    .frame(maxWidth: 900, maxHeight: 700)
+                    .background(Color.black)
+                } else if authManager.isAuthenticated {
+                    MainWindowView()
                 } else {
                     AuthenticationView()
                 }

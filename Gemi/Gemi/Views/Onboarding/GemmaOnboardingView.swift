@@ -3,10 +3,17 @@ import SwiftUI
 /// Beautiful onboarding experience for Gemma 3n setup
 struct GemmaOnboardingView: View {
     @StateObject private var modelManager = GemmaModelManager()
+    @StateObject private var authManager = AuthenticationManager.shared
     @State private var currentPage = 0
     @State private var showingSetup = false
     @State private var showingProgressSetup = false
     @State private var hasCompletedOnboarding = false
+    @State private var password = ""
+    @State private var confirmPassword = ""
+    @State private var enableBiometric = true
+    @State private var showPassword = false
+    @State private var isSettingUpPassword = false
+    @State private var passwordError = ""
     @Environment(\.dismiss) var dismiss
     
     let onComplete: () -> Void
@@ -129,6 +136,12 @@ struct GemmaOnboardingView: View {
                             removal: .move(edge: .leading).combined(with: .opacity)
                         ))
                 } else if currentPage == 2 {
+                    passwordSetupPage
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        ))
+                } else if currentPage == 3 {
                     welcomePage3
                         .transition(.asymmetric(
                             insertion: .move(edge: .trailing).combined(with: .opacity),
@@ -144,7 +157,7 @@ struct GemmaOnboardingView: View {
             VStack(spacing: 24) {
                 // Custom page indicators
                 HStack(spacing: 8) {
-                    ForEach(0..<3) { index in
+                    ForEach(0..<4) { index in
                         Capsule()
                             .fill(currentPage == index ? Color.white : Color.white.opacity(0.3))
                             .frame(width: currentPage == index ? 24 : 8, height: 8)
@@ -154,18 +167,39 @@ struct GemmaOnboardingView: View {
                 
                 // Continue button
                 Button {
-                    if currentPage < 2 {
+                    if currentPage < 3 {
                         withAnimation(.spring(response: 0.4)) {
                             currentPage += 1
                         }
                     } else {
-                        withAnimation(.spring(response: 0.4)) {
-                            showingSetup = true
+                        // Setup password if provided, then proceed to Gemma setup
+                        if !password.isEmpty && isPasswordValid {
+                            Task {
+                                do {
+                                    try await authManager.setupInitialAuthentication(
+                                        password: password,
+                                        enableBiometric: enableBiometric
+                                    )
+                                    withAnimation(.spring(response: 0.4)) {
+                                        showingSetup = true
+                                    }
+                                } catch {
+                                    passwordError = error.localizedDescription
+                                }
+                            }
+                        } else {
+                            // Skip password, proceed directly
+                            UserDefaults.standard.set(true, forKey: "hasCompletedInitialSetup")
+                            authManager.requiresInitialSetup = false
+                            authManager.isAuthenticated = true
+                            withAnimation(.spring(response: 0.4)) {
+                                showingSetup = true
+                            }
                         }
                     }
                 } label: {
                     HStack {
-                        Text(currentPage < 2 ? "Continue" : "Get Started")
+                        Text(currentPage < 3 ? "Continue" : "Get Started")
                             .font(.system(size: 18, weight: .semibold))
                         
                         Image(systemName: "arrow.right")
@@ -180,6 +214,7 @@ struct GemmaOnboardingView: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .disabled(currentPage == 2 && !isPasswordValid)
             }
             .padding(.bottom, 60)
         }
@@ -252,6 +287,165 @@ struct GemmaOnboardingView: View {
             }
         }
         .padding(.horizontal, 40)
+    }
+    
+    private var passwordSetupPage: some View {
+        VStack(spacing: 40) {
+            // Security icon with animation
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.1)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 180, height: 180)
+                    .blur(radius: 30)
+                
+                Image(systemName: "lock.shield.fill")
+                    .font(.system(size: 100))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color.blue, Color.purple],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .shadow(color: Color.blue.opacity(0.5), radius: 20)
+            }
+            
+            VStack(spacing: 16) {
+                Text("Secure Your Journal")
+                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                
+                Text("Create a password to protect your thoughts")
+                    .font(.system(size: 20))
+                    .foregroundColor(.white.opacity(0.8))
+            }
+            
+            // Password fields with beautiful styling
+            VStack(spacing: 16) {
+                // Password field
+                HStack {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(.white.opacity(0.5))
+                    
+                    if showPassword {
+                        TextField("Password", text: $password)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 18))
+                    } else {
+                        SecureField("Password", text: $password)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 18))
+                    }
+                    
+                    Button {
+                        showPassword.toggle()
+                    } label: {
+                        Image(systemName: showPassword ? "eye.slash.fill" : "eye.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.white.opacity(0.5))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.white.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
+                        )
+                )
+                
+                // Confirm password field
+                HStack {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(.white.opacity(0.5))
+                    
+                    if showPassword {
+                        TextField("Confirm Password", text: $confirmPassword)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 18))
+                    } else {
+                        SecureField("Confirm Password", text: $confirmPassword)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 18))
+                    }
+                    
+                    // Show checkmark when passwords match
+                    if !confirmPassword.isEmpty && password == confirmPassword {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.green)
+                            .transition(.scale.combined(with: .opacity))
+                    }
+                }
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.white.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
+                        )
+                )
+                
+                // Password requirements
+                HStack(spacing: 8) {
+                    Image(systemName: password.count >= 6 ? "checkmark.circle.fill" : "circle")
+                        .foregroundColor(password.count >= 6 ? .green : .white.opacity(0.5))
+                        .font(.system(size: 14))
+                    Text("At least 6 characters")
+                        .font(.system(size: 14))
+                        .foregroundColor(.white.opacity(0.7))
+                    Spacer()
+                }
+                .padding(.horizontal, 4)
+                
+                // Biometric toggle
+                if authManager.isBiometricAvailable {
+                    Toggle(isOn: $enableBiometric) {
+                        HStack {
+                            Image(systemName: "touchid")
+                                .font(.system(size: 18))
+                            Text("Enable Touch ID")
+                                .font(.system(size: 16, weight: .medium))
+                        }
+                        .foregroundColor(.white)
+                    }
+                    .toggleStyle(SwitchToggleStyle(tint: Color.blue))
+                    .padding(.top, 8)
+                }
+            }
+            .frame(maxWidth: 400)
+            
+            // Skip option
+            Button {
+                // Skip password setup but allow continuing
+                password = ""
+                confirmPassword = ""
+                currentPage = 3
+            } label: {
+                Text("Set up later")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.white.opacity(0.5))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 40)
+        .onChange(of: password) { passwordError = "" }
+        .onChange(of: confirmPassword) { passwordError = "" }
+    }
+    
+    private var isPasswordValid: Bool {
+        password.count >= 6 && password == confirmPassword
     }
     
     private var welcomePage3: some View {
