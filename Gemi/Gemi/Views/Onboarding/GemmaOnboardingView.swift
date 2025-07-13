@@ -18,6 +18,16 @@ struct GemmaOnboardingView: View {
     
     let onComplete: () -> Void
     
+    // Determine if we should show password setup (only for new users)
+    private var shouldShowPasswordPage: Bool {
+        authManager.requiresInitialSetup
+    }
+    
+    // Adjust page count based on whether password setup is needed
+    private var totalPages: Int {
+        shouldShowPasswordPage ? 4 : 3
+    }
+    
     private func safeComplete() {
         guard !hasCompletedOnboarding else { return }
         hasCompletedOnboarding = true
@@ -136,11 +146,19 @@ struct GemmaOnboardingView: View {
                             removal: .move(edge: .leading).combined(with: .opacity)
                         ))
                 } else if currentPage == 2 {
-                    passwordSetupPage
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
-                        ))
+                    if shouldShowPasswordPage {
+                        passwordSetupPage
+                            .transition(.asymmetric(
+                                insertion: .move(edge: .trailing).combined(with: .opacity),
+                                removal: .move(edge: .leading).combined(with: .opacity)
+                            ))
+                    } else {
+                        welcomePage3
+                            .transition(.asymmetric(
+                                insertion: .move(edge: .trailing).combined(with: .opacity),
+                                removal: .move(edge: .leading).combined(with: .opacity)
+                            ))
+                    }
                 } else if currentPage == 3 {
                     welcomePage3
                         .transition(.asymmetric(
@@ -157,7 +175,7 @@ struct GemmaOnboardingView: View {
             VStack(spacing: 24) {
                 // Custom page indicators
                 HStack(spacing: 8) {
-                    ForEach(0..<4) { index in
+                    ForEach(0..<totalPages, id: \.self) { index in
                         Capsule()
                             .fill(currentPage == index ? Color.white : Color.white.opacity(0.3))
                             .frame(width: currentPage == index ? 24 : 8, height: 8)
@@ -167,39 +185,10 @@ struct GemmaOnboardingView: View {
                 
                 // Continue button
                 Button {
-                    if currentPage < 3 {
-                        withAnimation(.spring(response: 0.4)) {
-                            currentPage += 1
-                        }
-                    } else {
-                        // Setup password if provided, then proceed to Gemma setup
-                        if !password.isEmpty && isPasswordValid {
-                            Task {
-                                do {
-                                    try await authManager.setupInitialAuthentication(
-                                        password: password,
-                                        enableBiometric: enableBiometric
-                                    )
-                                    withAnimation(.spring(response: 0.4)) {
-                                        showingSetup = true
-                                    }
-                                } catch {
-                                    passwordError = error.localizedDescription
-                                }
-                            }
-                        } else {
-                            // Skip password, proceed directly
-                            UserDefaults.standard.set(true, forKey: "hasCompletedInitialSetup")
-                            authManager.requiresInitialSetup = false
-                            authManager.isAuthenticated = true
-                            withAnimation(.spring(response: 0.4)) {
-                                showingSetup = true
-                            }
-                        }
-                    }
+                    handleContinue()
                 } label: {
                     HStack {
-                        Text(currentPage < 3 ? "Continue" : "Get Started")
+                        Text(currentPage < totalPages - 1 ? "Continue" : "Get Started")
                             .font(.system(size: 18, weight: .semibold))
                         
                         Image(systemName: "arrow.right")
@@ -214,7 +203,7 @@ struct GemmaOnboardingView: View {
                     )
                 }
                 .buttonStyle(.plain)
-                .disabled(currentPage == 2 && !isPasswordValid)
+                .disabled(shouldShowPasswordPage && currentPage == 2 && !isPasswordValid)
             }
             .padding(.bottom, 60)
         }
@@ -431,7 +420,9 @@ struct GemmaOnboardingView: View {
                 // Skip password setup but allow continuing
                 password = ""
                 confirmPassword = ""
-                currentPage = 3
+                withAnimation(.spring(response: 0.4)) {
+                    currentPage = 3
+                }
             } label: {
                 Text("Set up later")
                     .font(.system(size: 14, weight: .medium))
@@ -446,6 +437,45 @@ struct GemmaOnboardingView: View {
     
     private var isPasswordValid: Bool {
         password.count >= 6 && password == confirmPassword
+    }
+    
+    private func handleContinue() {
+        if currentPage < totalPages - 1 {
+            withAnimation(.spring(response: 0.4)) {
+                currentPage += 1
+            }
+        } else {
+            // Last page - handle setup
+            if shouldShowPasswordPage && !password.isEmpty && isPasswordValid {
+                // New user with password
+                Task {
+                    do {
+                        try await authManager.setupInitialAuthentication(
+                            password: password,
+                            enableBiometric: enableBiometric
+                        )
+                        withAnimation(.spring(response: 0.4)) {
+                            showingSetup = true
+                        }
+                    } catch {
+                        passwordError = error.localizedDescription
+                    }
+                }
+            } else if shouldShowPasswordPage && password.isEmpty {
+                // New user skipping password
+                UserDefaults.standard.set(true, forKey: "hasCompletedInitialSetup")
+                authManager.requiresInitialSetup = false
+                authManager.isAuthenticated = true
+                withAnimation(.spring(response: 0.4)) {
+                    showingSetup = true
+                }
+            } else {
+                // Existing user from Settings
+                withAnimation(.spring(response: 0.4)) {
+                    showingSetup = true
+                }
+            }
+        }
     }
     
     private var welcomePage3: some View {
