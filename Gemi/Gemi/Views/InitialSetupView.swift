@@ -42,50 +42,13 @@ struct InitialSetupView: View {
                     SecureField("Confirm Password", text: $confirmPassword)
                         .textFieldStyle(.roundedBorder)
                     
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Password requirements:")
-                            .font(.caption)
+                    HStack(spacing: 8) {
+                        Image(systemName: passwordHasLength ? "checkmark.circle.fill" : "circle")
+                            .foregroundColor(passwordHasLength ? .green : Theme.Colors.secondaryText)
+                            .font(.system(size: 14))
+                        Text("At least 6 characters")
+                            .font(.system(size: 14))
                             .foregroundColor(Theme.Colors.secondaryText)
-                        HStack(spacing: 4) {
-                            Image(systemName: passwordHasLength ? "checkmark.circle.fill" : "circle")
-                                .foregroundColor(passwordHasLength ? .green : Theme.Colors.secondaryText)
-                                .font(.caption)
-                            Text("At least 8 characters")
-                                .font(.caption)
-                                .foregroundColor(Theme.Colors.secondaryText)
-                        }
-                        HStack(spacing: 4) {
-                            Image(systemName: passwordHasUppercase ? "checkmark.circle.fill" : "circle")
-                                .foregroundColor(passwordHasUppercase ? .green : Theme.Colors.secondaryText)
-                                .font(.caption)
-                            Text("One uppercase letter")
-                                .font(.caption)
-                                .foregroundColor(Theme.Colors.secondaryText)
-                        }
-                        HStack(spacing: 4) {
-                            Image(systemName: passwordHasLowercase ? "checkmark.circle.fill" : "circle")
-                                .foregroundColor(passwordHasLowercase ? .green : Theme.Colors.secondaryText)
-                                .font(.caption)
-                            Text("One lowercase letter")
-                                .font(.caption)
-                                .foregroundColor(Theme.Colors.secondaryText)
-                        }
-                        HStack(spacing: 4) {
-                            Image(systemName: passwordHasDigit ? "checkmark.circle.fill" : "circle")
-                                .foregroundColor(passwordHasDigit ? .green : Theme.Colors.secondaryText)
-                                .font(.caption)
-                            Text("One number")
-                                .font(.caption)
-                                .foregroundColor(Theme.Colors.secondaryText)
-                        }
-                        HStack(spacing: 4) {
-                            Image(systemName: passwordHasSpecialChar ? "checkmark.circle.fill" : "circle")
-                                .foregroundColor(passwordHasSpecialChar ? .green : Theme.Colors.secondaryText)
-                                .font(.caption)
-                            Text("One special character (!@#$%^&*)")
-                                .font(.caption)
-                                .foregroundColor(Theme.Colors.secondaryText)
-                        }
                     }
                 }
                 
@@ -139,27 +102,12 @@ struct InitialSetupView: View {
     
     // Password validation computed properties
     private var passwordHasLength: Bool {
-        password.count >= 8
+        password.count >= 6
     }
     
-    private var passwordHasUppercase: Bool {
-        password.range(of: "[A-Z]", options: .regularExpression) != nil
-    }
-    
-    private var passwordHasLowercase: Bool {
-        password.range(of: "[a-z]", options: .regularExpression) != nil
-    }
-    
-    private var passwordHasDigit: Bool {
-        password.range(of: "[0-9]", options: .regularExpression) != nil
-    }
-    
-    private var passwordHasSpecialChar: Bool {
-        password.range(of: "[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?]", options: .regularExpression) != nil
-    }
     
     private var isPasswordValid: Bool {
-        passwordHasLength && passwordHasUppercase && passwordHasLowercase && passwordHasDigit && passwordHasSpecialChar
+        passwordHasLength
     }
     
     private var biometricName: String {

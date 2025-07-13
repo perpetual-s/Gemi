@@ -194,22 +194,9 @@ final class AuthenticationManager: ObservableObject {
     }
     
     private func isValidPassword(_ password: String) -> Bool {
-        // Strong password validation
-        guard password.count >= 8 else { return false }
-        
-        // Check for at least one uppercase letter
-        let hasUppercase = password.range(of: "[A-Z]", options: .regularExpression) != nil
-        
-        // Check for at least one lowercase letter
-        let hasLowercase = password.range(of: "[a-z]", options: .regularExpression) != nil
-        
-        // Check for at least one digit
-        let hasDigit = password.range(of: "[0-9]", options: .regularExpression) != nil
-        
-        // Check for at least one special character
-        let hasSpecialChar = password.range(of: "[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?]", options: .regularExpression) != nil
-        
-        return hasUppercase && hasLowercase && hasDigit && hasSpecialChar
+        // Simple password validation - just minimum length
+        // This is a personal diary app, not a bank
+        return password.count >= 6
     }
     
     private func savePasswordToKeychain(_ password: String) throws {
@@ -323,7 +310,7 @@ enum AuthenticationError: LocalizedError, Equatable {
         case .incorrectPassword:
             return "Incorrect password"
         case .weakPassword:
-            return "Password must contain at least 8 characters, including uppercase, lowercase, number, and special character"
+            return "Password must be at least 6 characters long"
         case .invalidPassword:
             return "Invalid password format"
         case .passwordRequired:

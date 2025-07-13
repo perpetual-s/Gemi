@@ -297,7 +297,7 @@ struct AuthenticationView: View {
         case .passwordRequired:
             return "Password authentication required."
         case .weakPassword:
-            return "Password must be at least 8 characters."
+            return "Password must be at least 6 characters."
         }
     }
     
