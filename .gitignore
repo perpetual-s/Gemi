@@ -73,9 +73,10 @@ Gemi/Scripts/Diagnostics/*.md
 *_backup.swift
 *_backup.*
 
-# Markdown files - only allowed in Documentation/ folder
+# Markdown files - only allowed in Documentation/ and legal/ folders
 *.md
 Gemi/**/*.md
+!legal/*.md
 
 # Python build artifacts
 __pycache__/
@@ -138,10 +139,13 @@ coverage.xml
 *.gcda
 *.gcno
 
-# Legal files that might be duplicated
-GEMMA_TERMS_OF_USE.txt
-NOTICE.txt
+# Legal files - tracked in /legal folder, ignored elsewhere
+/GEMMA_TERMS_OF_USE.txt
+/NOTICE.txt
 python-inference-server/legal/
+Documentation/GEMMA_TERMS_OF_USE.txt
+gemi-release/GEMMA_TERMS_OF_USE.txt
+gemi-release/NOTICE.txt
 
 # Installer backgrounds and resources
 .background/
