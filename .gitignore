@@ -67,4 +67,78 @@ Gemi/Scripts/Diagnostics/*.md
 
 # Markdown files - only allowed in Documentation/ folder
 *.md
-Gemi/**/*.md 
+Gemi/**/*.md
+
+# Python build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+python-inference-server/__pycache__/
+python-inference-server/build/
+python-inference-server/dist/
+*.egg-info/
+*.egg
+.coverage
+.pytest_cache/
+*.cover
+*.coverage
+htmlcov/
+.tox/
+.nox/
+
+# PyInstaller build artifacts
+*.spec
+*.manifest
+*.pkg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+*.virtualenv
+
+# Distribution and packaging
+*.dmg
+*.pkg
+*.deb
+*.rpm
+*.msi
+*.exe
+*.app
+*.zip
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar
+*.gz
+*.bz2
+*.xz
+*.7z
+gemi-release/
+Gemi-*.dmg
+
+# Code coverage and profiling
+*.profraw
+*.profdata
+coverage.xml
+*.gcov
+*.gcda
+*.gcno
+
+# Legal files that might be duplicated
+GEMMA_TERMS_OF_USE.txt
+NOTICE.txt
+python-inference-server/legal/
+
+# Installer backgrounds and resources
+.background/
+installer-bg.png
+
+# macOS app bundles (unless explicitly tracked)
+*.app/
+!Gemi/Gemi.app  # Exception for main app if needed 

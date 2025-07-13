@@ -1,6 +1,6 @@
 #!/bin/bash
-# Beautiful DMG Creation Script for Gemi
-# Creates a professional installer with custom background and icon arrangement
+# Final DMG Creation Script for Gemi
+# Creates a clean, professional installer with just Gemi.app and Applications
 
 set -e  # Exit on any error
 
@@ -18,8 +18,8 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}🌟 Creating Beautiful Gemi DMG Installer v$VERSION${NC}"
-echo "================================================"
+echo -e "${BLUE}🌟 Creating Final Gemi DMG Installer v$VERSION${NC}"
+echo "============================================="
 
 # Check if source directory exists
 if [ ! -d "$SOURCE_DIR" ]; then
@@ -27,7 +27,7 @@ if [ ! -d "$SOURCE_DIR" ]; then
     exit 1
 fi
 
-# Check if both apps exist
+# Check if Gemi.app exists
 if [ ! -d "$SOURCE_DIR/Gemi.app" ]; then
     echo -e "${RED}❌ Error: Gemi.app not found in $SOURCE_DIR${NC}"
     exit 1
@@ -38,11 +38,9 @@ if [ ! -d "$SOURCE_DIR/GemiServer.app" ]; then
     exit 1
 fi
 
-# Check if background exists
-if [ ! -f "$SOURCE_DIR/.background/installer-bg.png" ]; then
-    echo -e "${YELLOW}⚠️  Creating DMG background...${NC}"
-    python3 create_dmg_background.py
-fi
+# Create new background with fixed alignment
+echo -e "${GREEN}🎨 Creating background with proper alignment...${NC}"
+python3 create_dmg_background_fixed.py
 
 # Remove any existing DMG
 if [ -f "$DMG_NAME" ]; then
@@ -54,6 +52,10 @@ fi
 if [ -f "$TEMP_DMG" ]; then
     rm -f "$TEMP_DMG"
 fi
+
+# Unmount any existing volumes with same name
+hdiutil detach "/Volumes/$DMG_VOLUME_NAME" 2>/dev/null || true
+hdiutil detach "/Volumes/$DMG_VOLUME_NAME 2" 2>/dev/null || true
 
 # Remove .DS_Store to ensure clean layout
 rm -f "$SOURCE_DIR/.DS_Store"
@@ -67,20 +69,15 @@ echo -e "${GREEN}✨ Creating temporary DMG (${DMG_SIZE}MB)...${NC}"
 # Create a temporary read-write DMG
 hdiutil create -size ${DMG_SIZE}m -fs HFS+ -volname "$DMG_VOLUME_NAME" "$TEMP_DMG" -quiet
 
-# Unmount any existing volumes with same name
-hdiutil detach "/Volumes/$DMG_VOLUME_NAME" 2>/dev/null || true
-hdiutil detach "/Volumes/$DMG_VOLUME_NAME 2" 2>/dev/null || true
-
 # Mount the temporary DMG
 echo -e "${GREEN}📦 Mounting temporary DMG...${NC}"
 MOUNT_OUTPUT=$(hdiutil attach "$TEMP_DMG" -nobrowse -noverify -noautoopen -quiet)
 MOUNT_POINT="/Volumes/$DMG_VOLUME_NAME"
 
-# Copy files to the mounted DMG
+# Copy files to the mounted DMG (only what users need to see)
 echo -e "${GREEN}📄 Copying files...${NC}"
 cp -R "$SOURCE_DIR/Gemi.app" "$MOUNT_POINT/"
 cp -R "$SOURCE_DIR/GemiServer.app" "$MOUNT_POINT/"
-cp "$SOURCE_DIR/Install-Gemi.command" "$MOUNT_POINT/"
 cp "$SOURCE_DIR/NOTICE.txt" "$MOUNT_POINT/"
 cp "$SOURCE_DIR/GEMMA_TERMS_OF_USE.txt" "$MOUNT_POINT/"
 
@@ -116,16 +113,13 @@ tell application "Finder"
         set icon size of viewOptions to 80
         set background picture of viewOptions to file ".background:installer-bg.png"
         
-        -- Position visible items
+        -- Position visible items (only 2 now)
         delay 1
         
-        -- Main app at top left
+        -- Gemi.app on the left
         set position of item "Gemi.app" of container window to {150, 150}
         
-        -- Install script in center
-        set position of item "Install-Gemi.command" of container window to {300, 200}
-        
-        -- Applications folder at right
+        -- Applications folder on the right
         set position of item "Applications" of container window to {450, 150}
         
         -- Update and close
@@ -139,6 +133,7 @@ EOF
 # Force Finder to save the view settings
 echo -e "${GREEN}💾 Saving window settings...${NC}"
 sync
+sleep 2
 
 # Unmount the temporary DMG
 echo -e "${GREEN}🔧 Finalizing DMG...${NC}"
@@ -150,7 +145,7 @@ hdiutil convert "$TEMP_DMG" -format UDZO -o "$DMG_NAME" -quiet
 
 # Clean up
 rm -f "$TEMP_DMG"
-rm -f create_dmg_background.py
+rm -f create_dmg_background_fixed.py
 
 # Verify the DMG
 echo -e "${GREEN}✅ Verifying DMG...${NC}"
@@ -160,21 +155,19 @@ hdiutil verify "$DMG_NAME" -quiet
 if [ -f "$DMG_NAME" ]; then
     SIZE=$(du -h "$DMG_NAME" | cut -f1)
     echo ""
-    echo -e "${GREEN}✅ Beautiful DMG created successfully!${NC}"
+    echo -e "${GREEN}✅ Clean DMG created successfully!${NC}"
     echo -e "${BLUE}📦 File: $DMG_NAME${NC}"
     echo -e "${BLUE}📏 Size: $SIZE${NC}"
     echo ""
-    echo -e "${GREEN}DMG Contents (User Visible):${NC}"
-    echo "  • Gemi.app - Your private AI journal"
-    echo "  • Install-Gemi.command - Quick installer"
-    echo "  • Applications - Drag here to install"
+    echo -e "${GREEN}What users see:${NC}"
+    echo "  • Gemi.app - Drag this to Applications"
+    echo "  • Applications - Drop target"
     echo ""
-    echo -e "${GREEN}Hidden Components:${NC}"
-    echo "  • GemiServer.app - AI inference engine (979MB)"
-    echo "  • Legal notices - Automatically accepted"
-    echo "  • Background image - Professional layout"
+    echo -e "${GREEN}Hidden components:${NC}"
+    echo "  • GemiServer.app - Bundled AI engine"
+    echo "  • Legal notices - Terms of use"
     echo ""
-    echo -e "${BLUE}🎉 Ready for hackathon submission!${NC}"
+    echo -e "${BLUE}🎉 Professional DMG ready for distribution!${NC}"
 else
     echo -e "${RED}❌ Error: DMG creation failed${NC}"
     exit 1
