@@ -48,16 +48,34 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Configure HuggingFace authentication
-# Using fine-grained token with read-only access to Gemma models
-HF_TOKEN = "REDACTED_TOKEN"
-os.environ["HF_TOKEN"] = HF_TOKEN
+# Try to read token from local file first (for zero-friction deployment)
+HF_TOKEN = None
+token_file_path = os.path.join(os.path.dirname(__file__), "hf_token.txt")
 
-# Login to HuggingFace Hub
 try:
-    login(token=HF_TOKEN, add_to_git_credential=False)
-    logger.info("Successfully authenticated with HuggingFace Hub")
+    if os.path.exists(token_file_path):
+        with open(token_file_path, 'r') as f:
+            HF_TOKEN = f.read().strip()
+        logger.info("Loaded HuggingFace token from hf_token.txt")
 except Exception as e:
-    logger.warning(f"HuggingFace authentication warning: {e}")
+    logger.warning(f"Could not read token file: {e}")
+
+# Fall back to environment variable if no token file
+if not HF_TOKEN:
+    HF_TOKEN = os.environ.get("HF_TOKEN", None)
+    if HF_TOKEN:
+        logger.info("Using HuggingFace token from environment variable")
+
+# Login to HuggingFace Hub if token is available
+if HF_TOKEN:
+    os.environ["HF_TOKEN"] = HF_TOKEN
+    try:
+        login(token=HF_TOKEN, add_to_git_credential=False)
+        logger.info("Successfully authenticated with HuggingFace Hub")
+    except Exception as e:
+        logger.warning(f"HuggingFace authentication warning: {e}")
+else:
+    logger.warning("No HuggingFace token found. Model download may fail.")
     # Continue anyway, the token might still work via environment variable
 
 # Global variables

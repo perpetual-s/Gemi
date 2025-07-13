@@ -52,6 +52,8 @@ temp_icon/
 *credential*
 *secret*
 hf-access-token.txt
+hf_token.txt
+python-inference-server/hf_token.txt
 
 # Scripts
 reset_gemi.sh
