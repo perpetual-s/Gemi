@@ -14,6 +14,7 @@ struct GemmaOnboardingView: View {
     @State private var showPassword = false
     @State private var isSettingUpPassword = false
     @State private var passwordError = ""
+    @State private var showPasswordError = false
     @Environment(\.dismiss) var dismiss
     
     let onComplete: () -> Void
@@ -187,12 +188,21 @@ struct GemmaOnboardingView: View {
                 Button {
                     handleContinue()
                 } label: {
-                    HStack {
-                        Text(currentPage < totalPages - 1 ? "Continue" : "Get Started")
-                            .font(.system(size: 18, weight: .semibold))
-                        
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 16, weight: .bold))
+                    ZStack {
+                        // Loading state
+                        if isSettingUpPassword {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .black))
+                                .scaleEffect(0.8)
+                        } else {
+                            HStack {
+                                Text(currentPage < totalPages - 1 ? "Continue" : "Get Started")
+                                    .font(.system(size: 18, weight: .semibold))
+                                
+                                Image(systemName: "arrow.right")
+                                    .font(.system(size: 16, weight: .bold))
+                            }
+                        }
                     }
                     .foregroundColor(.black)
                     .frame(width: 200, height: 56)
@@ -203,7 +213,7 @@ struct GemmaOnboardingView: View {
                     )
                 }
                 .buttonStyle(.plain)
-                .disabled(shouldShowPasswordPage && currentPage == 2 && !isPasswordValid)
+                .disabled((shouldShowPasswordPage && currentPage == 2 && !isPasswordValid) || isSettingUpPassword)
             }
             .padding(.bottom, 60)
         }
@@ -386,15 +396,29 @@ struct GemmaOnboardingView: View {
                         )
                 )
                 
-                // Password requirements
-                HStack(spacing: 8) {
-                    Image(systemName: password.count >= 6 ? "checkmark.circle.fill" : "circle")
-                        .foregroundColor(password.count >= 6 ? .green : .white.opacity(0.5))
-                        .font(.system(size: 14))
-                    Text("At least 6 characters")
-                        .font(.system(size: 14))
-                        .foregroundColor(.white.opacity(0.7))
-                    Spacer()
+                // Password requirements with animation
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
+                        Image(systemName: password.count >= 6 ? "checkmark.circle.fill" : "circle")
+                            .foregroundColor(password.count >= 6 ? .green : .white.opacity(0.5))
+                            .font(.system(size: 14))
+                            .animation(.spring(response: 0.3), value: password.count >= 6)
+                        Text("At least 6 characters")
+                            .font(.system(size: 14))
+                            .foregroundColor(.white.opacity(0.7))
+                    }
+                    
+                    if !confirmPassword.isEmpty && password != confirmPassword {
+                        HStack(spacing: 8) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.red.opacity(0.8))
+                                .font(.system(size: 14))
+                            Text("Passwords don't match")
+                                .font(.system(size: 14))
+                                .foregroundColor(.red.opacity(0.8))
+                        }
+                        .transition(.scale.combined(with: .opacity))
+                    }
                 }
                 .padding(.horizontal, 4)
                 
@@ -431,8 +455,19 @@ struct GemmaOnboardingView: View {
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 40)
-        .onChange(of: password) { passwordError = "" }
-        .onChange(of: confirmPassword) { passwordError = "" }
+        .onChange(of: password) { 
+            passwordError = "" 
+            showPasswordError = false
+        }
+        .onChange(of: confirmPassword) { 
+            passwordError = "" 
+            showPasswordError = false
+        }
+        .alert("Password Setup Error", isPresented: $showPasswordError) {
+            Button("OK") { }
+        } message: {
+            Text(passwordError)
+        }
     }
     
     private var isPasswordValid: Bool {
@@ -448,6 +483,7 @@ struct GemmaOnboardingView: View {
             // Last page - handle setup
             if shouldShowPasswordPage && !password.isEmpty && isPasswordValid {
                 // New user with password
+                isSettingUpPassword = true
                 Task {
                     do {
                         try await authManager.setupInitialAuthentication(
@@ -458,7 +494,11 @@ struct GemmaOnboardingView: View {
                             showingSetup = true
                         }
                     } catch {
-                        passwordError = error.localizedDescription
+                        await MainActor.run {
+                            isSettingUpPassword = false
+                            passwordError = error.localizedDescription
+                            showPasswordError = true
+                        }
                     }
                 }
             } else if shouldShowPasswordPage && password.isEmpty {
