@@ -6,9 +6,20 @@ struct GemmaOnboardingView: View {
     @State private var currentPage = 0
     @State private var showingSetup = false
     @State private var showingProgressSetup = false
+    @State private var hasCompletedOnboarding = false
     @Environment(\.dismiss) var dismiss
     
     let onComplete: () -> Void
+    
+    private func safeComplete() {
+        guard !hasCompletedOnboarding else { return }
+        hasCompletedOnboarding = true
+        
+        // Ensure we're on the main thread and delay slightly to avoid state update conflicts
+        DispatchQueue.main.async {
+            onComplete()
+        }
+    }
     
     var body: some View {
         ZStack {
@@ -18,10 +29,10 @@ struct GemmaOnboardingView: View {
             // Content based on state
             if showingProgressSetup {
                 GemmaSetupProgressView(
-                    onComplete: onComplete,
+                    onComplete: safeComplete,
                     onSkip: {
                         showingProgressSetup = false
-                        onComplete()
+                        safeComplete()
                     }
                 )
                 .transition(.asymmetric(
@@ -403,7 +414,7 @@ struct GemmaOnboardingView: View {
                 
                 Button {
                     // Skip for now - they can download later
-                    onComplete()
+                    safeComplete()
                 } label: {
                     Text("Set up later")
                         .font(.system(size: 16, weight: .medium))
@@ -505,7 +516,7 @@ struct GemmaOnboardingView: View {
             }
             
             Button {
-                onComplete()
+                safeComplete()
             } label: {
                 Text("Start Using Gemi")
                     .font(.system(size: 18, weight: .semibold))
@@ -580,7 +591,7 @@ struct GemmaOnboardingView: View {
                 
                 Button {
                     // Skip for now
-                    onComplete()
+                    safeComplete()
                 } label: {
                     Text("Set up later")
                         .font(.system(size: 14, weight: .medium))

@@ -8,6 +8,7 @@ struct GemmaSetupProgressView: View {
     
     @State private var showingError = false
     @State private var pulseAnimation = false
+    @State private var hasCalledCompletion = false
     
     var body: some View {
         ZStack {
@@ -147,6 +148,8 @@ struct GemmaSetupProgressView: View {
                 HStack(spacing: 16) {
                     if setupManager.isComplete {
                         Button {
+                            guard !hasCalledCompletion else { return }
+                            hasCalledCompletion = true
                             onComplete()
                         } label: {
                             HStack {
@@ -204,6 +207,8 @@ struct GemmaSetupProgressView: View {
                     
                     if !setupManager.isComplete {
                         Button {
+                            guard !hasCalledCompletion else { return }
+                            hasCalledCompletion = true
                             onSkip()
                         } label: {
                             Text("Set up later")

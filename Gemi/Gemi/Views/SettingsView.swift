@@ -2,6 +2,21 @@ import SwiftUI
 import LocalAuthentication
 import AppKit
 
+// Window controller manager to retain window controllers
+@MainActor
+private final class WindowControllerManager {
+    static let shared = WindowControllerManager()
+    private var windowControllers: [NSWindowController] = []
+    
+    func addWindowController(_ controller: NSWindowController) {
+        windowControllers.append(controller)
+    }
+    
+    func removeWindowController(_ controller: NSWindowController) {
+        windowControllers.removeAll { $0 == controller }
+    }
+}
+
 struct SettingsView: View {
     @State private var showExportSuccess = false
     @State private var showExportError = false
@@ -1019,7 +1034,7 @@ struct SettingsView: View {
     }
     
     private func openGemmaSetupWindow() {
-        // Create a new window for Gemma setup
+        // Use AppKit's window management directly to avoid lifecycle issues
         let setupWindow = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 900, height: 700),
             styleMask: [.titled, .closable, .fullSizeContentView],
@@ -1033,10 +1048,23 @@ struct SettingsView: View {
         setupWindow.isMovableByWindowBackground = true
         setupWindow.backgroundColor = NSColor.black
         
-        // Create the content view
+        // Create a window controller to manage the window properly
+        let windowController = NSWindowController(window: setupWindow)
+        
+        // Add to manager to keep it alive
+        WindowControllerManager.shared.addWindowController(windowController)
+        
+        // Create the content view with a completion handler that safely closes the window
         let contentView = GemmaOnboardingView {
-            // Close the window when setup is completed
-            setupWindow.close()
+            // Use the window controller to close the window safely
+            DispatchQueue.main.async {
+                // First check if window is still valid
+                if let window = windowController.window, window.isVisible {
+                    windowController.close()
+                }
+                // Remove from manager after closing
+                WindowControllerManager.shared.removeWindowController(windowController)
+            }
         }
         .frame(width: 900, height: 700)
         .frame(maxWidth: 900, maxHeight: 700)
@@ -1045,11 +1073,16 @@ struct SettingsView: View {
         // Set the content view
         setupWindow.contentView = NSHostingView(rootView: contentView)
         
+        // Set up window delegate to clean up when closed via X button
+        setupWindow.delegate = NSWindowDelegateAdapter {
+            WindowControllerManager.shared.removeWindowController(windowController)
+        }
+        
         // Center the window on screen
         setupWindow.center()
         
-        // Make the window key and bring it to front
-        setupWindow.makeKeyAndOrderFront(nil)
+        // Show the window using the window controller
+        windowController.showWindow(nil)
         setupWindow.level = .floating
         
         // Remove the window level after a short delay to allow normal window behavior
@@ -1454,6 +1487,21 @@ struct DataManagementView: View {
             .background(VisualEffectView.sidebar)
         }
         .frame(width: 600, height: 500)
+    }
+}
+
+// MARK: - Window Delegate Adapter
+
+private class NSWindowDelegateAdapter: NSObject, NSWindowDelegate {
+    private let onWindowWillClose: (() -> Void)?
+    
+    init(onWindowWillClose: (() -> Void)? = nil) {
+        self.onWindowWillClose = onWindowWillClose
+        super.init()
+    }
+    
+    func windowWillClose(_ notification: Notification) {
+        onWindowWillClose?()
     }
 }
 
