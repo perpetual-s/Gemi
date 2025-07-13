@@ -260,18 +260,22 @@ class BundledServerManager: ObservableObject {
     private func locateServerBundle() -> URL {
         // Check multiple locations in priority order
         let locations = [
-            // 1. Same directory as Gemi.app (for DMG distribution)
+            // 1. Inside Gemi.app bundle (primary location)
+            Bundle.main.bundleURL
+                .appendingPathComponent("Contents/Resources/GemiServer.app"),
+            
+            // 2. Same directory as Gemi.app (for DMG distribution)
             Bundle.main.bundleURL.deletingLastPathComponent()
                 .appendingPathComponent("GemiServer.app"),
             
-            // 2. In /Applications (standard installation)
+            // 3. In /Applications (standard installation)
             URL(fileURLWithPath: "/Applications/GemiServer.app"),
             
-            // 3. In ~/Applications (user installation)
+            // 4. In ~/Applications (user installation)
             FileManager.default.homeDirectoryForCurrentUser
                 .appendingPathComponent("Applications/GemiServer.app"),
             
-            // 4. Development location (for testing)
+            // 5. Development location (for testing)
             URL(fileURLWithPath: NSHomeDirectory())
                 .appendingPathComponent("Documents/project-Gemi/python-inference-server/dist/GemiServer.app")
         ]
