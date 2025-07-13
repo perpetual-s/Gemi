@@ -4,6 +4,7 @@ torchvision
 torchaudio
 transformers>=4.53.0
 accelerate
+huggingface-hub
 fastapi
 uvicorn
 pillow

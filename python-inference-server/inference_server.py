@@ -2,6 +2,10 @@
 """
 Gemi Inference Server - Multimodal AI Backend for Gemma 3n
 Direct HuggingFace integration for full multimodal support
+
+This software includes Gemma 3n model support.
+Gemma is provided under and subject to the Gemma Terms of Use 
+found at ai.google.dev/gemma/terms
 """
 
 import asyncio
@@ -30,6 +34,7 @@ from transformers import (
 )
 from threading import Thread
 import uvicorn
+from huggingface_hub import login
 
 # Configure logging
 logging.basicConfig(
@@ -41,6 +46,19 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+# Configure HuggingFace authentication
+# Using fine-grained token with read-only access to Gemma models
+HF_TOKEN = "REDACTED_TOKEN"
+os.environ["HF_TOKEN"] = HF_TOKEN
+
+# Login to HuggingFace Hub
+try:
+    login(token=HF_TOKEN, add_to_git_credential=False)
+    logger.info("Successfully authenticated with HuggingFace Hub")
+except Exception as e:
+    logger.warning(f"HuggingFace authentication warning: {e}")
+    # Continue anyway, the token might still work via environment variable
 
 # Global variables
 model = None

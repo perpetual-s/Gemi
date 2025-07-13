@@ -30,6 +30,9 @@ a = Analysis(
         *collect_data_files('torch', include_py_files=False),
         # Include Pillow data
         *collect_data_files('PIL'),
+        # Include legal notices for Gemma
+        ('legal/NOTICE.txt', 'legal'),
+        ('legal/GEMMA_TERMS_OF_USE.txt', 'legal'),
     ],
     hiddenimports=[
         # Core imports
@@ -56,6 +59,12 @@ a = Analysis(
         'transformers.generation.streamers',
         'accelerate',
         'accelerate.utils',
+        
+        # HuggingFace Hub for authentication
+        'huggingface_hub',
+        'huggingface_hub.utils',
+        'huggingface_hub.hf_api',
+        'huggingface_hub.file_download',
         
         # PyTorch
         'torch',
@@ -151,7 +160,7 @@ exe = EXE(
     console=False,  # No console window
     disable_windowed_traceback=False,
     argv_emulation=False,
-    target_arch='universal2',  # Build for both Intel and Apple Silicon
+    target_arch=None,  # Use native architecture
     codesign_identity=None,  # Will be signed later
     entitlements_file=None,
 )
