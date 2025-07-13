@@ -167,6 +167,12 @@ class BundledServerManager: ObservableObject {
             let data = handle.availableData
             if !data.isEmpty, let output = String(data: data, encoding: .utf8) {
                 self?.logger.debug("Server output: \(output)")
+                // Check for specific messages
+                if output.contains("Downloading") || output.contains("download") {
+                    Task { @MainActor in
+                        self?.statusMessage = "Downloading Gemma 3n model (~8GB)..."
+                    }
+                }
             }
         }
         
@@ -174,6 +180,13 @@ class BundledServerManager: ObservableObject {
             let data = handle.availableData
             if !data.isEmpty, let error = String(data: data, encoding: .utf8) {
                 self?.logger.error("Server error: \(error)")
+                // Capture critical errors
+                if error.contains("Permission denied") || error.contains("cannot execute") {
+                    Task { @MainActor in
+                        self?.serverStatus = .error("Permission error: Server cannot execute")
+                        self?.statusMessage = "Server permission error. Try reinstalling Gemi."
+                    }
+                }
             }
         }
         
@@ -202,8 +215,8 @@ class BundledServerManager: ObservableObject {
         // Start periodic health checks
         startHealthCheckTimer()
         
-        // Wait up to 60 seconds for initial startup
-        for attempt in 1...60 {
+        // Wait up to 180 seconds for initial startup (3 minutes for first-time model download)
+        for attempt in 1...180 {
             if await checkHealth() {
                 serverStatus = .ready
                 statusMessage = "Gemma 3n ready!"
@@ -216,8 +229,12 @@ class BundledServerManager: ObservableObject {
                 statusMessage = "Starting server..."
             } else if attempt < 15 {
                 statusMessage = "Loading AI model..."
-            } else {
+            } else if attempt < 30 {
+                statusMessage = "Initializing Gemma 3n model..."
+            } else if attempt < 60 {
                 statusMessage = "Downloading model (first run only)..."
+            } else {
+                statusMessage = "Large model download in progress (this may take several minutes)..."
             }
             
             try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
