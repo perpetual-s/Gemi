@@ -50,15 +50,26 @@ logger = logging.getLogger(__name__)
 # Configure HuggingFace authentication
 # Try to read token from local file first (for zero-friction deployment)
 HF_TOKEN = None
-token_file_path = os.path.join(os.path.dirname(__file__), "hf_token.txt")
 
-try:
-    if os.path.exists(token_file_path):
-        with open(token_file_path, 'r') as f:
-            HF_TOKEN = f.read().strip()
-        logger.info("Loaded HuggingFace token from hf_token.txt")
-except Exception as e:
-    logger.warning(f"Could not read token file: {e}")
+# Check multiple locations for the token file
+possible_paths = [
+    # PyInstaller bundle location
+    os.path.join(getattr(sys, '_MEIPASS', os.path.dirname(__file__)), "hf_token.txt"),
+    # Same directory as script
+    os.path.join(os.path.dirname(__file__), "hf_token.txt"),
+    # Parent directory (for bundled apps)
+    os.path.join(os.path.dirname(os.path.dirname(__file__)), "hf_token.txt"),
+]
+
+for token_path in possible_paths:
+    try:
+        if os.path.exists(token_path):
+            with open(token_path, 'r') as f:
+                HF_TOKEN = f.read().strip()
+            logger.info(f"Loaded HuggingFace token from {token_path}")
+            break
+    except Exception as e:
+        logger.debug(f"Could not read token from {token_path}: {e}")
 
 # Fall back to environment variable if no token file
 if not HF_TOKEN:

@@ -15,6 +15,22 @@ os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 os.environ['HF_HUB_DISABLE_SYMLINKS_WARNING'] = '1'
 os.environ['TRANSFORMERS_OFFLINE'] = '0'  # Allow model downloads
 
+# Try to load HF token from file if not already in environment
+if 'HF_TOKEN' not in os.environ:
+    token_paths = [
+        Path(__file__).parent / 'hf_token.txt',
+        Path(getattr(sys, '_MEIPASS', Path(__file__).parent)) / 'hf_token.txt',
+    ]
+    for token_path in token_paths:
+        if token_path.exists():
+            try:
+                token = token_path.read_text().strip()
+                if token:
+                    os.environ['HF_TOKEN'] = token
+                    break
+            except Exception:
+                pass
+
 # Ensure we can find our modules when bundled
 if getattr(sys, 'frozen', False):
     # Running in PyInstaller bundle
