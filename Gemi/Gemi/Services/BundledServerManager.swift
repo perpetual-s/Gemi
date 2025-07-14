@@ -80,9 +80,18 @@ class BundledServerManager: ObservableObject {
         healthCheckTimer?.invalidate()
         healthCheckTimer = nil
         
-        if let process = serverProcess {
+        if let process = serverProcess, process.isRunning {
+            // Try graceful termination first
             process.terminate()
-            serverProcess = nil
+            
+            // Give it a moment to terminate
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                if let process = self?.serverProcess, process.isRunning {
+                    // Force kill if still running
+                    kill(process.processIdentifier, SIGKILL)
+                }
+                self?.serverProcess = nil
+            }
         }
         
         serverStatus = .notRunning
