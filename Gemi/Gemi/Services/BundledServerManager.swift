@@ -138,16 +138,31 @@ class BundledServerManager: ObservableObject {
         // Find the bundled server
         let serverURL = locateServerBundle()
         
+        logger.info("Attempting to launch server from: \(serverURL.path)")
+        
         guard FileManager.default.fileExists(atPath: serverURL.path) else {
-            let error = "GemiServer.app not found. Please reinstall Gemi."
+            let error = "GemiServer.app not found at \(serverURL.path). Please reinstall Gemi."
             serverStatus = .error(error)
             statusMessage = error
+            logger.error("Server not found at \(serverURL.path)")
             throw ServerError.serverNotFound
         }
         
         // Prepare the process
         let process = Process()
-        process.executableURL = serverURL.appendingPathComponent("Contents/MacOS/GemiServer")
+        let executablePath = serverURL.appendingPathComponent("Contents/MacOS/GemiServer")
+        
+        // Verify executable exists
+        guard FileManager.default.fileExists(atPath: executablePath.path) else {
+            let error = "GemiServer executable not found at \(executablePath.path)"
+            serverStatus = .error(error)
+            statusMessage = error
+            logger.error("\(error)")
+            throw ServerError.serverNotFound
+        }
+        
+        logger.info("Server executable found at: \(executablePath.path)")
+        process.executableURL = executablePath
         
         // Set environment
         var environment = ProcessInfo.processInfo.environment
@@ -192,18 +207,41 @@ class BundledServerManager: ObservableObject {
         
         // Launch the process
         do {
+            logger.info("Attempting to launch process...")
             try process.run()
             serverProcess = process
-            logger.info("Server process launched")
+            logger.info("Server process launched with PID: \(process.processIdentifier)")
+            
+            // Monitor process status
+            Task {
+                process.waitUntilExit()
+                let exitCode = process.terminationStatus
+                let reason = process.terminationReason
+                
+                await MainActor.run {
+                    if exitCode != 0 {
+                        self.logger.error("Server process terminated with exit code: \(exitCode), reason: \(reason.rawValue)")
+                        if exitCode == 137 {
+                            self.serverStatus = .error("Server killed by system (code signing or sandbox issue)")
+                            self.statusMessage = "Server was terminated. This is usually due to code signing issues."
+                        } else {
+                            self.serverStatus = .error("Server exited with code \(exitCode)")
+                            self.statusMessage = "Server process failed to start properly."
+                        }
+                    }
+                }
+            }
             
             // Wait for server to be ready
             await waitForServerReady()
             
         } catch {
-            let errorMsg = "Failed to launch server: \(error.localizedDescription)"
+            let nsError = error as NSError
+            let errorMsg = "Failed to launch server: \(error.localizedDescription) (Code: \(nsError.code), Domain: \(nsError.domain))"
             serverStatus = .error(errorMsg)
             statusMessage = errorMsg
             logger.error("\(errorMsg)")
+            logger.error("Full error: \(error)")
             throw ServerError.launchFailed(error.localizedDescription)
         }
     }
