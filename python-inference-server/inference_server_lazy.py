@@ -61,7 +61,7 @@ class ChatResponse(BaseModel):
 # Configuration
 MODEL_ID = "google/gemma-3n-e4b-it"
 DEFAULT_MODEL_DIR = Path.home() / "Library" / "Application Support" / "Gemi" / "Models"
-HF_TOKEN = os.getenv("HF_TOKEN", "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")
+HF_TOKEN = os.getenv("HF_TOKEN", None)  # Token should be loaded from hf_token.txt or environment
 
 def lazy_load_ml_libraries():
     """Lazy load ML libraries to avoid import issues with PyInstaller"""

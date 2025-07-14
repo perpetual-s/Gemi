@@ -41,7 +41,8 @@ RESOURCES_DIR="${APP_DIR}/Resources"
 export PYTHONPATH="${RESOURCES_DIR}:${PYTHONPATH}"
 export HF_HOME="${HOME}/Library/Application Support/Gemi/Models"
 export TRANSFORMERS_CACHE="${HF_HOME}"
-export HF_TOKEN="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"
+# HF_TOKEN should be set via environment variable or hf_token.txt file
+# export HF_TOKEN="your_token_here"
 
 # Create cache directory
 mkdir -p "${HF_HOME}"
