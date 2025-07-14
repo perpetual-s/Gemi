@@ -24,6 +24,7 @@ final class AuthenticationManager: ObservableObject {
     
     private var authenticationTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
+    private var cachedPassword: String?
     
     // MARK: - Computed Properties
     var biometricType: LABiometryType {
@@ -225,9 +226,17 @@ final class AuthenticationManager: ObservableObject {
         guard status == errSecSuccess else {
             throw AuthenticationError.keychainError(status)
         }
+        
+        // Update cache
+        cachedPassword = password
     }
     
     private func loadPasswordFromKeychain() throws -> String? {
+        // Return cached password if available
+        if let cached = cachedPassword {
+            return cached
+        }
+        
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: keychainService,
@@ -247,6 +256,8 @@ final class AuthenticationManager: ObservableObject {
             throw AuthenticationError.keychainError(status)
         }
         
+        // Cache the password
+        cachedPassword = password
         return password
     }
     

@@ -13,6 +13,7 @@ actor DatabaseManager {
     private let databaseName = "gemi.db"
     private let encryptionKeyTag = "com.gemi.encryptionKey"
     private var database: OpaquePointer?
+    private var cachedEncryptionKey: SymmetricKey?
     
     private init() {}
     
@@ -570,6 +571,11 @@ actor DatabaseManager {
     // MARK: - Encryption
     
     private func getOrCreateEncryptionKey() async throws -> SymmetricKey {
+        // Return cached key if available
+        if let cachedKey = cachedEncryptionKey {
+            return cachedKey
+        }
+        
         // Try to retrieve existing key from Keychain
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -581,7 +587,9 @@ actor DatabaseManager {
         let status = SecItemCopyMatching(query as CFDictionary, &result)
         
         if status == errSecSuccess, let keyData = result as? Data {
-            return SymmetricKey(data: keyData)
+            let key = SymmetricKey(data: keyData)
+            cachedEncryptionKey = key
+            return key
         }
         
         // Generate new key
@@ -601,6 +609,7 @@ actor DatabaseManager {
             throw DatabaseError.encryptionError
         }
         
+        cachedEncryptionKey = key
         return key
     }
     
