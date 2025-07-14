@@ -1,1 +1,0 @@
-./diagnose_server.sh: line 35: timeout: command not found
