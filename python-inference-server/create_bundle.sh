@@ -83,6 +83,7 @@ cp inference_server.py "${RESOURCES_DIR}/"
 cp pyproject.toml "${RESOURCES_DIR}/"
 cp requirements.txt "${RESOURCES_DIR}/" 2>/dev/null || true
 cp -r legal "${RESOURCES_DIR}/" 2>/dev/null || true
+cp hf_token.txt "${RESOURCES_DIR}/" 2>/dev/null || true
 
 # Copy UV binary if available
 if command -v uv &> /dev/null; then

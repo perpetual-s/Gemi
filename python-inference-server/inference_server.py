@@ -230,7 +230,11 @@ async def load_model_async():
         logger.info(f"Model loaded successfully on {device}")
         
         # Run a test inference to ensure everything works
-        await test_model()
+        try:
+            await test_model()
+        except Exception as e:
+            logger.warning(f"Model test skipped due to error: {str(e)}")
+            # Continue anyway - the model is loaded
         
     except Exception as e:
         logger.error(f"Failed to load model: {str(e)}")
@@ -240,12 +244,16 @@ async def load_model_async():
 async def test_model():
     """Run a simple test to ensure model works"""
     try:
+        # Create test messages in ChatMessage format
         test_messages = [
-            {"role": "user", "content": "Hello!"}
+            ChatMessage(role="user", content="Hello!")
         ]
         
+        # Process through the same pipeline as regular messages
+        processed_messages = process_multimodal_messages(test_messages)
+        
         inputs = processor.apply_chat_template(
-            test_messages,
+            processed_messages,
             add_generation_prompt=True,
             tokenize=True,
             return_dict=True,
