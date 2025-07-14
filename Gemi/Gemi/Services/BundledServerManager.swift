@@ -113,8 +113,14 @@ class BundledServerManager: ObservableObject {
                 if let downloadProgress = json["download_progress"] as? Double {
                     await MainActor.run {
                         self.modelDownloadProgress = downloadProgress
-                        self.serverStatus = .downloadingModel(progress: downloadProgress)
-                        self.statusMessage = "Downloading Gemma 3n model: \(Int(downloadProgress * 100))%"
+                        if downloadProgress < 0 {
+                            // Error state
+                            self.serverStatus = .error("Model loading failed")
+                            self.statusMessage = "Failed to load AI model. Check server logs."
+                        } else {
+                            self.serverStatus = .downloadingModel(progress: downloadProgress)
+                            self.statusMessage = "Downloading Gemma 3n model: \(Int(downloadProgress * 100))%"
+                        }
                     }
                 }
             }
@@ -287,7 +293,7 @@ class BundledServerManager: ObservableObject {
         // Timeout
         serverStatus = .error("Server startup timeout")
         statusMessage = "Server failed to start. Please check logs."
-        logger.error("Server startup timeout after 60 seconds")
+        logger.error("Server startup timeout after 180 seconds")
     }
     
     private func startHealthCheckTimer() {

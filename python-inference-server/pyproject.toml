@@ -15,6 +15,8 @@ dependencies = [
     "librosa",
     "python-multipart",
     "sse-starlette",
+    "timm",
+    "huggingface-hub",
 ]
 
 [tool.uv]
