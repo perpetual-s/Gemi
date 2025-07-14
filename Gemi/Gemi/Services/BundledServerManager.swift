@@ -275,6 +275,9 @@ class BundledServerManager: ObservableObject {
     }
     
     private func locateServerBundle() -> URL {
+        // First, try to ensure server is bundled (for development builds)
+        ensureServerBundled()
+        
         // Check multiple locations in priority order
         let locations = [
             // 1. Inside Gemi.app bundle (primary location)
@@ -297,17 +300,57 @@ class BundledServerManager: ObservableObject {
                 .appendingPathComponent("Documents/project-Gemi/python-inference-server/dist/GemiServer.app")
         ]
         
+        // Log all locations being checked for debugging
+        logger.info("Searching for GemiServer.app in the following locations:")
+        for (index, location) in locations.enumerated() {
+            let exists = FileManager.default.fileExists(atPath: location.path)
+            logger.info("  \(index + 1). \(location.path) - \(exists ? "FOUND" : "not found")")
+        }
+        
         // Find first existing location
         for location in locations {
             if FileManager.default.fileExists(atPath: location.path) {
-                logger.info("Found GemiServer at: \(location.path)")
+                logger.info("Using GemiServer at: \(location.path)")
                 return location
             }
         }
         
         // Default to /Applications
-        logger.warning("GemiServer.app not found in expected locations")
+        logger.error("GemiServer.app not found in any expected location")
         return URL(fileURLWithPath: "/Applications/GemiServer.app")
+    }
+    
+    /// Attempts to bundle GemiServer.app if running in development mode
+    private func ensureServerBundled() {
+        #if DEBUG
+        // Only try to auto-bundle in debug builds
+        let resourcesPath = Bundle.main.bundleURL.appendingPathComponent("Contents/Resources")
+        let serverDestPath = resourcesPath.appendingPathComponent("GemiServer.app")
+        
+        // Check if already bundled
+        if FileManager.default.fileExists(atPath: serverDestPath.path) {
+            return
+        }
+        
+        // Look for server in development location
+        let devServerPath = URL(fileURLWithPath: NSHomeDirectory())
+            .appendingPathComponent("Documents/project-Gemi/python-inference-server/dist/GemiServer.app")
+        
+        if FileManager.default.fileExists(atPath: devServerPath.path) {
+            logger.info("Development mode: Attempting to bundle GemiServer.app")
+            
+            do {
+                // Create Resources directory if needed
+                try FileManager.default.createDirectory(at: resourcesPath, withIntermediateDirectories: true)
+                
+                // Copy server to bundle
+                try FileManager.default.copyItem(at: devServerPath, to: serverDestPath)
+                logger.info("Successfully bundled GemiServer.app for development")
+            } catch {
+                logger.error("Failed to bundle GemiServer.app: \(error)")
+            }
+        }
+        #endif
     }
 }
 
