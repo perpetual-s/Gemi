@@ -48,6 +48,11 @@ pyinstaller gemi-server.spec --clean --noconfirm
 # Check if build succeeded
 if [ -d "dist/GemiServer.app" ]; then
     echo -e "${GREEN}✓ Build successful!${NC}"
+
+# Sign the app with ad-hoc signature to prevent macOS from killing it
+echo -e "${YELLOW}Signing app with ad-hoc signature...${NC}"
+codesign --force --deep --sign - "dist/GemiServer.app"
+echo -e "${GREEN}✓ App signed!${NC}"
     
     # Optimize the bundle
     echo -e "${YELLOW}Optimizing bundle size...${NC}"
