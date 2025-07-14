@@ -9,7 +9,6 @@ import SwiftUI
 
 @main
 struct GemiApp: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var authManager = AuthenticationManager.shared
     @StateObject private var modelManager = GemmaModelManager()
     @AppStorage("hasCompletedGemmaOnboarding") private var hasCompletedOnboarding = false
@@ -117,17 +116,6 @@ struct GemiApp: App {
         showingOnboarding = needsOnboarding
     }
     
-}
-
-// MARK: - App Delegate
-
-class AppDelegate: NSObject, NSApplicationDelegate {
-    func applicationWillTerminate(_ notification: Notification) {
-        // Stop the bundled server when app terminates
-        Task { @MainActor in
-            BundledServerManager.shared.stopServer()
-        }
-    }
 }
 
 extension Notification.Name {
