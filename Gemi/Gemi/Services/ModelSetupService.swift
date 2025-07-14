@@ -113,37 +113,48 @@ class ModelSetupService: ObservableObject {
     }
     
     private func monitorServerStatus() async {
-        // Monitor server status for up to 5 minutes (for model download)
-        for _ in 0..<300 { // 300 seconds = 5 minutes
-            let serverManager = BundledServerManager.shared
-            
-            switch serverManager.serverStatus {
-            case .ready:
-                currentStep = .complete
-                statusMessage = "Setup complete!"
-                progress = 1.0
-                isComplete = true
-                return
+        // Set up observation of server status changes
+        let serverManager = BundledServerManager.shared
+        
+        // Create a task that monitors server status
+        Task { @MainActor in
+            // Monitor status changes with async loop
+            while !self.isComplete && self.error == nil {
+                switch serverManager.serverStatus {
+                case .ready:
+                    self.currentStep = .complete
+                    self.statusMessage = "Setup complete!"
+                    self.progress = 1.0
+                    self.isComplete = true
+                    return
+                    
+                case .downloadingModel(let downloadProgress):
+                    self.currentStep = .downloadingModel
+                    self.statusMessage = "Downloading Gemma 3n model (\(Int(downloadProgress * 100))%)"
+                    self.progress = 0.5 + (downloadProgress * 0.5)
+                    
+                case .error(let errorMsg):
+                    self.error = SetupError.launchFailed(errorMsg)
+                    self.statusMessage = errorMsg
+                    return
+                    
+                case .loading:
+                    self.statusMessage = "Loading AI model..."
+                    
+                case .launching:
+                    self.statusMessage = "Starting server..."
+                    
+                default:
+                    break
+                }
                 
-            case .downloadingModel(let downloadProgress):
-                statusMessage = "Downloading Gemma 3n model (\(Int(downloadProgress * 100))%)"
-                progress = 0.5 + (downloadProgress * 0.5)
-                
-            case .error(let errorMsg):
-                self.error = SetupError.launchFailed(errorMsg)
-                return
-                
-            default:
-                // Keep waiting
-                break
+                // Wait a bit before checking again
+                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
             }
-            
-            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
         }
         
-        // Timeout
-        self.error = SetupError.downloadFailed("Download timeout - please check your connection")
-        statusMessage = "Download timeout - please check your connection"
+        // Don't block here - return immediately to keep UI responsive
+        statusMessage = "Starting Gemi AI server..."
     }
 }
 

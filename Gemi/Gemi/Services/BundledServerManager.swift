@@ -93,7 +93,10 @@ class BundledServerManager: ObservableObject {
     func checkHealth() async -> Bool {
         do {
             let url = URL(string: "http://127.0.0.1:\(serverPort)/api/health")!
-            let (data, response) = try await URLSession.shared.data(from: url)
+            var request = URLRequest(url: url)
+            request.timeoutInterval = 2.0 // 2 second timeout
+            
+            let (data, response) = try await URLSession.shared.data(for: request)
             
             guard let httpResponse = response as? HTTPURLResponse,
                   httpResponse.statusCode == 200 else {
@@ -259,8 +262,11 @@ class BundledServerManager: ObservableObject {
         // Start periodic health checks
         startHealthCheckTimer()
         
-        // Wait up to 180 seconds for initial startup (3 minutes for first-time model download)
-        for attempt in 1...180 {
+        // Don't block here - let the health check timer handle status updates
+        // The UI will remain responsive and update based on server status changes
+        
+        // Just do a quick initial check
+        for attempt in 1...10 {
             if await checkHealth() {
                 serverStatus = .ready
                 statusMessage = "Gemma 3n ready!"
@@ -268,32 +274,18 @@ class BundledServerManager: ObservableObject {
                 return
             }
             
-            // Update status message based on timing
-            if attempt < 5 {
-                statusMessage = "Starting server..."
-            } else if attempt < 15 {
-                statusMessage = "Loading AI model..."
-            } else if attempt < 30 {
-                statusMessage = "Initializing Gemma 3n model..."
-            } else if attempt < 60 {
-                statusMessage = "Downloading model (first run only)..."
-            } else {
-                statusMessage = "Large model download in progress (this may take several minutes)..."
-            }
+            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
             
-            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-            
-            // Check if task was cancelled
             if Task.isCancelled {
                 serverStatus = .error("Server startup cancelled")
                 return
             }
         }
         
-        // Timeout
-        serverStatus = .error("Server startup timeout")
-        statusMessage = "Server failed to start. Please check logs."
-        logger.error("Server startup timeout after 180 seconds")
+        // After initial quick checks, just set status to loading
+        // The health check timer will continue monitoring
+        statusMessage = "Server is starting up. This may take a few minutes on first run..."
+        logger.info("Server not immediately ready, continuing with background monitoring")
     }
     
     private func startHealthCheckTimer() {
