@@ -144,41 +144,69 @@ class BundledServerManager: ObservableObject {
     }
     
     private func performServerLaunch() async throws {
-        // Find the bundled server
-        let serverURL = locateServerBundle()
+        // Try multiple server launch approaches
+        let launchOptions = findServerLaunchOptions()
         
-        logger.info("Attempting to launch server from: \(serverURL.path)")
-        
-        guard FileManager.default.fileExists(atPath: serverURL.path) else {
-            let error = "GemiServer.app not found at \(serverURL.path). Please reinstall Gemi."
+        guard !launchOptions.isEmpty else {
+            let error = "No server launch method found. Please reinstall Gemi."
             serverStatus = .error(error)
             statusMessage = error
-            logger.error("Server not found at \(serverURL.path)")
+            logger.error("No server launch options available")
             throw ServerError.serverNotFound
         }
         
+        var lastError: Error?
+        
+        // Try each launch option in order
+        for (method, executableURL) in launchOptions {
+            logger.info("Attempting to launch server using \(method): \(executableURL.path)")
+            
+            do {
+                try await launchServerWithExecutable(executableURL: executableURL)
+                logger.info("Successfully launched server using \(method)")
+                return
+            } catch {
+                logger.error("Failed to launch using \(method): \(error.localizedDescription)")
+                lastError = error
+                // Continue to next method
+            }
+        }
+        
+        // All methods failed
+        let error = "Failed to launch server with any method"
+        serverStatus = .error(error)
+        statusMessage = error
+        throw lastError ?? ServerError.serverNotFound
+    }
+    
+    private func launchServerWithExecutable(executableURL: URL) async throws {
         // Prepare the process
         let process = Process()
-        let executablePath = serverURL.appendingPathComponent("Contents/MacOS/GemiServer")
-        
-        // Verify executable exists
-        guard FileManager.default.fileExists(atPath: executablePath.path) else {
-            let error = "GemiServer executable not found at \(executablePath.path)"
-            serverStatus = .error(error)
-            statusMessage = error
-            logger.error("\(error)")
-            throw ServerError.serverNotFound
-        }
-        
-        logger.info("Server executable found at: \(executablePath.path)")
-        process.executableURL = executablePath
+        process.executableURL = executableURL
         
         // Set environment
         var environment = ProcessInfo.processInfo.environment
         environment["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
-        environment["HF_HOME"] = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let modelPath = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
             .appendingPathComponent("Gemi/Models").path
+        environment["HF_HOME"] = modelPath
+        environment["TRANSFORMERS_CACHE"] = modelPath
+        environment["TORCH_HOME"] = modelPath
         process.environment = environment
+        
+        // Special handling for UV-based launches
+        if executableURL.lastPathComponent == "launch_server.sh" {
+            // Launch shell script
+            process.arguments = []
+        } else if executableURL.lastPathComponent == "uv" {
+            // Direct UV execution
+            let serverDir = URL(fileURLWithPath: NSHomeDirectory())
+                .appendingPathComponent("Documents/project-Gemi/python-inference-server")
+            process.currentDirectoryURL = serverDir
+            process.arguments = ["run", "python", "inference_server.py"]
+        }
+        
+        // Rest of the original launch code continues...
         
         // Capture output for debugging
         let outputPipe = Pipe()
@@ -308,6 +336,81 @@ class BundledServerManager: ObservableObject {
                 }
             }
         }
+    }
+    
+    private func findServerLaunchOptions() -> [(method: String, executable: URL)] {
+        var options: [(method: String, executable: URL)] = []
+        
+        // First, try to ensure server is bundled (for development builds)
+        ensureServerBundled()
+        
+        // Option 1: Bundled GemiServer.app
+        let bundledLocations = [
+            // Inside Gemi.app bundle
+            Bundle.main.bundleURL
+                .appendingPathComponent("Contents/Resources/GemiServer.app/Contents/MacOS/GemiServer"),
+            // Same directory as Gemi.app
+            Bundle.main.bundleURL.deletingLastPathComponent()
+                .appendingPathComponent("GemiServer.app/Contents/MacOS/GemiServer"),
+            // Development location
+            URL(fileURLWithPath: NSHomeDirectory())
+                .appendingPathComponent("Documents/project-Gemi/python-inference-server/dist/GemiServer.app/Contents/MacOS/GemiServer")
+        ]
+        
+        for location in bundledLocations {
+            if FileManager.default.fileExists(atPath: location.path) {
+                options.append((method: "PyInstaller Bundle", executable: location))
+                break
+            }
+        }
+        
+        // Option 2: UV-based launch script
+        let launchScriptLocations = [
+            // Development location
+            URL(fileURLWithPath: NSHomeDirectory())
+                .appendingPathComponent("Documents/project-Gemi/python-inference-server/launch_server.sh"),
+            // Bundled location
+            Bundle.main.bundleURL
+                .appendingPathComponent("Contents/Resources/launch_server.sh")
+        ]
+        
+        for location in launchScriptLocations {
+            if FileManager.default.fileExists(atPath: location.path) {
+                options.append((method: "UV Launch Script", executable: location))
+                break
+            }
+        }
+        
+        // Option 3: Direct UV command (if UV is available)
+        if let uvPath = findUVExecutable() {
+            // Use UV to run the inference server directly
+            options.append((method: "UV Direct", executable: uvPath))
+        }
+        
+        // Log all options for debugging
+        logger.info("Found \(options.count) server launch options:")
+        for (index, option) in options.enumerated() {
+            logger.info("  \(index + 1). \(option.method): \(option.executable.path)")
+        }
+        
+        return options
+    }
+    
+    private func findUVExecutable() -> URL? {
+        // Check common UV installation locations
+        let uvPaths = [
+            "/Users/\(NSUserName())/.local/bin/uv",
+            "/usr/local/bin/uv",
+            "/opt/homebrew/bin/uv"
+        ]
+        
+        for path in uvPaths {
+            if FileManager.default.fileExists(atPath: path) {
+                return URL(fileURLWithPath: path)
+            }
+        }
+        
+        return nil
     }
     
     private func locateServerBundle() -> URL {
