@@ -144,39 +144,33 @@ class BundledServerManager: ObservableObject {
     }
     
     private func performServerLaunch() async throws {
-        // Try multiple server launch approaches
-        let launchOptions = findServerLaunchOptions()
+        // Find the bundled GemiServer.app
+        let serverURL = locateServerBundle()
         
-        guard !launchOptions.isEmpty else {
-            let error = "No server launch method found. Please reinstall Gemi."
+        logger.info("Attempting to launch server from: \(serverURL.path)")
+        
+        guard FileManager.default.fileExists(atPath: serverURL.path) else {
+            let error = "GemiServer.app not found at \(serverURL.path). Please reinstall Gemi."
             serverStatus = .error(error)
             statusMessage = error
-            logger.error("No server launch options available")
+            logger.error("Server not found at \(serverURL.path)")
             throw ServerError.serverNotFound
         }
         
-        var lastError: Error?
+        // Launch the server executable directly
+        let executablePath = serverURL.appendingPathComponent("Contents/MacOS/GemiServer")
         
-        // Try each launch option in order
-        for (method, executableURL) in launchOptions {
-            logger.info("Attempting to launch server using \(method): \(executableURL.path)")
-            
-            do {
-                try await launchServerWithExecutable(executableURL: executableURL)
-                logger.info("Successfully launched server using \(method)")
-                return
-            } catch {
-                logger.error("Failed to launch using \(method): \(error.localizedDescription)")
-                lastError = error
-                // Continue to next method
-            }
+        guard FileManager.default.fileExists(atPath: executablePath.path) else {
+            let error = "GemiServer executable not found"
+            serverStatus = .error(error)
+            statusMessage = error
+            logger.error("\(error)")
+            throw ServerError.serverNotFound
         }
         
-        // All methods failed
-        let error = "Failed to launch server with any method"
-        serverStatus = .error(error)
-        statusMessage = error
-        throw lastError ?? ServerError.serverNotFound
+        logger.info("Server executable found at: \(executablePath.path)")
+        
+        try await launchServerWithExecutable(executableURL: executablePath)
     }
     
     private func launchServerWithExecutable(executableURL: URL) async throws {
@@ -193,20 +187,6 @@ class BundledServerManager: ObservableObject {
         environment["TRANSFORMERS_CACHE"] = modelPath
         environment["TORCH_HOME"] = modelPath
         process.environment = environment
-        
-        // Special handling for UV-based launches
-        if executableURL.lastPathComponent == "launch_server.sh" {
-            // Launch shell script
-            process.arguments = []
-        } else if executableURL.lastPathComponent == "uv" {
-            // Direct UV execution
-            let serverDir = URL(fileURLWithPath: NSHomeDirectory())
-                .appendingPathComponent("Documents/project-Gemi/python-inference-server")
-            process.currentDirectoryURL = serverDir
-            process.arguments = ["run", "python", "inference_server.py"]
-        }
-        
-        // Rest of the original launch code continues...
         
         // Capture output for debugging
         let outputPipe = Pipe()
@@ -338,113 +318,17 @@ class BundledServerManager: ObservableObject {
         }
     }
     
-    private func findServerLaunchOptions() -> [(method: String, executable: URL)] {
-        var options: [(method: String, executable: URL)] = []
-        
-        // First, try to ensure server is bundled (for development builds)
-        ensureServerBundled()
-        
-        // Option 1: Bundled GemiServer.app
-        let bundledLocations = [
-            // Inside Gemi.app bundle
-            Bundle.main.bundleURL
-                .appendingPathComponent("Contents/Resources/GemiServer.app/Contents/MacOS/GemiServer"),
-            // Same directory as Gemi.app
-            Bundle.main.bundleURL.deletingLastPathComponent()
-                .appendingPathComponent("GemiServer.app/Contents/MacOS/GemiServer"),
-            // Development location
-            URL(fileURLWithPath: NSHomeDirectory())
-                .appendingPathComponent("Documents/project-Gemi/python-inference-server/dist/GemiServer.app/Contents/MacOS/GemiServer")
-        ]
-        
-        for location in bundledLocations {
-            if FileManager.default.fileExists(atPath: location.path) {
-                options.append((method: "PyInstaller Bundle", executable: location))
-                break
-            }
-        }
-        
-        // Option 2: UV-based launch script
-        let launchScriptLocations = [
-            // Development location
-            URL(fileURLWithPath: NSHomeDirectory())
-                .appendingPathComponent("Documents/project-Gemi/python-inference-server/launch_server.sh"),
-            // Bundled location
-            Bundle.main.bundleURL
-                .appendingPathComponent("Contents/Resources/launch_server.sh")
-        ]
-        
-        for location in launchScriptLocations {
-            if FileManager.default.fileExists(atPath: location.path) {
-                options.append((method: "UV Launch Script", executable: location))
-                break
-            }
-        }
-        
-        // Option 3: Direct UV command (if UV is available)
-        if let uvPath = findUVExecutable() {
-            // Use UV to run the inference server directly
-            options.append((method: "UV Direct", executable: uvPath))
-        }
-        
-        // Log all options for debugging
-        logger.info("Found \(options.count) server launch options:")
-        for (index, option) in options.enumerated() {
-            logger.info("  \(index + 1). \(option.method): \(option.executable.path)")
-        }
-        
-        return options
-    }
-    
-    private func findUVExecutable() -> URL? {
-        // Check common UV installation locations
-        let uvPaths = [
-            "/Users/\(NSUserName())/.local/bin/uv",
-            "/usr/local/bin/uv",
-            "/opt/homebrew/bin/uv"
-        ]
-        
-        for path in uvPaths {
-            if FileManager.default.fileExists(atPath: path) {
-                return URL(fileURLWithPath: path)
-            }
-        }
-        
-        return nil
-    }
-    
     private func locateServerBundle() -> URL {
-        // First, try to ensure server is bundled (for development builds)
-        ensureServerBundled()
-        
-        // Check multiple locations in priority order
+        // Check for bundled GemiServer.app in priority order
         let locations = [
             // 1. Inside Gemi.app bundle (primary location)
             Bundle.main.bundleURL
                 .appendingPathComponent("Contents/Resources/GemiServer.app"),
             
-            // 2. Same directory as Gemi.app (for DMG distribution)
-            Bundle.main.bundleURL.deletingLastPathComponent()
-                .appendingPathComponent("GemiServer.app"),
-            
-            // 3. In /Applications (standard installation)
-            URL(fileURLWithPath: "/Applications/GemiServer.app"),
-            
-            // 4. In ~/Applications (user installation)
-            FileManager.default.homeDirectoryForCurrentUser
-                .appendingPathComponent("Applications/GemiServer.app"),
-            
-            // 5. Development location (for testing)
+            // 2. Development location (for testing)
             URL(fileURLWithPath: NSHomeDirectory())
                 .appendingPathComponent("Documents/project-Gemi/python-inference-server/dist/GemiServer.app")
         ]
-        
-        // Log all locations being checked for debugging
-        logger.info("Searching for GemiServer.app in the following locations:")
-        for (index, location) in locations.enumerated() {
-            let exists = FileManager.default.fileExists(atPath: location.path)
-            logger.info("  \(index + 1). \(location.path) - \(exists ? "FOUND" : "not found")")
-        }
         
         // Find first existing location
         for location in locations {
@@ -454,42 +338,9 @@ class BundledServerManager: ObservableObject {
             }
         }
         
-        // Default to /Applications
+        // Default to expected location
         logger.error("GemiServer.app not found in any expected location")
-        return URL(fileURLWithPath: "/Applications/GemiServer.app")
-    }
-    
-    /// Attempts to bundle GemiServer.app if running in development mode
-    private func ensureServerBundled() {
-        #if DEBUG
-        // Only try to auto-bundle in debug builds
-        let resourcesPath = Bundle.main.bundleURL.appendingPathComponent("Contents/Resources")
-        let serverDestPath = resourcesPath.appendingPathComponent("GemiServer.app")
-        
-        // Check if already bundled
-        if FileManager.default.fileExists(atPath: serverDestPath.path) {
-            return
-        }
-        
-        // Look for server in development location
-        let devServerPath = URL(fileURLWithPath: NSHomeDirectory())
-            .appendingPathComponent("Documents/project-Gemi/python-inference-server/dist/GemiServer.app")
-        
-        if FileManager.default.fileExists(atPath: devServerPath.path) {
-            logger.info("Development mode: Attempting to bundle GemiServer.app")
-            
-            do {
-                // Create Resources directory if needed
-                try FileManager.default.createDirectory(at: resourcesPath, withIntermediateDirectories: true)
-                
-                // Copy server to bundle
-                try FileManager.default.copyItem(at: devServerPath, to: serverDestPath)
-                logger.info("Successfully bundled GemiServer.app for development")
-            } catch {
-                logger.error("Failed to bundle GemiServer.app: \(error)")
-            }
-        }
-        #endif
+        return locations.first!
     }
 }
 
