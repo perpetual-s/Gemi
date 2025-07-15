@@ -200,8 +200,18 @@ async def load_model_async():
         cache_dir = Path.home() / ".cache" / "huggingface"
         os.environ["HF_HOME"] = str(cache_dir)
         
+        # Check if model is already cached
+        model_cache_path = cache_dir / "hub" / f"models--{MODEL_ID.replace('/', '--')}"
+        is_cached = model_cache_path.exists() and any(model_cache_path.glob("**/pytorch_model*.bin")) or any(model_cache_path.glob("**/model*.safetensors"))
+        
+        if is_cached:
+            logger.info(f"Model already cached at {model_cache_path}")
+            download_progress = 0.9  # Show almost complete if already cached
+        else:
+            logger.info(f"Model will be downloaded to {model_cache_path}")
+            download_progress = 0.1
+        
         logger.info(f"Loading model: {MODEL_ID}")
-        download_progress = 0.1
         
         # Load processor first (smaller download)
         processor = AutoProcessor.from_pretrained(
@@ -209,15 +219,19 @@ async def load_model_async():
             cache_dir=cache_dir,
             trust_remote_code=True
         )
-        download_progress = 0.2
+        if not is_cached:
+            download_progress = 0.2
         logger.info("Processor loaded successfully")
         
         # Configure model loading
         torch_dtype = torch.bfloat16 if device.type in ["mps", "cuda"] else torch.float32
         
         # Load model with optimizations
-        logger.info("Loading model weights... This may take several minutes on first run.")
-        download_progress = 0.3
+        if is_cached:
+            logger.info("Loading cached model weights...")
+        else:
+            logger.info("Downloading model weights... This may take several minutes on first run.")
+            download_progress = 0.3
         
         model = AutoModelForCausalLM.from_pretrained(
             MODEL_ID,
@@ -228,7 +242,8 @@ async def load_model_async():
             low_cpu_mem_usage=True,
         )
         
-        download_progress = 0.8
+        if not is_cached:
+            download_progress = 0.8
         
         # Move to device if not using device_map
         if device.type != "cuda":

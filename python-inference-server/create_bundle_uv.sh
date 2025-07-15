@@ -96,14 +96,29 @@ echo "Starting Gemi Server..." >> "$LOG_FILE"
 echo "Date: $(date)" >> "$LOG_FILE"
 echo "UV: $RESOURCES_DIR/uv" >> "$LOG_FILE"
 
-# Create virtual environment if it doesn't exist
-if [ ! -d "$RESOURCES_DIR/.venv" ]; then
-    echo "Creating virtual environment..." >> "$LOG_FILE"
-    "$RESOURCES_DIR/uv" venv "$RESOURCES_DIR/.venv" >> "$LOG_FILE" 2>&1
+# Create a working directory in user space
+WORK_DIR="$HOME/Library/Application Support/Gemi/ServerRuntime"
+mkdir -p "$WORK_DIR"
+
+# Copy necessary files to working directory if not already there
+if [ ! -f "$WORK_DIR/pyproject.toml" ]; then
+    echo "Setting up working directory..." >> "$LOG_FILE"
+    cp "$RESOURCES_DIR/pyproject.toml" "$WORK_DIR/"
+    cp "$RESOURCES_DIR/inference_server.py" "$WORK_DIR/"
+    cp "$RESOURCES_DIR/hf_token.txt" "$WORK_DIR/" 2>/dev/null || true
 fi
 
-# Run the server
-exec "$RESOURCES_DIR/uv" run python inference_server.py 2>&1 | tee -a "$LOG_FILE"
+# Change to working directory
+cd "$WORK_DIR"
+
+# Create virtual environment if it doesn't exist
+if [ ! -d "$WORK_DIR/.venv" ]; then
+    echo "Creating virtual environment..." >> "$LOG_FILE"
+    "$RESOURCES_DIR/uv" venv "$WORK_DIR/.venv" >> "$LOG_FILE" 2>&1
+fi
+
+# Run the server from working directory
+exec "$RESOURCES_DIR/uv" run python "$WORK_DIR/inference_server.py" 2>&1 | tee -a "$LOG_FILE"
 EOF
 
 chmod +x "$MACOS_DIR/GemiServer"
@@ -159,10 +174,9 @@ fi
 echo -e "${YELLOW}Signing bundle...${NC}"
 codesign --force --deep --sign - "$BUNDLE_DIR"
 
-# Create symlink for UV to find packages
-echo -e "${YELLOW}Setting up package discovery...${NC}"
-cd "$RESOURCES_DIR"
-"$RESOURCES_DIR/uv" sync 2>/dev/null || true
+# Don't create virtual environment during bundling
+# It will be created at runtime in the correct location
+echo -e "${YELLOW}Bundle setup complete...${NC}"
 
 # Get bundle size
 BUNDLE_SIZE=$(du -sh "$BUNDLE_DIR" | cut -f1)
