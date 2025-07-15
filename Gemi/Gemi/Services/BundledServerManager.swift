@@ -73,6 +73,14 @@ class BundledServerManager: ObservableObject {
         try await launchTask!.value
     }
     
+    /// Restart the server gracefully
+    func restartServer() async throws {
+        logger.info("Restarting server...")
+        stopServer()
+        try await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+        try await startServer()
+    }
+    
     /// Stop the server gracefully
     func stopServer() {
         logger.info("Stopping server...")
@@ -312,6 +320,17 @@ class BundledServerManager: ObservableObject {
                     } else if !isHealthy && self.serverStatus == .ready {
                         self.serverStatus = .error("Server became unresponsive")
                         self.statusMessage = "Server connection lost"
+                        
+                        // Attempt automatic recovery
+                        Task {
+                            self.logger.warning("Server became unresponsive, attempting restart...")
+                            do {
+                                try await self.restartServer()
+                                self.logger.info("Server restarted successfully")
+                            } catch {
+                                self.logger.error("Failed to restart server: \(error)")
+                            }
+                        }
                     }
                 }
             }

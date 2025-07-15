@@ -26,6 +26,10 @@ actor AIService {
         configuration.timeoutIntervalForRequest = 30
         configuration.timeoutIntervalForResource = 300
         configuration.waitsForConnectivity = true
+        configuration.httpMaximumConnectionsPerHost = 2
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        // Keep connections alive for better performance
+        configuration.shouldUseExtendedBackgroundIdleMode = true
         self.session = URLSession(configuration: configuration)
     }
     
@@ -276,32 +280,44 @@ enum AIServiceError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .serviceUnavailable(let details):
-            return "AI service is not running. \(details)\n\nPlease ensure:\n1. Inference server is running\n2. The server will start automatically when needed"
+            return "AI service is starting up"
             
         case .connectionFailed(let details):
-            return "Failed to connect to AI service: \(details)"
+            return "Connection to AI service failed"
             
         case .modelLoading(let details):
-            return "Model is loading: \(details)"
+            return "AI model is downloading"
             
         case .invalidResponse(let details):
-            return "Invalid response from AI service: \(details)"
+            return "Unexpected response from AI service"
             
         case .timeout:
-            return "Request timed out. Please check your connection and try again."
+            return "Request timed out"
         }
     }
     
     var recoverySuggestion: String? {
         switch self {
-        case .serviceUnavailable:
-            return "The inference server will start automatically when needed"
+        case .serviceUnavailable(let details):
+            if details.contains("503") || details.contains("loading") {
+                return "The AI is starting up. This usually takes 10-30 seconds."
+            }
+            return "Gemi will automatically start the AI service."
             
-        case .modelLoading:
-            return "Please wait for the model to finish downloading"
+        case .connectionFailed:
+            return "The AI service will restart automatically. Please try again in a moment."
             
-        default:
-            return "Try restarting the inference server or check your network connection"
+        case .modelLoading(let details):
+            if details.contains("%") {
+                return "First-time download in progress. This only happens once."
+            }
+            return "Please wait while the AI model downloads (~8GB)."
+            
+        case .invalidResponse:
+            return "Please try your request again."
+            
+        case .timeout:
+            return "The request is taking longer than expected. Try a simpler message."
         }
     }
 }
