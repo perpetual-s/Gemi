@@ -69,12 +69,38 @@ echo -e "${YELLOW}Creating temporary directory: $TEMP_DIR${NC}"
 echo -e "${YELLOW}Copying Gemi.app...${NC}"
 cp -R "$APP_PATH" "$TEMP_DIR/"
 
-# Create symbolic link to Applications folder
+# Create symbolic link to Applications folder  
 echo -e "${YELLOW}Creating Applications symlink...${NC}"
 ln -s /Applications "$TEMP_DIR/Applications"
 
-# Create a background image directory (optional)
+# Add custom volume icon if available
+VOLUME_ICON="$PROJECT_ROOT/Documentation/assets-icons/gemi-icon.icns"
+if [ ! -f "$VOLUME_ICON" ]; then
+    # Try to create from PNG if ICNS doesn't exist
+    PNG_ICON="$PROJECT_ROOT/Documentation/assets-icons/gemi-icon.png"
+    if [ -f "$PNG_ICON" ]; then
+        echo -e "${YELLOW}Converting PNG icon to ICNS...${NC}"
+        VOLUME_ICON="$TEMP_DIR/.VolumeIcon.icns"
+        sips -s format icns "$PNG_ICON" --out "$VOLUME_ICON" 2>/dev/null || true
+    fi
+fi
+
+if [ -f "$VOLUME_ICON" ]; then
+    echo -e "${YELLOW}Adding custom volume icon...${NC}"
+    cp "$VOLUME_ICON" "$TEMP_DIR/.VolumeIcon.icns"
+fi
+
+# Create and set up background image
 mkdir -p "$TEMP_DIR/.background"
+
+# Look for background image
+BACKGROUND_IMAGE="$PROJECT_ROOT/Documentation/assets-icons/dmg-background.png"
+if [ -f "$BACKGROUND_IMAGE" ]; then
+    echo -e "${YELLOW}Adding background image...${NC}"
+    cp "$BACKGROUND_IMAGE" "$TEMP_DIR/.background/background.png"
+else
+    echo -e "${YELLOW}No background image found, using default appearance${NC}"
+fi
 
 # Get app size
 APP_SIZE=$(du -sh "$APP_PATH" | cut -f1)
@@ -99,26 +125,54 @@ MOUNT_OUTPUT=$(hdiutil attach -readwrite -noverify -noautoopen "$TEMP_DMG_PATH")
 DEVICE=$(echo "$MOUNT_OUTPUT" | grep '^/dev/' | awk '{print $1}')
 VOLUME="/Volumes/$DMG_VOLUME_NAME"
 
+# Set custom volume icon if it was added
+if [ -f "$VOLUME/.VolumeIcon.icns" ]; then
+    SetFile -a C "$VOLUME" 2>/dev/null || true
+fi
+
 # Wait for volume to mount
 sleep 2
 
 # Set custom icon positions and window properties using AppleScript
 echo -e "${YELLOW}Setting DMG window properties...${NC}"
+
+# Enhanced AppleScript for beautiful DMG appearance
 osascript <<EOD
 tell application "Finder"
     tell disk "$DMG_VOLUME_NAME"
         open
+        
+        -- Window properties
         set current view of container window to icon view
         set toolbar visible of container window to false
         set statusbar visible of container window to false
-        set the bounds of container window to {400, 100, 900, 400}
+        set sidebar width of container window to 0
+        
+        -- Window size (matches background image if present)
+        set the bounds of container window to {400, 100, 1000, 500}
+        
+        -- View options
         set viewOptions to the icon view options of container window
         set arrangement of viewOptions to not arranged
-        set icon size of viewOptions to 72
-        set position of item "Gemi.app" of container window to {150, 150}
-        set position of item "Applications" of container window to {350, 150}
+        set icon size of viewOptions to 128
+        set label position of viewOptions to bottom
+        set shows item info of viewOptions to false
+        set shows icon preview of viewOptions to true
+        
+        -- Set background if image exists
+        try
+            set background picture of viewOptions to file ".background:background.png"
+        end try
+        
+        -- Icon positions for drag-and-drop
+        set position of item "Gemi.app" of container window to {180, 200}
+        set position of item "Applications" of container window to {420, 200}
+        
+        -- Apply changes
+        close
+        open
         update without registering applications
-        delay 2
+        delay 3
         close
     end tell
 end tell
