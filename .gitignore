@@ -56,7 +56,6 @@ hf_token.txt
 python-inference-server/hf_token.txt
 
 # Scripts
-scripts/
 reset_gemi.sh
 
 # Log files
@@ -154,3 +153,4 @@ installer-bg.png
 # macOS app bundles (unless explicitly tracked)
 *.app/
 !Gemi/Gemi.app  # Exception for main app if needed 
+build_log.txt
