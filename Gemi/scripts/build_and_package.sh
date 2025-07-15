@@ -144,20 +144,10 @@ if [ "$CREATE_DMG" = "yes" ]; then
         rm -f "$DMG_PATH"
     fi
     
-    # Use advanced DMG creation script if available
-    ADVANCED_DMG_SCRIPT="$PROJECT_ROOT/Gemi/scripts/create_dmg_advanced.sh"
-    if [ -f "$ADVANCED_DMG_SCRIPT" ]; then
-        echo -e "${YELLOW}Using advanced DMG creation...${NC}"
-        "$ADVANCED_DMG_SCRIPT"
-    else
-        # Fallback to simple DMG creation
-        echo -e "${YELLOW}Creating DMG from $GEMI_APP...${NC}"
-        hdiutil create -volname "$DMG_VOLUME_NAME" \
-            -srcfolder "$GEMI_APP" \
-            -ov \
-            -format UDZO \
-            "$DMG_PATH"
-    fi
+    # Create DMG using our unified script
+    DMG_SCRIPT="$PROJECT_ROOT/Gemi/scripts/create_dmg.sh"
+    echo -e "${YELLOW}Creating DMG...${NC}"
+    "$DMG_SCRIPT" "$GEMI_APP"
     
     # Get final DMG size
     DMG_FINAL_SIZE=$(du -sh "$DMG_PATH" | cut -f1)

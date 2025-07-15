@@ -1,14 +1,29 @@
 # Gemi Build Scripts
 
-Production-ready build and deployment scripts for Gemi's zero-friction installation.
+Clean, organized scripts for building and packaging Gemi.
+
+## 📁 Script Organization
+
+```
+scripts/
+├── build_and_package.sh    # Main build orchestrator
+├── create_dmg.sh          # DMG creator (beautiful installer)
+├── test_deployment.sh     # Installation tester
+├── clean_gemma_cache.sh   # Model cache cleaner
+├── fix_sandbox.sh         # Sandbox permission fixer
+└── README.md             # This file
+```
 
 ## 🚀 Quick Start
 
 ```bash
-# Full release build with professional DMG
+# Build everything and create DMG
 ./build_and_package.sh
 
-# Test the deployment experience
+# Just create DMG from existing build
+./create_dmg.sh
+
+# Test the installation
 ./test_deployment.sh
 ```
 
@@ -31,18 +46,23 @@ The master build orchestrator that creates a complete, self-contained Gemi insta
 ./build_and_package.sh Release yes  # Release + DMG (explicit)
 ```
 
-### `create_dmg_advanced.sh`
-Creates a beautiful, professional DMG installer with:
-- Custom drag-to-install interface
-- Perfectly positioned app and Applications icons
-- Optimized compression (zlib-level=9)
-- Automatic code signing if certificates available
-- Professional window styling
+### `create_dmg.sh`
+The one true DMG creator - beautiful, simple, and professional:
+- Smart app detection (finds Gemi.app automatically)
+- Custom drag-to-install interface with visual guide
+- Beautiful 600x400 window with 128px icons
+- Background image and volume icon support
+- Maximum compression (zlib-level=9)
+- Automatic code signing if available
+- Clear progress indicators
 
 **Usage:**
 ```bash
-# Create DMG from existing build
-./create_dmg_advanced.sh
+# Create DMG (auto-detects Gemi.app)
+./create_dmg.sh
+
+# Create DMG from specific app
+./create_dmg.sh /path/to/Gemi.app
 ```
 
 ### `test_deployment.sh` 
@@ -76,10 +96,12 @@ Everything is bundled and configured automatically!
 
 ## 📁 Output Locations
 
-- **Gemi.app**: Xcode DerivedData
-- **GemiServer.app**: `../python-inference-server/dist/`
-- **Gemi.dmg**: Project root
+- **Gemi.app**: Xcode DerivedData or `gemi-release/`
+- **GemiServer.app**: `python-inference-server/dist/`
+- **Gemi.dmg**: Project root (gitignored)
 - **Server logs**: `~/Library/Logs/GemiServer.log`
+
+Note: DMG files are automatically gitignored to keep the repository clean.
 
 ## 🛠 Requirements
 

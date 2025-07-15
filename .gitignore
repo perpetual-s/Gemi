@@ -154,3 +154,4 @@ installer-bg.png
 *.app/
 !Gemi/Gemi.app  # Exception for main app if needed 
 build_log.txt
+*.dmg
