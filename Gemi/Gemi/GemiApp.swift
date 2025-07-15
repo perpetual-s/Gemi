@@ -103,13 +103,13 @@ struct GemiApp: App {
             return
         }
         
-        // If not completed, check if server is running
-        let isServerRunning = await BundledServerManager.shared.checkHealth()
+        // If not completed, check if model is loaded
+        let isModelReady = await NativeChatService.shared.health().modelLoaded
         
         // Show onboarding if:
         // 1. Never completed onboarding AND
-        // 2. Server is not running (model not installed)
-        let needsOnboarding = !hasCompletedOnboarding && !isServerRunning
+        // 2. Model is not loaded
+        let needsOnboarding = !hasCompletedOnboarding && !isModelReady
         
         // Update state
         hasCheckedOnboarding = true

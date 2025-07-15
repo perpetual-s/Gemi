@@ -871,7 +871,8 @@ class GemmaModelManager: ObservableObject {
     @Published var status: ModelStatus = .checking
     @Published var downloadTimeEstimate = "Calculating..."
     
-    private let serverManager = BundledServerManager.shared
+    private let chatService = NativeChatService.shared
+    private let modelDownloader = ModelDownloader()
     private var checkTimer: Timer?
     
     enum ModelStatus: Equatable {
@@ -896,12 +897,16 @@ class GemmaModelManager: ObservableObject {
     
     func checkStatus() {
         Task {
-            // Check if server is reachable
-            let isRunning = await serverManager.checkHealth()
+            // Check if model is loaded
+            let health = await chatService.health()
+            
+            let isComplete = await ModelCache.shared.isModelComplete()
             
             await MainActor.run {
-                if isRunning {
+                if health.modelLoaded {
                     self.status = .ready
+                } else if isComplete {
+                    self.status = .downloading(progress: 0.9) // Model exists but loading
                 } else {
                     self.status = .notInstalled
                 }
@@ -910,14 +915,23 @@ class GemmaModelManager: ObservableObject {
     }
     
     func startSetup() {
-        // Simply open Terminal with the setup script
-        // This is more reliable than trying to launch programmatically
-        ModelSetupHelper.openManualSetup()
+        Task {
+            do {
+                // Start model download
+                status = .downloading(progress: 0.0)
+                try await modelDownloader.startDownload()
+                
+                // After download, load the model
+                try await chatService.loadModel()
+                
+                // Update status
+                status = .ready
+            } catch {
+                status = .error(message: error.localizedDescription)
+            }
+        }
         
-        // Update status to show we're setting up
-        status = .downloading(progress: 0.0)
-        
-        // Start monitoring for when the server comes online
+        // Start monitoring download progress
         startStatusMonitoring()
     }
     
@@ -936,45 +950,66 @@ class GemmaModelManager: ObservableObject {
     }
     
     func openServerTerminal() {
-        // Open Terminal with server logs
-        let script = """
-        tell application "Terminal"
-            activate
-            do script "cd ~/Library/Application\\ Support/Gemi && tail -f server.log"
-        end tell
-        """
-        
-        if let scriptObject = NSAppleScript(source: script) {
-            var error: NSDictionary?
-            scriptObject.executeAndReturnError(&error)
-        }
+        // Open model directory in Finder
+        let modelPath = ModelCache.shared.modelPath
+        NSWorkspace.shared.open(modelPath)
     }
     
     func viewLogs() {
-        let logPath = NSHomeDirectory() + "/Library/Application Support/Gemi/server.log"
-        NSWorkspace.shared.open(URL(fileURLWithPath: logPath))
+        // Open Console app for system logs
+        NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Utilities/Console.app"))
     }
     
     private func startStatusMonitoring() {
         checkTimer?.invalidate()
-        checkTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
-            Task { @MainActor in
-                self.checkStatus()
+        
+        // Monitor download progress
+        Task {
+            while true {
+                await MainActor.run {
+                    switch modelDownloader.downloadState {
+                    case .downloading(let file, let progress):
+                        self.status = .downloading(progress: progress)
+                        self.downloadTimeEstimate = self.calculateTimeEstimate(progress: progress)
+                    case .completed:
+                        // Now load the model
+                        Task {
+                            do {
+                                try await chatService.loadModel()
+                                await MainActor.run {
+                                    self.status = .ready
+                                }
+                            } catch {
+                                await MainActor.run {
+                                    self.status = .error(message: error.localizedDescription)
+                                }
+                            }
+                        }
+                        return
+                    case .failed(let error):
+                        self.status = .error(message: error)
+                        return
+                    default:
+                        break
+                    }
+                }
+                
+                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
             }
         }
     }
     
-    private func updateTimeEstimate(progress: Double) {
+    private func calculateTimeEstimate(progress: Double) -> String {
         // Simple time estimate based on progress
         let remainingProgress = 1.0 - progress
         let estimatedMinutes = Int(remainingProgress * 15) // Assume 15 minutes for full download
         
         if estimatedMinutes > 1 {
-            downloadTimeEstimate = "About \(estimatedMinutes) minutes remaining"
+            return "About \(estimatedMinutes) minutes remaining"
         } else if estimatedMinutes == 1 {
-            downloadTimeEstimate = "About 1 minute remaining"
+            return "About 1 minute remaining"
         } else {
-            downloadTimeEstimate = "Almost done..."
+            return "Almost done..."
         }
     }
     

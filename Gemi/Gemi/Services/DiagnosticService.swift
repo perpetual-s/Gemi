@@ -92,9 +92,9 @@ actor DiagnosticService {
     }
     
     private func testNetworkPermissions() async -> DiagnosticResult {
+        // Test if we can reach HuggingFace for model downloads
         do {
-            // Test connection to AI server
-            let url = URL(string: await AIConfiguration.shared.baseURL)!
+            let url = URL(string: "https://huggingface.co/api/models/google/gemma-3n-E4B-it")!
             var request = URLRequest(url: url)
             request.httpMethod = "HEAD"
             request.timeoutInterval = 5
@@ -102,18 +102,18 @@ actor DiagnosticService {
             let (_, response) = try await URLSession.shared.data(for: request)
             
             if let httpResponse = response as? HTTPURLResponse {
-                if httpResponse.statusCode == 404 || httpResponse.statusCode == 200 {
+                if httpResponse.statusCode == 200 {
                     return DiagnosticResult(
                         component: "Network Permissions",
                         status: .success,
-                        message: "Network access to AI server is allowed",
-                        details: "Successfully connected to \(await AIConfiguration.shared.baseURL)"
+                        message: "Network access for model downloads is allowed",
+                        details: "Successfully connected to HuggingFace"
                     )
                 } else {
                     return DiagnosticResult(
                         component: "Network Permissions",
                         status: .warning,
-                        message: "Localhost is reachable but returned unexpected status",
+                        message: "HuggingFace is reachable but returned unexpected status",
                         details: "HTTP Status: \(httpResponse.statusCode)"
                     )
                 }

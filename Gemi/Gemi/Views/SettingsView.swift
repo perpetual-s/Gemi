@@ -24,8 +24,8 @@ struct SettingsView: View {
     @State private var showBackupError = false
     @State private var errorMessage = ""
     let journalStore: JournalStore
-    @AppStorage("aiHost") private var aiHost = AIConfiguration.shared.host
-    @AppStorage("aiPort") private var aiPort = AIConfiguration.shared.port
+    @AppStorage("aiTemperature") private var aiTemperature = AIConfiguration.shared.temperature
+    @AppStorage("aiMaxTokens") private var aiMaxTokens = AIConfiguration.shared.maxTokens
     @AppStorage("selectedModel") private var selectedModel = "gemma-3n-e4b-it"
     @AppStorage("autoSaveInterval") private var autoSaveInterval = 3.0
     @AppStorage("enableMarkdown") private var enableMarkdown = true
@@ -33,7 +33,7 @@ struct SettingsView: View {
     @AppStorage("defaultFontSize") private var defaultFontSize = 14.0
     @AppStorage("sessionTimeout") private var sessionTimeout = 30.0
     @AppStorage("requireAuthentication") private var requireAuthentication = true
-    @AppStorage("autoStartAIServer") private var autoStartAIServer = true
+    @AppStorage("autoLoadModel") private var autoLoadModel = true
     
     private let aiService = AIService.shared
     @State private var isCheckingConnection = false
@@ -378,75 +378,6 @@ struct SettingsView: View {
     
     private var aiSettings: some View {
         VStack(spacing: 24) {
-            // Connection Status Card
-            PremiumSettingsCard(
-                title: "AI Server Connection",
-                icon: "network",
-                iconColor: connectionStatus.color
-            ) {
-                VStack(spacing: 24) {
-                    // Connection Status Banner
-                    HStack(spacing: 16) {
-                        Image(systemName: connectionStatus.icon)
-                            .font(.system(size: 32))
-                            .foregroundColor(connectionStatus.color)
-                            .symbolEffect(.pulse, isActive: connectionStatus == .checking)
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Connection Status")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.secondary)
-                            
-                            Text(connectionStatus.text)
-                                .font(.system(size: 16, weight: .semibold))
-                        }
-                        
-                        Spacer()
-                        
-                        Button(action: checkConnection) {
-                            Label("Test Connection", systemImage: "arrow.clockwise")
-                                .font(.system(size: 13, weight: .medium))
-                        }
-                        .buttonStyle(PremiumButtonStyle())
-                        .disabled(isCheckingConnection)
-                    }
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(connectionStatus.color.opacity(0.1))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .strokeBorder(connectionStatus.color.opacity(0.2), lineWidth: 1)
-                            )
-                    )
-                    
-                    Divider()
-                    
-                    // Connection Settings
-                    HStack(spacing: 20) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Host")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.secondary)
-                            
-                            TextField("localhost", text: $aiHost)
-                                .textFieldStyle(PremiumTextFieldStyle())
-                                .frame(width: 200)
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Port")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.secondary)
-                            
-                            TextField("11435", value: $aiPort, format: .number)
-                                .textFieldStyle(PremiumTextFieldStyle())
-                                .frame(width: 100)
-                        }
-                    }
-                }
-            }
-            
             // Model Selection Card
             PremiumSettingsCard(
                 title: "AI Model",
@@ -515,25 +446,6 @@ struct SettingsView: View {
                     
                     Divider()
                     
-                    // Auto-start toggle
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Auto-start AI Server")
-                                .font(.system(size: 14, weight: .semibold))
-                            Text("Launch AI server when Gemi opens")
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                        
-                        Toggle("", isOn: $autoStartAIServer)
-                            .toggleStyle(.switch)
-                    }
-                    .padding(.vertical, 8)
-                    
-                    Divider()
-                    
                     // Setup actions
                     VStack(alignment: .leading, spacing: 16) {
                         HStack {
@@ -576,7 +488,7 @@ struct SettingsView: View {
                                 .foregroundColor(.secondary)
                             
                             HStack {
-                                Text("The inference server starts automatically")
+                                Text("Model loads automatically when needed")
                                     .font(.system(size: 11, design: .monospaced))
                                     .padding(8)
                                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -588,7 +500,7 @@ struct SettingsView: View {
                                 
                                 Button(action: {
                                     NSPasteboard.general.clearContents()
-                                    NSPasteboard.general.setString("The inference server starts automatically", forType: .string)
+                                    NSPasteboard.general.setString("Model loads automatically when needed", forType: .string)
                                 }) {
                                     Image(systemName: "doc.on.clipboard")
                                         .font(.system(size: 12))
@@ -1096,16 +1008,14 @@ struct SettingsView: View {
         connectionStatus = .checking
         
         Task {
-            do {
-                let isHealthy = try await aiService.checkHealth()
-                await MainActor.run {
-                    connectionStatus = isHealthy ? .connected : .disconnected
-                    isCheckingConnection = false
-                }
-            } catch {
-                await MainActor.run {
+            let isReady = await AIConfiguration.shared.isModelReady()
+            
+            await MainActor.run {
+                isCheckingConnection = false
+                if isReady {
+                    connectionStatus = .connected
+                } else {
                     connectionStatus = .disconnected
-                    isCheckingConnection = false
                 }
             }
         }

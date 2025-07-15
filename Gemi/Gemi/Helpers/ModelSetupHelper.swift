@@ -4,101 +4,56 @@ import AppKit
 /// Helper for Gemma 3n model setup and debugging
 struct ModelSetupHelper {
     
-    /// Open Terminal with manual setup instructions
+    /// Open documentation about model setup
     static func openManualSetup() {
-        let script = """
-        tell application "Terminal"
-            activate
-            
-            -- Create new window
-            set newWindow to do script ""
-            
-            -- Set custom title
-            tell first window
-                set custom title to "Gemi - Gemma 3n Setup"
-            end tell
-            
-            -- Clear and show instructions
-            do script "clear" in newWindow
-            do script "echo '=== Gemi - Gemma 3n Setup ==='" in newWindow
-            do script "echo ''" in newWindow
-            do script "echo '=== Two-Step Setup Process ==='" in newWindow
-            do script "echo ''" in newWindow
-            do script "echo 'STEP 1: HuggingFace Authentication (Required for Gemma 3n)'" in newWindow
-            do script "echo '--------------------------------------------------------'" in newWindow
-            do script "echo '1. Go to: https://huggingface.co/google/gemma-3n-e4b-it'" in newWindow
-            do script "echo '2. Click \"Access repository\" and accept the terms'" in newWindow
-            do script "echo '3. Get your token from: https://huggingface.co/settings/tokens'" in newWindow
-            do script "echo '4. Run: huggingface-cli login'" in newWindow
-            do script "echo '   (Enter your token when prompted)'" in newWindow
-            do script "echo ''" in newWindow
-            do script "echo 'STEP 2: Launch Server'" in newWindow
-            do script "echo '-----------------------------------'" in newWindow
-            do script "echo 'The inference server will start automatically when needed.'" in newWindow
-            do script "echo ''" in newWindow
-            do script "echo 'Press ENTER to start the setup process...'" in newWindow
-            do script "read -p ''" in newWindow
-            
-            -- Setup complete
-            do script "echo 'Setup instructions complete. You can now close this window.'" in newWindow
-        end tell
-        """
-        
-        if let scriptObject = NSAppleScript(source: script) {
-            var error: NSDictionary?
-            scriptObject.executeAndReturnError(&error)
-            
-            if let error = error {
-                print("Failed to open Terminal: \(error)")
-            }
+        // Since the model downloads automatically, just open the GitHub docs
+        if let url = URL(string: "https://github.com/gemi-app/gemi#setup") {
+            NSWorkspace.shared.open(url)
         }
     }
     
-    /// Check if python server directory exists
-    static func checkServerDirectory() -> Bool {
-        let path = NSHomeDirectory() + "/Documents/project-Gemi/python-inference-server"
-        return FileManager.default.fileExists(atPath: path)
+    /// Check if model directory exists
+    @MainActor
+    static func checkModelDirectory() -> Bool {
+        return FileManager.default.fileExists(atPath: ModelCache.shared.modelPath.path)
     }
     
     /// Get helpful error message based on the issue
     static func getSetupErrorMessage(for error: Error) -> String {
-        if !checkServerDirectory() {
-            return """
-            The Python server directory is missing.
-            
-            Please ensure you have the complete Gemi project with the python-inference-server folder.
-            
-            You can also set it up manually by clicking "Open Terminal" below.
-            """
-        }
-        
-        if let serverError = error as? ServerError {
-            switch serverError {
-            case .serverNotFound:
+        if let modelError = error as? ModelError {
+            switch modelError {
+            case .modelNotFound:
                 return """
-                GemiServer.app not found.
+                Gemma 3n model not found.
                 
-                Please reinstall Gemi from the DMG installer.
+                The model will be downloaded automatically (~8GB).
                 
-                The AI server should be installed alongside Gemi in your Applications folder.
+                Please ensure you have a stable internet connection.
                 """
                 
-            case .launchFailed(let reason):
+            case .downloadFailed(let reason):
                 return """
-                Failed to launch the AI server: \(reason)
+                Failed to download the model: \(reason)
                 
-                Try restarting Gemi or check if port 11435 is in use.
+                Please check your internet connection and try again.
                 
-                Click "Open Terminal" for troubleshooting.
+                The download will resume from where it left off.
                 """
                 
-            case .connectionFailed(let reason):
+            case .verificationFailed(let file):
                 return """
-                Cannot connect to the AI server: \(reason)
+                Model file verification failed: \(file)
                 
-                The server may still be starting up. Please wait a moment and try again.
+                The file may be corrupted. It will be re-downloaded automatically.
                 
-                Click "Open Terminal" to check server status.
+                Please try again.
+                """
+                
+            case .extractionFailed(let reason):
+                return """
+                Failed to extract model: \(reason)
+                
+                Please ensure you have enough disk space (20GB recommended).
                 """
             }
         }
@@ -106,7 +61,7 @@ struct ModelSetupHelper {
         return """
         An unexpected error occurred: \(error.localizedDescription)
         
-        Click "Open Terminal" below for manual setup.
+        Please try restarting Gemi and trying again.
         """
     }
 }

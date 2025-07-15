@@ -216,11 +216,13 @@ struct GemmaSetupProgressView: View {
         }
         
         switch setupManager.currentStep {
-        case .checkingServer:
+        case .checkingModel:
             return .blue
-        case .launchingServer:
+        case .downloadingModel:
             return .indigo
-        case .downloadingModel, .complete:
+        case .loadingModel:
+            return .purple
+        case .complete:
             return .green
         }
     }
@@ -297,9 +299,9 @@ struct StepIndicator: View {
 extension ModelSetupService.SetupStep {
     var ordinalValue: Int {
         switch self {
-        case .checkingServer: return 0
-        case .launchingServer: return 1
-        case .downloadingModel: return 2
+        case .checkingModel: return 0
+        case .downloadingModel: return 1
+        case .loadingModel: return 2
         case .complete: return 3
         }
     }

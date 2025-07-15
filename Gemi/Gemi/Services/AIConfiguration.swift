@@ -1,119 +1,86 @@
 import Foundation
 
-/// Configuration manager for AI inference server settings
+/// Configuration manager for AI model settings
 @MainActor
 final class AIConfiguration: ObservableObject {
     static let shared = AIConfiguration()
     
     // MARK: - Published Properties
-    @Published var host: String {
+    @Published var selectedModel: String {
         didSet {
-            UserDefaults.standard.set(host, forKey: Keys.host)
+            UserDefaults.standard.set(selectedModel, forKey: Keys.selectedModel)
         }
     }
     
-    @Published var port: Int {
+    @Published var temperature: Double {
         didSet {
-            UserDefaults.standard.set(port, forKey: Keys.port)
+            UserDefaults.standard.set(temperature, forKey: Keys.temperature)
         }
     }
     
-    @Published var useCustomURL: Bool {
+    @Published var maxTokens: Int {
         didSet {
-            UserDefaults.standard.set(useCustomURL, forKey: Keys.useCustomURL)
+            UserDefaults.standard.set(maxTokens, forKey: Keys.maxTokens)
         }
     }
     
     // MARK: - Constants
     private enum Keys {
-        static let host = "com.gemi.ai.host"
-        static let port = "com.gemi.ai.port"
-        static let useCustomURL = "com.gemi.ai.useCustomURL"
+        static let selectedModel = "com.gemi.ai.selectedModel"
+        static let temperature = "com.gemi.ai.temperature"
+        static let maxTokens = "com.gemi.ai.maxTokens"
     }
     
     private enum Defaults {
-        static let host = "127.0.0.1"
-        static let port = 11435  // Python inference server port
-        static let useCustomURL = false
+        static let selectedModel = "google/gemma-3n-e4b-it"
+        static let temperature = 0.7
+        static let maxTokens = 2048
     }
     
     // MARK: - Computed Properties
-    var baseURL: String {
-        if useCustomURL {
-            return "http://\(host):\(port)"
-        } else {
-            return "http://\(Defaults.host):\(Defaults.port)"
-        }
+    var isMultimodalModel: Bool {
+        // Gemma 3n is always multimodal
+        return selectedModel.contains("gemma-3n")
     }
     
-    var apiHealthURL: String {
-        return "\(baseURL)/api/health"
+    var modelPath: URL {
+        ModelCache.shared.modelPath
     }
     
-    var apiChatURL: String {
-        return "\(baseURL)/api/chat"
-    }
-    
-    var apiTagsURL: String {
-        return "\(baseURL)/api/tags"
-    }
-    
-    var apiPullURL: String {
-        return "\(baseURL)/api/pull"
-    }
-    
-    var apiShowURL: String {
-        return "\(baseURL)/api/show"
+    var estimatedMemoryUsage: Int64 {
+        // Rough estimate based on model
+        return 4 * 1024 * 1024 * 1024 // 4GB for E4B model
     }
     
     // MARK: - Initialization
     private init() {
-        self.host = UserDefaults.standard.string(forKey: Keys.host) ?? Defaults.host
-        self.port = UserDefaults.standard.integer(forKey: Keys.port) > 0 
-            ? UserDefaults.standard.integer(forKey: Keys.port) 
-            : Defaults.port
-        self.useCustomURL = UserDefaults.standard.bool(forKey: Keys.useCustomURL)
+        // Initialize all properties first with defaults
+        self.selectedModel = UserDefaults.standard.string(forKey: Keys.selectedModel) ?? Defaults.selectedModel
+        
+        let storedTemperature = UserDefaults.standard.double(forKey: Keys.temperature)
+        self.temperature = storedTemperature == 0 ? Defaults.temperature : storedTemperature
+        
+        let storedMaxTokens = UserDefaults.standard.integer(forKey: Keys.maxTokens)
+        self.maxTokens = storedMaxTokens == 0 ? Defaults.maxTokens : storedMaxTokens
     }
     
     // MARK: - Methods
     func resetToDefaults() {
-        host = Defaults.host
-        port = Defaults.port
-        useCustomURL = Defaults.useCustomURL
+        selectedModel = Defaults.selectedModel
+        temperature = Defaults.temperature
+        maxTokens = Defaults.maxTokens
     }
     
-    func validateURL() -> Bool {
-        // Basic validation
-        guard !host.isEmpty else { return false }
-        guard port > 0 && port <= 65535 else { return false }
-        
-        // Check if host is valid IP or hostname
-        let ipPattern = #"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"#
-        let hostnamePattern = #"^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$"#
-        
-        let isValidIP = host.range(of: ipPattern, options: .regularExpression) != nil
-        let isValidHostname = host == "localhost" || host.range(of: hostnamePattern, options: .regularExpression) != nil
-        
-        return isValidIP || isValidHostname
+    /// Check if model is ready
+    func isModelReady() async -> Bool {
+        let health = await NativeChatService.shared.health()
+        return health.modelLoaded
     }
     
-    /// Test connection to AI server
-    func testConnection() async -> (success: Bool, error: String?) {
-        let url = URL(string: apiHealthURL)!
-        
-        do {
-            let (_, response) = try await URLSession.shared.data(from: url)
-            
-            if let httpResponse = response as? HTTPURLResponse,
-               httpResponse.statusCode == 200 {
-                // Server is responding
-                return (true, nil)
-            } else {
-                return (false, "Invalid response from server")
-            }
-        } catch {
-            return (false, "Server not running. The inference server will start automatically")
-        }
+    /// Get available models
+    func getAvailableModels() -> [String] {
+        // For now, only Gemma 3n E4B is supported
+        return ["google/gemma-3n-e4b-it"]
     }
 }
 

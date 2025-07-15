@@ -1,13 +1,12 @@
 import Foundation
 
-/// Service for communicating with the Gemi AI inference server
+/// Service for AI inference using native MLX implementation
 /// Provides multimodal support for text, images, and audio
 actor AIService {
     static let shared = AIService()
     
     // MARK: - Properties
     
-    private let session: URLSession
     private var modelName = "google/gemma-3n-e4b-it"
     
     // Connection state caching
@@ -15,27 +14,15 @@ actor AIService {
     private var cachedHealthStatus: Bool = false
     private let healthCheckCacheDuration: TimeInterval = 30.0
     
-    // Retry configuration
-    private let maxRetries = 3
-    private let retryDelay: UInt64 = 1_000_000_000 // 1 second in nanoseconds
-    
     // MARK: - Initialization
     
     private init() {
-        let configuration = URLSessionConfiguration.default
-        configuration.timeoutIntervalForRequest = 30
-        configuration.timeoutIntervalForResource = 300
-        configuration.waitsForConnectivity = true
-        configuration.httpMaximumConnectionsPerHost = 2
-        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-        // Keep connections alive for better performance
-        configuration.shouldUseExtendedBackgroundIdleMode = true
-        self.session = URLSession(configuration: configuration)
+        // No initialization needed for native implementation
     }
     
     // MARK: - Health Check
     
-    /// Check if the AI server is running and ready
+    /// Check if the AI model is loaded and ready
     func checkHealth() async throws -> Bool {
         // Use cached result if available and recent
         if let lastCheck = lastHealthCheck,
@@ -43,47 +30,20 @@ actor AIService {
             return cachedHealthStatus
         }
         
-        do {
-            let healthURL = URL(string: await AIConfiguration.shared.apiHealthURL)!
-            let (data, response) = try await session.data(from: healthURL)
-            
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw AIServiceError.invalidResponse("Invalid response type")
-            }
-            
-            guard httpResponse.statusCode == 200 else {
-                throw AIServiceError.serviceUnavailable("AI service returned status \(httpResponse.statusCode)")
-            }
-            
-            // Parse health response
-            if let healthData = try? JSONDecoder().decode(HealthResponse.self, from: data) {
-                let isReady = healthData.model_loaded && healthData.status == "healthy"
-                
-                // Cache the result
-                lastHealthCheck = Date()
-                cachedHealthStatus = isReady
-                
-                return isReady
-            }
-            
-            return false
-            
-        } catch {
-            // Cache negative result too
-            lastHealthCheck = Date()
-            cachedHealthStatus = false
-            
-            if error is AIServiceError {
-                throw error
-            } else {
-                throw AIServiceError.connectionFailed(error.localizedDescription)
-            }
-        }
+        // Access MainActor-isolated shared instance and call health
+        let health = await NativeChatService.shared.health()
+        let isReady = health.healthy && health.modelLoaded
+        
+        // Cache the result
+        lastHealthCheck = Date()
+        cachedHealthStatus = isReady
+        
+        return isReady
     }
     
     // MARK: - Chat with Streaming
     
-    /// Generate a response using the chat endpoint with streaming
+    /// Generate a response using native MLX inference with streaming
     func chat(messages: [ChatMessage]) -> AsyncThrowingStream<ChatResponse, Error> {
         AsyncThrowingStream { continuation in
             Task {
@@ -99,90 +59,58 @@ actor AIService {
     }
     
     private func performChatRequest(messages: [ChatMessage], continuation: AsyncThrowingStream<ChatResponse, Error>.Continuation) async {
-        var retryCount = 0
-        
-        while retryCount <= maxRetries {
-            do {
-                // Build request
-                let url = URL(string: await AIConfiguration.shared.apiChatURL)!
-                var request = URLRequest(url: url)
-                request.httpMethod = "POST"
-                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                
-                let chatRequest = ChatRequest(
+        do {
+            // Convert messages to native format
+            let nativeMessages = messages.map { msg in
+                NativeChatService.ChatMessage(
+                    role: msg.role.rawValue,
+                    content: msg.content,
+                    images: msg.images
+                )
+            }
+            
+            let request = NativeChatService.ChatRequest(
+                messages: nativeMessages,
+                model: modelName,
+                stream: true,
+                options: NativeChatService.ChatOptions(
+                    temperature: 0.7,
+                    maxTokens: 2048,
+                    topK: 40,
+                    topP: 0.9
+                )
+            )
+            
+            // Get streaming response from native service
+            let chatStream = try await NativeChatService.shared.chat(request)
+            
+            for try await response in chatStream {
+                // Convert native response to expected format
+                let chatResponse = ChatResponse(
                     model: modelName,
-                    messages: messages,
-                    stream: true
+                    created_at: ISO8601DateFormatter().string(from: Date()),
+                    message: response.done ? ChatMessage(
+                        role: .assistant,
+                        content: response.message.content
+                    ) : nil,
+                    done: response.done,
+                    total_duration: response.totalDuration,
+                    eval_count: response.evalCount,
+                    prompt_eval_count: response.promptEvalCount
                 )
                 
-                request.httpBody = try JSONEncoder().encode(chatRequest)
+                continuation.yield(chatResponse)
                 
-                // Start streaming
-                let (bytes, response) = try await session.bytes(for: request)
-                
-                guard let httpResponse = response as? HTTPURLResponse else {
-                    throw AIServiceError.invalidResponse("Invalid response type")
-                }
-                
-                if httpResponse.statusCode == 503 {
-                    // Model still loading
-                    if let data = try? await bytes.reduce(into: Data(), { data, byte in
-                        data.append(byte)
-                    }),
-                       let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data),
-                       errorResponse.detail.contains("Progress:") {
-                        throw AIServiceError.modelLoading(errorResponse.detail)
-                    }
-                    throw AIServiceError.serviceUnavailable("Model not ready")
-                }
-                
-                guard httpResponse.statusCode == 200 else {
-                    throw AIServiceError.invalidResponse("HTTP \(httpResponse.statusCode)")
-                }
-                
-                // Process streaming response
-                // Process streaming response line by line
-                
-                for try await line in bytes.lines {
-                    guard !line.isEmpty else { continue }
-                    
-                    // Handle SSE format: data: {...}
-                    if line.hasPrefix("data: ") {
-                        let jsonString = String(line.dropFirst(6))
-                        
-                        if let data = jsonString.data(using: .utf8) {
-                            do {
-                                let response = try JSONDecoder().decode(ChatResponse.self, from: data)
-                                continuation.yield(response)
-                                
-                                if response.done {
-                                    continuation.finish()
-                                    return
-                                }
-                            } catch {
-                                // Handle parsing errors
-                                print("Failed to parse response: \(jsonString)")
-                                continue
-                            }
-                        }
-                    }
-                }
-                
-                continuation.finish()
-                return
-                
-            } catch {
-                retryCount += 1
-                
-                if retryCount > maxRetries {
-                    continuation.finish(throwing: error)
+                if response.done {
+                    continuation.finish()
                     return
                 }
-                
-                // Wait before retry
-                try? await Task.sleep(nanoseconds: retryDelay * UInt64(retryCount))
-                print("Retrying request (attempt \(retryCount)/\(maxRetries))...")
             }
+            
+            continuation.finish()
+            
+        } catch {
+            continuation.finish(throwing: error)
         }
     }
 }
@@ -279,16 +207,16 @@ enum AIServiceError: LocalizedError {
     
     var errorDescription: String? {
         switch self {
-        case .serviceUnavailable(let details):
+        case .serviceUnavailable(_):
             return "AI service is starting up"
             
-        case .connectionFailed(let details):
+        case .connectionFailed(_):
             return "Connection to AI service failed"
             
-        case .modelLoading(let details):
+        case .modelLoading(_):
             return "AI model is downloading"
             
-        case .invalidResponse(let details):
+        case .invalidResponse(_):
             return "Unexpected response from AI service"
             
         case .timeout:
