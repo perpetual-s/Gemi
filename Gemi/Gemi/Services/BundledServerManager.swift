@@ -40,6 +40,8 @@ class BundledServerManager: ObservableObject {
     private let logger = Logger(subsystem: "com.gemi", category: "BundledServerManager")
     private var healthCheckTimer: Timer?
     private var launchTask: Task<Void, Error>?
+    private var hasRetriedAfter137 = false
+    private var portCheckAttempts = 0
     
     // MARK: - Initialization
     
@@ -90,11 +92,31 @@ class BundledServerManager: ObservableObject {
         
         if let process = serverProcess {
             process.terminate()
+            
+            // Give it 2 seconds to terminate gracefully
+            DispatchQueue.global().asyncAfter(deadline: .now() + 2.0) { [weak self] in
+                if process.isRunning {
+                    self?.logger.warning("Server didn't terminate gracefully, sending SIGKILL")
+                    process.interrupt() // Try SIGINT first
+                    
+                    DispatchQueue.global().asyncAfter(deadline: .now() + 1.0) {
+                        if process.isRunning {
+                            kill(process.processIdentifier, SIGKILL)
+                        }
+                    }
+                }
+            }
+            
             serverProcess = nil
         }
         
+        // Clean up any zombie processes
+        cleanupZombieProcesses()
+        
         serverStatus = .notRunning
         statusMessage = "Server stopped"
+        hasRetriedAfter137 = false
+        portCheckAttempts = 0
     }
     
     /// Check if server is healthy
@@ -117,20 +139,33 @@ class BundledServerManager: ObservableObject {
                let modelLoaded = json["model_loaded"] as? Bool {
                 
                 if status == "healthy" && modelLoaded {
+                    await MainActor.run {
+                        self.serverStatus = .ready
+                        self.statusMessage = "Gemma 3n ready!"
+                        self.modelDownloadProgress = 1.0
+                    }
                     return true
                 }
                 
                 // Check for model download progress
                 if let downloadProgress = json["download_progress"] as? Double {
                     await MainActor.run {
-                        self.modelDownloadProgress = downloadProgress
-                        if downloadProgress < 0 {
+                        // Handle the case where server reports 0.9 for cached models
+                        if downloadProgress >= 0.9 && !modelLoaded {
+                            // Model is cached but still loading
+                            self.serverStatus = .loading
+                            self.statusMessage = "Loading Gemma 3n model from cache..."
+                            self.modelDownloadProgress = downloadProgress
+                        } else if downloadProgress < 0 {
                             // Error state
                             self.serverStatus = .error("Model loading failed")
                             self.statusMessage = "Failed to load AI model. Check server logs."
-                        } else {
+                            self.modelDownloadProgress = 0.0
+                        } else if downloadProgress > 0 && downloadProgress < 0.9 {
+                            // Actually downloading
                             self.serverStatus = .downloadingModel(progress: downloadProgress)
-                            self.statusMessage = "Downloading Gemma 3n model: \(Int(downloadProgress * 100))%"
+                            self.statusMessage = "Downloading Gemma 3n model (~8GB): \(Int(downloadProgress * 100))%"
+                            self.modelDownloadProgress = downloadProgress
                         }
                     }
                 }
@@ -151,7 +186,47 @@ class BundledServerManager: ObservableObject {
         }
     }
     
+    private func checkPortAvailability() async -> Bool {
+        // Check if port is already in use
+        do {
+            let url = URL(string: "http://127.0.0.1:\(serverPort)/api/health")!
+            var request = URLRequest(url: url)
+            request.timeoutInterval = 1.0
+            
+            let (_, response) = try await URLSession.shared.data(for: request)
+            
+            if let httpResponse = response as? HTTPURLResponse,
+               httpResponse.statusCode == 200 {
+                logger.info("Port \(self.serverPort) already has a server running")
+                return false // Port is in use
+            }
+        } catch {
+            // Port is free (connection failed)
+            return true
+        }
+        return true
+    }
+    
     private func performServerLaunch() async throws {
+        // Check if port is available first
+        if await !checkPortAvailability() {
+            // Another server is already running on this port
+            if await checkHealth() {
+                // It's a healthy Gemi server
+                serverStatus = .ready
+                statusMessage = "Connected to existing server"
+                logger.info("Connected to existing Gemi server on port \(self.serverPort)")
+                return
+            } else {
+                // Something else is using the port
+                let error = "Port \(self.serverPort) is already in use by another application"
+                serverStatus = .error(error)
+                statusMessage = error
+                logger.error("Port conflict: \(error)")
+                throw ServerError.connectionFailed("Port \(self.serverPort) unavailable")
+            }
+        }
+        
         // Find the bundled GemiServer.app
         let serverURL = locateServerBundle()
         
@@ -247,11 +322,29 @@ class BundledServerManager: ObservableObject {
                     if exitCode != 0 {
                         self.logger.error("Server process terminated with exit code: \(exitCode), reason: \(reason.rawValue)")
                         if exitCode == 137 {
-                            self.serverStatus = .error("Server killed by system (code signing or sandbox issue)")
-                            self.statusMessage = "Server was terminated. This is usually due to code signing issues."
+                            // SIGKILL - usually code signing or permission issue
+                            self.serverStatus = .error("Server terminated - permission issue")
+                            self.statusMessage = "Server permission error. Attempting automatic recovery..."
+                            
+                            // Attempt to fix permissions and restart
+                            Task {
+                                self.logger.info("Attempting to fix server permissions...")
+                                await self.fixServerPermissions()
+                                try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                                
+                                // Only retry once to avoid infinite loop
+                                if !self.hasRetriedAfter137 {
+                                    self.hasRetriedAfter137 = true
+                                    self.logger.info("Retrying server launch after permission fix...")
+                                    try? await self.startServer()
+                                }
+                            }
+                        } else if exitCode == 1 {
+                            self.serverStatus = .error("Server startup failed")
+                            self.statusMessage = "Server failed to start. Check if port 11435 is already in use."
                         } else {
                             self.serverStatus = .error("Server exited with code \(exitCode)")
-                            self.statusMessage = "Server process failed to start properly."
+                            self.statusMessage = "Server process failed. Please try restarting Gemi."
                         }
                     }
                 }
@@ -334,6 +427,53 @@ class BundledServerManager: ObservableObject {
                     }
                 }
             }
+        }
+    }
+    
+    private func cleanupZombieProcesses() {
+        // Kill any lingering GemiServer or python processes
+        let zombiePatterns = ["GemiServer", "inference_server.py", "python.*inference_server"]
+        
+        for pattern in zombiePatterns {
+            let task = Process()
+            task.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
+            task.arguments = ["-f", pattern]
+            
+            do {
+                try task.run()
+                task.waitUntilExit()
+                if task.terminationStatus == 0 {
+                    logger.info("Cleaned up zombie process matching: \(pattern)")
+                }
+            } catch {
+                // pkill might not find anything, which is fine
+                logger.debug("No zombie processes found for pattern: \(pattern)")
+            }
+        }
+    }
+    
+    private func fixServerPermissions() async {
+        let serverURL = locateServerBundle()
+        let executablePath = serverURL.appendingPathComponent("Contents/MacOS/GemiServer")
+        
+        do {
+            // Make executable
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/bin/chmod")
+            process.arguments = ["+x", executablePath.path]
+            try process.run()
+            process.waitUntilExit()
+            
+            // Re-sign with ad-hoc signature
+            let codesignProcess = Process()
+            codesignProcess.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
+            codesignProcess.arguments = ["--force", "--deep", "--sign", "-", serverURL.path]
+            try codesignProcess.run()
+            codesignProcess.waitUntilExit()
+            
+            logger.info("Fixed server permissions and re-signed bundle")
+        } catch {
+            logger.error("Failed to fix server permissions: \(error)")
         }
     }
     

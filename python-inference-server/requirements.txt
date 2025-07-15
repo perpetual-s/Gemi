@@ -12,4 +12,4 @@ soundfile
 librosa
 python-multipart
 sse-starlette
-pyinstaller
+# pyinstaller - removed, using UV bundling instead

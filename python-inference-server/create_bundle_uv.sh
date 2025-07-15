@@ -172,7 +172,13 @@ fi
 
 # Sign the bundle with ad-hoc signature
 echo -e "${YELLOW}Signing bundle...${NC}"
+# First sign the UV binary
+codesign --force --sign - "$RESOURCES_DIR/uv"
+# Then sign the entire bundle
 codesign --force --deep --sign - "$BUNDLE_DIR"
+# Verify the signature
+echo -e "${YELLOW}Verifying signature...${NC}"
+codesign --verify --verbose "$BUNDLE_DIR"
 
 # Don't create virtual environment during bundling
 # It will be created at runtime in the correct location
