@@ -130,8 +130,14 @@ class ModelSetupService: ObservableObject {
                     
                 case .downloadingModel(let downloadProgress):
                     self.currentStep = .downloadingModel
-                    self.statusMessage = "Downloading Gemma 3n model (\(Int(downloadProgress * 100))%)"
-                    self.progress = 0.5 + (downloadProgress * 0.5)
+                    if downloadProgress < 0.1 {
+                        self.statusMessage = "Starting model download..."
+                    } else if downloadProgress < 0.9 {
+                        self.statusMessage = "Downloading Gemma 3n model... This may take several minutes"
+                    } else {
+                        self.statusMessage = "Finalizing model installation..."
+                    }
+                    self.progress = downloadProgress
                     
                 case .error(let errorMsg):
                     self.error = SetupError.launchFailed(errorMsg)

@@ -44,70 +44,37 @@ struct GemmaSetupProgressView: View {
                 
                 // Progress section
                 VStack(spacing: 24) {
-                    // Overall progress bar
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Overall Progress")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.white.opacity(0.8))
-                            
-                            Spacer()
-                            
-                            Text("\(Int(setupManager.progress * 100))%")
-                                .font(.system(size: 18, weight: .bold, design: .monospaced))
-                                .foregroundStyle(
-                                    LinearGradient(
-                                        colors: [currentStepColor(), currentStepColor().opacity(0.8)],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                        }
-                        
-                        GeometryReader { geometry in
-                            ZStack(alignment: .leading) {
-                                // Background
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.white.opacity(0.1))
-                                    .frame(height: 16)
+                    // Status indicator with animation
+                    HStack(spacing: 12) {
+                        // Animated progress indicator
+                        if !setupManager.isComplete && setupManager.error == nil {
+                            ZStack {
+                                Circle()
+                                    .stroke(lineWidth: 3)
+                                    .foregroundColor(.white.opacity(0.1))
+                                    .frame(width: 28, height: 28)
                                 
-                                // Progress
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [currentStepColor(), currentStepColor().opacity(0.7)],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
+                                Circle()
+                                    .trim(from: 0, to: 0.8)
+                                    .stroke(style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                                    .foregroundColor(currentStepColor())
+                                    .frame(width: 28, height: 28)
+                                    .rotationEffect(.degrees(pulseAnimation ? 360 : 0))
+                                    .animation(
+                                        .linear(duration: 1.5)
+                                        .repeatForever(autoreverses: false),
+                                        value: pulseAnimation
                                     )
-                                    .frame(width: geometry.size.width * setupManager.progress, height: 16)
-                                    .animation(.spring(response: 0.5), value: setupManager.progress)
-                                
-                                // Shimmer effect
-                                if !setupManager.isComplete {
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(
-                                            LinearGradient(
-                                                colors: [
-                                                    Color.clear,
-                                                    Color.white.opacity(0.3),
-                                                    Color.clear
-                                                ],
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            )
-                                        )
-                                        .frame(width: 100, height: 16)
-                                        .offset(x: geometry.size.width * setupManager.progress - 50)
-                                        .animation(
-                                            .linear(duration: 1.5)
-                                            .repeatForever(autoreverses: false),
-                                            value: pulseAnimation
-                                        )
-                                }
                             }
+                        } else if setupManager.isComplete {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 28))
+                                .foregroundColor(.green)
+                        } else if setupManager.error != nil {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 28))
+                                .foregroundColor(.orange)
                         }
-                        .frame(height: 16)
                     }
                     .frame(maxWidth: 600)
                     
