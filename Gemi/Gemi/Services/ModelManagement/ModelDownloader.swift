@@ -13,6 +13,8 @@ final class ModelDownloader: NSObject, ObservableObject {
     @Published var error: Error?
     @Published var bytesDownloaded: Int64 = 0
     @Published var totalBytes: Int64 = 0
+    @Published var downloadStartTime: Date?
+    @Published var downloadSpeed: Double = 0 // bytes per second
     
     // MARK: - Types
     
@@ -102,6 +104,8 @@ final class ModelDownloader: NSObject, ObservableObject {
         
         downloadState = .preparing
         currentFile = "Preparing download..."
+        downloadStartTime = Date()
+        bytesDownloaded = 0
         
         // Check if model already exists
         if await modelCache.isModelComplete() {
@@ -371,6 +375,14 @@ final class ModelDownloader: NSObject, ObservableObject {
         
         Task { @MainActor in
             self.progress = min(1.0, max(0.0, newProgress))
+            
+            // Calculate download speed
+            if let startTime = self.downloadStartTime {
+                let elapsed = Date().timeIntervalSince(startTime)
+                if elapsed > 0 {
+                    self.downloadSpeed = Double(self.bytesDownloaded) / elapsed
+                }
+            }
             
             if downloadTasks.first(where: { $0.state == .running }) != nil {
                 self.currentFile = "Downloading model files..."

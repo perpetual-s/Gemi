@@ -7,6 +7,8 @@ struct ModelDownloadProgressView: View {
     let currentFile: String
     let bytesDownloaded: Int64
     let totalBytes: Int64
+    let downloadStartTime: Date?
+    let downloadSpeed: Double
     let onCancel: (() -> Void)?
     
     @State private var showDetails = false
@@ -23,20 +25,44 @@ struct ModelDownloadProgressView: View {
     private var timeRemaining: String {
         guard progress > 0 && progress < 1 else { return "" }
         
-        let elapsed = Date().timeIntervalSince1970 // Would need start time
-        let estimatedTotal = elapsed / progress
-        let remaining = estimatedTotal - elapsed
-        
-        if remaining < 60 {
-            return "Less than a minute"
-        } else if remaining < 3600 {
-            let minutes = Int(remaining / 60)
-            return "\(minutes) minute\(minutes == 1 ? "" : "s") remaining"
-        } else {
-            let hours = Int(remaining / 3600)
-            let minutes = Int((remaining.truncatingRemainder(dividingBy: 3600)) / 60)
-            return "\(hours)h \(minutes)m remaining"
+        // Calculate based on download speed
+        if downloadSpeed > 0 {
+            let remainingBytes = totalBytes - bytesDownloaded
+            let remainingSeconds = Double(remainingBytes) / downloadSpeed
+            
+            if remainingSeconds < 60 {
+                return "Less than a minute remaining"
+            } else if remainingSeconds < 3600 {
+                let minutes = Int(remainingSeconds / 60)
+                return "\(minutes) minute\(minutes == 1 ? "" : "s") remaining"
+            } else {
+                let hours = Int(remainingSeconds / 3600)
+                let minutes = Int((remainingSeconds.truncatingRemainder(dividingBy: 3600)) / 60)
+                return "\(hours)h \(minutes)m remaining"
+            }
         }
+        
+        // Fallback: estimate based on progress and elapsed time
+        if let startTime = downloadStartTime {
+            let elapsed = Date().timeIntervalSince(startTime)
+            if elapsed > 5 { // Only show after 5 seconds
+                let estimatedTotal = elapsed / progress
+                let remaining = estimatedTotal - elapsed
+                
+                if remaining < 60 {
+                    return "Less than a minute remaining"
+                } else if remaining < 3600 {
+                    let minutes = Int(remaining / 60)
+                    return "\(minutes) minute\(minutes == 1 ? "" : "s") remaining"
+                } else {
+                    let hours = Int(remaining / 3600)
+                    let minutes = Int((remaining.truncatingRemainder(dividingBy: 3600)) / 60)
+                    return "\(hours)h \(minutes)m remaining"
+                }
+            }
+        }
+        
+        return "Calculating..."
     }
     
     var body: some View {
@@ -241,7 +267,7 @@ struct ModelDownloadProgressView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Label("This is a one-time download", systemImage: "checkmark.circle")
                     Label("The download continues if you close this window", systemImage: "checkmark.circle")
-                    Label("You can start writing entries while downloading", systemImage: "checkmark.circle")
+                    Label("Gemi will be ready to use once download completes", systemImage: "checkmark.circle")
                 }
                 .font(.system(size: 14))
                 .foregroundColor(.white.opacity(0.6))
@@ -328,6 +354,8 @@ struct ModelDownloadProgressView_Previews: PreviewProvider {
                 currentFile: "model-00002-of-00004.safetensors",
                 bytesDownloaded: 7_065_950_208,
                 totalBytes: 15_737_835_520,
+                downloadStartTime: Date().addingTimeInterval(-300), // 5 minutes ago
+                downloadSpeed: 10_000_000, // 10 MB/s
                 onCancel: {}
             )
             .padding(40)

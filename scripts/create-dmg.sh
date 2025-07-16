@@ -215,65 +215,69 @@ create_beautiful_dmg() {
     
     # Configure DMG window with AppleScript for perfect alignment
     print_substep "Applying professional layout..."
-    osascript <<EOF >/dev/null 2>&1
-tell application "Finder"
-    tell disk "$volume_name"
-        open
-        delay 1
-        set current view of container window to icon view
-        set toolbar visible of container window to false
-        set statusbar visible of container window to false
-        
-        -- Set exact window bounds for 600x400 content
-        set the bounds of container window to {400, 200, 1000, 600}
-        
-        set viewOptions to the icon view options of container window
-        set icon size of viewOptions to $ICON_SIZE
-        set text size of viewOptions to $TEXT_SIZE
-        set label position of viewOptions to bottom
-        set shows item info of viewOptions to false
-        set shows icon preview of viewOptions to true
-        set arrangement of viewOptions to not arranged
-        
-        -- Apply background image
-        set background picture of viewOptions to file ".background:dmg-background.png"
-        
-        -- Hide other items
-        set showsItemInfo of viewOptions to false
-        set showsIconPreview of viewOptions to true
-        
-        -- Wait for background to load
-        delay 1
-        
-        -- Position items centered in visual areas
-        set position of item "Gemi.app" of container window to {$APP_X, $APP_Y}
-        set position of item "Applications" of container window to {$APPS_X, $APPS_Y}
-        
-        -- Force window to front
-        set index of container window to 1
-        
-        -- Update and ensure positions stick
-        update without registering applications
-        delay 2
-        
-        -- Close and reopen to finalize
-        close
-        open
-        delay 1
-        
-        -- Reposition items one more time
-        set position of item "Gemi.app" of container window to {$APP_X, $APP_Y}
-        set position of item "Applications" of container window to {$APPS_X, $APPS_Y}
-        
-        -- Final update
-        update without registering applications
-        delay 1
-        
-        -- Close window
-        close
-    end tell
-end tell
+    
+    # Try AppleScript with timeout to prevent hanging
+    local applescript_success=false
+    
+    # Create a temporary AppleScript file to avoid inline issues
+    local temp_script="/tmp/dmg_layout_$$.scpt"
+    cat > "$temp_script" <<EOF
+on run
+    with timeout of 10 seconds
+        tell application "Finder"
+            try
+                tell disk "$volume_name"
+                    open
+                    delay 0.5
+                    set current view of container window to icon view
+                    set toolbar visible of container window to false
+                    set statusbar visible of container window to false
+                    
+                    -- Set exact window bounds for 600x400 content
+                    set the bounds of container window to {400, 200, 1000, 600}
+                    
+                    set viewOptions to the icon view options of container window
+                    set icon size of viewOptions to $ICON_SIZE
+                    set text size of viewOptions to $TEXT_SIZE
+                    set label position of viewOptions to bottom
+                    set shows item info of viewOptions to false
+                    set shows icon preview of viewOptions to true
+                    set arrangement of viewOptions to not arranged
+                    
+                    -- Apply background image
+                    set background picture of viewOptions to file ".background:dmg-background.png"
+                    
+                    -- Position items centered in visual areas
+                    set position of item "Gemi.app" of container window to {$APP_X, $APP_Y}
+                    set position of item "Applications" of container window to {$APPS_X, $APPS_Y}
+                    
+                    -- Update without registering applications
+                    update without registering applications
+                    delay 0.5
+                    
+                    -- Close window
+                    close
+                end tell
+                return "success"
+            on error errMsg
+                return "error: " & errMsg
+            end try
+        end tell
+    end timeout
+end run
 EOF
+    
+    # Run AppleScript with timeout
+    if timeout 15 osascript "$temp_script" >/dev/null 2>&1; then
+        applescript_success=true
+        print_success "Applied custom DMG layout"
+    else
+        print_warning "Could not apply custom layout (this is normal on some systems)"
+        print_info "DMG will use default macOS layout"
+    fi
+    
+    # Clean up temporary script
+    rm -f "$temp_script"
     
     # Additional sync to ensure all changes are written
     sync

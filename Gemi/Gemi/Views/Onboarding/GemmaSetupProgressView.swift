@@ -113,6 +113,8 @@ struct GemmaSetupProgressView: View {
                             currentFile: setupManager.currentDownloadFile,
                             bytesDownloaded: setupManager.downloadedBytes,
                             totalBytes: setupManager.totalDownloadBytes,
+                            downloadStartTime: setupManager.downloadStartTime,
+                            downloadSpeed: setupManager.downloadSpeed,
                             onCancel: {
                                 setupManager.modelDownloader.cancelDownload()
                             }

@@ -15,6 +15,8 @@ class ModelSetupService: ObservableObject {
     @Published var totalDownloadBytes: Int64 = 0
     @Published var currentDownloadFile: String = ""
     @Published var downloaderState: ModelDownloader.DownloadState = .notStarted
+    @Published var downloadStartTime: Date?
+    @Published var downloadSpeed: Double = 0
     
     private let chatService = NativeChatService.shared
     let modelDownloader = ModelDownloader()
@@ -148,6 +150,14 @@ class ModelSetupService: ObservableObject {
                 
                 let totalBytesObserver = modelDownloader.$totalBytes.sink { [weak self] total in
                     self?.totalDownloadBytes = total
+                }
+                
+                let startTimeObserver = modelDownloader.$downloadStartTime.sink { [weak self] startTime in
+                    self?.downloadStartTime = startTime
+                }
+                
+                let speedObserver = modelDownloader.$downloadSpeed.sink { [weak self] speed in
+                    self?.downloadSpeed = speed
                 }
                 
                 try await modelDownloader.startDownload()
