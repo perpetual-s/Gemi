@@ -150,7 +150,7 @@ struct ChatRequest: Codable, Sendable {
     
     struct Options: Codable, Sendable {
         let temperature: Double
-        let num_predict: Int  // Changed from num_ctx to match Python server
+        let num_predict: Int  // Maximum tokens to generate
         let top_p: Double
         let top_k: Int
         

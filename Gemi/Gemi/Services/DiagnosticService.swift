@@ -174,32 +174,32 @@ actor DiagnosticService {
                 switch aiError {
                 case .modelLoading(let details):
                     return DiagnosticResult(
-                        component: "AI Server",
+                        component: "AI Model",
                         status: .warning,
                         message: "Model is loading",
                         details: details
                     )
                 case .serviceUnavailable:
                     return DiagnosticResult(
-                        component: "AI Server",
+                        component: "AI Model",
                         status: .warning,
-                        message: "AI server is not running",
-                        details: "The inference server will start automatically"
+                        message: "AI service is not ready",
+                        details: "The model will be loaded when needed"
                     )
                 default:
                     return DiagnosticResult(
-                        component: "AI Server",
+                        component: "AI Model",
                         status: .failure,
-                        message: "AI server error",
+                        message: "AI service error",
                         details: error.localizedDescription
                     )
                 }
             }
             
             return DiagnosticResult(
-                component: "AI Server",
+                component: "AI Model",
                 status: .failure,
-                message: "AI server error",
+                message: "AI service error",
                 details: error.localizedDescription
             )
         }
