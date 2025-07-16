@@ -152,45 +152,67 @@ struct ModelDownloadProgressView: View {
                     
                     // Progress fill with gradient
                     GeometryReader { geometry in
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color.purple,
-                                        Color.blue,
-                                        Color.purple
-                                    ],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
+                        if progress > 0 {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.purple,
+                                            Color.blue,
+                                            Color.purple
+                                        ],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
                                 )
-                            )
-                            .frame(width: geometry.size.width * CGFloat(progress))
-                            .overlay(
-                                // Shimmer effect
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [
-                                                Color.white.opacity(0),
-                                                Color.white.opacity(0.3),
-                                                Color.white.opacity(0)
-                                            ],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
+                                .frame(width: max(24, geometry.size.width * CGFloat(progress))) // Minimum 24px for visibility
+                                .overlay(
+                                    // Shimmer effect
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [
+                                                    Color.white.opacity(0),
+                                                    Color.white.opacity(0.3),
+                                                    Color.white.opacity(0)
+                                                ],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
                                         )
+                                        .offset(x: pulseAnimation ? geometry.size.width : -geometry.size.width)
+                                        .animation(
+                                            .linear(duration: 3)
+                                            .repeatForever(autoreverses: false),
+                                            value: pulseAnimation
+                                        )
+                                        .mask(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .frame(width: max(24, geometry.size.width * CGFloat(progress)))
+                                        )
+                                )
+                                .shadow(color: Color.purple.opacity(0.5), radius: 8, x: 0, y: 4)
+                        } else {
+                            // Show a subtle pulsing indicator at start when progress is 0
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.purple.opacity(0.3),
+                                            Color.blue.opacity(0.3)
+                                        ],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
                                     )
-                                    .offset(x: pulseAnimation ? geometry.size.width : -geometry.size.width)
-                                    .animation(
-                                        .linear(duration: 3)
-                                        .repeatForever(autoreverses: false),
-                                        value: pulseAnimation
-                                    )
-                                    .mask(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .frame(width: geometry.size.width * CGFloat(progress))
-                                    )
-                            )
-                            .shadow(color: Color.purple.opacity(0.5), radius: 8, x: 0, y: 4)
+                                )
+                                .frame(width: 60)
+                                .opacity(pulseAnimation ? 0.6 : 0.3)
+                                .animation(
+                                    .easeInOut(duration: 1.5)
+                                    .repeatForever(autoreverses: true),
+                                    value: pulseAnimation
+                                )
+                        }
                     }
                     .frame(height: 24)
                 }
@@ -211,7 +233,16 @@ struct ModelDownloadProgressView: View {
                         }
                         
                         // Individual file progress indicators
-                        ForEach(["config.json", "tokenizer.json", "model-00001.safetensors", "model-00002.safetensors", "model-00003.safetensors", "model-00004.safetensors"], id: \.self) { file in
+                        ForEach([
+                            "config.json",
+                            "tokenizer.json", 
+                            "tokenizer_config.json",
+                            "model.safetensors.index.json",
+                            "model-00001.safetensors",
+                            "model-00002.safetensors",
+                            "model-00003.safetensors",
+                            "model-00004.safetensors"
+                        ], id: \.self) { file in
                             FileProgressIndicator(
                                 filename: file,
                                 isComplete: shouldShowAsComplete(file),
@@ -300,10 +331,32 @@ struct ModelDownloadProgressView: View {
     }
     
     private func shouldShowAsComplete(_ filename: String) -> Bool {
-        // Simple heuristic based on progress
-        let fileIndex = ["config.json": 0, "tokenizer.json": 1, "model-00001": 2, "model-00002": 3, "model-00003": 4, "model-00004": 5][filename] ?? 0
-        let progressPerFile = 1.0 / 6.0
-        return progress > (Double(fileIndex) * progressPerFile)
+        // More accurate file completion detection based on file sizes
+        // Total size is ~15.7GB, calculate cumulative progress for each file
+        let fileSizes: [(String, Double)] = [
+            ("config.json", 4_540),                    // 4.54 KB
+            ("tokenizer.json", 35_026_124),            // 33.4 MB
+            ("tokenizer_config.json", 1_258_291),      // 1.2 MB  
+            ("model.safetensors.index.json", 175_104), // 171 KB
+            ("model-00001.safetensors", 3_308_257_280), // 3.08 GB
+            ("model-00002.safetensors", 5_338_316_800), // 4.97 GB
+            ("model-00003.safetensors", 5_359_288_320), // 4.99 GB
+            ("model-00004.safetensors", 2_856_321_024)  // 2.66 GB
+        ]
+        
+        var cumulativeSize: Double = 0
+        let totalSize: Double = 16_873_421_483 // ~15.7 GB total
+        
+        for (file, size) in fileSizes {
+            cumulativeSize += size
+            if filename.contains(file) {
+                // File is complete if we've downloaded past its cumulative position
+                let fileProgress = cumulativeSize / totalSize
+                return progress >= fileProgress
+            }
+        }
+        
+        return false
     }
 }
 
