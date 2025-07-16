@@ -69,6 +69,24 @@ class ModelSetupService: ObservableObject {
             }
         }
         
+        var userFriendlyMessage: String {
+            switch self {
+            case .modelNotFound:
+                return "Model files not found. Please download the model first."
+            case .downloadFailed(let reason):
+                // Clean up technical messages for users
+                return reason
+                    .replacingOccurrences(of: "HTTP 401", with: "Connection error")
+                    .replacingOccurrences(of: "HTTP 403", with: "Access error")
+                    .replacingOccurrences(of: "authentication", with: "connection")
+                    .replacingOccurrences(of: "Authentication", with: "Connection")
+            case .loadFailed:
+                return "Model setup encountered an issue. Please try again."
+            case .authenticationRequired:
+                return "Connection issue. Please check your internet and try again."
+            }
+        }
+        
         var recoverySuggestion: String? {
             switch self {
             case .modelNotFound:
@@ -192,22 +210,35 @@ class ModelSetupService: ObservableObject {
             
         } catch let setupError as SetupError {
             self.error = setupError
-            statusMessage = setupError.localizedDescription
+            statusMessage = setupError.userFriendlyMessage
         } catch let modelError as ModelError {
             switch modelError {
             case .authenticationRequired:
-                self.error = .downloadFailed("Download configuration error. Please try again.")
-                statusMessage = "Download configuration error"
+                self.error = .downloadFailed("Connection issue. Please check your internet and try again.")
+                statusMessage = "Connection issue - please try again"
             case .downloadFailed(let reason):
-                self.error = .downloadFailed(reason)
-                statusMessage = reason
+                // Clean up technical jargon for users
+                let userFriendlyReason = reason
+                    .replacingOccurrences(of: "HTTP 401", with: "Connection error")
+                    .replacingOccurrences(of: "HTTP 403", with: "Access error")
+                    .replacingOccurrences(of: "authentication", with: "connection")
+                    .replacingOccurrences(of: "Authentication", with: "Connection")
+                self.error = .downloadFailed(userFriendlyReason)
+                statusMessage = userFriendlyReason
+            case .modelNotFound:
+                self.error = .downloadFailed("Model files not found. Please ensure the download completed successfully.")
+                statusMessage = "Model files not ready"
+            case .invalidFormat(let reason):
+                self.error = .downloadFailed("Model files appear corrupted: \(reason). Please delete the model folder and download again.")
+                statusMessage = "Invalid model format"
             default:
-                self.error = .downloadFailed(modelError.localizedDescription)
-                statusMessage = modelError.localizedDescription
+                self.error = .downloadFailed("Setup failed. Please try deleting the model folder and downloading again.")
+                statusMessage = "Setup failed - please retry"
             }
         } catch {
-            self.error = .downloadFailed(error.localizedDescription)
-            statusMessage = error.localizedDescription
+            // Generic error - provide helpful message
+            self.error = .downloadFailed("Setup encountered an issue. Please try again. If the problem persists, delete the model folder and re-download.")
+            statusMessage = "Setup issue - please retry"
         }
     }
     

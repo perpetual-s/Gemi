@@ -248,6 +248,18 @@ final class ModelDownloader: NSObject, ObservableObject {
         downloadState = .verifying
         try await verifyAllFiles()
         
+        // Validate the complete model setup
+        print("\n🔍 Validating complete model setup...")
+        do {
+            try await ModelSetupValidator.validateModelFiles(at: modelCache.modelPath)
+        } catch {
+            print("❌ Model validation failed: \(error)")
+            
+            // Get user-friendly recovery suggestion
+            let suggestion = ModelSetupValidator.getRecoverySuggestion(for: error)
+            throw ModelError.downloadFailed(suggestion)
+        }
+        
         downloadState = .completed
         progress = 1.0
     }
@@ -300,21 +312,44 @@ final class ModelDownloader: NSObject, ObservableObject {
                     }
                     
                     do {
-                        // Check if the downloaded file is HTML (error page)
+                        // Validate the downloaded file before moving
                         let fileData = try Data(contentsOf: tempURL)
+                        
+                        // Check if it's HTML error page
                         if let htmlCheck = String(data: fileData.prefix(1000), encoding: .utf8),
-                           (htmlCheck.contains("<!DOCTYPE") || htmlCheck.contains("<html") || htmlCheck.contains("401") || htmlCheck.contains("403")) {
+                           (htmlCheck.contains("<!DOCTYPE") || htmlCheck.contains("<html") || 
+                            htmlCheck.contains("401") || htmlCheck.contains("403") ||
+                            htmlCheck.contains("error") || htmlCheck.contains("Error")) {
                             
                             // Extract error message if possible
-                            var errorMessage = "Download failed - received invalid data"
+                            var errorMessage = "Download failed - received error page instead of model data"
                             if htmlCheck.contains("401") || htmlCheck.contains("Unauthorized") {
-                                errorMessage = "Download failed due to authentication. Please try again later."
+                                errorMessage = "Download failed. This is usually temporary - please try again in a few minutes."
+                            } else if htmlCheck.contains("403") || htmlCheck.contains("Forbidden") {
+                                errorMessage = "Model access issue. Please try again later."
                             }
                             
                             throw ModelError.downloadFailed(errorMessage)
                         }
                         
+                        // Validate file size
+                        let minSize: Int
+                        if file.name.contains("safetensors") {
+                            minSize = 10_000_000 // 10MB minimum for safetensors
+                        } else if file.name.contains(".json") {
+                            minSize = 100 // 100 bytes for JSON
+                        } else {
+                            minSize = 0
+                        }
+                        
+                        guard fileData.count >= minSize else {
+                            throw ModelError.downloadFailed("Downloaded file \(file.name) is too small (\(fileData.count) bytes). Please try downloading again.")
+                        }
+                        
                         // Move file to destination
+                        if FileManager.default.fileExists(atPath: destinationURL.path) {
+                            try FileManager.default.removeItem(at: destinationURL)
+                        }
                         try FileManager.default.moveItem(at: tempURL, to: destinationURL)
                         
                         // Clean up resume data

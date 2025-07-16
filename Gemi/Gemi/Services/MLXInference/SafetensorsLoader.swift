@@ -31,14 +31,28 @@ class SafetensorsLoader {
             htmlCheck.contains("401") || htmlCheck.contains("403") || 
             htmlCheck.contains("Unauthorized")) {
             
-            throw ModelError.downloadFailed("""
-                The downloaded file appears to be invalid.
-                
-                This may be a temporary issue. Please try:
-                1. Deleting the model folder and downloading again
-                2. Checking your internet connection
-                3. Trying again later if the issue persists
-                """)
+            // Provide specific error based on content
+            if htmlCheck.contains("401") || htmlCheck.contains("Unauthorized") {
+                throw ModelError.downloadFailed("""
+                    Connection issue detected. The model download may have been interrupted.
+                    
+                    Please delete the model folder and try downloading again.
+                    If this continues, try again in a few minutes.
+                    """)
+            } else if htmlCheck.contains("403") || htmlCheck.contains("Forbidden") {
+                throw ModelError.downloadFailed("""
+                    Model access issue detected. This is usually temporary.
+                    
+                    Please delete the model folder and try again later.
+                    """)
+            } else {
+                throw ModelError.downloadFailed("""
+                    The downloaded file appears to be corrupted.
+                    
+                    Please delete the model folder and download again.
+                    This often happens due to network interruptions.
+                    """)
+            }
         }
         
         // Read header size (first 8 bytes, little-endian)
@@ -55,9 +69,20 @@ class SafetensorsLoader {
             // Check if it might be a JSON error response
             if let jsonString = String(data: data, encoding: .utf8) {
                 print("File appears to be JSON/text instead of safetensors: \(String(jsonString.prefix(500)))")
-                throw ModelError.invalidFormat("Invalid safetensors format - file appears to be text/JSON")
+                
+                // Provide user-friendly error
+                throw ModelError.invalidFormat("""
+                    Model file format is incorrect. This usually means:
+                    • The download was corrupted
+                    • Network issues during download
+                    
+                    Please delete the model folder and download again.
+                    """)
             }
-            throw ModelError.invalidFormat("Invalid header size: \(headerSize)")
+            throw ModelError.invalidFormat("""
+                Model file appears corrupted (invalid header).
+                Please delete the model folder and download again.
+                """)
         }
         
         // Read header JSON
@@ -82,10 +107,25 @@ class SafetensorsLoader {
                 
                 // Check if this might be a corrupt or incomplete file
                 if data.count < 1_000_000 { // Less than 1MB is suspicious for model files
-                    throw ModelError.invalidFormat("File appears to be incomplete or corrupted (only \(data.count) bytes). Please delete the model folder and try downloading again.")
+                    let sizeInMB = Double(data.count) / 1_000_000.0
+                    throw ModelError.invalidFormat("""
+                        Model file is too small (\(String(format: "%.1f", sizeInMB))MB).
+                        This indicates an incomplete download.
+                        
+                        Please delete the model folder and download again.
+                        Make sure you have a stable internet connection.
+                        """)
                 }
                 
-                throw ModelError.invalidFormat("Failed to decode safetensors header: \(error.localizedDescription)")
+                throw ModelError.invalidFormat("""
+                    Model file format error detected.
+                    
+                    This usually happens when:
+                    • Download was interrupted
+                    • Files were corrupted during transfer
+                    
+                    Please delete the model folder and try again.
+                    """)
             }
         }
         
