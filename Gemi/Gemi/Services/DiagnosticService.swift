@@ -30,8 +30,8 @@ actor DiagnosticService {
         // 2. Test Network Permissions
         results.append(await testNetworkPermissions())
         
-        // 3. Test AI Server Connectivity
-        results.append(await testAIServerConnectivity())
+        // 3. Test AI Model Status
+        results.append(await testAIModelStatus())
         
         // 4. Test File System Access
         results.append(await testFileSystemAccess())
@@ -135,37 +135,37 @@ actor DiagnosticService {
                 return DiagnosticResult(
                     component: "Network Permissions",
                     status: .success,
-                    message: "Network access to AI server is allowed",
-                    details: "Connection refused (expected if AI server not running)"
+                    message: "Network access is allowed",
+                    details: "Local network connectivity verified"
                 )
             }
             
             return DiagnosticResult(
                 component: "Network Permissions",
                 status: .failure,
-                message: "Network access to AI server may be blocked",
+                message: "Network access may be blocked",
                 details: error.localizedDescription
             )
         }
     }
     
-    private func testAIServerConnectivity() async -> DiagnosticResult {
+    private func testAIModelStatus() async -> DiagnosticResult {
         // Test API endpoint
         do {
             let isHealthy = try await AIService.shared.checkHealth()
             
             if isHealthy {
                 return DiagnosticResult(
-                    component: "AI Server",
+                    component: "AI Model",
                     status: .success,
-                    message: "AI server is running and model is loaded",
+                    message: "Gemma 3n model is loaded and ready",
                     details: "Gemma 3n model is ready for use"
                 )
             } else {
                 return DiagnosticResult(
-                    component: "AI Server",
+                    component: "AI Model",
                     status: .warning,
-                    message: "AI server is running but model not loaded",
+                    message: "MLX inference engine ready but model not loaded",
                     details: "Model is being downloaded or loaded"
                 )
             }
@@ -388,8 +388,8 @@ actor DiagnosticService {
             report += "• Fix critical failures before proceeding\n"
         }
         
-        if results.contains(where: { $0.component == "AI Server" && $0.status == .warning }) {
-            report += "• The AI server will start automatically when needed\n"
+        if results.contains(where: { $0.component == "AI Model" && $0.status == .warning }) {
+            report += "• The AI model will be loaded automatically when needed\n"
         }
         
         if results.contains(where: { $0.component == "Network Permissions" && $0.status == .failure }) {

@@ -601,7 +601,7 @@ struct GemmaModelStatusView: View {
             // Actions
             HStack(spacing: 12) {
                 Button("Open Model Folder") {
-                    modelManager.openServerTerminal()
+                    modelManager.openModelDirectory()
                 }
                 .buttonStyle(.plain)
                 .font(.system(size: 13, weight: .medium))
@@ -949,7 +949,7 @@ class GemmaModelManager: ObservableObject {
         }
     }
     
-    func openServerTerminal() {
+    func openModelDirectory() {
         // Open model directory in Finder
         let modelPath = ModelCache.shared.modelPath
         NSWorkspace.shared.open(modelPath)

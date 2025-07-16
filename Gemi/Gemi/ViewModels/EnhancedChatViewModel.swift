@@ -48,7 +48,7 @@ final class EnhancedChatViewModel: ObservableObject {
     
     // MARK: - Public Methods
     
-    /// Start monitoring the connection to AI server
+    /// Start monitoring the AI model status
     func startConnectionMonitoring() {
         // Cancel any existing monitoring
         connectionMonitorTask?.cancel()
@@ -75,7 +75,7 @@ final class EnhancedChatViewModel: ObservableObject {
         }
     }
     
-    /// Check the connection to AI server silently (without updating UI unless status changes)
+    /// Check the AI model status silently (without updating UI unless status changes)
     private func checkAIConnectionSilently() {
         Task {
             lastConnectionCheck = Date()
@@ -99,7 +99,7 @@ final class EnhancedChatViewModel: ObservableObject {
         }
     }
     
-    /// Check the connection to AI server
+    /// Check the AI model status
     func checkAIConnection() {
         Task {
             guard lastKnownConnectionStatus != .connecting else { return }
@@ -122,7 +122,7 @@ final class EnhancedChatViewModel: ObservableObject {
                 }
                 
                 if !isHealthy {
-                    print("AI server health check failed")
+                    print("AI model health check failed")
                 } else {
                     // Check if current model supports multimodal
                     let isMultimodal = await aiService.isMultimodalModel()
@@ -138,7 +138,7 @@ final class EnhancedChatViewModel: ObservableObject {
                     lastKnownConnectionStatus = .disconnected
                     connectionStatus = .disconnected
                 }
-                print("AI server connection error: \(error)")
+                print("AI model status check error: \(error)")
                 
                 // Don't show error alerts for connection checks
                 // The UI will show the connection status
@@ -150,7 +150,7 @@ final class EnhancedChatViewModel: ObservableObject {
     func sendMessage(_ content: String, images: [String]? = nil) async {
         guard !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         guard connectionStatus == .connected else {
-            error = AIServiceError.serviceUnavailable("Please wait for connection to AI server")
+            error = AIServiceError.serviceUnavailable("Please wait for AI model to load")
             return
         }
         

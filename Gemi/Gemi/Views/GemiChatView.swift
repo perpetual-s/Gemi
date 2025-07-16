@@ -546,7 +546,7 @@ struct GemiChatView: View {
                         .fill(Color.red)
                         .frame(width: 8, height: 8)
                     
-                    Text("AI server disconnected")
+                    Text("AI model not loaded")
                         .font(Theme.Typography.caption)
                         .foregroundColor(Theme.Colors.secondaryText)
                     

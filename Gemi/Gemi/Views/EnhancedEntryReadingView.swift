@@ -453,7 +453,7 @@ struct EnhancedEntryReadingView: View {
                     self.aiSummary = "Unable to generate AI insights at this time. Please ensure Gemma 3n is running."
                     self.aiKeyPoints = [
                         "AI analysis temporarily unavailable",
-                        "Check AI server connection in settings",
+                        "Check AI model status in settings",
                         "Your journal entry has been saved successfully"
                     ]
                     self.aiSuggestedPrompts = [
