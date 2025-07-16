@@ -197,17 +197,56 @@ final class GemmaMLXModel: ObservableObject {
             "model-00004-of-00004.safetensors"
         ]
         
-        // TODO: Implement actual safetensors loading
-        // For now, initialize with random weights
-        guard let _ = self.model else { return }
+        guard let model = self.model else { return }
         
-        // MLX modules handle their own parameter initialization
-        // In production, we would load from safetensors files here
+        // Load all weight files
+        let weights = try await SafetensorsLoader.loadModelWeights(
+            from: modelCache.modelPath,
+            fileNames: weightFiles
+        )
         
-        for (index, _) in weightFiles.enumerated() {
-            loadProgress = 0.5 + (0.3 * Double(index + 1) / Double(weightFiles.count))
-            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s simulated load time per file
+        // Apply weights to model
+        // For now, we'll just load the attention weights since they're accessible
+        
+        // Load transformer layer weights
+        for (layerIdx, layer) in model.layers.enumerated() {
+            let prefix = "model.layers.\(layerIdx)"
+            
+            // Attention weights (these are accessible via our custom GemmaAttention)
+            if let qWeight = weights["\(prefix).self_attn.q_proj.weight"] {
+                layer.selfAttention.wq = qWeight
+            }
+            if let kWeight = weights["\(prefix).self_attn.k_proj.weight"] {
+                layer.selfAttention.wk = kWeight
+            }
+            if let vWeight = weights["\(prefix).self_attn.v_proj.weight"] {
+                layer.selfAttention.wv = vWeight
+            }
+            if let oWeight = weights["\(prefix).self_attn.o_proj.weight"] {
+                layer.selfAttention.wo = oWeight
+            }
+            
+            // MLP weights (these are accessible via our custom MLP)
+            if let gateWeight = weights["\(prefix).mlp.gate_proj.weight"] {
+                layer.mlp.gateWeight = gateWeight
+            }
+            if let upWeight = weights["\(prefix).mlp.up_proj.weight"] {
+                layer.mlp.upWeight = upWeight
+            }
+            if let downWeight = weights["\(prefix).mlp.down_proj.weight"] {
+                layer.mlp.downWeight = downWeight
+            }
+            
+            // Update progress
+            loadProgress = 0.5 + (0.4 * Double(layerIdx + 1) / Double(model.layers.count))
         }
+        
+        // TODO: In production, we need to either:
+        // 1. Create custom layers with mutable weights
+        // 2. Store weights separately and apply during forward pass
+        // 3. Use MLX's built-in model loading once available
+        
+        loadProgress = 0.95
     }
     
     private func prepareInput(prompt: String, images: [Data]?) async throws -> ModelInput {
@@ -283,6 +322,52 @@ extension ModelError {
 
 // MARK: - Helper Components
 
+/// Custom attention for Gemma with accessible weights
+class GemmaAttention: Module {
+    var wq: MLXArray?
+    var wk: MLXArray?
+    var wv: MLXArray?
+    var wo: MLXArray?
+    
+    let dimensions: Int
+    let numHeads: Int
+    let headDim: Int
+    
+    init(dimensions: Int, numHeads: Int) {
+        self.dimensions = dimensions
+        self.numHeads = numHeads
+        self.headDim = dimensions / numHeads
+        super.init()
+    }
+    
+    func callAsFunction(_ x: MLXArray) -> MLXArray {
+        // Apply projections
+        let q = matmul(x, wq ?? MLXArray.zeros([dimensions, dimensions]))
+        let k = matmul(x, wk ?? MLXArray.zeros([dimensions, dimensions]))
+        let v = matmul(x, wv ?? MLXArray.zeros([dimensions, dimensions]))
+        
+        // Reshape for multi-head attention
+        let batchSize = x.shape[0]
+        let seqLen = x.shape[1]
+        
+        let qHeads = q.reshaped([batchSize, seqLen, numHeads, headDim]).transposed(0, 2, 1, 3)
+        let kHeads = k.reshaped([batchSize, seqLen, numHeads, headDim]).transposed(0, 2, 1, 3)
+        let vHeads = v.reshaped([batchSize, seqLen, numHeads, headDim]).transposed(0, 2, 1, 3)
+        
+        // Scaled dot-product attention
+        let scale = 1.0 / sqrt(Float(headDim))
+        let scores = matmul(qHeads, kHeads.transposed(0, 1, 3, 2)) * scale
+        let weights = softmax(scores, axis: -1)
+        let attention = matmul(weights, vHeads)
+        
+        // Reshape back
+        let concatAttention = attention.transposed(0, 2, 1, 3).reshaped([batchSize, seqLen, dimensions])
+        
+        // Output projection
+        return matmul(concatAttention, wo ?? MLXArray.zeros([dimensions, dimensions]))
+    }
+}
+
 /// Simplified Gemma model for MLX
 class GemmaModel: Module {
     let embedding: Embedding
@@ -326,13 +411,13 @@ class GemmaModel: Module {
 
 /// Transformer layer for Gemma
 class TransformerLayer: Module {
-    let selfAttention: MultiHeadAttention
+    let selfAttention: GemmaAttention
     let mlp: MLP
     let inputLayerNorm: RMSNorm
     let postAttentionLayerNorm: RMSNorm
     
     init(dimensions: Int, numHeads: Int) {
-        self.selfAttention = MultiHeadAttention(
+        self.selfAttention = GemmaAttention(
             dimensions: dimensions,
             numHeads: numHeads
         )
@@ -351,7 +436,7 @@ class TransformerLayer: Module {
     func callAsFunction(_ x: MLXArray) -> MLXArray {
         // Pre-norm residual architecture
         let normed = inputLayerNorm(x)
-        let attnOut = selfAttention(normed, keys: normed, values: normed)
+        let attnOut = selfAttention(normed)
         var h = x + attnOut
         
         let normed2 = postAttentionLayerNorm(h)
@@ -364,23 +449,28 @@ class TransformerLayer: Module {
 
 /// MLP layer
 class MLP: Module {
-    let gate: Linear
-    let up: Linear
-    let down: Linear
+    var gateWeight: MLXArray?
+    var upWeight: MLXArray?
+    var downWeight: MLXArray?
+    
+    let dimensions: Int
+    let hiddenDimensions: Int
     
     init(dimensions: Int, hiddenDimensions: Int) {
-        self.gate = Linear(dimensions, hiddenDimensions, bias: false)
-        self.up = Linear(dimensions, hiddenDimensions, bias: false)
-        self.down = Linear(hiddenDimensions, dimensions, bias: false)
-        
+        self.dimensions = dimensions
+        self.hiddenDimensions = hiddenDimensions
         super.init()
     }
     
     func callAsFunction(_ x: MLXArray) -> MLXArray {
-        let gate = self.gate(x)
-        let up = self.up(x)
+        let gateW = gateWeight ?? MLXArray.zeros([dimensions, hiddenDimensions])
+        let upW = upWeight ?? MLXArray.zeros([dimensions, hiddenDimensions])
+        let downW = downWeight ?? MLXArray.zeros([hiddenDimensions, dimensions])
+        
+        let gate = matmul(x, gateW)
+        let up = matmul(x, upW)
         let activated = silu(gate) * up
-        return down(activated)
+        return matmul(activated, downW)
     }
 }
 
