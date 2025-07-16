@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import CryptoKit
+import CryptoKit
 
 /// Handles downloading of Gemma 3n model files from HuggingFace
 @MainActor
@@ -114,6 +115,9 @@ final class ModelDownloader: NSObject, ObservableObject {
             progress = 1.0
             return
         }
+        
+        // Fetch file metadata from HuggingFace API for SHA-256 hashes
+        await fetchAndUpdateFileHashes()
         
         // CRITICAL: Check authentication BEFORE downloading
         // This prevents users from waiting 20 minutes only to fail
@@ -231,13 +235,39 @@ final class ModelDownloader: NSObject, ObservableObject {
             return
         }
         
-        // Download files in parallel (up to 4 at a time)
+        // Download files in parallel (up to 4 at a time) with retry
         downloadState = .downloading(file: "Starting downloads...", progress: 0.0)
         
         try await withThrowingTaskGroup(of: Void.self) { group in
             for file in filesToDownload {
                 group.addTask {
-                    try await self.downloadFile(file)
+                    // Use NetworkRetryHandler for robust downloads
+                    try await NetworkRetryHandler.withRetry(
+                        operation: {
+                            try await self.downloadFile(file)
+                        },
+                        configuration: .aggressive,
+                        shouldRetry: { error in
+                            // Don't retry auth errors
+                            if let modelError = error as? ModelError {
+                                switch modelError {
+                                case .authenticationRequired, .downloadFailed(let reason)
+                                    where reason.contains("401") || reason.contains("403"):
+                                    return false
+                                default:
+                                    return true
+                                }
+                            }
+                            return NetworkRetryHandler.isRetryableError(error)
+                        },
+                        onRetry: { attempt, error in
+                            let message = NetworkRetryHandler.retryMessage(for: attempt, error: error)
+                            Task { @MainActor in
+                                self.currentFile = message
+                            }
+                            print("🔄 \(message) for \(file.name)")
+                        }
+                    )
                 }
             }
             
@@ -392,9 +422,68 @@ final class ModelDownloader: NSObject, ObservableObject {
     }
     
     private func verifyFile(at url: URL, expectedHash: String) async throws -> Bool {
-        // For now, skip SHA verification since we don't have real hashes
-        // In production, implement proper SHA-256 verification
-        return FileManager.default.fileExists(atPath: url.path)
+        // If we don't have a hash, just check file exists
+        guard !expectedHash.isEmpty && expectedHash != "pending" else {
+            return FileManager.default.fileExists(atPath: url.path)
+        }
+        
+        // Verify file exists
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            return false
+        }
+        
+        // Calculate SHA-256
+        do {
+            let fileHandle = try FileHandle(forReadingFrom: url)
+            defer { try? fileHandle.close() }
+            
+            var hasher = SHA256()
+            let bufferSize = 1024 * 1024 // 1MB chunks
+            
+            while autoreleasepool(invoking: {
+                let data = fileHandle.readData(ofLength: bufferSize)
+                guard !data.isEmpty else { return false }
+                hasher.update(data: data)
+                return true
+            }) {}
+            
+            let digest = hasher.finalize()
+            let calculatedHash = digest.map { String(format: "%02x", $0) }.joined()
+            
+            // Compare hashes
+            let matches = calculatedHash.lowercased() == expectedHash.lowercased()
+            
+            if !matches {
+                print("⚠️ SHA-256 mismatch for \(url.lastPathComponent)")
+                print("  Expected: \(expectedHash)")
+                print("  Calculated: \(calculatedHash)")
+            }
+            
+            return matches
+        } catch {
+            print("Error calculating SHA-256 for \(url.lastPathComponent): \(error)")
+            return false
+        }
+    }
+    
+    private func fetchAndUpdateFileHashes() async {
+        do {
+            let metadata = try await fetchFileMetadata()
+            
+            // Update our file list with SHA256 hashes
+            for (index, file) in requiredFiles.enumerated() {
+                if let meta = metadata.first(where: { $0.filename == file.name }),
+                   let sha256 = meta.sha256 {
+                    requiredFiles[index].sha256 = sha256
+                }
+            }
+            
+            print("✅ Fetched SHA-256 hashes for \(metadata.filter { $0.sha256 != nil }.count) files")
+        } catch {
+            // If we can't fetch metadata, continue without SHA verification
+            print("⚠️ Could not fetch file metadata: \(error.localizedDescription)")
+            print("   Continuing without SHA-256 verification")
+        }
     }
     
     private func verifyAllFiles() async throws {
@@ -478,7 +567,10 @@ enum ModelError: LocalizedError {
     case verificationFailed(String)
     case extractionFailed(String)
     case modelNotFound
+    case modelNotLoaded
+    case invalidConfiguration
     case authenticationRequired(String)
+    case invalidFormat(String)
     
     var errorDescription: String? {
         switch self {
@@ -490,8 +582,14 @@ enum ModelError: LocalizedError {
             return "Extraction failed: \(reason)"
         case .modelNotFound:
             return "Model files not found"
+        case .modelNotLoaded:
+            return "Model not loaded"
+        case .invalidConfiguration:
+            return "Invalid model configuration"
         case .authenticationRequired(let message):
             return message
+        case .invalidFormat(let reason):
+            return "Invalid format: \(reason)"
         }
     }
 }
