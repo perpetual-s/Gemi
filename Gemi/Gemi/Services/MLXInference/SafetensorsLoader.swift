@@ -31,16 +31,13 @@ class SafetensorsLoader {
             htmlCheck.contains("401") || htmlCheck.contains("403") || 
             htmlCheck.contains("Unauthorized")) {
             
-            throw ModelError.authenticationRequired("""
-                The model file appears to be an HTML error page instead of model data.
+            throw ModelError.downloadFailed("""
+                The downloaded file appears to be invalid.
                 
-                This usually means:
-                1. Your HuggingFace token is missing or invalid
-                2. You haven't accepted the Gemma model license
-                3. The model requires authentication that wasn't provided
-                
-                Please check your HuggingFace token and ensure you've accepted the license at:
-                https://huggingface.co/google/gemma-3n-E4B-it
+                This may be a temporary issue. Please try:
+                1. Deleting the model folder and downloading again
+                2. Checking your internet connection
+                3. Trying again later if the issue persists
                 """)
         }
         

@@ -1,0 +1,2 @@
+# This file ensures the Resources directory is tracked in git
+# .env files will be placed here during build but are gitignored

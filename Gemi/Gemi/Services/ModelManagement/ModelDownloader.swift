@@ -159,16 +159,10 @@ final class ModelDownloader: NSObject, ObservableObject {
     /// Verify HuggingFace authentication BEFORE downloading
     /// This prevents users from waiting 20 minutes only to fail
     private func verifyHuggingFaceAccess() async throws {
-        // Check if we have a token
+        // We always have a token now - embedded for zero friction
         guard let token = await SettingsManager.shared.getHuggingFaceToken() else {
-            throw ModelError.authenticationRequired(
-                """
-                HuggingFace authentication required.
-                
-                Gemma models are gated and require a HuggingFace token.
-                Please add your token in the settings to continue.
-                """
-            )
+            // This should never happen with embedded token
+            throw ModelError.downloadFailed("Configuration error: No authentication token found")
         }
         
         // Test access to a small file to verify authentication
@@ -188,22 +182,9 @@ final class ModelDownloader: NSObject, ObservableObject {
                     print("✅ HuggingFace authentication verified")
                     return
                 case 401:
-                    throw ModelError.authenticationRequired(
-                        """
-                        Invalid HuggingFace token.
-                        
-                        Please check that your token is correct and has read permissions.
-                        """
-                    )
+                    throw ModelError.downloadFailed("Authentication failed. The model access may have changed. Please contact support.")
                 case 403:
-                    throw ModelError.authenticationRequired(
-                        """
-                        Access forbidden.
-                        
-                        Please ensure you have accepted the Gemma license at:
-                        https://huggingface.co/google/gemma-3n-E4B-it
-                        """
-                    )
+                    throw ModelError.downloadFailed("Model access forbidden. The model permissions may have changed. Please contact support.")
                 default:
                     throw ModelError.downloadFailed("Authentication check failed: HTTP \(httpResponse.statusCode)")
                 }
@@ -303,16 +284,7 @@ final class ModelDownloader: NSObject, ObservableObject {
                     // Check HTTP response status
                     if let httpResponse = response as? HTTPURLResponse {
                         if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
-                            let authError = ModelError.authenticationRequired(
-                                """
-                                HuggingFace authentication failed (HTTP \(httpResponse.statusCode)).
-                                
-                                To fix this:
-                                1. Ensure your HuggingFace token is set in .env file
-                                2. Visit https://huggingface.co/google/gemma-3n-E4B-it and accept the license
-                                3. Make sure your token has read permissions
-                                """
-                            )
+                            let authError = ModelError.downloadFailed("Download failed (HTTP \(httpResponse.statusCode)). The model access may have changed. Please try again later.")
                             continuation.resume(throwing: authError)
                             return
                         } else if httpResponse.statusCode >= 400 {
@@ -329,20 +301,12 @@ final class ModelDownloader: NSObject, ObservableObject {
                            (htmlCheck.contains("<!DOCTYPE") || htmlCheck.contains("<html") || htmlCheck.contains("401") || htmlCheck.contains("403")) {
                             
                             // Extract error message if possible
-                            var errorMessage = "Authentication required to access Gemma model"
+                            var errorMessage = "Download failed - received invalid data"
                             if htmlCheck.contains("401") || htmlCheck.contains("Unauthorized") {
-                                errorMessage = """
-                                    HuggingFace authentication failed.
-                                    
-                                    Please ensure:
-                                    1. Your HuggingFace token is correctly set
-                                    2. You have accepted the Gemma license at:
-                                       https://huggingface.co/google/gemma-3n-E4B-it
-                                    3. Your token has read permissions
-                                    """
+                                errorMessage = "Download failed due to authentication. Please try again later."
                             }
                             
-                            throw ModelError.authenticationRequired(errorMessage)
+                            throw ModelError.downloadFailed(errorMessage)
                         }
                         
                         // Move file to destination

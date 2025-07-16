@@ -111,10 +111,9 @@ class ModelDiagnostics {
         // Check HuggingFace token
         print("🔐 Authentication Status:")
         if let token = SettingsManager.shared.getHuggingFaceToken() {
-            print("  ✓ HuggingFace token found (starts with: \(String(token.prefix(7)))...)")
+            print("  ✓ Authentication configured")
         } else {
-            print("  ✗ No HuggingFace token found!")
-            print("  → Check .env file or add token in Settings")
+            print("  ✗ Authentication not configured")
         }
         
         // Check environment config

@@ -10,7 +10,7 @@ struct GemmaSetupProgressView: View {
     @State private var showingError = false
     @State private var pulseAnimation = false
     @State private var hasCalledCompletion = false
-    @State private var showingTokenView = false
+    // @State private var showingTokenView = false // No longer needed - embedded token
     
     var body: some View {
         ZStack {
@@ -19,21 +19,10 @@ struct GemmaSetupProgressView: View {
         }
         .onAppear {
             pulseAnimation = true
-            // Check for HuggingFace token before starting setup
-            // If we have an environment token or user token, start setup immediately
-            if settingsManager.hasHuggingFaceToken || settingsManager.hasEnvironmentToken {
-                setupManager.startSetup()
-            } else {
-                showingTokenView = true
-            }
+            // Start setup immediately - we have embedded token
+            setupManager.startSetup()
         }
-        .sheet(isPresented: $showingTokenView) {
-            HuggingFaceTokenView {
-                // Token saved callback
-                showingTokenView = false
-                setupManager.startSetup()
-            }
-        }
+        // Token view no longer needed - using embedded token
         .alert("Setup Error", isPresented: .init(
             get: { setupManager.error != nil },
             set: { _ in setupManager.error = nil }
@@ -191,16 +180,11 @@ struct GemmaSetupProgressView: View {
                         .transition(.scale.combined(with: .opacity))
                     } else if setupManager.error != nil {
                         Button {
-                            // Check if authentication error - show token view
-                            if case .authenticationRequired = setupManager.error {
-                                showingTokenView = true
-                            } else {
-                                setupManager.startSetup()
-                            }
+                            setupManager.startSetup()
                         } label: {
                             HStack {
-                                Image(systemName: setupManager.error == .authenticationRequired ? "key.fill" : "arrow.clockwise")
-                                Text(setupManager.error == .authenticationRequired ? "Add Token" : "Retry Setup")
+                                Image(systemName: "arrow.clockwise")
+                                Text("Retry Setup")
                             }
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)

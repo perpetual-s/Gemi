@@ -38,15 +38,19 @@ class SettingsManager: ObservableObject {
         }
     }
     
-    /// Retrieve HuggingFace token from .env file or Keychain
+    /// Retrieve HuggingFace token - uses embedded token for zero-friction experience
     func getHuggingFaceToken() -> String? {
-        // First check if we have a token in .env file (for release builds)
+        // First check .env file for the token
         if let envToken = EnvironmentConfig.shared.huggingFaceToken,
            !envToken.isEmpty {
             return envToken
         }
         
-        // Otherwise check Keychain for user-provided token
+        // For production builds, the token should be in .env file
+        // which is NOT committed to git (it's in .gitignore)
+        // This provides zero-friction experience without exposing tokens
+        
+        // Fallback: check Keychain for any user-provided token
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrAccount as String: tokenKey,

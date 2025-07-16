@@ -63,7 +63,7 @@ class ModelSetupService: ObservableObject {
             case .loadFailed(let reason):
                 return "Failed to load model: \(reason)"
             case .authenticationRequired:
-                return "HuggingFace authentication required"
+                return "Download configuration error"
             }
         }
         
@@ -79,7 +79,7 @@ class ModelSetupService: ObservableObject {
             case .loadFailed:
                 return "Try restarting Gemi to free up memory"
             case .authenticationRequired:
-                return "Gemma models are gated and require a HuggingFace token for access."
+                return "There was a problem accessing the model. Please try again later."
             }
         }
     }
@@ -174,9 +174,9 @@ class ModelSetupService: ObservableObject {
             statusMessage = setupError.localizedDescription
         } catch let modelError as ModelError {
             switch modelError {
-            case .authenticationRequired(let message):
-                self.error = .authenticationRequired
-                statusMessage = message
+            case .authenticationRequired:
+                self.error = .downloadFailed("Download configuration error. Please try again.")
+                statusMessage = "Download configuration error"
             case .downloadFailed(let reason):
                 self.error = .downloadFailed(reason)
                 statusMessage = reason
@@ -185,15 +185,8 @@ class ModelSetupService: ObservableObject {
                 statusMessage = modelError.localizedDescription
             }
         } catch {
-            // Check if it's an authentication error
-            let errorMessage = error.localizedDescription
-            if errorMessage.contains("401") || errorMessage.contains("403") || errorMessage.contains("Unauthorized") || errorMessage.contains("authentication") {
-                self.error = .authenticationRequired
-                statusMessage = "Authentication required"
-            } else {
-                self.error = .downloadFailed(error.localizedDescription)
-                statusMessage = error.localizedDescription
-            }
+            self.error = .downloadFailed(error.localizedDescription)
+            statusMessage = error.localizedDescription
         }
     }
     
