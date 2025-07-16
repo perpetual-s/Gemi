@@ -121,9 +121,22 @@ final class GemmaMLXModel: ObservableObject {
                     
                     isGenerating = true
                     
+                    // Process images if provided
+                    var imageEmbeddings: [MLXArray]? = nil
+                    if let images = images {
+                        let processedImages = try await processImages(images)
+                        imageEmbeddings = processedImages.compactMap { $0.preprocessedTensor }
+                    }
+                    
                     // Tokenize input
                     let inputTokens = tokenizer.encode(prompt)
                     var tokens = inputTokens
+                    
+                    // TODO: For full multimodal support, we need to:
+                    // 1. Pass image embeddings through vision encoder
+                    // 2. Concatenate with text embeddings
+                    // 3. Use cross-attention in transformer layers
+                    // This requires the full Gemma 3n architecture
                     
                     // Generate tokens
                     for _ in 0..<config.maxTokens {
@@ -264,9 +277,8 @@ final class GemmaMLXModel: ObservableObject {
         var processedImages: [ProcessedImage] = []
         
         for imageData in imagesData {
-            // Convert to appropriate format for Gemma 3n
-            // Resize to 256-768px as per model requirements
-            let processed = ProcessedImage(data: imageData)
+            // Process image using GemmaImageProcessor
+            let processed = try await ProcessedImage.create(from: imageData)
             processedImages.append(processed)
         }
         
@@ -310,7 +322,8 @@ struct ModelInput {
 
 struct ProcessedImage {
     let data: Data
-    // Add tensor representation when MLX is integrated
+    var tensor: MLXArray?
+    var preprocessedTensor: MLXArray?
 }
 
 // MARK: - Errors
