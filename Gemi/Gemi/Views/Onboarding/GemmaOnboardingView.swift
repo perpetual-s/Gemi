@@ -698,8 +698,8 @@ struct GemmaOnboardingView: View {
                     .animation(.easeInOut, value: progress)
                 
                 VStack(spacing: 8) {
-                    Text("\(Int(progress * 100))%")
-                        .font(.system(size: 48, weight: .bold, design: .monospaced))
+                    Text("Downloading...")
+                        .font(.system(size: 24, weight: .semibold))
                         .foregroundColor(.white)
                     
                     Text(modelManager.downloadTimeEstimate)

@@ -117,8 +117,7 @@ class ModelSetupService: ObservableObject {
                     case .preparing:
                         self.statusMessage = "Preparing download..."
                     case .downloading(let file, let progress):
-                        let percent = Int(progress * 100)
-                        self.statusMessage = "Downloading model files... \(percent)%\n⏱ This may take 20-60 minutes depending on your connection"
+                        self.statusMessage = "Downloading model files...\n⏱ This may take 20-60 minutes depending on your connection"
                         self.progress = 0.2 + (progress * 0.6) // Scale to 20-80% of total progress
                     case .verifying:
                         self.statusMessage = "Verifying downloaded files..."
