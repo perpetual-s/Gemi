@@ -7,83 +7,136 @@ struct InitialSetupView: View {
     @State private var enableBiometric = true
     @State private var showingError = false
     @State private var errorMessage = ""
+    @State private var isSettingUp = false
     @FocusState private var passwordFieldFocused: Bool
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            VStack(spacing: 16) {
-                Image(systemName: "lock.shield.fill")
-                    .font(.system(size: 64))
-                    .foregroundColor(Theme.Colors.primaryAccent)
-                
-                Text("Secure Your Journal")
-                    .font(.largeTitle)
-                    .fontWeight(.semibold)
-                
-                Text("Create a password to protect your thoughts")
-                    .font(.title3)
-                    .foregroundColor(Theme.Colors.secondaryText)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(.vertical, 48)
+        ZStack {
+            // Beautiful gradient background matching onboarding
+            LinearGradient(
+                colors: [
+                    Color(red: 0.1, green: 0.05, blue: 0.2),
+                    Color(red: 0.05, green: 0.05, blue: 0.15)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
             
-            // Setup form
-            VStack(alignment: .leading, spacing: 24) {
-                // Password fields
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Create Password")
-                        .font(.headline)
+            VStack(spacing: 40) {
+                // Header with animated icon
+                VStack(spacing: 32) {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.1)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 160, height: 160)
+                            .blur(radius: 30)
+                        
+                        Image(systemName: "lock.shield.fill")
+                            .font(.system(size: 80))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [Color.blue, Color.purple],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .shadow(color: Color.blue.opacity(0.5), radius: 20)
+                    }
                     
-                    SecureField("Password", text: $password)
-                        .textFieldStyle(.roundedBorder)
-                        .focused($passwordFieldFocused)
-                    
-                    SecureField("Confirm Password", text: $confirmPassword)
-                        .textFieldStyle(.roundedBorder)
-                    
-                    HStack(spacing: 8) {
-                        Image(systemName: passwordHasLength ? "checkmark.circle.fill" : "circle")
-                            .foregroundColor(passwordHasLength ? .green : Theme.Colors.secondaryText)
-                            .font(.system(size: 14))
-                        Text("At least 6 characters")
-                            .font(.system(size: 14))
-                            .foregroundColor(Theme.Colors.secondaryText)
+                    VStack(spacing: 16) {
+                        Text("Secure Your Journal")
+                            .font(.system(size: 42, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                        
+                        Text("Create a password to protect your thoughts")
+                            .font(.system(size: 20))
+                            .foregroundColor(.white.opacity(0.8))
+                            .multilineTextAlignment(.center)
                     }
                 }
                 
-                // Biometric option
-                if authManager.isBiometricAvailable {
-                    Toggle(isOn: $enableBiometric) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Enable \(biometricName)")
-                                .font(.headline)
-                            Text("Use biometric authentication for quick access")
-                                .font(.caption)
-                                .foregroundColor(Theme.Colors.secondaryText)
+                // Password fields with beautiful styling
+                VStack(spacing: 16) {
+                    OnboardingPasswordField(
+                        placeholder: "Password",
+                        text: $password,
+                        showPasswordToggle: true,
+                        validationIcon: password.count >= 6 ? "checkmark.circle.fill" : nil,
+                        validationColor: password.count >= 6 ? .green : nil
+                    )
+                    .focused($passwordFieldFocused)
+                    
+                    OnboardingPasswordField(
+                        placeholder: "Confirm Password",
+                        text: $confirmPassword,
+                        showPasswordToggle: true,
+                        validationIcon: !confirmPassword.isEmpty && password == confirmPassword ? "checkmark.circle.fill" : nil,
+                        validationColor: !confirmPassword.isEmpty && password == confirmPassword ? .green : nil
+                    )
+                    
+                    // Password requirements with animation
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 8) {
+                            Image(systemName: password.count >= 6 ? "checkmark.circle.fill" : "circle")
+                                .foregroundColor(password.count >= 6 ? .green : .white.opacity(0.5))
+                                .font(.system(size: 14))
+                                .animation(.spring(response: 0.3), value: password.count >= 6)
+                            Text("At least 6 characters")
+                                .font(.system(size: 14))
+                                .foregroundColor(.white.opacity(0.7))
+                        }
+                        
+                        if !confirmPassword.isEmpty && password != confirmPassword {
+                            HStack(spacing: 8) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.red.opacity(0.8))
+                                    .font(.system(size: 14))
+                                Text("Passwords don't match")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.red.opacity(0.8))
+                            }
+                            .transition(.scale.combined(with: .opacity))
                         }
                     }
-                    .toggleStyle(.checkbox)
-                }
-                
-                // Action buttons
-                HStack {
-                    Spacer()
+                    .padding(.horizontal, 4)
                     
-                    Button("Complete Setup") {
-                        completeSetup()
+                    // Biometric toggle
+                    if authManager.isBiometricAvailable {
+                        Toggle(isOn: $enableBiometric) {
+                            HStack {
+                                Image(systemName: "touchid")
+                                    .font(.system(size: 18))
+                                Text("Enable \(biometricName)")
+                                    .font(.system(size: 16, weight: .medium))
+                            }
+                            .foregroundColor(.white)
+                        }
+                        .toggleStyle(SwitchToggleStyle(tint: Color.blue))
+                        .padding(.top, 8)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(!isValidSetup)
-                    .keyboardShortcut(.return, modifiers: [])
                 }
+                .frame(maxWidth: 400)
+                
+                // Action button
+                OnboardingButton(
+                    "Complete Setup",
+                    icon: "checkmark.shield.fill",
+                    isLoading: isSettingUp,
+                    action: completeSetup
+                )
+                .disabled(!isValidSetup || isSettingUp)
             }
-            .frame(maxWidth: 400)
-            .padding(.horizontal, 48)
-            .padding(.bottom, 48)
+            .padding(.horizontal, 40)
+            .padding(.vertical, 60)
         }
-        .frame(width: 600, height: 700)
-        .background(Theme.Colors.windowBackground)
+        .frame(width: 700, height: 800)
         .onAppear {
             passwordFieldFocused = true
         }
@@ -122,6 +175,7 @@ struct InitialSetupView: View {
     private func completeSetup() {
         guard isValidSetup else { return }
         
+        isSettingUp = true
         Task {
             do {
                 try await authManager.setupInitialAuthentication(
@@ -129,8 +183,11 @@ struct InitialSetupView: View {
                     enableBiometric: enableBiometric
                 )
             } catch {
-                errorMessage = error.localizedDescription
-                showingError = true
+                await MainActor.run {
+                    isSettingUp = false
+                    errorMessage = error.localizedDescription
+                    showingError = true
+                }
             }
         }
     }

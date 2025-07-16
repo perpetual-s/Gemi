@@ -5,7 +5,6 @@ struct GemmaOnboardingView: View {
     @StateObject private var modelManager = GemmaModelManager()
     @StateObject private var authManager = AuthenticationManager.shared
     @State private var currentPage = 0
-    @State private var showingSetup = false
     @State private var showingProgressSetup = false
     @State private var hasCompletedOnboarding = false
     @State private var password = ""
@@ -57,12 +56,6 @@ struct GemmaOnboardingView: View {
                     insertion: .move(edge: .trailing).combined(with: .opacity),
                     removal: .move(edge: .leading).combined(with: .opacity)
                 ))
-            } else if showingSetup {
-                setupView
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                        removal: .move(edge: .leading).combined(with: .opacity)
-                    ))
             } else {
                 welcomeFlow
                     .transition(.asymmetric(
@@ -95,34 +88,8 @@ struct GemmaOnboardingView: View {
             .ignoresSafeArea(.all)
             
             // Animated mesh gradient overlay
-            GeometryReader { geometry in
-                ForEach(0..<3) { index in
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [
-                                    Color.purple.opacity(0.3 - Double(index) * 0.1),
-                                    Color.clear
-                                ],
-                                center: .center,
-                                startRadius: 100,
-                                endRadius: 300
-                            )
-                        )
-                        .frame(width: 600, height: 600)
-                        .blur(radius: 80)
-                        .offset(
-                            x: sin(Date().timeIntervalSince1970 * 0.1 + Double(index)) * 200,
-                            y: cos(Date().timeIntervalSince1970 * 0.1 + Double(index)) * 200
-                        )
-                        .animation(
-                            .easeInOut(duration: 20 + Double(index * 5))
-                            .repeatForever(autoreverses: true),
-                            value: Date()
-                        )
-                }
-            }
-            .opacity(0.5)
+            AnimatedGradientMesh()
+                .opacity(0.5)
         }
     }
     
@@ -175,44 +142,15 @@ struct GemmaOnboardingView: View {
             // Page indicators and navigation
             VStack(spacing: 24) {
                 // Custom page indicators
-                HStack(spacing: 8) {
-                    ForEach(0..<totalPages, id: \.self) { index in
-                        Capsule()
-                            .fill(currentPage == index ? Color.white : Color.white.opacity(0.3))
-                            .frame(width: currentPage == index ? 24 : 8, height: 8)
-                            .animation(.spring(response: 0.3), value: currentPage)
-                    }
-                }
+                StepProgressIndicator(totalSteps: totalPages, currentStep: currentPage)
                 
                 // Continue button
-                Button {
-                    handleContinue()
-                } label: {
-                    ZStack {
-                        // Loading state
-                        if isSettingUpPassword {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .black))
-                                .scaleEffect(0.8)
-                        } else {
-                            HStack {
-                                Text(currentPage < totalPages - 1 ? "Continue" : "Get Started")
-                                    .font(.system(size: 18, weight: .semibold))
-                                
-                                Image(systemName: "arrow.right")
-                                    .font(.system(size: 16, weight: .bold))
-                            }
-                        }
-                    }
-                    .foregroundColor(.black)
-                    .frame(width: 200, height: 56)
-                    .background(
-                        Capsule()
-                            .fill(Color.white)
-                            .shadow(color: .white.opacity(0.3), radius: 20, y: 10)
-                    )
-                }
-                .buttonStyle(.plain)
+                OnboardingButton(
+                    currentPage < totalPages - 1 ? "Continue" : "Get Started",
+                    icon: isSettingUpPassword ? nil : "arrow.right",
+                    isLoading: isSettingUpPassword,
+                    action: handleContinue
+                )
                 .disabled((shouldShowPasswordPage && currentPage == 2 && !isPasswordValid) || isSettingUpPassword)
             }
             .padding(.bottom, 60)
@@ -327,73 +265,20 @@ struct GemmaOnboardingView: View {
             
             // Password fields with beautiful styling
             VStack(spacing: 16) {
-                // Password field
-                HStack {
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 18))
-                        .foregroundColor(.white.opacity(0.5))
-                    
-                    if showPassword {
-                        TextField("Password", text: $password)
-                            .textFieldStyle(.plain)
-                            .font(.system(size: 18))
-                    } else {
-                        SecureField("Password", text: $password)
-                            .textFieldStyle(.plain)
-                            .font(.system(size: 18))
-                    }
-                    
-                    Button {
-                        showPassword.toggle()
-                    } label: {
-                        Image(systemName: showPassword ? "eye.slash.fill" : "eye.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(.white.opacity(0.5))
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(16)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.white.opacity(0.1))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
-                        )
+                OnboardingPasswordField(
+                    placeholder: "Password",
+                    text: $password,
+                    showPasswordToggle: true,
+                    validationIcon: password.count >= 6 ? "checkmark.circle.fill" : nil,
+                    validationColor: password.count >= 6 ? .green : nil
                 )
                 
-                // Confirm password field
-                HStack {
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 18))
-                        .foregroundColor(.white.opacity(0.5))
-                    
-                    if showPassword {
-                        TextField("Confirm Password", text: $confirmPassword)
-                            .textFieldStyle(.plain)
-                            .font(.system(size: 18))
-                    } else {
-                        SecureField("Confirm Password", text: $confirmPassword)
-                            .textFieldStyle(.plain)
-                            .font(.system(size: 18))
-                    }
-                    
-                    // Show checkmark when passwords match
-                    if !confirmPassword.isEmpty && password == confirmPassword {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(.green)
-                            .transition(.scale.combined(with: .opacity))
-                    }
-                }
-                .padding(16)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.white.opacity(0.1))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
-                        )
+                OnboardingPasswordField(
+                    placeholder: "Confirm Password",
+                    text: $confirmPassword,
+                    showPasswordToggle: true,
+                    validationIcon: !confirmPassword.isEmpty && password == confirmPassword ? "checkmark.circle.fill" : nil,
+                    validationColor: !confirmPassword.isEmpty && password == confirmPassword ? .green : nil
                 )
                 
                 // Password requirements with animation
@@ -477,7 +362,7 @@ struct GemmaOnboardingView: View {
                             enableBiometric: enableBiometric
                         )
                         withAnimation(.spring(response: 0.4)) {
-                            showingSetup = true
+                            showingProgressSetup = true
                         }
                     } catch {
                         await MainActor.run {
@@ -498,7 +383,7 @@ struct GemmaOnboardingView: View {
             } else {
                 // Existing user from Settings
                 withAnimation(.spring(response: 0.4)) {
-                    showingSetup = true
+                    showingProgressSetup = true
                 }
             }
         }
@@ -509,29 +394,7 @@ struct GemmaOnboardingView: View {
             // Multimodal icon
             ZStack {
                 // Animated circles representing different modalities
-                ForEach(0..<4) { index in
-                    Circle()
-                        .stroke(
-                            LinearGradient(
-                                colors: [
-                                    colorForModality(index),
-                                    colorForModality(index).opacity(0.3)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 3
-                        )
-                        .frame(
-                            width: 120 + CGFloat(index * 30),
-                            height: 120 + CGFloat(index * 30)
-                        )
-                        .rotationEffect(.degrees(Date().timeIntervalSince1970 * 20 * (index % 2 == 0 ? 1 : -1)))
-                        .animation(
-                            .linear(duration: 30).repeatForever(autoreverses: false),
-                            value: Date()
-                        )
-                }
+                AnimatedModalityRings()
                 
                 // Center icon
                 Image(systemName: "cpu.fill")
@@ -560,301 +423,102 @@ struct GemmaOnboardingView: View {
         .padding(.horizontal, 40)
     }
     
-    // MARK: - Setup View
+    // MARK: - Helpers
     
-    private var setupView: some View {
-        VStack(spacing: 40) {
-            // Header
-            VStack(spacing: 16) {
-                Image(systemName: "cpu.fill")
-                    .font(.system(size: 80))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [Color.purple, Color.blue],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .shadow(color: Color.purple.opacity(0.5), radius: 20)
-                
-                Text("Let's Set Up Gemma 3n")
-                    .font(.system(size: 36, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-                
-                Text("One-time download to enable AI features")
-                    .font(.system(size: 20))
-                    .foregroundColor(.white.opacity(0.8))
-            }
-            .padding(.top, 80)
-            
-            // Status content
-            Group {
-                switch modelManager.status {
-                case .notInstalled, .checking:
-                    setupInstructions
-                case .downloading(let progress):
-                    downloadProgress(progress: progress)
-                case .ready:
-                    setupComplete
-                case .error(let message):
-                    setupError(message: message)
-                }
-            }
-            .frame(maxWidth: 600)
-            
-            Spacer()
-        }
-        .padding(.horizontal, 40)
-    }
-    
-    // MARK: - Setup States
-    
-    private var setupInstructions: some View {
-        VStack(spacing: 32) {
-            // Requirements
-            VStack(alignment: .leading, spacing: 20) {
-                Label("15.7GB download (one-time)", systemImage: "arrow.down.circle")
-                    .font(.system(size: 18))
-                    .foregroundColor(.white.opacity(0.9))
-                
-                Label("30GB free space recommended", systemImage: "internaldrive")
-                    .font(.system(size: 18))
-                    .foregroundColor(.white.opacity(0.9))
-                
-                Label("Stable internet connection", systemImage: "wifi")
-                    .font(.system(size: 18))
-                    .foregroundColor(.white.opacity(0.9))
-                
-                Label("20-60 minutes depending on connection", systemImage: "clock")
-                    .font(.system(size: 18))
-                    .foregroundColor(.white.opacity(0.9))
-            }
-            .padding(24)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white.opacity(0.1))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
-                    )
-            )
-            
-            // Action buttons
-            VStack(spacing: 16) {
-                Button {
-                    withAnimation(.spring(response: 0.4)) {
-                        showingProgressSetup = true
-                    }
-                } label: {
-                    HStack {
-                        Image(systemName: "arrow.down.circle.fill")
-                            .font(.system(size: 20))
-                        Text("Set Up Gemma 3n")
-                            .font(.system(size: 18, weight: .semibold))
-                    }
-                    .foregroundColor(.black)
-                    .frame(width: 280, height: 56)
-                    .background(
-                        Capsule()
-                            .fill(Color.white)
-                            .shadow(color: .white.opacity(0.3), radius: 20, y: 10)
-                    )
-                }
-                .buttonStyle(.plain)
-                
-                Button {
-                    // Skip for now - they can download later
-                    safeComplete()
-                } label: {
-                    Text("Set up later")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white.opacity(0.6))
-                }
-                .buttonStyle(.plain)
-            }
+    private func colorForModality(_ index: Int) -> Color {
+        switch index {
+        case 0: return .blue
+        case 1: return .purple
+        case 2: return .pink
+        case 3: return .orange
+        default: return .white
         }
     }
+}
+
+// MARK: - Optimized Animation Components
+
+/// Performant animated gradient mesh without Date-based animations
+struct AnimatedGradientMesh: View {
+    @State private var phase: Double = 0
+    @State private var animateGradient = false
     
-    private func downloadProgress(progress: Double) -> some View {
-        // This view is shown in the initial onboarding flow
-        // For actual download progress, GemmaSetupProgressView is used
-        VStack(spacing: 32) {
-            // Progress circle
+    var body: some View {
+        GeometryReader { geometry in
             ZStack {
+                ForEach(0..<3) { index in
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    Color.purple.opacity(0.3 - Double(index) * 0.1),
+                                    Color.clear
+                                ],
+                                center: .center,
+                                startRadius: 100,
+                                endRadius: 300
+                            )
+                        )
+                        .frame(width: 600, height: 600)
+                        .blur(radius: 80)
+                        .offset(
+                            x: animateGradient ? 200 : -200,
+                            y: animateGradient ? 100 : -100
+                        )
+                        .animation(
+                            .easeInOut(duration: 20 + Double(index * 5))
+                            .repeatForever(autoreverses: true),
+                            value: animateGradient
+                        )
+                        .rotationEffect(.degrees(Double(index) * 120))
+                }
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+        }
+        .onAppear {
+            animateGradient = true
+        }
+    }
+}
+
+/// Optimized animated rings for modalities
+struct AnimatedModalityRings: View {
+    @State private var rotationAngles: [Double] = [0, 0, 0, 0]
+    @State private var isAnimating = false
+    
+    var body: some View {
+        ZStack {
+            ForEach(0..<4) { index in
                 Circle()
-                    .stroke(Color.white.opacity(0.2), lineWidth: 12)
-                    .frame(width: 200, height: 200)
-                
-                Circle()
-                    .trim(from: 0, to: progress)
                     .stroke(
                         LinearGradient(
-                            colors: [Color.purple, Color.blue],
+                            colors: [
+                                colorForModality(index),
+                                colorForModality(index).opacity(0.3)
+                            ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        style: StrokeStyle(lineWidth: 12, lineCap: .round)
+                        lineWidth: 3
                     )
-                    .frame(width: 200, height: 200)
-                    .rotationEffect(.degrees(-90))
-                    .animation(.easeInOut, value: progress)
-                
-                VStack(spacing: 8) {
-                    Text("\(Int(progress * 100))%")
-                        .font(.system(size: 48, weight: .bold, design: .monospaced))
-                        .foregroundColor(.white)
-                    
-                    Text(modelManager.downloadTimeEstimate)
-                        .font(.system(size: 16))
-                        .foregroundColor(.white.opacity(0.6))
-                }
+                    .frame(
+                        width: 120 + CGFloat(index * 30),
+                        height: 120 + CGFloat(index * 30)
+                    )
+                    .rotationEffect(.degrees(rotationAngles[index]))
+                    .animation(
+                        .linear(duration: 30)
+                        .repeatForever(autoreverses: false),
+                        value: rotationAngles[index]
+                    )
             }
-            
-            // Tips
-            VStack(alignment: .leading, spacing: 16) {
-                Text("While downloading...")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(.white.opacity(0.8))
-                
-                Text("• Feel free to explore Gemi")
-                    .font(.system(size: 16))
-                    .foregroundColor(.white.opacity(0.6))
-                
-                Text("• The download continues in background")
-                    .font(.system(size: 16))
-                    .foregroundColor(.white.opacity(0.6))
-                
-                Text("• This is a one-time process")
-                    .font(.system(size: 16))
-                    .foregroundColor(.white.opacity(0.6))
-            }
-            .padding(24)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white.opacity(0.05))
-            )
         }
-    }
-    
-    private var setupComplete: some View {
-        VStack(spacing: 32) {
-            // Success animation
-            ZStack {
-                Circle()
-                    .fill(Color.green.opacity(0.2))
-                    .frame(width: 160, height: 160)
-                    .blur(radius: 40)
-                
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 100))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [Color.green, Color.green.opacity(0.8)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .shadow(color: Color.green.opacity(0.5), radius: 20)
-            }
-            
-            VStack(spacing: 16) {
-                Text("All Set!")
-                    .font(.system(size: 36, weight: .bold))
-                    .foregroundColor(.white)
-                
-                Text("Gemma 3n is ready to assist you")
-                    .font(.system(size: 20))
-                    .foregroundColor(.white.opacity(0.8))
-            }
-            
-            Button {
-                safeComplete()
-            } label: {
-                Text("Start Using Gemi")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.black)
-                    .frame(width: 280, height: 56)
-                    .background(
-                        Capsule()
-                            .fill(Color.white)
-                            .shadow(color: .white.opacity(0.3), radius: 20, y: 10)
-                    )
-            }
-            .buttonStyle(.plain)
-        }
-    }
-    
-    private func setupError(message: String) -> some View {
-        VStack(spacing: 32) {
-            // Error icon
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 80))
-                .foregroundColor(.orange)
-            
-            VStack(spacing: 16) {
-                Text("Setup Issue")
-                    .font(.system(size: 32, weight: .bold))
-                    .foregroundColor(.white)
-                
-                Text(message)
-                    .font(.system(size: 16))
-                    .foregroundColor(.white.opacity(0.8))
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 500)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            
-            VStack(spacing: 12) {
-                HStack(spacing: 16) {
-                    Button {
-                        modelManager.retry()
-                    } label: {
-                        Text("Try Again")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 12)
-                            .background(
-                                Capsule()
-                                    .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
-                            )
-                    }
-                    .buttonStyle(.plain)
-                    
-                    Button {
-                        ModelSetupHelper.openManualSetup()
-                    } label: {
-                        HStack {
-                            Image(systemName: "terminal")
-                                .font(.system(size: 14))
-                            Text("Open Terminal")
-                                .font(.system(size: 16, weight: .medium))
-                        }
-                        .foregroundColor(.black)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 12)
-                        .background(
-                            Capsule()
-                                .fill(Color.white)
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
-                
-                Button {
-                    // Skip for now
-                    safeComplete()
-                } label: {
-                    Text("Set up later")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.white.opacity(0.6))
-                }
-                .buttonStyle(.plain)
+        .onAppear {
+            for index in 0..<4 {
+                rotationAngles[index] = 360 * (index % 2 == 0 ? 1 : -1)
             }
         }
     }
-    
-    // MARK: - Helpers
     
     private func colorForModality(_ index: Int) -> Color {
         switch index {

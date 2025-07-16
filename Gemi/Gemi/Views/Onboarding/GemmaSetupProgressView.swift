@@ -15,27 +15,25 @@ struct GemmaSetupProgressView: View {
     var body: some View {
         ZStack {
             backgroundGradient
-            contentView
+            
+            if let error = setupManager.error {
+                // Use our beautiful error view instead of basic alert
+                errorView(for: error)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .bottom).combined(with: .opacity),
+                        removal: .move(edge: .top).combined(with: .opacity)
+                    ))
+            } else {
+                contentView
+                    .transition(.opacity)
+            }
         }
         .onAppear {
             pulseAnimation = true
             // Start setup immediately - we have embedded token
             setupManager.startSetup()
         }
-        // Token view no longer needed - using embedded token
-        .alert("Setup Error", isPresented: .init(
-            get: { setupManager.error != nil },
-            set: { _ in setupManager.error = nil }
-        )) {
-            Button("OK") { }
-        } message: {
-            if let error = setupManager.error {
-                Text(error.localizedDescription)
-                if let suggestion = error.recoverySuggestion {
-                    Text(suggestion)
-                }
-            }
-        }
+        .animation(.spring(response: 0.5), value: setupManager.error != nil)
     }
     
     private var backgroundGradient: some View {
@@ -120,6 +118,13 @@ struct GemmaSetupProgressView: View {
                             }
                         )
                         .padding(.top, 20)
+                    } else if setupManager.currentStep == .downloadingModel && setupManager.downloaderState == .preparing {
+                        // Show loading state when preparing download
+                        OnboardingLoadingView(
+                            title: "Preparing Download",
+                            subtitle: "Setting up secure connection..."
+                        )
+                        .frame(maxWidth: 400)
                     } else if case .cancelled = setupManager.downloaderState {
                         // Cancelled state UI
                         VStack(spacing: 20) {
@@ -175,6 +180,13 @@ struct GemmaSetupProgressView: View {
                             )
                             .frame(maxWidth: 500)
                         }
+                    } else if setupManager.currentStep == .loadingModel {
+                        // Use beautiful loading view for model loading
+                        OnboardingLoadingView(
+                            title: "Loading Model",
+                            subtitle: "Initializing Gemma 3n in memory..."
+                        )
+                        .frame(maxWidth: 400)
                     } else {
                         // Status message for other steps
                         Text(setupManager.statusMessage)
@@ -216,107 +228,51 @@ struct GemmaSetupProgressView: View {
                 // Action buttons
                 HStack(spacing: 16) {
                     if setupManager.isComplete {
-                        Button {
-                            guard !hasCalledCompletion else { return }
-                            hasCalledCompletion = true
-                            onComplete()
-                        } label: {
-                            HStack {
-                                Image(systemName: "checkmark.circle.fill")
-                                Text("Start Using Gemi")
+                        OnboardingButton(
+                            "Start Using Gemi",
+                            icon: "checkmark.circle.fill",
+                            action: {
+                                guard !hasCalledCompletion else { return }
+                                hasCalledCompletion = true
+                                onComplete()
                             }
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.black)
-                            .frame(width: 280, height: 56)
-                            .background(
-                                Capsule()
-                                    .fill(Color.white)
-                                    .shadow(color: .white.opacity(0.3), radius: 20, y: 10)
-                            )
-                        }
-                        .buttonStyle(.plain)
+                        )
                         .transition(.scale.combined(with: .opacity))
                     } else if case .cancelled = setupManager.downloaderState {
                         // Cancelled state buttons
-                        Button {
-                            Task {
-                                await setupManager.resumeDownload()
+                        OnboardingButton(
+                            "Resume Download",
+                            icon: "play.fill",
+                            action: {
+                                Task {
+                                    await setupManager.resumeDownload()
+                                }
                             }
-                        } label: {
-                            HStack {
-                                Image(systemName: "play.fill")
-                                Text("Resume Download")
-                            }
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.black)
-                            .frame(width: 200, height: 48)
-                            .background(
-                                Capsule()
-                                    .fill(Color.white)
-                                    .shadow(color: .white.opacity(0.3), radius: 10, y: 5)
-                            )
-                        }
-                        .buttonStyle(.plain)
+                        )
                         
-                        Button {
-                            guard !hasCalledCompletion else { return }
-                            hasCalledCompletion = true
-                            onSkip()
-                        } label: {
-                            Text("Set up later")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.white.opacity(0.6))
-                        }
-                        .buttonStyle(.plain)
+                        OnboardingButton(
+                            "Set up later",
+                            style: .text,
+                            action: {
+                                guard !hasCalledCompletion else { return }
+                                hasCalledCompletion = true
+                                onSkip()
+                            }
+                        )
                     } else if setupManager.error != nil {
-                        Button {
-                            setupManager.startSetup()
-                        } label: {
-                            HStack {
-                                Image(systemName: "arrow.clockwise")
-                                Text("Retry Setup")
-                            }
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 14)
-                            .background(
-                                Capsule()
-                                    .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        
-                        Button {
-                            ModelSetupHelper.openManualSetup()
-                        } label: {
-                            HStack {
-                                Image(systemName: "terminal")
-                                Text("Manual Setup")
-                            }
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.black)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 14)
-                            .background(
-                                Capsule()
-                                    .fill(Color.white)
-                            )
-                        }
-                        .buttonStyle(.plain)
+                        // Error buttons moved to errorView
                     }
                     
                     if !setupManager.isComplete && setupManager.downloaderState != .cancelled {
-                        Button {
-                            guard !hasCalledCompletion else { return }
-                            hasCalledCompletion = true
-                            onSkip()
-                        } label: {
-                            Text("Set up later")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.white.opacity(0.6))
-                        }
-                        .buttonStyle(.plain)
+                        OnboardingButton(
+                            "Set up later",
+                            style: .text,
+                            action: {
+                                guard !hasCalledCompletion else { return }
+                                hasCalledCompletion = true
+                                onSkip()
+                            }
+                        )
                     }
                 }
             }
@@ -341,6 +297,146 @@ struct GemmaSetupProgressView: View {
         case .complete:
             return .green
         }
+    }
+    
+    // MARK: - Error View
+    
+    @ViewBuilder
+    private func errorView(for error: ModelSetupService.SetupError) -> some View {
+        VStack(spacing: 40) {
+            Spacer()
+            
+            switch error {
+            case .downloadFailed(let reason):
+                if reason.contains("401") || reason.contains("403") || reason.contains("authentication") {
+                    // Authentication error
+                    OnboardingErrorView(
+                        title: "Authentication Required",
+                        message: "The model requires authentication to download. This has been configured incorrectly.",
+                        primaryAction: (
+                            title: "Contact Support",
+                            action: {
+                                NSWorkspace.shared.open(URL(string: "https://github.com/yourusername/gemi/issues")!)
+                            }
+                        ),
+                        secondaryAction: (
+                            title: "Try Again",
+                            action: {
+                                setupManager.error = nil
+                                setupManager.startSetup()
+                            }
+                        )
+                    )
+                } else if reason.contains("network") || reason.contains("connection") {
+                    // Network error
+                    OnboardingErrorView(
+                        title: "Connection Failed",
+                        message: "Unable to connect to download the model. Please check your internet connection.",
+                        primaryAction: (
+                            title: "Retry Download",
+                            action: {
+                                setupManager.error = nil
+                                setupManager.startSetup()
+                            }
+                        ),
+                        secondaryAction: (
+                            title: "Manual Setup",
+                            action: {
+                                ModelSetupHelper.openManualSetup()
+                            }
+                        )
+                    )
+                } else {
+                    // Generic download error
+                    OnboardingErrorView(
+                        title: "Download Failed",
+                        message: reason,
+                        primaryAction: (
+                            title: "Retry Setup",
+                            action: {
+                                setupManager.error = nil
+                                setupManager.startSetup()
+                            }
+                        ),
+                        secondaryAction: (
+                            title: "Manual Setup",
+                            action: {
+                                ModelSetupHelper.openManualSetup()
+                            }
+                        )
+                    )
+                }
+                
+            case .loadFailed(let reason):
+                // Model loading error
+                OnboardingErrorView(
+                    title: "Loading Failed",
+                    message: "Unable to load the model: \(reason)\n\nThis might be due to insufficient memory.",
+                    primaryAction: (
+                        title: "Try Again",
+                        action: {
+                            setupManager.error = nil
+                            setupManager.startSetup()
+                        }
+                    ),
+                    secondaryAction: (
+                        title: "Skip for Now",
+                        action: {
+                            guard !hasCalledCompletion else { return }
+                            hasCalledCompletion = true
+                            onSkip()
+                        }
+                    )
+                )
+                
+            case .modelNotFound:
+                // Model not found error
+                OnboardingErrorView(
+                    title: "Model Not Found",
+                    message: "The Gemma 3n model needs to be downloaded.",
+                    primaryAction: (
+                        title: "Download Now",
+                        action: {
+                            setupManager.error = nil
+                            setupManager.startSetup()
+                        }
+                    ),
+                    secondaryAction: (
+                        title: "Set up Later",
+                        action: {
+                            guard !hasCalledCompletion else { return }
+                            hasCalledCompletion = true
+                            onSkip()
+                        }
+                    )
+                )
+                
+            case .authenticationRequired:
+                // Configuration error
+                OnboardingErrorView(
+                    title: "Configuration Error",
+                    message: "There was a problem with the download configuration. Please try again.",
+                    primaryAction: (
+                        title: "Retry",
+                        action: {
+                            setupManager.error = nil
+                            setupManager.startSetup()
+                        }
+                    ),
+                    secondaryAction: (
+                        title: "Skip Setup",
+                        action: {
+                            guard !hasCalledCompletion else { return }
+                            hasCalledCompletion = true
+                            onSkip()
+                        }
+                    )
+                )
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 40)
     }
 }
 
