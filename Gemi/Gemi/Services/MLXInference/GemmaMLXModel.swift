@@ -546,11 +546,7 @@ struct ProcessedImage {
 }
 
 // MARK: - Errors
-
-extension ModelError {
-    static let modelNotLoaded = ModelError.downloadFailed("Model not loaded")
-    static let invalidConfiguration = ModelError.downloadFailed("Invalid model configuration")
-}
+// ModelError cases are defined in ModelDownloader.swift
 
 // MARK: - Helper Components
 

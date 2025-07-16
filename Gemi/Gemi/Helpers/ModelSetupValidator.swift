@@ -168,7 +168,7 @@ final class ModelSetupValidator {
         var vocabSize: Int?
         
         // First try nested Gemma 3n structure
-        if let config = try? JSONDecoder().decode(Gemma3nConfig.self, from: data) {
+        if let config = try? JSONDecoder().decode(ValidatorGemma3nConfig.self, from: data) {
             modelType = config.modelType
             vocabSize = config.textConfig.vocabSize
         } else if let config = try? JSONDecoder().decode(FlatModelConfig.self, from: data) {
@@ -337,7 +337,7 @@ enum ValidationError: LocalizedError {
 
 // MARK: - Config Structures for Validation
 
-private struct Gemma3nConfig: Codable {
+private struct ValidatorGemma3nConfig: Codable {
     let modelType: String
     let textConfig: TextConfig
     

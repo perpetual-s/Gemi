@@ -230,8 +230,4 @@ class SafetensorsLoader {
     }
 }
 
-extension ModelError {
-    static func invalidFormat(_ message: String) -> ModelError {
-        return ModelError.downloadFailed("Invalid format: \(message)")
-    }
-}
+// Extension removed - ModelError.invalidFormat is now a proper case

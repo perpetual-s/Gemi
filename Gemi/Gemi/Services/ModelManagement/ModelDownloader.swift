@@ -39,7 +39,7 @@ final class ModelDownloader: NSObject, ObservableObject {
         let name: String
         let url: String
         let size: Int64
-        let sha256: String
+        var sha256: String
     }
     
     // MARK: - Properties
@@ -49,7 +49,7 @@ final class ModelDownloader: NSObject, ObservableObject {
     
     // Required model files for Gemma 3n E4B
     // Total size is approximately 15.7 GB (actual sizes from HuggingFace)
-    private let requiredFiles: [ModelFile] = [
+    private var requiredFiles: [ModelFile] = [
         ModelFile(name: "config.json", 
                  url: "config.json",
                  size: 4_540,  // 4.54 KB
@@ -251,8 +251,9 @@ final class ModelDownloader: NSObject, ObservableObject {
                             // Don't retry auth errors
                             if let modelError = error as? ModelError {
                                 switch modelError {
-                                case .authenticationRequired, .downloadFailed(let reason)
-                                    where reason.contains("401") || reason.contains("403"):
+                                case .authenticationRequired:
+                                    return false
+                                case .downloadFailed(let reason) where reason.contains("401") || reason.contains("403"):
                                     return false
                                 default:
                                     return true

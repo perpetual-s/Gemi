@@ -58,6 +58,33 @@ struct ModelSetupHelper {
                 
             case .authenticationRequired(let message):
                 return message
+                
+            case .modelNotLoaded:
+                return """
+                Model not loaded.
+                
+                The model needs to be loaded into memory before use.
+                
+                Please wait for the model to load completely.
+                """
+                
+            case .invalidConfiguration:
+                return """
+                Invalid model configuration.
+                
+                The model configuration file may be corrupted.
+                
+                Please delete the model folder and download again.
+                """
+                
+            case .invalidFormat(let reason):
+                return """
+                Invalid model format: \(reason)
+                
+                The model files may be corrupted or incomplete.
+                
+                Please delete the model folder and download again.
+                """
             }
         }
         

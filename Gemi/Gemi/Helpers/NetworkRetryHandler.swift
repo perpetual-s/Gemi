@@ -72,7 +72,7 @@ final class NetworkRetryHandler {
     }
     
     /// Determine if an error is retryable
-    static func isRetryableError(_ error: Error) -> Bool {
+    nonisolated static func isRetryableError(_ error: Error) -> Bool {
         // Network errors
         if let urlError = error as? URLError {
             switch urlError.code {
@@ -128,7 +128,7 @@ final class NetworkRetryHandler {
     }
     
     /// Create a user-friendly message for retry attempts
-    static func retryMessage(for attempt: Int, error: Error) -> String {
+    nonisolated static func retryMessage(for attempt: Int, error: Error) -> String {
         let errorType: String
         
         if let urlError = error as? URLError {
