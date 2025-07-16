@@ -1,3 +1,7 @@
+# Documentation and scripts (local only)
+/Documentation/
+/scripts/
+
 # Xcode
 xcuserdata/
 *.xcscmblueprint
