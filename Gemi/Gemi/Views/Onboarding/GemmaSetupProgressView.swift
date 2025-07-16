@@ -300,10 +300,21 @@ struct StepIndicator: View {
                     )
                 
                 if isActive {
-                    Text(step.description)
-                        .font(.system(size: 12))
-                        .foregroundColor(.white.opacity(0.6))
-                        .lineLimit(1)
+                    if step == .downloadingModel {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(step.description)
+                                .font(.system(size: 12))
+                                .foregroundColor(.white.opacity(0.6))
+                            Text("Model size: 15.7 GB")
+                                .font(.system(size: 11))
+                                .foregroundColor(.white.opacity(0.4))
+                        }
+                    } else {
+                        Text(step.description)
+                            .font(.system(size: 12))
+                            .foregroundColor(.white.opacity(0.6))
+                            .lineLimit(1)
+                    }
                 }
             }
             
