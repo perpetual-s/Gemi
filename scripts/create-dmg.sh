@@ -22,7 +22,7 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 readonly APP_NAME="Gemi"
 readonly VOLUME_NAME="Gemi Installer"
-readonly DMG_NAME="Gemi-$(date +%Y%m%d)"
+readonly DMG_NAME="Gemi-Installer"
 readonly BACKGROUND_IMAGE="$PROJECT_ROOT/Documentation/assets/dmg-background-clean-premium.png"
 
 # Build paths
@@ -34,13 +34,14 @@ readonly FINAL_DMG="$BUILD_DIR/${DMG_NAME}.dmg"
 # Window configuration (optimized for 600x400 background)
 readonly WINDOW_WIDTH=600
 readonly WINDOW_HEIGHT=400
-readonly ICON_SIZE=72
+readonly ICON_SIZE=80
 readonly TEXT_SIZE=12
-# Center icons in each half of the window
-readonly APP_X=160    # Left side center
-readonly APP_Y=170    # Vertical center
-readonly APPS_X=440   # Right side center  
-readonly APPS_Y=170   # Vertical center
+# Icon positioning for premium background
+# Adjusted for visual balance with the gradient design
+readonly APP_X=150    # Left side
+readonly APP_Y=185    # Slightly below center for visual balance
+readonly APPS_X=450   # Right side  
+readonly APPS_Y=185   # Match app position
 
 # Colors for output
 readonly RED='\033[0;31m'
@@ -201,7 +202,7 @@ create_beautiful_dmg() {
         -volname "$volume_name" \
         -fs HFS+ \
         -format UDRW \
-        -size 200m \
+        -size 250m \
         "$temp_dmg" >/dev/null 2>&1
     
     # Mount the DMG
@@ -236,6 +237,9 @@ on run
                     -- Set exact window bounds for 600x400 content
                     set the bounds of container window to {400, 200, 1000, 600}
                     
+                    -- Force window to front
+                    set the position of container window to {400, 200}
+                    
                     set viewOptions to the icon view options of container window
                     set icon size of viewOptions to $ICON_SIZE
                     set text size of viewOptions to $TEXT_SIZE
@@ -251,7 +255,17 @@ on run
                     set position of item "Gemi.app" of container window to {$APP_X, $APP_Y}
                     set position of item "Applications" of container window to {$APPS_X, $APPS_Y}
                     
-                    -- Update without registering applications
+                    -- Hide toolbar and sidebar for cleaner look
+                    set sidebar width of container window to 0
+                    
+                    -- Force refresh to show background
+                    update without registering applications
+                    delay 1
+                    
+                    -- Ensure icons stay in position
+                    set position of item "Gemi.app" of container window to {$APP_X, $APP_Y}
+                    set position of item "Applications" of container window to {$APPS_X, $APPS_Y}
+                    
                     update without registering applications
                     delay 0.5
                     
@@ -432,13 +446,14 @@ main() {
     ditto "$app_path" "$STAGING_DIR/Gemi.app"
     
     # Include .env file if it exists
-    local env_file="$PROJECT_ROOT/Gemi/.env"
+    local env_file="$PROJECT_ROOT/.env"
     if [ -f "$env_file" ]; then
         print_substep "Including HuggingFace token..."
+        mkdir -p "$STAGING_DIR/Gemi.app/Contents/Resources"
         cp "$env_file" "$STAGING_DIR/Gemi.app/Contents/Resources/.env"
         print_success "Token included in bundle"
     else
-        print_warning "No .env file found"
+        print_warning "No .env file found at project root"
         print_info "Users will need to provide their own HuggingFace token"
     fi
     
@@ -492,6 +507,9 @@ EOF
         print_error "DMG verification failed"
         exit 1
     fi
+    
+    # Copy the final DMG to project root for easy access
+    cp "$FINAL_DMG" "$PROJECT_ROOT/Gemi-Installer.dmg"
     
     # Get final stats
     local dmg_size
