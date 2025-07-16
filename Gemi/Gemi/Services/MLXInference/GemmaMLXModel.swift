@@ -85,15 +85,43 @@ final class GemmaMLXModel: ObservableObject {
             } catch let decodingError {
                 // Print the actual JSON for debugging
                 if let jsonString = String(data: configData, encoding: .utf8) {
-                    print("Failed to decode config.json. Content: \(jsonString)")
+                    print("⚠️ Failed to decode config.json")
+                    
+                    // Try to parse as generic JSON to see what fields exist
+                    if let json = try? JSONSerialization.jsonObject(with: configData) as? [String: Any] {
+                        print("📋 Available fields in config.json:")
+                        for (key, value) in json.sorted(by: { $0.key < $1.key }) {
+                            let valueType = type(of: value)
+                            print("  - \(key): \(valueType)")
+                        }
+                        
+                        // Print specific values that might help
+                        print("\n📊 Key values:")
+                        if let modelType = json["model_type"] { print("  - model_type: \(modelType)") }
+                        if let vocabSize = json["vocab_size"] { print("  - vocab_size: \(vocabSize)") }
+                        if let layers = json["num_hidden_layers"] { print("  - num_hidden_layers: \(layers)") }
+                        if let layers = json["layers"] { print("  - layers: \(layers)") }
+                        if let hidden = json["hidden_size"] { print("  - hidden_size: \(hidden)") }
+                        if let heads = json["num_attention_heads"] { print("  - num_attention_heads: \(heads)") }
+                    }
                 }
-                print("Decoding error: \(decodingError)")
+                print("\n❌ Decoding error: \(decodingError)")
                 
                 // Try to provide more helpful error message
                 if let decodingError = decodingError as? DecodingError {
                     switch decodingError {
                     case .keyNotFound(let key, let context):
-                        throw ModelError.downloadFailed("Missing required field '\(key.stringValue)' in config.json. Path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+                        let path = context.codingPath.map { $0.stringValue }.joined(separator: ".")
+                        throw ModelError.downloadFailed("""
+                            Missing field '\(key.stringValue)' in config.json
+                            
+                            This may indicate:
+                            1. The model config format has changed
+                            2. The download was incomplete
+                            
+                            Try deleting the model folder and downloading again.
+                            Path: \(path.isEmpty ? "root" : path)
+                            """)
                     case .typeMismatch(let type, let context):
                         throw ModelError.downloadFailed("Type mismatch for field at path: \(context.codingPath.map { $0.stringValue }.joined(separator: ".")). Expected \(type)")
                     case .dataCorrupted(let context):
@@ -348,10 +376,14 @@ final class GemmaMLXModel: ObservableObject {
 
 struct ModelConfig: Codable {
     let modelType: String
-    let numLayers: Int
-    let hiddenSize: Int
-    let numHeads: Int
     let vocabSize: Int
+    
+    // These fields might have different names in different model configs
+    let numLayers: Int?
+    let hiddenSize: Int?
+    let numHeads: Int?
+    
+    // Optional fields
     let intermediateSize: Int?
     let numKeyValueHeads: Int?
     let headDim: Int?
@@ -361,6 +393,12 @@ struct ModelConfig: Codable {
     let attentionBias: Bool?
     let attentionDropout: Double?
     let mlpBias: Bool?
+    
+    // Alternative field names that Gemma might use
+    let layers: Int?
+    let dModel: Int?
+    let nHeads: Int?
+    let dim: Int?
     
     private enum CodingKeys: String, CodingKey {
         case modelType = "model_type"
@@ -377,6 +415,25 @@ struct ModelConfig: Codable {
         case attentionBias = "attention_bias"
         case attentionDropout = "attention_dropout"
         case mlpBias = "mlp_bias"
+        
+        // Alternative field names
+        case layers = "layers"
+        case dModel = "d_model"
+        case nHeads = "n_heads"
+        case dim = "dim"
+    }
+    
+    // Computed properties to handle different field names
+    var actualNumLayers: Int {
+        return numLayers ?? layers ?? 32 // Default for Gemma 3n
+    }
+    
+    var actualHiddenSize: Int {
+        return hiddenSize ?? dModel ?? dim ?? 4096 // Default for Gemma 3n
+    }
+    
+    var actualNumHeads: Int {
+        return numHeads ?? nHeads ?? 32 // Default for Gemma 3n
     }
 }
 
@@ -456,18 +513,18 @@ class GemmaModel: Module {
     init(config: ModelConfig) {
         self.embedding = Embedding(
             embeddingCount: config.vocabSize,
-            dimensions: config.hiddenSize
+            dimensions: config.actualHiddenSize
         )
         
-        self.layers = (0..<config.numLayers).map { _ in
+        self.layers = (0..<config.actualNumLayers).map { _ in
             TransformerLayer(
-                dimensions: config.hiddenSize,
-                numHeads: config.numHeads
+                dimensions: config.actualHiddenSize,
+                numHeads: config.actualNumHeads
             )
         }
         
-        self.norm = RMSNorm(dimensions: config.hiddenSize)
-        self.outputProjection = Linear(config.hiddenSize, config.vocabSize)
+        self.norm = RMSNorm(dimensions: config.actualHiddenSize)
+        self.outputProjection = Linear(config.actualHiddenSize, config.vocabSize)
         
         super.init()
     }

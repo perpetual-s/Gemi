@@ -103,8 +103,8 @@ class ModelDiagnostics {
                     let config = try JSONDecoder().decode(ModelConfig.self, from: data)
                     print("  ✓ Successfully decoded!")
                     print("    - Model type: \(config.modelType)")
-                    print("    - Layers: \(config.numLayers)")
-                    print("    - Hidden size: \(config.hiddenSize)")
+                    print("    - Layers: \(config.actualNumLayers)")
+                    print("    - Hidden size: \(config.actualHiddenSize)")
                     print("    - Vocab size: \(config.vocabSize)")
                 } catch {
                     print("  ✗ Failed to decode: \(error)")
