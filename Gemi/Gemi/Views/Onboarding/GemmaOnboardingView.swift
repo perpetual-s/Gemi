@@ -613,11 +613,11 @@ struct GemmaOnboardingView: View {
         VStack(spacing: 32) {
             // Requirements
             VStack(alignment: .leading, spacing: 20) {
-                Label("8GB download (one-time)", systemImage: "arrow.down.circle")
+                Label("15.7GB download (one-time)", systemImage: "arrow.down.circle")
                     .font(.system(size: 18))
                     .foregroundColor(.white.opacity(0.9))
                 
-                Label("20GB free space recommended", systemImage: "internaldrive")
+                Label("30GB free space recommended", systemImage: "internaldrive")
                     .font(.system(size: 18))
                     .foregroundColor(.white.opacity(0.9))
                 
@@ -625,7 +625,7 @@ struct GemmaOnboardingView: View {
                     .font(.system(size: 18))
                     .foregroundColor(.white.opacity(0.9))
                 
-                Label("Terminal will open for setup", systemImage: "terminal")
+                Label("20-60 minutes depending on connection", systemImage: "clock")
                     .font(.system(size: 18))
                     .foregroundColor(.white.opacity(0.9))
             }

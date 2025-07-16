@@ -79,9 +79,30 @@ final class GemmaMLXModel: ObservableObject {
             
             let configData = try Data(contentsOf: configPath)
             
-            // Try to decode the config with better error handling
+            // Try to decode the config with proper nested structure handling
             do {
-                self.config = try JSONDecoder().decode(ModelConfig.self, from: configData)
+                // First, try Gemma 3n nested structure
+                if let gemma3nConfig = try? JSONDecoder().decode(Gemma3nConfig.self, from: configData) {
+                    // Convert nested config to flat config for compatibility
+                    self.config = ModelConfig(
+                        modelType: gemma3nConfig.modelType,
+                        vocabSize: gemma3nConfig.textConfig.vocabSize,
+                        hiddenSize: gemma3nConfig.textConfig.hiddenSize,
+                        numHiddenLayers: gemma3nConfig.textConfig.numHiddenLayers,
+                        numAttentionHeads: gemma3nConfig.textConfig.numAttentionHeads,
+                        numKeyValueHeads: gemma3nConfig.textConfig.numKeyValueHeads,
+                        intermediateSize: gemma3nConfig.textConfig.intermediateSize.value,
+                        maxPositionEmbeddings: gemma3nConfig.textConfig.maxPositionEmbeddings,
+                        ropeTheta: gemma3nConfig.textConfig.ropeTheta,
+                        rmsNormEps: gemma3nConfig.textConfig.rmsNormEps
+                    )
+                    print("✅ Successfully loaded Gemma 3n config with nested structure")
+                    print("📊 Model info: \(self.config!.numHiddenLayers) layers, \(self.config!.hiddenSize) hidden size")
+                } else {
+                    // Fallback to flat structure for other models
+                    self.config = try JSONDecoder().decode(ModelConfig.self, from: configData)
+                    print("✅ Successfully loaded config with flat structure")
+                }
             } catch let decodingError {
                 // Print the actual JSON for debugging
                 if let jsonString = String(data: configData, encoding: .utf8) {
@@ -374,67 +395,145 @@ final class GemmaMLXModel: ObservableObject {
 
 // MARK: - Supporting Types
 
-struct ModelConfig: Codable {
+// MARK: - Model Configuration Types
+
+/// Root configuration for Gemma 3n multimodal models
+struct Gemma3nConfig: Codable {
+    let architectures: [String]?
     let modelType: String
+    let textConfig: TextConfig
+    let audioConfig: AudioConfig?
+    let visionConfig: VisionConfig?
+    
+    private enum CodingKeys: String, CodingKey {
+        case architectures
+        case modelType = "model_type"
+        case textConfig = "text_config"
+        case audioConfig = "audio_config"
+        case visionConfig = "vision_config"
+    }
+}
+
+/// Text configuration for Gemma models
+struct TextConfig: Codable {
     let vocabSize: Int
-    
-    // These fields might have different names in different model configs
-    let numLayers: Int?
-    let hiddenSize: Int?
-    let numHeads: Int?
-    
-    // Optional fields
-    let intermediateSize: Int?
+    let hiddenSize: Int
+    let numHiddenLayers: Int
+    let numAttentionHeads: Int
     let numKeyValueHeads: Int?
-    let headDim: Int?
-    let maxPositionEmbeddings: Int?
-    let rmsNormEps: Double?
+    let intermediateSize: IntermediateSize // Can be Int or [Int]
+    let maxPositionEmbeddings: Int
     let ropeTheta: Double?
     let attentionBias: Bool?
     let attentionDropout: Double?
+    let rmsNormEps: Double?
     let mlpBias: Bool?
     
-    // Alternative field names that Gemma might use
-    let layers: Int?
-    let dModel: Int?
-    let nHeads: Int?
-    let dim: Int?
-    
     private enum CodingKeys: String, CodingKey {
-        case modelType = "model_type"
-        case numLayers = "num_hidden_layers"
-        case hiddenSize = "hidden_size"
-        case numHeads = "num_attention_heads"
         case vocabSize = "vocab_size"
-        case intermediateSize = "intermediate_size"
+        case hiddenSize = "hidden_size"
+        case numHiddenLayers = "num_hidden_layers"
+        case numAttentionHeads = "num_attention_heads"
         case numKeyValueHeads = "num_key_value_heads"
-        case headDim = "head_dim"
+        case intermediateSize = "intermediate_size"
         case maxPositionEmbeddings = "max_position_embeddings"
-        case rmsNormEps = "rms_norm_eps"
         case ropeTheta = "rope_theta"
         case attentionBias = "attention_bias"
         case attentionDropout = "attention_dropout"
+        case rmsNormEps = "rms_norm_eps"
         case mlpBias = "mlp_bias"
-        
-        // Alternative field names
-        case layers = "layers"
-        case dModel = "d_model"
-        case nHeads = "n_heads"
-        case dim = "dim"
+    }
+}
+
+/// Handles both Int and [Int] for intermediate_size
+enum IntermediateSize: Codable {
+    case single(Int)
+    case array([Int])
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let intValue = try? container.decode(Int.self) {
+            self = .single(intValue)
+        } else if let arrayValue = try? container.decode([Int].self) {
+            self = .array(arrayValue)
+        } else {
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "intermediate_size must be Int or [Int]")
+        }
     }
     
-    // Computed properties to handle different field names
-    var actualNumLayers: Int {
-        return numLayers ?? layers ?? 32 // Default for Gemma 3n
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .single(let value):
+            try container.encode(value)
+        case .array(let values):
+            try container.encode(values)
+        }
     }
     
-    var actualHiddenSize: Int {
-        return hiddenSize ?? dModel ?? dim ?? 4096 // Default for Gemma 3n
+    /// Get the intermediate size value (use first if array)
+    var value: Int {
+        switch self {
+        case .single(let size):
+            return size
+        case .array(let sizes):
+            return sizes.first ?? 16384 // Default for Gemma 3n
+        }
+    }
+}
+
+/// Audio configuration for multimodal models
+struct AudioConfig: Codable {
+    let hiddenSize: Int
+    let vocabSize: Int
+    
+    private enum CodingKeys: String, CodingKey {
+        case hiddenSize = "hidden_size"
+        case vocabSize = "vocab_size"
+    }
+}
+
+/// Vision configuration for multimodal models
+struct VisionConfig: Codable {
+    let hiddenSize: Int
+    let vocabSize: Int
+    
+    private enum CodingKeys: String, CodingKey {
+        case hiddenSize = "hidden_size"
+        case vocabSize = "vocab_size"
+    }
+}
+
+/// Legacy flat configuration for backward compatibility
+struct ModelConfig: Codable {
+    let modelType: String
+    let vocabSize: Int
+    let hiddenSize: Int
+    let numHiddenLayers: Int
+    let numAttentionHeads: Int
+    let numKeyValueHeads: Int?
+    let intermediateSize: Int?
+    let maxPositionEmbeddings: Int?
+    let ropeTheta: Double?
+    let rmsNormEps: Double?
+    
+    private enum CodingKeys: String, CodingKey {
+        case modelType = "model_type"
+        case vocabSize = "vocab_size"
+        case hiddenSize = "hidden_size"
+        case numHiddenLayers = "num_hidden_layers"
+        case numAttentionHeads = "num_attention_heads"
+        case numKeyValueHeads = "num_key_value_heads"
+        case intermediateSize = "intermediate_size"
+        case maxPositionEmbeddings = "max_position_embeddings"
+        case ropeTheta = "rope_theta"
+        case rmsNormEps = "rms_norm_eps"
     }
     
-    var actualNumHeads: Int {
-        return numHeads ?? nHeads ?? 32 // Default for Gemma 3n
-    }
+    // Computed properties for defaults
+    var actualNumLayers: Int { numHiddenLayers }
+    var actualHiddenSize: Int { hiddenSize }
+    var actualNumHeads: Int { numAttentionHeads }
 }
 
 struct ModelInput {

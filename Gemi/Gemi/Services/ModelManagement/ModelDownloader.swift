@@ -110,6 +110,16 @@ final class ModelDownloader: NSObject, ObservableObject {
             return
         }
         
+        // CRITICAL: Check authentication BEFORE downloading
+        // This prevents users from waiting 20 minutes only to fail
+        do {
+            try await verifyHuggingFaceAccess()
+        } catch {
+            self.error = error
+            downloadState = .failed(error.localizedDescription)
+            throw error
+        }
+        
         // Start downloading missing files
         do {
             try await downloadMissingFiles()
@@ -144,6 +154,67 @@ final class ModelDownloader: NSObject, ObservableObject {
         configuration.httpMaximumConnectionsPerHost = 4 // Parallel downloads
         
         session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
+    }
+    
+    /// Verify HuggingFace authentication BEFORE downloading
+    /// This prevents users from waiting 20 minutes only to fail
+    private func verifyHuggingFaceAccess() async throws {
+        // Check if we have a token
+        guard let token = await SettingsManager.shared.getHuggingFaceToken() else {
+            throw ModelError.authenticationRequired(
+                """
+                HuggingFace authentication required.
+                
+                Gemma models are gated and require a HuggingFace token.
+                Please add your token in the settings to continue.
+                """
+            )
+        }
+        
+        // Test access to a small file to verify authentication
+        let testURL = URL(string: baseURL + "config.json")!
+        var request = URLRequest(url: testURL)
+        request.httpMethod = "HEAD" // Just check headers, don't download
+        request.setValue("Gemi/1.0", forHTTPHeaderField: "User-Agent")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                switch httpResponse.statusCode {
+                case 200:
+                    // Success - authentication working
+                    print("✅ HuggingFace authentication verified")
+                    return
+                case 401:
+                    throw ModelError.authenticationRequired(
+                        """
+                        Invalid HuggingFace token.
+                        
+                        Please check that your token is correct and has read permissions.
+                        """
+                    )
+                case 403:
+                    throw ModelError.authenticationRequired(
+                        """
+                        Access forbidden.
+                        
+                        Please ensure you have accepted the Gemma license at:
+                        https://huggingface.co/google/gemma-3n-E4B-it
+                        """
+                    )
+                default:
+                    throw ModelError.downloadFailed("Authentication check failed: HTTP \(httpResponse.statusCode)")
+                }
+            }
+        } catch let error as ModelError {
+            throw error
+        } catch {
+            // Network error - let download attempt proceed
+            // (might be temporary network issue)
+            print("⚠️ Could not verify authentication: \(error.localizedDescription)")
+        }
     }
     
     private func calculateTotalSize() {

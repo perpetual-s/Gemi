@@ -1,5 +1,105 @@
 import Foundation
 
+// MARK: - Config Structures for Diagnostics (Prefixed to avoid conflicts)
+
+private struct DiagGemma3nConfig: Codable {
+    let architectures: [String]?
+    let modelType: String
+    let textConfig: DiagTextConfig
+    let audioConfig: DiagAudioConfig?
+    let visionConfig: DiagVisionConfig?
+    
+    private enum CodingKeys: String, CodingKey {
+        case architectures
+        case modelType = "model_type"
+        case textConfig = "text_config"
+        case audioConfig = "audio_config"
+        case visionConfig = "vision_config"
+    }
+}
+
+private struct DiagTextConfig: Codable {
+    let vocabSize: Int
+    let hiddenSize: Int
+    let numHiddenLayers: Int
+    let numAttentionHeads: Int
+    let numKeyValueHeads: Int?
+    let intermediateSize: DiagIntermediateSize
+    let maxPositionEmbeddings: Int
+    
+    private enum CodingKeys: String, CodingKey {
+        case vocabSize = "vocab_size"
+        case hiddenSize = "hidden_size"
+        case numHiddenLayers = "num_hidden_layers"
+        case numAttentionHeads = "num_attention_heads"
+        case numKeyValueHeads = "num_key_value_heads"
+        case intermediateSize = "intermediate_size"
+        case maxPositionEmbeddings = "max_position_embeddings"
+    }
+}
+
+private enum DiagIntermediateSize: Codable {
+    case single(Int)
+    case array([Int])
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let intValue = try? container.decode(Int.self) {
+            self = .single(intValue)
+        } else if let arrayValue = try? container.decode([Int].self) {
+            self = .array(arrayValue)
+        } else {
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "intermediate_size must be Int or [Int]")
+        }
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .single(let value):
+            try container.encode(value)
+        case .array(let values):
+            try container.encode(values)
+        }
+    }
+}
+
+private struct DiagAudioConfig: Codable {
+    let hiddenSize: Int
+    let vocabSize: Int
+    
+    private enum CodingKeys: String, CodingKey {
+        case hiddenSize = "hidden_size"
+        case vocabSize = "vocab_size"
+    }
+}
+
+private struct DiagVisionConfig: Codable {
+    let hiddenSize: Int
+    let vocabSize: Int
+    
+    private enum CodingKeys: String, CodingKey {
+        case hiddenSize = "hidden_size"
+        case vocabSize = "vocab_size"
+    }
+}
+
+private struct DiagModelConfig: Codable {
+    let modelType: String
+    let vocabSize: Int
+    let hiddenSize: Int
+    let numHiddenLayers: Int
+    let numAttentionHeads: Int
+    
+    private enum CodingKeys: String, CodingKey {
+        case modelType = "model_type"
+        case vocabSize = "vocab_size"
+        case hiddenSize = "hidden_size"
+        case numHiddenLayers = "num_hidden_layers"
+        case numAttentionHeads = "num_attention_heads"
+    }
+}
+
 /// Diagnostic utility for debugging model loading issues
 @MainActor
 class ModelDiagnostics {
@@ -73,20 +173,57 @@ class ModelDiagnostics {
                     }
                     
                     // Print specific fields we're looking for
-                    print("\n  Expected fields:")
-                    let expectedFields = [
+                    print("\n  Root level fields:")
+                    let rootFields = [
                         "model_type",
-                        "num_hidden_layers",
-                        "hidden_size",
-                        "num_attention_heads",
-                        "vocab_size"
+                        "architectures",
+                        "text_config",
+                        "audio_config",
+                        "vision_config"
                     ]
                     
-                    for field in expectedFields {
+                    for field in rootFields {
                         if let value = json[field] {
-                            print("    - \(field): \(value)")
+                            let valueType = type(of: value)
+                            print("    - \(field): \(valueType)")
                         } else {
-                            print("    - \(field): MISSING")
+                            print("    - \(field): NOT FOUND")
+                        }
+                    }
+                    
+                    // Check nested text_config
+                    if let textConfig = json["text_config"] as? [String: Any] {
+                        print("\n  text_config fields:")
+                        let textFields = [
+                            "num_hidden_layers",
+                            "hidden_size",
+                            "num_attention_heads",
+                            "vocab_size"
+                        ]
+                        
+                        for field in textFields {
+                            if let value = textConfig[field] {
+                                print("    - \(field): \(value)")
+                            } else {
+                                print("    - \(field): MISSING")
+                            }
+                        }
+                    } else {
+                        // Check flat structure
+                        print("\n  Checking flat structure:")
+                        let flatFields = [
+                            "num_hidden_layers",
+                            "hidden_size",
+                            "num_attention_heads",
+                            "vocab_size"
+                        ]
+                        
+                        for field in flatFields {
+                            if let value = json[field] {
+                                print("    - \(field): \(value)")
+                            } else {
+                                print("    - \(field): MISSING")
+                            }
                         }
                     }
                 } else {
@@ -99,15 +236,45 @@ class ModelDiagnostics {
                 
                 // Try to decode as ModelConfig
                 print("\n  Trying to decode as ModelConfig:")
-                do {
-                    let config = try JSONDecoder().decode(ModelConfig.self, from: data)
-                    print("  ✓ Successfully decoded!")
-                    print("    - Model type: \(config.modelType)")
-                    print("    - Layers: \(config.actualNumLayers)")
-                    print("    - Hidden size: \(config.actualHiddenSize)")
-                    print("    - Vocab size: \(config.vocabSize)")
-                } catch {
-                    print("  ✗ Failed to decode: \(error)")
+                
+                // First try Gemma 3n nested structure
+                if let gemma3nConfig = try? JSONDecoder().decode(DiagGemma3nConfig.self, from: data) {
+                    print("  ✅ Successfully decoded as Gemma 3n (nested) config!")
+                    print("    - Model type: \(gemma3nConfig.modelType)")
+                    print("    - Text config:")
+                    print("      - Layers: \(gemma3nConfig.textConfig.numHiddenLayers)")
+                    print("      - Hidden size: \(gemma3nConfig.textConfig.hiddenSize)")
+                    print("      - Vocab size: \(gemma3nConfig.textConfig.vocabSize)")
+                    print("      - Attention heads: \(gemma3nConfig.textConfig.numAttentionHeads)")
+                    if let audioConfig = gemma3nConfig.audioConfig {
+                        print("    - Audio config: ✓ (hidden_size: \(audioConfig.hiddenSize))")
+                    }
+                    if let visionConfig = gemma3nConfig.visionConfig {
+                        print("    - Vision config: ✓ (hidden_size: \(visionConfig.hiddenSize))")
+                    }
+                } else {
+                    // Try flat structure
+                    do {
+                        let config = try JSONDecoder().decode(DiagModelConfig.self, from: data)
+                        print("  ✅ Successfully decoded as flat config!")
+                        print("    - Model type: \(config.modelType)")
+                        print("    - Layers: \(config.numHiddenLayers)")
+                        print("    - Hidden size: \(config.hiddenSize)")
+                        print("    - Vocab size: \(config.vocabSize)")
+                    } catch {
+                        print("  ❌ Failed to decode: \(error)")
+                        
+                        // Check for nested structure
+                        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                            if let textConfig = json["text_config"] as? [String: Any] {
+                                print("\n  ⚠️  DETECTED: Config has nested structure (text_config)")
+                                print("    text_config fields:")
+                                for (key, value) in textConfig.sorted(by: { $0.key < $1.key }).prefix(10) {
+                                    print("      - \(key): \(value)")
+                                }
+                            }
+                        }
+                    }
                 }
                 
             } catch {
