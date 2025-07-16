@@ -44,39 +44,39 @@ final class ModelDownloader: NSObject, ObservableObject {
     private let baseURL = "https://huggingface.co/google/gemma-3n-E4B-it/resolve/main/"
     
     // Required model files for Gemma 3n E4B
-    // Total size is approximately 15.7 GB
+    // Total size is approximately 15.7 GB (actual sizes from HuggingFace)
     private let requiredFiles: [ModelFile] = [
         ModelFile(name: "config.json", 
                  url: "config.json",
-                 size: 2_048,  // ~2KB
+                 size: 4_540,  // 4.54 KB
                  sha256: "placeholder_hash_config"),
         ModelFile(name: "tokenizer.json",
                  url: "tokenizer.json", 
-                 size: 1_747_968,  // ~1.7MB
+                 size: 35_026_124,  // 33.4 MB
                  sha256: "placeholder_hash_tokenizer"),
         ModelFile(name: "tokenizer_config.json",
                  url: "tokenizer_config.json",
-                 size: 2_048,  // ~2KB
+                 size: 1_258_291,  // 1.2 MB
                  sha256: "placeholder_hash_tokenizer_config"),
         ModelFile(name: "model.safetensors.index.json",
                  url: "model.safetensors.index.json",
-                 size: 32_768,  // ~32KB
+                 size: 175_104,  // 171 KB
                  sha256: "placeholder_hash_index"),
         ModelFile(name: "model-00001-of-00004.safetensors",
                  url: "model-00001-of-00004.safetensors",
-                 size: 4_225_761_280,  // ~3.94GB
+                 size: 3_308_257_280,  // 3.08 GB
                  sha256: "placeholder_hash_model1"),
         ModelFile(name: "model-00002-of-00004.safetensors",
                  url: "model-00002-of-00004.safetensors",
-                 size: 4_225_761_280,  // ~3.94GB
+                 size: 5_338_316_800,  // 4.97 GB
                  sha256: "placeholder_hash_model2"),
         ModelFile(name: "model-00003-of-00004.safetensors",
                  url: "model-00003-of-00004.safetensors",
-                 size: 4_225_761_280,  // ~3.94GB
+                 size: 5_359_288_320,  // 4.99 GB
                  sha256: "placeholder_hash_model3"),
         ModelFile(name: "model-00004-of-00004.safetensors",
                  url: "model-00004-of-00004.safetensors",
-                 size: 4_194_304_000,  // ~3.91GB
+                 size: 2_856_321_024,  // 2.66 GB
                  sha256: "placeholder_hash_model4")
     ]
     
