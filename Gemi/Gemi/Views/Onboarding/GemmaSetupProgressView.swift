@@ -120,6 +120,61 @@ struct GemmaSetupProgressView: View {
                             }
                         )
                         .padding(.top, 20)
+                    } else if case .cancelled = setupManager.downloaderState {
+                        // Cancelled state UI
+                        VStack(spacing: 20) {
+                            Text("cancelled")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.white.opacity(0.8))
+                            
+                            VStack(spacing: 16) {
+                                Image(systemName: "pause.circle.fill")
+                                    .font(.system(size: 64))
+                                    .foregroundStyle(
+                                        LinearGradient(
+                                            colors: [Color.orange, Color.orange.opacity(0.8)],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                
+                                VStack(spacing: 8) {
+                                    Text("Download Paused")
+                                        .font(.system(size: 20, weight: .semibold))
+                                        .foregroundColor(.white)
+                                    
+                                    Text("The model download has been paused. You can resume it anytime.")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.white.opacity(0.7))
+                                        .multilineTextAlignment(.center)
+                                        .frame(maxWidth: 400)
+                                }
+                                
+                                // Progress info
+                                if setupManager.downloadedBytes > 0 {
+                                    HStack {
+                                        Image(systemName: "arrow.down.circle")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(.white.opacity(0.5))
+                                        
+                                        Text("\(ByteCountFormatter.string(fromByteCount: setupManager.downloadedBytes, countStyle: .file)) of \(ByteCountFormatter.string(fromByteCount: setupManager.totalDownloadBytes, countStyle: .file)) downloaded")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(.white.opacity(0.6))
+                                    }
+                                    .padding(.top, 8)
+                                }
+                            }
+                            .padding(32)
+                            .background(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(Color.white.opacity(0.05))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .strokeBorder(Color.white.opacity(0.1), lineWidth: 1)
+                                    )
+                            )
+                            .frame(maxWidth: 500)
+                        }
                     } else {
                         // Status message for other steps
                         Text(setupManager.statusMessage)
@@ -130,8 +185,9 @@ struct GemmaSetupProgressView: View {
                             .animation(.easeInOut, value: setupManager.statusMessage)
                     }
                     
-                    // Step indicators (hide when showing download progress)
-                    if !(setupManager.currentStep == .downloadingModel && setupManager.downloaderState.isDownloading) {
+                    // Step indicators (hide when showing download progress or cancelled state)
+                    if !(setupManager.currentStep == .downloadingModel && setupManager.downloaderState.isDownloading) && 
+                       setupManager.downloaderState != .cancelled {
                         VStack(alignment: .leading, spacing: 12) {
                             ForEach(ModelSetupService.SetupStep.allCases.filter { $0 != .complete }, id: \.self) { step in
                                 StepIndicator(
@@ -180,6 +236,38 @@ struct GemmaSetupProgressView: View {
                         }
                         .buttonStyle(.plain)
                         .transition(.scale.combined(with: .opacity))
+                    } else if case .cancelled = setupManager.downloaderState {
+                        // Cancelled state buttons
+                        Button {
+                            Task {
+                                await setupManager.resumeDownload()
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "play.fill")
+                                Text("Resume Download")
+                            }
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.black)
+                            .frame(width: 200, height: 48)
+                            .background(
+                                Capsule()
+                                    .fill(Color.white)
+                                    .shadow(color: .white.opacity(0.3), radius: 10, y: 5)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        
+                        Button {
+                            guard !hasCalledCompletion else { return }
+                            hasCalledCompletion = true
+                            onSkip()
+                        } label: {
+                            Text("Set up later")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.white.opacity(0.6))
+                        }
+                        .buttonStyle(.plain)
                     } else if setupManager.error != nil {
                         Button {
                             setupManager.startSetup()
@@ -218,7 +306,7 @@ struct GemmaSetupProgressView: View {
                         .buttonStyle(.plain)
                     }
                     
-                    if !setupManager.isComplete {
+                    if !setupManager.isComplete && setupManager.downloaderState != .cancelled {
                         Button {
                             guard !hasCalledCompletion else { return }
                             hasCalledCompletion = true

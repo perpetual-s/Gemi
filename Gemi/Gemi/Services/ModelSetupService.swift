@@ -92,6 +92,17 @@ class ModelSetupService: ObservableObject {
         }
     }
     
+    func resumeDownload() async {
+        do {
+            currentStep = .downloadingModel
+            statusMessage = "Resuming download..."
+            try await modelDownloader.startDownload()
+        } catch {
+            self.error = SetupError.downloadFailed(error.localizedDescription)
+            statusMessage = "Failed to resume download: \(error.localizedDescription)"
+        }
+    }
+    
     private func performSetup() async {
         do {
             // Step 1: Check if model is already loaded

@@ -26,6 +26,7 @@ final class ModelDownloader: NSObject, ObservableObject {
         case extracting
         case completed
         case failed(String)
+        case cancelled
         
         var isDownloading: Bool {
             if case .downloading = self { return true }
@@ -98,7 +99,7 @@ final class ModelDownloader: NSObject, ObservableObject {
     
     /// Start downloading the model
     func startDownload() async throws {
-        guard downloadState == .notStarted || downloadState == .failed("") else {
+        guard downloadState == .notStarted || downloadState == .failed("") || downloadState == .cancelled else {
             return
         }
         
@@ -138,7 +139,7 @@ final class ModelDownloader: NSObject, ObservableObject {
     func cancelDownload() {
         downloadTasks.forEach { $0.cancel() }
         downloadTasks.removeAll()
-        downloadState = .notStarted
+        downloadState = .cancelled
         progress = 0.0
     }
     
