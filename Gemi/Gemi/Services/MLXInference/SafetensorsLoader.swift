@@ -19,18 +19,59 @@ class SafetensorsLoader {
     static func loadSafetensors(from url: URL) throws -> [String: MLXArray] {
         let data = try Data(contentsOf: url)
         
+        // Check if the file is HTML (common with authentication errors)
+        if let htmlCheck = String(data: data.prefix(1000), encoding: .utf8),
+           (htmlCheck.contains("<!DOCTYPE") || htmlCheck.contains("<html") || 
+            htmlCheck.contains("401") || htmlCheck.contains("403") || 
+            htmlCheck.contains("Unauthorized")) {
+            
+            throw ModelError.authenticationRequired("""
+                The model file appears to be an HTML error page instead of model data.
+                
+                This usually means:
+                1. Your HuggingFace token is missing or invalid
+                2. You haven't accepted the Gemma model license
+                3. The model requires authentication that wasn't provided
+                
+                Please check your HuggingFace token and ensure you've accepted the license at:
+                https://huggingface.co/google/gemma-3n-E4B-it
+                """)
+        }
+        
         // Read header size (first 8 bytes, little-endian)
         guard data.count >= 8 else {
-            throw ModelError.invalidFormat("Safetensors file too small")
+            throw ModelError.invalidFormat("Safetensors file too small (\(data.count) bytes). This may indicate a download error.")
         }
         
         let headerSize = data.withUnsafeBytes { bytes in
             bytes.load(as: UInt64.self)
         }
         
+        // Validate header size
+        guard headerSize > 0 && headerSize < data.count - 8 else {
+            // Check if it might be a JSON error response
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("File appears to be JSON/text instead of safetensors: \(String(jsonString.prefix(500)))")
+                throw ModelError.invalidFormat("Invalid safetensors format - file appears to be text/JSON")
+            }
+            throw ModelError.invalidFormat("Invalid header size: \(headerSize)")
+        }
+        
         // Read header JSON
         let headerData = data.subdata(in: 8..<(8 + Int(headerSize)))
-        let header = try JSONDecoder().decode([String: TensorInfo].self, from: headerData)
+        
+        // Try to decode header with better error handling
+        let header: [String: TensorInfo]
+        do {
+            header = try JSONDecoder().decode([String: TensorInfo].self, from: headerData)
+        } catch {
+            // Print header for debugging
+            if let headerString = String(data: headerData, encoding: .utf8) {
+                print("Failed to decode safetensors header. Content: \(headerString)")
+            }
+            print("Safetensors decoding error: \(error)")
+            throw ModelError.invalidFormat("Failed to decode safetensors header: \(error.localizedDescription)")
+        }
         
         // Load tensors
         var tensors: [String: MLXArray] = [:]

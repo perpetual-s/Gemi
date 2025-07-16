@@ -55,6 +55,9 @@ struct ModelSetupHelper {
                 
                 Please ensure you have enough disk space (20GB recommended).
                 """
+                
+            case .authenticationRequired(let message):
+                return message
             }
         }
         

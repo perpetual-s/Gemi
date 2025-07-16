@@ -206,6 +206,9 @@ final class ModelDownloader: NSObject, ObservableObject {
             resumeData = try? Data(contentsOf: resumeDataURL)
         }
         
+        // Get token before entering continuation
+        let token = await SettingsManager.shared.getHuggingFaceToken()
+        
         return try await withCheckedThrowingContinuation { continuation in
             let completionHandler: (URL?, URLResponse?, Error?) -> Void = { [weak self] tempURL, response, error in
                 guard let self = self else { return }
@@ -225,7 +228,51 @@ final class ModelDownloader: NSObject, ObservableObject {
                         return
                     }
                     
+                    // Check HTTP response status
+                    if let httpResponse = response as? HTTPURLResponse {
+                        if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
+                            let authError = ModelError.authenticationRequired(
+                                """
+                                HuggingFace authentication failed (HTTP \(httpResponse.statusCode)).
+                                
+                                To fix this:
+                                1. Ensure your HuggingFace token is set in .env file
+                                2. Visit https://huggingface.co/google/gemma-3n-E4B-it and accept the license
+                                3. Make sure your token has read permissions
+                                """
+                            )
+                            continuation.resume(throwing: authError)
+                            return
+                        } else if httpResponse.statusCode >= 400 {
+                            let httpError = ModelError.downloadFailed("HTTP \(httpResponse.statusCode): \(HTTPURLResponse.localizedString(forStatusCode: httpResponse.statusCode))")
+                            continuation.resume(throwing: httpError)
+                            return
+                        }
+                    }
+                    
                     do {
+                        // Check if the downloaded file is HTML (error page)
+                        let fileData = try Data(contentsOf: tempURL)
+                        if let htmlCheck = String(data: fileData.prefix(1000), encoding: .utf8),
+                           (htmlCheck.contains("<!DOCTYPE") || htmlCheck.contains("<html") || htmlCheck.contains("401") || htmlCheck.contains("403")) {
+                            
+                            // Extract error message if possible
+                            var errorMessage = "Authentication required to access Gemma model"
+                            if htmlCheck.contains("401") || htmlCheck.contains("Unauthorized") {
+                                errorMessage = """
+                                    HuggingFace authentication failed.
+                                    
+                                    Please ensure:
+                                    1. Your HuggingFace token is correctly set
+                                    2. You have accepted the Gemma license at:
+                                       https://huggingface.co/google/gemma-3n-E4B-it
+                                    3. Your token has read permissions
+                                    """
+                            }
+                            
+                            throw ModelError.authenticationRequired(errorMessage)
+                        }
+                        
                         // Move file to destination
                         try FileManager.default.moveItem(at: tempURL, to: destinationURL)
                         
@@ -251,6 +298,14 @@ final class ModelDownloader: NSObject, ObservableObject {
                 var request = URLRequest(url: fullURL)
                 request.httpMethod = "GET"
                 request.setValue("Gemi/1.0", forHTTPHeaderField: "User-Agent")
+                
+                // Add HuggingFace authentication if token exists
+                if let token = token {
+                    request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                    print("🔐 Using HuggingFace token for authentication (token starts with: \(String(token.prefix(7)))...)")
+                } else {
+                    print("⚠️ No HuggingFace token found - this will fail for gated models!")
+                }
                 
                 task = session.downloadTask(with: request, completionHandler: completionHandler)
             }
@@ -339,6 +394,7 @@ enum ModelError: LocalizedError {
     case verificationFailed(String)
     case extractionFailed(String)
     case modelNotFound
+    case authenticationRequired(String)
     
     var errorDescription: String? {
         switch self {
@@ -350,6 +406,8 @@ enum ModelError: LocalizedError {
             return "Extraction failed: \(reason)"
         case .modelNotFound:
             return "Model files not found"
+        case .authenticationRequired(let message):
+            return message
         }
     }
 }

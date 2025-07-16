@@ -71,8 +71,40 @@ final class GemmaMLXModel: ObservableObject {
         do {
             // Load configuration
             let configPath = modelCache.modelPath.appendingPathComponent("config.json")
+            
+            // Check if config file exists
+            guard FileManager.default.fileExists(atPath: configPath.path) else {
+                throw ModelError.modelNotFound
+            }
+            
             let configData = try Data(contentsOf: configPath)
-            self.config = try JSONDecoder().decode(ModelConfig.self, from: configData)
+            
+            // Try to decode the config with better error handling
+            do {
+                self.config = try JSONDecoder().decode(ModelConfig.self, from: configData)
+            } catch let decodingError {
+                // Print the actual JSON for debugging
+                if let jsonString = String(data: configData, encoding: .utf8) {
+                    print("Failed to decode config.json. Content: \(jsonString)")
+                }
+                print("Decoding error: \(decodingError)")
+                
+                // Try to provide more helpful error message
+                if let decodingError = decodingError as? DecodingError {
+                    switch decodingError {
+                    case .keyNotFound(let key, let context):
+                        throw ModelError.downloadFailed("Missing required field '\(key.stringValue)' in config.json. Path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+                    case .typeMismatch(let type, let context):
+                        throw ModelError.downloadFailed("Type mismatch for field at path: \(context.codingPath.map { $0.stringValue }.joined(separator: ".")). Expected \(type)")
+                    case .dataCorrupted(let context):
+                        throw ModelError.downloadFailed("Data corrupted at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+                    default:
+                        throw ModelError.downloadFailed("Failed to decode config.json: \(decodingError.localizedDescription)")
+                    }
+                } else {
+                    throw ModelError.downloadFailed("Failed to decode config.json: \(decodingError.localizedDescription)")
+                }
+            }
             
             loadProgress = 0.2
             
@@ -101,6 +133,21 @@ final class GemmaMLXModel: ObservableObject {
             
         } catch {
             self.error = error
+            
+            // Run diagnostics when loading fails
+            print("\n⚠️ Model loading failed. Running diagnostics...")
+            ModelDiagnostics.diagnoseModelFiles()
+            
+            // Run authentication test if it seems like an auth issue
+            if let modelError = error as? ModelError {
+                switch modelError {
+                case .authenticationRequired:
+                    await ModelDiagnostics.testHuggingFaceAuthentication()
+                default:
+                    break
+                }
+            }
+            
             throw error
         }
     }
@@ -305,6 +352,15 @@ struct ModelConfig: Codable {
     let hiddenSize: Int
     let numHeads: Int
     let vocabSize: Int
+    let intermediateSize: Int?
+    let numKeyValueHeads: Int?
+    let headDim: Int?
+    let maxPositionEmbeddings: Int?
+    let rmsNormEps: Double?
+    let ropeTheta: Double?
+    let attentionBias: Bool?
+    let attentionDropout: Double?
+    let mlpBias: Bool?
     
     private enum CodingKeys: String, CodingKey {
         case modelType = "model_type"
@@ -312,6 +368,15 @@ struct ModelConfig: Codable {
         case hiddenSize = "hidden_size"
         case numHeads = "num_attention_heads"
         case vocabSize = "vocab_size"
+        case intermediateSize = "intermediate_size"
+        case numKeyValueHeads = "num_key_value_heads"
+        case headDim = "head_dim"
+        case maxPositionEmbeddings = "max_position_embeddings"
+        case rmsNormEps = "rms_norm_eps"
+        case ropeTheta = "rope_theta"
+        case attentionBias = "attention_bias"
+        case attentionDropout = "attention_dropout"
+        case mlpBias = "mlp_bias"
     }
 }
 

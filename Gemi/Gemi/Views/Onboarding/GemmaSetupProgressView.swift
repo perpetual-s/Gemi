@@ -3,28 +3,66 @@ import SwiftUI
 /// Beautiful setup progress view for Gemma 3n installation
 struct GemmaSetupProgressView: View {
     @StateObject private var setupManager = ModelSetupService()
+    @StateObject private var settingsManager = SettingsManager.shared
     let onComplete: () -> Void
     let onSkip: () -> Void
     
     @State private var showingError = false
     @State private var pulseAnimation = false
     @State private var hasCalledCompletion = false
+    @State private var showingTokenView = false
     
     var body: some View {
         ZStack {
-            // Background gradient
-            LinearGradient(
-                colors: [
-                    Color(red: 0.1, green: 0.05, blue: 0.2),
-                    Color(red: 0.05, green: 0.05, blue: 0.15)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-            
-            // Content
-            VStack(spacing: 24) {
+            backgroundGradient
+            contentView
+        }
+        .onAppear {
+            pulseAnimation = true
+            // Check for HuggingFace token before starting setup
+            // If we have an environment token or user token, start setup immediately
+            if settingsManager.hasHuggingFaceToken || settingsManager.hasEnvironmentToken {
+                setupManager.startSetup()
+            } else {
+                showingTokenView = true
+            }
+        }
+        .sheet(isPresented: $showingTokenView) {
+            HuggingFaceTokenView {
+                // Token saved callback
+                showingTokenView = false
+                setupManager.startSetup()
+            }
+        }
+        .alert("Setup Error", isPresented: .init(
+            get: { setupManager.error != nil },
+            set: { _ in setupManager.error = nil }
+        )) {
+            Button("OK") { }
+        } message: {
+            if let error = setupManager.error {
+                Text(error.localizedDescription)
+                if let suggestion = error.recoverySuggestion {
+                    Text(suggestion)
+                }
+            }
+        }
+    }
+    
+    private var backgroundGradient: some View {
+        LinearGradient(
+            colors: [
+                Color(red: 0.1, green: 0.05, blue: 0.2),
+                Color(red: 0.05, green: 0.05, blue: 0.15)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .ignoresSafeArea()
+    }
+    
+    private var contentView: some View {
+        VStack(spacing: 24) {
                 // Header
                 VStack(spacing: 16) {
                     Text("Setting Up Gemma 3n")
@@ -136,11 +174,16 @@ struct GemmaSetupProgressView: View {
                         .transition(.scale.combined(with: .opacity))
                     } else if setupManager.error != nil {
                         Button {
-                            setupManager.startSetup()
+                            // Check if authentication error - show token view
+                            if case .authenticationRequired = setupManager.error {
+                                showingTokenView = true
+                            } else {
+                                setupManager.startSetup()
+                            }
                         } label: {
                             HStack {
-                                Image(systemName: "arrow.clockwise")
-                                Text("Retry Setup")
+                                Image(systemName: setupManager.error == .authenticationRequired ? "key.fill" : "arrow.clockwise")
+                                Text(setupManager.error == .authenticationRequired ? "Add Token" : "Retry Setup")
                             }
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
@@ -186,26 +229,8 @@ struct GemmaSetupProgressView: View {
                     }
                 }
             }
-            .padding(.horizontal, 40)
-            .padding(.vertical, 50)
-        }
-        .onAppear {
-            pulseAnimation = true
-            setupManager.startSetup()
-        }
-        .alert("Setup Error", isPresented: .init(
-            get: { setupManager.error != nil },
-            set: { _ in setupManager.error = nil }
-        )) {
-            Button("OK") { }
-        } message: {
-            if let error = setupManager.error {
-                Text(error.localizedDescription)
-                if let suggestion = error.recoverySuggestion {
-                    Text(suggestion)
-                }
-            }
-        }
+        .padding(.horizontal, 40)
+        .padding(.vertical, 50)
     }
     
     private func currentStepColor() -> Color {

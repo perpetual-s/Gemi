@@ -59,7 +59,16 @@ struct GemiTests {
             "num_hidden_layers": 12,
             "hidden_size": 768,
             "num_attention_heads": 12,
-            "vocab_size": 32000
+            "vocab_size": 32000,
+            "intermediate_size": 3072,
+            "num_key_value_heads": 12,
+            "head_dim": 64,
+            "max_position_embeddings": 2048,
+            "rms_norm_eps": 1e-06,
+            "rope_theta": 10000.0,
+            "attention_bias": false,
+            "attention_dropout": 0.0,
+            "mlp_bias": false
         }
         """
         
@@ -71,5 +80,7 @@ struct GemiTests {
         #expect(config.hiddenSize == 768)
         #expect(config.numHeads == 12)
         #expect(config.vocabSize == 32000)
+        #expect(config.intermediateSize == 3072)
+        #expect(config.numKeyValueHeads == 12)
     }
 }

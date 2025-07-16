@@ -9,11 +9,13 @@ echo "🎨 Creating beautiful DMG for Gemi..."
 
 # Configuration
 APP_NAME="Gemi"
-APP_PATH="../Gemi/build/Release/Gemi.app"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+APP_PATH="$PROJECT_ROOT/Gemi/build/Release/Gemi.app"
 DMG_NAME="Gemi-Installer"
 DMG_FINAL="Gemi-Installer.dmg"
 VOLUME_NAME="Gemi"
-BACKGROUND_IMAGE="../Documentation/assets/dmg-background-clean-premium.png"
+BACKGROUND_IMAGE="$PROJECT_ROOT/Documentation/assets/dmg-background-clean-premium.png"
 
 # Create directories
 BUILD_DIR="build"
@@ -23,6 +25,7 @@ TEMP_DMG="$BUILD_DIR/${DMG_NAME}-temp.dmg"
 # Colors for output
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Clean up any existing build
@@ -31,22 +34,51 @@ rm -rf "$DMG_DIR"
 rm -f "$BUILD_DIR"/*.dmg
 mkdir -p "$DMG_DIR"
 
-# Build the app in Release mode first
-echo -e "${BLUE}🔨 Building Gemi in Release mode...${NC}"
-cd ../Gemi
-xcodebuild -project Gemi.xcodeproj -scheme Gemi -configuration Release build
-cd ../scripts
+# Check if we should skip building (for testing or if already built)
+if [ "$1" != "--skip-build" ]; then
+    # Build the app in Release mode first
+    echo -e "${BLUE}🔨 Building Gemi in Release mode...${NC}"
+    cd "$PROJECT_ROOT/Gemi"
+    xcodebuild -project Gemi.xcodeproj -scheme Gemi -configuration Release build
+    cd "$SCRIPT_DIR"
+else
+    echo -e "${BLUE}⏭️  Skipping build step (--skip-build flag used)${NC}"
+fi
 
 # Verify the app was built
 if [ ! -d "$APP_PATH" ]; then
-    echo "❌ Error: Gemi.app not found at $APP_PATH"
-    echo "Please build the app first with: xcodebuild -project Gemi.xcodeproj -scheme Gemi -configuration Release build"
-    exit 1
+    # Check if app exists in DerivedData or user provided path
+    if [ -n "$2" ] && [ -d "$2" ]; then
+        APP_PATH="$2"
+        echo -e "${BLUE}Using app at: $APP_PATH${NC}"
+    else
+        echo "❌ Error: Gemi.app not found at $APP_PATH"
+        echo ""
+        echo "Options:"
+        echo "1. Build the app: ./create-dmg.sh"
+        echo "2. Skip build if already built: ./create-dmg.sh --skip-build"
+        echo "3. Provide app path: ./create-dmg.sh --skip-build /path/to/Gemi.app"
+        echo ""
+        echo "To find your built app, try:"
+        echo "find ~/Library/Developer/Xcode/DerivedData -name 'Gemi.app' -type d 2>/dev/null | grep -E 'Release|Build/Products'"
+        exit 1
+    fi
 fi
 
 # Copy app to DMG staging directory
 echo "📦 Copying Gemi.app..."
 cp -R "$APP_PATH" "$DMG_DIR/"
+
+# Copy .env file into the app bundle if it exists
+ENV_FILE="$PROJECT_ROOT/Gemi/.env"
+if [ -f "$ENV_FILE" ]; then
+    echo "🔑 Including .env file in app bundle..."
+    cp "$ENV_FILE" "$DMG_DIR/Gemi.app/Contents/Resources/.env"
+    echo -e "${GREEN}✓ HuggingFace token included in bundle${NC}"
+else
+    echo -e "${YELLOW}⚠️  No .env file found. Users will need to provide their own token.${NC}"
+    echo -e "${YELLOW}   To include a token: cp .env.example .env and add your token${NC}"
+fi
 
 # Create Applications symlink
 echo "🔗 Creating Applications symlink..."
@@ -133,6 +165,13 @@ else
 fi
 
 echo -e "\n🎉 DMG creation complete!"
+echo ""
+echo "📝 For Release DMG with bundled token:"
+echo "  1. Create .env file: cp .env.example .env"
+echo "  2. Add your HuggingFace token to .env"
+echo "  3. Build the app in Xcode"
+echo "  4. Run this script again"
+echo ""
 echo "Next steps:"
 echo "1. Test the DMG by double-clicking it"
 echo "2. Drag Gemi to Applications folder"

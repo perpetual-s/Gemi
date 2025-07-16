@@ -62,8 +62,26 @@ class GemmaTokenizer {
     init(modelPath: URL) async throws {
         // Load tokenizer.json
         let tokenizerPath = modelPath.appendingPathComponent("tokenizer.json")
+        
+        // Check if tokenizer file exists
+        guard FileManager.default.fileExists(atPath: tokenizerPath.path) else {
+            throw ModelError.downloadFailed("tokenizer.json not found at \(tokenizerPath.path)")
+        }
+        
         let tokenizerData = try Data(contentsOf: tokenizerPath)
-        let config = try JSONDecoder().decode(TokenizerConfig.self, from: tokenizerData)
+        
+        // Try to decode with better error handling
+        let config: TokenizerConfig
+        do {
+            config = try JSONDecoder().decode(TokenizerConfig.self, from: tokenizerData)
+        } catch {
+            // Print tokenizer data for debugging
+            if let jsonString = String(data: tokenizerData, encoding: .utf8) {
+                print("Failed to decode tokenizer.json. Content preview: \(String(jsonString.prefix(500)))")
+            }
+            print("Tokenizer decoding error: \(error)")
+            throw ModelError.downloadFailed("Failed to decode tokenizer.json: \(error.localizedDescription)")
+        }
         
         // Load vocabulary
         if let vocab = config.model?.vocab {

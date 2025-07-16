@@ -42,10 +42,11 @@ class ModelSetupService: ObservableObject {
         }
     }
     
-    enum SetupError: LocalizedError {
+    enum SetupError: LocalizedError, Equatable {
         case modelNotFound
         case downloadFailed(String)
         case loadFailed(String)
+        case authenticationRequired
         
         var errorDescription: String? {
             switch self {
@@ -55,6 +56,8 @@ class ModelSetupService: ObservableObject {
                 return "Model download failed: \(reason)"
             case .loadFailed(let reason):
                 return "Failed to load model: \(reason)"
+            case .authenticationRequired:
+                return "HuggingFace authentication required"
             }
         }
         
@@ -62,10 +65,15 @@ class ModelSetupService: ObservableObject {
             switch self {
             case .modelNotFound:
                 return "The model will be downloaded automatically"
-            case .downloadFailed:
+            case .downloadFailed(let reason):
+                if reason.contains("401") || reason.contains("403") {
+                    return "This model requires a HuggingFace token. Please add your token in the settings."
+                }
                 return "Check your internet connection and try again"
             case .loadFailed:
                 return "Try restarting Gemi to free up memory"
+            case .authenticationRequired:
+                return "Gemma models are gated and require a HuggingFace token for access."
             }
         }
     }
@@ -119,9 +127,28 @@ class ModelSetupService: ObservableObject {
         } catch let setupError as SetupError {
             self.error = setupError
             statusMessage = setupError.localizedDescription
+        } catch let modelError as ModelError {
+            switch modelError {
+            case .authenticationRequired(let message):
+                self.error = .authenticationRequired
+                statusMessage = message
+            case .downloadFailed(let reason):
+                self.error = .downloadFailed(reason)
+                statusMessage = reason
+            default:
+                self.error = .downloadFailed(modelError.localizedDescription)
+                statusMessage = modelError.localizedDescription
+            }
         } catch {
-            self.error = .downloadFailed(error.localizedDescription)
-            statusMessage = error.localizedDescription
+            // Check if it's an authentication error
+            let errorMessage = error.localizedDescription
+            if errorMessage.contains("401") || errorMessage.contains("403") || errorMessage.contains("Unauthorized") || errorMessage.contains("authentication") {
+                self.error = .authenticationRequired
+                statusMessage = "Authentication required"
+            } else {
+                self.error = .downloadFailed(error.localizedDescription)
+                statusMessage = error.localizedDescription
+            }
         }
     }
     
