@@ -175,7 +175,7 @@ struct GemmaModelStatusView: View {
                 FeatureRow(
                     icon: "hare.fill",
                     title: "Optimized Performance",
-                    description: "8GB model, runs like 4GB",
+                    description: "Multimodal AI with efficient memory usage",
                     color: .purple
                 )
             }
@@ -194,7 +194,7 @@ struct GemmaModelStatusView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Download Gemma 3n")
                                 .font(.system(size: 16, weight: .semibold))
-                            Text("8GB download • One-time setup")
+                            Text("15.7GB download • One-time setup")
                                 .font(.system(size: 12))
                                 .opacity(0.8)
                         }
@@ -414,7 +414,7 @@ struct GemmaModelStatusView: View {
                 
                 TipRow(icon: "cup.and.saucer.fill", text: "Grab a coffee, this is a one-time download")
                 TipRow(icon: "wifi", text: "Ensure stable internet connection")
-                TipRow(icon: "internaldrive", text: "20GB free space recommended")
+                TipRow(icon: "internaldrive", text: "32GB free space recommended")
             }
             .padding(20)
             .background(
@@ -593,14 +593,14 @@ struct GemmaModelStatusView: View {
             // Model info
             HStack(spacing: 40) {
                 ModelInfoItem(label: "Model", value: "Gemma 3n E4B")
-                ModelInfoItem(label: "Size", value: "8GB")
+                ModelInfoItem(label: "Size", value: "15.7GB")
                 ModelInfoItem(label: "Device", value: modelManager.deviceInfo)
                 ModelInfoItem(label: "Status", value: "Active")
             }
             
             // Actions
             HStack(spacing: 12) {
-                Button("Open Terminal") {
+                Button("Open Model Folder") {
                     modelManager.openServerTerminal()
                 }
                 .buttonStyle(.plain)
@@ -769,7 +769,7 @@ struct GemmaDetailsView: View {
                         SpecRow(label: "Model Architecture", value: "MatFormer (Matryoshka Transformer)")
                         SpecRow(label: "Parameters", value: "8B (runs like 4B with PLE)")
                         SpecRow(label: "Context Length", value: "32,768 tokens")
-                        SpecRow(label: "Download Size", value: "~8GB")
+                        SpecRow(label: "Download Size", value: "~15.7GB")
                         SpecRow(label: "Memory Usage", value: "4-6GB RAM")
                         SpecRow(label: "Required macOS", value: "12.3 or later")
                     }
@@ -1000,14 +1000,31 @@ class GemmaModelManager: ObservableObject {
     }
     
     private func calculateTimeEstimate(progress: Double) -> String {
-        // Simple time estimate based on progress
-        let remainingProgress = 1.0 - progress
-        let estimatedMinutes = Int(remainingProgress * 15) // Assume 15 minutes for full download
+        // More realistic time estimate for 15.7GB download
+        guard progress > 0.01 else {
+            return "Estimating time..."
+        }
         
-        if estimatedMinutes > 1 {
-            return "About \(estimatedMinutes) minutes remaining"
+        let remainingProgress = 1.0 - progress
+        
+        // Estimate based on typical download speeds
+        // Assuming 10-50 Mbps average home internet
+        // 15.7GB at 25 Mbps = ~84 minutes
+        let baseMinutes = 84.0
+        let estimatedMinutes = Int(remainingProgress * baseMinutes)
+        
+        if estimatedMinutes > 60 {
+            let hours = estimatedMinutes / 60
+            let minutes = estimatedMinutes % 60
+            if minutes > 0 {
+                return "\(hours)h \(minutes)m remaining"
+            } else {
+                return "\(hours) hour\(hours > 1 ? "s" : "") remaining"
+            }
+        } else if estimatedMinutes > 1 {
+            return "\(estimatedMinutes) minutes remaining"
         } else if estimatedMinutes == 1 {
-            return "About 1 minute remaining"
+            return "1 minute remaining"
         } else {
             return "Almost done..."
         }
