@@ -38,7 +38,6 @@ final class ModelSetupValidator {
         ]
         
         // Also need at least one safetensors file
-        let safetensorPattern = "model*.safetensors"
         
         for file in requiredFiles {
             let filePath = modelPath.appendingPathComponent(file)
