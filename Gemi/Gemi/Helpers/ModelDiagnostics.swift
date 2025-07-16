@@ -110,7 +110,7 @@ class ModelDiagnostics {
         
         // Check HuggingFace token
         print("🔐 Authentication Status:")
-        if let token = SettingsManager.shared.getHuggingFaceToken() {
+        if SettingsManager.shared.getHuggingFaceToken() != nil {
             print("  ✓ Authentication configured")
         } else {
             print("  ✗ Authentication not configured")

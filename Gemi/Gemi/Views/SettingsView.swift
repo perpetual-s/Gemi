@@ -222,7 +222,7 @@ struct SettingsView: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                     }
                     .scrollIndicators(.hidden)
-                    .onChange(of: selectedTab) { _ in
+                    .onChange(of: selectedTab) {
                         withAnimation(.easeInOut(duration: 0.3)) {
                             scrollProxy.scrollTo("scrollTop", anchor: .top)
                         }
@@ -963,8 +963,19 @@ struct SettingsView: View {
         // Create a window controller to manage the window properly
         let windowController = NSWindowController(window: setupWindow)
         
+        // Create and store the delegate to keep it alive
+        let windowDelegate = NSWindowDelegateAdapter {
+            WindowControllerManager.shared.removeWindowController(windowController)
+        }
+        
+        // Set up window delegate to clean up when closed via X button
+        setupWindow.delegate = windowDelegate
+        
         // Add to manager to keep it alive
         WindowControllerManager.shared.addWindowController(windowController)
+        
+        // Store the delegate in the window controller to keep it alive
+        objc_setAssociatedObject(windowController, "windowDelegate", windowDelegate, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         
         // Create the content view with a completion handler that safely closes the window
         let contentView = GemmaOnboardingView {
@@ -984,11 +995,6 @@ struct SettingsView: View {
         
         // Set the content view
         setupWindow.contentView = NSHostingView(rootView: contentView)
-        
-        // Set up window delegate to clean up when closed via X button
-        setupWindow.delegate = NSWindowDelegateAdapter {
-            WindowControllerManager.shared.removeWindowController(windowController)
-        }
         
         // Center the window on screen
         setupWindow.center()

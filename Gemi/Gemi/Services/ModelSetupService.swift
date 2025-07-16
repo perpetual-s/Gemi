@@ -163,11 +163,11 @@ class ModelSetupService: ObservableObject {
                     self?.totalDownloadBytes = total
                 }
                 
-                let startTimeObserver = modelDownloader.$downloadStartTime.sink { [weak self] startTime in
+                _ = modelDownloader.$downloadStartTime.sink { [weak self] startTime in
                     self?.downloadStartTime = startTime
                 }
                 
-                let speedObserver = modelDownloader.$downloadSpeed.sink { [weak self] speed in
+                _ = modelDownloader.$downloadSpeed.sink { [weak self] speed in
                     self?.downloadSpeed = speed
                 }
                 

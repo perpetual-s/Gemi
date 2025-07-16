@@ -105,26 +105,24 @@ final class GemmaMLXModel: ObservableObject {
                 }
             } catch let decodingError {
                 // Print the actual JSON for debugging
-                if let jsonString = String(data: configData, encoding: .utf8) {
-                    print("⚠️ Failed to decode config.json")
-                    
-                    // Try to parse as generic JSON to see what fields exist
-                    if let json = try? JSONSerialization.jsonObject(with: configData) as? [String: Any] {
-                        print("📋 Available fields in config.json:")
-                        for (key, value) in json.sorted(by: { $0.key < $1.key }) {
-                            let valueType = type(of: value)
-                            print("  - \(key): \(valueType)")
-                        }
-                        
-                        // Print specific values that might help
-                        print("\n📊 Key values:")
-                        if let modelType = json["model_type"] { print("  - model_type: \(modelType)") }
-                        if let vocabSize = json["vocab_size"] { print("  - vocab_size: \(vocabSize)") }
-                        if let layers = json["num_hidden_layers"] { print("  - num_hidden_layers: \(layers)") }
-                        if let layers = json["layers"] { print("  - layers: \(layers)") }
-                        if let hidden = json["hidden_size"] { print("  - hidden_size: \(hidden)") }
-                        if let heads = json["num_attention_heads"] { print("  - num_attention_heads: \(heads)") }
+                print("⚠️ Failed to decode config.json")
+                
+                // Try to parse as generic JSON to see what fields exist
+                if let json = try? JSONSerialization.jsonObject(with: configData) as? [String: Any] {
+                    print("📋 Available fields in config.json:")
+                    for (key, value) in json.sorted(by: { $0.key < $1.key }) {
+                        let valueType = type(of: value)
+                        print("  - \(key): \(valueType)")
                     }
+                    
+                    // Print specific values that might help
+                    print("\n📊 Key values:")
+                    if let modelType = json["model_type"] { print("  - model_type: \(modelType)") }
+                    if let vocabSize = json["vocab_size"] { print("  - vocab_size: \(vocabSize)") }
+                    if let layers = json["num_hidden_layers"] { print("  - num_hidden_layers: \(layers)") }
+                    if let layers = json["layers"] { print("  - layers: \(layers)") }
+                    if let hidden = json["hidden_size"] { print("  - hidden_size: \(hidden)") }
+                    if let heads = json["num_attention_heads"] { print("  - num_attention_heads: \(heads)") }
                 }
                 print("\n❌ Decoding error: \(decodingError)")
                 
@@ -218,10 +216,10 @@ final class GemmaMLXModel: ObservableObject {
                     isGenerating = true
                     
                     // Process images if provided
-                    var imageEmbeddings: [MLXArray]? = nil
                     if let images = images {
                         let processedImages = try await processImages(images)
-                        imageEmbeddings = processedImages.compactMap { $0.preprocessedTensor }
+                        // TODO: Use image embeddings when multimodal support is fully implemented
+                        _ = processedImages.compactMap { $0.preprocessedTensor }
                     }
                     
                     // Tokenize input

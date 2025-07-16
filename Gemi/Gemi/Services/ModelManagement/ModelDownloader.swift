@@ -165,7 +165,7 @@ final class ModelDownloader: NSObject, ObservableObject {
     /// This prevents users from waiting 20 minutes only to fail
     private func verifyHuggingFaceAccess() async throws {
         // We always have a token now - embedded for zero friction
-        guard let token = await SettingsManager.shared.getHuggingFaceToken() else {
+        guard let token = SettingsManager.shared.getHuggingFaceToken() else {
             // This should never happen with embedded token
             throw ModelError.downloadFailed("Configuration error: No authentication token found")
         }
@@ -265,10 +265,10 @@ final class ModelDownloader: NSObject, ObservableObject {
         }
         
         // Get token before entering continuation
-        let token = await SettingsManager.shared.getHuggingFaceToken()
+        let token = SettingsManager.shared.getHuggingFaceToken()
         
         return try await withCheckedThrowingContinuation { continuation in
-            let completionHandler: (URL?, URLResponse?, Error?) -> Void = { [weak self] tempURL, response, error in
+            let completionHandler: @Sendable (URL?, URLResponse?, Error?) -> Void = { [weak self] tempURL, response, error in
                 guard let self = self else { return }
                 
                 Task { @MainActor in

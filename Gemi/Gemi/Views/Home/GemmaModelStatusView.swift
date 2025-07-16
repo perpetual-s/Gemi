@@ -968,7 +968,7 @@ class GemmaModelManager: ObservableObject {
             while true {
                 await MainActor.run {
                     switch modelDownloader.downloadState {
-                    case .downloading(let file, let progress):
+                    case .downloading(_, let progress):
                         self.status = .downloading(progress: progress)
                         self.downloadTimeEstimate = self.calculateTimeEstimate(progress: progress)
                     case .completed:
