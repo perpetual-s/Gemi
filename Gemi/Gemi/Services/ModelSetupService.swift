@@ -10,9 +10,14 @@ class ModelSetupService: ObservableObject {
     @Published var statusMessage: String = "Initializing..."
     @Published var isComplete: Bool = false
     @Published var error: SetupError?
+    @Published var downloadProgress: Double = 0.0
+    @Published var downloadedBytes: Int64 = 0
+    @Published var totalDownloadBytes: Int64 = 0
+    @Published var currentDownloadFile: String = ""
+    @Published var downloaderState: ModelDownloader.DownloadState = .notStarted
     
     private let chatService = NativeChatService.shared
-    private let modelDownloader = ModelDownloader()
+    let modelDownloader = ModelDownloader()
     
     enum SetupStep: String, CaseIterable {
         case checkingModel = "Checking Model"
@@ -109,9 +114,11 @@ class ModelSetupService: ObservableObject {
                 statusMessage = "Preparing to download Gemma 3n model (15.7 GB)..."
                 progress = 0.2
                 
-                // Set up observer for download progress
+                // Set up observers for download progress
                 let downloadObserver = modelDownloader.$downloadState.sink { [weak self] state in
                     guard let self = self else { return }
+                    
+                    self.downloaderState = state
                     
                     switch state {
                     case .preparing:
@@ -120,6 +127,8 @@ class ModelSetupService: ObservableObject {
                         let percent = Int(progress * 100)
                         self.statusMessage = "Downloading model files... \(percent)%\n⏱ This may take 20-60 minutes depending on your connection"
                         self.progress = 0.2 + (progress * 0.6) // Scale to 20-80% of total progress
+                        self.downloadProgress = progress
+                        self.currentDownloadFile = file
                     case .verifying:
                         self.statusMessage = "Verifying downloaded files..."
                         self.progress = 0.85
@@ -133,8 +142,18 @@ class ModelSetupService: ObservableObject {
                     }
                 }
                 
+                let bytesObserver = modelDownloader.$bytesDownloaded.sink { [weak self] bytes in
+                    self?.downloadedBytes = bytes
+                }
+                
+                let totalBytesObserver = modelDownloader.$totalBytes.sink { [weak self] total in
+                    self?.totalDownloadBytes = total
+                }
+                
                 try await modelDownloader.startDownload()
                 downloadObserver.cancel()
+                bytesObserver.cancel()
+                totalBytesObserver.cancel()
             }
             
             // Step 3: Load the model

@@ -676,6 +676,8 @@ struct GemmaOnboardingView: View {
     }
     
     private func downloadProgress(progress: Double) -> some View {
+        // This view is shown in the initial onboarding flow
+        // For actual download progress, GemmaSetupProgressView is used
         VStack(spacing: 32) {
             // Progress circle
             ZStack {

@@ -9,6 +9,12 @@ class SafetensorsLoader {
         let dtype: String
         let shape: [Int]
         let data_offsets: [Int]
+        
+        private enum CodingKeys: String, CodingKey {
+            case dtype
+            case shape
+            case data_offsets
+        }
     }
     
     struct SafetensorsHeader: Codable {
@@ -61,23 +67,36 @@ class SafetensorsLoader {
         let headerData = data.subdata(in: 8..<(8 + Int(headerSize)))
         
         // Try to decode header with better error handling
-        let header: [String: TensorInfo]
+        let header: SafetensorsHeader
         do {
-            header = try JSONDecoder().decode([String: TensorInfo].self, from: headerData)
+            // First try to decode the full header structure
+            header = try JSONDecoder().decode(SafetensorsHeader.self, from: headerData)
         } catch {
-            // Print header for debugging
-            if let headerString = String(data: headerData, encoding: .utf8) {
-                print("Failed to decode safetensors header. Content: \(headerString)")
+            // If that fails, try just the tensors dictionary
+            do {
+                let tensors = try JSONDecoder().decode([String: TensorInfo].self, from: headerData)
+                header = SafetensorsHeader(tensors: tensors)
+            } catch {
+                // Print header for debugging
+                if let headerString = String(data: headerData, encoding: .utf8) {
+                    print("Failed to decode safetensors header. Content preview: \(String(headerString.prefix(200)))")
+                }
+                print("Safetensors decoding error: \(error)")
+                
+                // Check if this might be a corrupt or incomplete file
+                if data.count < 1_000_000 { // Less than 1MB is suspicious for model files
+                    throw ModelError.invalidFormat("File appears to be incomplete or corrupted (only \(data.count) bytes). Please delete the model folder and try downloading again.")
+                }
+                
+                throw ModelError.invalidFormat("Failed to decode safetensors header: \(error.localizedDescription)")
             }
-            print("Safetensors decoding error: \(error)")
-            throw ModelError.invalidFormat("Failed to decode safetensors header: \(error.localizedDescription)")
         }
         
         // Load tensors
         var tensors: [String: MLXArray] = [:]
         let tensorDataStart = 8 + Int(headerSize)
         
-        for (name, info) in header {
+        for (name, info) in header.tensors {
             // Skip metadata entries
             if name == "__metadata__" { continue }
             

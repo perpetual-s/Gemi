@@ -116,34 +116,51 @@ struct GemmaSetupProgressView: View {
                     }
                     .frame(maxWidth: 600)
                     
-                    // Status message
-                    Text(setupManager.statusMessage)
-                        .font(.system(size: 16))
-                        .foregroundColor(.white.opacity(0.8))
-                        .multilineTextAlignment(.center)
-                        .frame(minHeight: 40)
-                        .animation(.easeInOut, value: setupManager.statusMessage)
-                    
-                    // Step indicators
-                    VStack(alignment: .leading, spacing: 12) {
-                        ForEach(ModelSetupService.SetupStep.allCases.filter { $0 != .complete }, id: \.self) { step in
-                            StepIndicator(
-                                step: step,
-                                currentStep: setupManager.currentStep,
-                                isComplete: setupManager.currentStep.ordinalValue > step.ordinalValue
-                            )
-                        }
+                    // Show beautiful progress bar when downloading
+                    if setupManager.currentStep == .downloadingModel && setupManager.downloaderState.isDownloading {
+                        ModelDownloadProgressView(
+                            progress: setupManager.downloadProgress,
+                            downloadState: setupManager.downloaderState,
+                            currentFile: setupManager.currentDownloadFile,
+                            bytesDownloaded: setupManager.downloadedBytes,
+                            totalBytes: setupManager.totalDownloadBytes,
+                            onCancel: {
+                                setupManager.modelDownloader.cancelDownload()
+                            }
+                        )
+                        .padding(.top, 20)
+                    } else {
+                        // Status message for other steps
+                        Text(setupManager.statusMessage)
+                            .font(.system(size: 16))
+                            .foregroundColor(.white.opacity(0.8))
+                            .multilineTextAlignment(.center)
+                            .frame(minHeight: 40)
+                            .animation(.easeInOut, value: setupManager.statusMessage)
                     }
-                    .frame(maxWidth: 500)
-                    .padding(24)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.white.opacity(0.05))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .strokeBorder(Color.white.opacity(0.1), lineWidth: 1)
-                            )
-                    )
+                    
+                    // Step indicators (hide when showing download progress)
+                    if !(setupManager.currentStep == .downloadingModel && setupManager.downloaderState.isDownloading) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            ForEach(ModelSetupService.SetupStep.allCases.filter { $0 != .complete }, id: \.self) { step in
+                                StepIndicator(
+                                    step: step,
+                                    currentStep: setupManager.currentStep,
+                                    isComplete: setupManager.currentStep.ordinalValue > step.ordinalValue
+                                )
+                            }
+                        }
+                        .frame(maxWidth: 500)
+                        .padding(24)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.white.opacity(0.05))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .strokeBorder(Color.white.opacity(0.1), lineWidth: 1)
+                                )
+                        )
+                    }
                 }
                 
                 Spacer()
