@@ -1,18 +1,11 @@
 # Xcode
-#
-# gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
-
-## User settings
 xcuserdata/
-
-## compatibility with Xcode 8 and earlier (ignoring not required starting Xcode 9)
 *.xcscmblueprint
 *.xccheckout
 
-## compatibility with Xcode 3 and earlier (ignoring not required starting Xcode 4)
+## Build
 build/
 DerivedData/
-*.moved-aside
 *.pbxuser
 !default.pbxuser
 *.mode1v3
@@ -22,7 +15,7 @@ DerivedData/
 *.perspectivev3
 !default.perspectivev3
 
-## Xcode Patch
+## Various settings
 *.xcodeproj/*
 !*.xcodeproj/project.pbxproj
 !*.xcodeproj/xcshareddata/
@@ -32,30 +25,45 @@ DerivedData/
 build_log.txt
 *.build
 
-## Profiling data
+## Profiling and coverage
 *.profraw
 *.profdata
+*.gcda
+*.gcno
+*.gcov
 
 ## macOS
 .DS_Store
 .AppleDouble
 .LSOverride
-
-## Thumbnails
 ._*
 
-## Files that might appear in the root of a volume
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-.com.apple.timemachine.donotpresent
+## Temporary files
+*.tmp
+*.temp
+*.swp
+*~.nib
 
-## Directories potentially created on remote AFP share
-.AppleDB
-.AppleDesktop
-Network Trash Folder
-Temporary Items
-.apdisk
+## Model files (downloaded at runtime)
+# These are downloaded by the app and shouldn't be in the repo
+Models/
+*.safetensors
+*.bin
+model_cache/
+
+## Logs
+*.log
+logs/
+
+## Documentation build artifacts (if any)
+docs/_build/
+docs/.doctrees/
+
+## Backup files
+*.backup
+*.bak
+
+## IDE
+.idea/
+.vscode/
+*.swiftpm
