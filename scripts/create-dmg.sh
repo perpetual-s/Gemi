@@ -95,20 +95,24 @@ create_beautiful_dmg() {
     local temp_dmg="$3"
     local final_dmg="$4"
     
-    # Create temporary DMG
+    # Create temporary DMG with all attributes preserved
     print_step "Creating DMG structure..."
+    # Remove any existing temp DMG first
+    rm -f "$temp_dmg"
+    
     hdiutil create \
         -srcfolder "$staging_dir" \
         -volname "$volume_name" \
         -fs HFS+ \
+        -fsargs "-c c=64,a=16,e=16" \
         -format UDRW \
-        -size 250m \
+        -size 300m \
         "$temp_dmg" || { print_error "Failed to create DMG"; exit 1; }
     
-    # Mount the DMG
+    # Mount the DMG with explicit read-write permissions
     print_step "Mounting and configuring DMG..."
     local device
-    device=$(hdiutil attach -readwrite -noverify -noautoopen "$temp_dmg" | \
+    device=$(hdiutil attach -readwrite -noverify -noautoopen "$temp_dmg" 2>/dev/null | \
              egrep '^/dev/' | sed 1q | awk '{print $1}')
     
     if [ -z "$device" ]; then
@@ -116,13 +120,8 @@ create_beautiful_dmg() {
         exit 1
     fi
     
-    # Wait for mount and hide .background folder
+    # Wait for mount to complete
     sleep 2
-    
-    # Hide .background folder after mounting
-    if [ -d "/Volumes/$volume_name/.background" ]; then
-        SetFile -a V "/Volumes/$volume_name/.background" 2>/dev/null || true
-    fi
     
     # Apply beautiful layout with AppleScript
     print_step "Applying premium design..."
@@ -286,7 +285,14 @@ main() {
         cp "$BACKGROUND_IMAGE" "$STAGING_DIR/.background/dmg-background.png"
         # Ensure background is readable
         chmod 644 "$STAGING_DIR/.background/dmg-background.png"
-        # Hide background folder (will be applied after mounting)
+        # Hide background folder NOW before creating DMG
+        if command -v SetFile &> /dev/null; then
+            SetFile -a V "$STAGING_DIR/.background"
+        else
+            # Alternative: use chflags if SetFile not available
+            chflags hidden "$STAGING_DIR/.background" 2>/dev/null || true
+        fi
+        print_success "Background image added"
     else
         print_warning "Background image not found"
     fi
