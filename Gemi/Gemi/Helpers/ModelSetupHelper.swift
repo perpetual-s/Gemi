@@ -1,15 +1,31 @@
 import Foundation
 import AppKit
+import SwiftUI
 
 /// Helper for Gemma 3n model setup and debugging
 struct ModelSetupHelper {
     
     /// Open documentation about model setup
+    @MainActor
     static func openManualSetup() {
-        // Since the model downloads automatically, just open the GitHub docs
-        if let url = URL(string: "https://github.com/gemi-app/gemi#setup") {
-            NSWorkspace.shared.open(url)
-        }
+        // Show the manual setup window
+        let manualSetupView = ManualSetupView()
+        let hostingController = NSHostingController(rootView: manualSetupView)
+        
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 700, height: 800),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        
+        window.title = "Manual Model Setup"
+        window.contentViewController = hostingController
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        
+        // Keep window reference to prevent deallocation
+        NSApp.activate(ignoringOtherApps: true)
     }
     
     /// Check if model directory exists

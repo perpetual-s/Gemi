@@ -5,7 +5,7 @@ struct EnhancedModelSetupErrorView: View {
     let error: ModelSetupService.SetupError
     let onRetry: () -> Void
     let onManualSetup: () -> Void
-    let onContactSupport: () -> Void
+    let onSkip: () -> Void
     
     @State private var showDetails = false
     @State private var showDiagnostics = false
@@ -54,7 +54,9 @@ struct EnhancedModelSetupErrorView: View {
             VStack(spacing: 16) {
                 // Primary action - Retry
                 Button {
-                    onRetry()
+                    withAnimation(.spring(response: 0.3)) {
+                        onRetry()
+                    }
                 } label: {
                     HStack {
                         Image(systemName: "arrow.clockwise")
@@ -76,7 +78,11 @@ struct EnhancedModelSetupErrorView: View {
                     Button {
                         onManualSetup()
                     } label: {
-                        Text("Manual Setup")
+                        HStack(spacing: 6) {
+                            Image(systemName: "folder.badge.gearshape")
+                                .font(.system(size: 14))
+                            Text("Manual Setup")
+                        }
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white.opacity(0.8))
                             .padding(.horizontal, 24)
