@@ -155,3 +155,7 @@ installer-bg.png
 !Gemi/Gemi.app  # Exception for main app if needed 
 build_log.txt
 *.dmg
+
+# Ignore DMG staging and temp directories
+.dmg-staging/
+.dmg-temp/

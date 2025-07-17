@@ -1,128 +1,218 @@
 #!/usr/bin/env python3
 
 """
-Create an enhanced DMG background with arrow and welcome message for Gemi
+Create a beautiful DMG background with arrow and welcome text for Gemi
 """
 
 import os
 import sys
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
+import numpy as np
 
-# Check if Pillow is installed
-try:
-    from PIL import Image, ImageDraw, ImageFont
-except ImportError:
-    print("Installing Pillow for image generation...")
-    os.system(f"{sys.executable} -m pip install Pillow")
-    from PIL import Image, ImageDraw, ImageFont
-
-def create_dmg_background():
-    # Create a new image with a subtle gradient background
-    width, height = 660, 400
-    img = Image.new('RGB', (width, height), (248, 248, 248))
-    draw = ImageDraw.Draw(img)
+def create_arrow(draw, start_x, start_y, end_x, end_y, color=(100, 100, 100, 180), width=3):
+    """Draw a curved arrow between two points"""
+    # Calculate control points for bezier curve
+    mid_x = (start_x + end_x) / 2
+    mid_y = (start_y + end_y) / 2
     
-    # Create gradient background
-    for y in range(height):
-        # Subtle gradient from light gray to white
-        color_value = int(248 + (255 - 248) * (y / height))
-        draw.rectangle([(0, y), (width, y + 1)], fill=(color_value, color_value, color_value))
+    # Create a subtle curve
+    control1_x = mid_x - 20
+    control1_y = start_y - 30
+    control2_x = mid_x + 20
+    control2_y = end_y - 30
     
-    # Try to load a system font
-    font_size = 24
-    welcome_font_size = 16
-    try:
-        # Try different font paths
-        font_paths = [
-            "/System/Library/Fonts/Helvetica.ttc",
-            "/System/Library/Fonts/Avenir.ttc",
-            "/Library/Fonts/Arial.ttf",
-            "/System/Library/Fonts/Supplemental/Arial.ttf"
-        ]
-        font = None
-        welcome_font = None
-        for font_path in font_paths:
-            if os.path.exists(font_path):
-                try:
-                    font = ImageFont.truetype(font_path, font_size)
-                    welcome_font = ImageFont.truetype(font_path, welcome_font_size)
-                    break
-                except:
-                    continue
-        if not font:
-            font = ImageFont.load_default()
-            welcome_font = ImageFont.load_default()
-    except:
-        font = ImageFont.load_default()
-        welcome_font = ImageFont.load_default()
+    # Draw the curved line
+    points = []
+    for t in np.linspace(0, 1, 100):
+        t2 = t * t
+        t3 = t2 * t
+        mt = 1 - t
+        mt2 = mt * mt
+        mt3 = mt2 * mt
+        
+        x = mt3 * start_x + 3 * mt2 * t * control1_x + 3 * mt * t2 * control2_x + t3 * end_x
+        y = mt3 * start_y + 3 * mt2 * t * control1_y + 3 * mt * t2 * control2_y + t3 * end_y
+        points.append((x, y))
     
-    # Add welcome message at the top
-    welcome_text = "Welcome to Gemi"
-    subtitle_text = "Your elegant AI diary, designed for privacy"
-    
-    # Calculate text positions
-    welcome_bbox = draw.textbbox((0, 0), welcome_text, font=font)
-    welcome_width = welcome_bbox[2] - welcome_bbox[0]
-    welcome_x = (width - welcome_width) // 2
-    
-    subtitle_bbox = draw.textbbox((0, 0), subtitle_text, font=welcome_font)
-    subtitle_width = subtitle_bbox[2] - subtitle_bbox[0]
-    subtitle_x = (width - subtitle_width) // 2
-    
-    # Draw welcome text with shadow effect
-    shadow_offset = 1
-    draw.text((welcome_x + shadow_offset, 25 + shadow_offset), welcome_text, 
-              fill=(200, 200, 200), font=font)
-    draw.text((welcome_x, 25), welcome_text, fill=(80, 80, 80), font=font)
-    
-    draw.text((subtitle_x + shadow_offset, 55 + shadow_offset), subtitle_text, 
-              fill=(200, 200, 200), font=welcome_font)
-    draw.text((subtitle_x, 55), subtitle_text, fill=(120, 120, 120), font=welcome_font)
-    
-    # Draw arrow from Gemi.app to Applications
-    # App icon will be at (180, 185) with size 128
-    # Applications icon will be at (480, 185) with size 128
-    
-    # Arrow start and end points (adjusted for actual DMG layout)
-    arrow_start_x = 220  # Right edge of Gemi icon
-    arrow_end_x = 380  # Left edge of Applications icon
-    arrow_y = 250  # Center Y position
-    
-    # Draw curved arrow
-    arrow_color = (100, 100, 100)
-    arrow_width = 3
-    
-    # Draw arrow shaft
-    draw.line([(arrow_start_x, arrow_y), (arrow_end_x - 15, arrow_y)], 
-              fill=arrow_color, width=arrow_width)
+    # Draw the line segments
+    for i in range(len(points) - 1):
+        draw.line([points[i], points[i + 1]], fill=color, width=width)
     
     # Draw arrowhead
-    arrowhead_size = 12
-    draw.polygon([
-        (arrow_end_x, arrow_y),
-        (arrow_end_x - arrowhead_size, arrow_y - arrowhead_size//2),
-        (arrow_end_x - arrowhead_size, arrow_y + arrowhead_size//2)
-    ], fill=arrow_color)
+    arrow_length = 20
+    arrow_angle = 30
     
-    # Add instruction text below the arrow
-    instruction_text = "Drag Gemi to Applications folder to install"
-    instruction_bbox = draw.textbbox((0, 0), instruction_text, font=welcome_font)
-    instruction_width = instruction_bbox[2] - instruction_bbox[0]
-    instruction_x = (width - instruction_width) // 2
+    # Calculate arrow direction from last segment
+    dx = end_x - points[-10][0]
+    dy = end_y - points[-10][1]
+    angle = np.arctan2(dy, dx)
     
-    draw.text((instruction_x + 1, arrow_y + 25 + 1), instruction_text, 
-              fill=(200, 200, 200), font=welcome_font)
-    draw.text((instruction_x, arrow_y + 25), instruction_text, 
-              fill=(100, 100, 100), font=welcome_font)
+    # Calculate arrowhead points
+    x1 = end_x - arrow_length * np.cos(angle - np.radians(arrow_angle))
+    y1 = end_y - arrow_length * np.sin(angle - np.radians(arrow_angle))
+    x2 = end_x - arrow_length * np.cos(angle + np.radians(arrow_angle))
+    y2 = end_y - arrow_length * np.sin(angle + np.radians(arrow_angle))
     
-    # Add subtle border
-    draw.rectangle([(0, 0), (width-1, height-1)], outline=(230, 230, 230), width=1)
+    # Draw arrowhead
+    draw.polygon([end_x, end_y, x1, y1, x2, y2], fill=color)
+
+def create_dmg_background(width=600, height=400, output_path="dmg-background.png"):
+    """Create a beautiful DMG background"""
+    
+    # Create base image with gradient
+    img = Image.new('RGBA', (width, height), (255, 255, 255, 255))
+    draw = ImageDraw.Draw(img)
+    
+    # Create subtle gradient background
+    for y in range(height):
+        # Gradient from light purple-gray to white
+        ratio = y / height
+        r = int(250 - ratio * 5)
+        g = int(248 - ratio * 8)
+        b = int(252 - ratio * 2)
+        draw.rectangle([(0, y), (width, y + 1)], fill=(r, g, b))
+    
+    # Add subtle texture overlay
+    noise = np.random.normal(0, 2, (height, width, 3))
+    noise_img = Image.fromarray(np.clip(noise + 250, 0, 255).astype('uint8'), 'RGB')
+    noise_img = noise_img.convert('RGBA')
+    noise_img.putalpha(20)  # Very subtle
+    img = Image.alpha_composite(img, noise_img)
+    
+    # Redraw for text and graphics
+    draw = ImageDraw.Draw(img)
+    
+    # Try to use system font, fallback to default
+    try:
+        # Try SF Pro Display or similar
+        title_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 32)
+        subtitle_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 16)
+        small_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 14)
+    except:
+        # Fallback to default
+        title_font = ImageFont.load_default()
+        subtitle_font = ImageFont.load_default()
+        small_font = ImageFont.load_default()
+    
+    # Welcome text at top
+    welcome_text = "Welcome to Gemi"
+    text_bbox = draw.textbbox((0, 0), welcome_text, font=title_font)
+    text_width = text_bbox[2] - text_bbox[0]
+    text_x = (width - text_width) // 2
+    
+    # Draw text with subtle shadow
+    draw.text((text_x + 2, 42), welcome_text, fill=(200, 200, 200, 100), font=title_font)
+    draw.text((text_x, 40), welcome_text, fill=(80, 80, 80, 255), font=title_font)
+    
+    # Subtitle
+    subtitle = "Your private AI diary, powered by Gemma"
+    text_bbox = draw.textbbox((0, 0), subtitle, font=subtitle_font)
+    text_width = text_bbox[2] - text_bbox[0]
+    text_x = (width - text_width) // 2
+    draw.text((text_x, 80), subtitle, fill=(120, 120, 120, 255), font=subtitle_font)
+    
+    # Draw curved arrow from left to right
+    # Positions should match the script (150, 180) -> (450, 180)
+    create_arrow(draw, 220, 200, 380, 200, color=(140, 140, 140, 180), width=3)
+    
+    # Installation instruction below icons
+    instruction = "Drag Gemi to your Applications folder"
+    text_bbox = draw.textbbox((0, 0), instruction, font=small_font)
+    text_width = text_bbox[2] - text_bbox[0]
+    text_x = (width - text_width) // 2
+    draw.text((text_x, 320), instruction, fill=(100, 100, 100, 255), font=small_font)
+    
+    # Add subtle rounded rectangle frame
+    padding = 20
+    corner_radius = 20
+    
+    # Draw rounded rectangle border
+    for i in range(2):  # Double border for depth
+        offset = i * 2
+        color = (230, 230, 230, 100 - i * 30)
+        
+        # Top left corner
+        draw.arc([(padding + offset, padding + offset), 
+                  (padding + corner_radius * 2 + offset, padding + corner_radius * 2 + offset)], 
+                 180, 270, fill=color, width=1)
+        
+        # Top right corner
+        draw.arc([(width - padding - corner_radius * 2 - offset, padding + offset), 
+                  (width - padding - offset, padding + corner_radius * 2 + offset)], 
+                 270, 0, fill=color, width=1)
+        
+        # Bottom left corner
+        draw.arc([(padding + offset, height - padding - corner_radius * 2 - offset), 
+                  (padding + corner_radius * 2 + offset, height - padding - offset)], 
+                 90, 180, fill=color, width=1)
+        
+        # Bottom right corner
+        draw.arc([(width - padding - corner_radius * 2 - offset, height - padding - corner_radius * 2 - offset), 
+                  (width - padding - offset, height - padding - offset)], 
+                 0, 90, fill=color, width=1)
+        
+        # Lines
+        draw.line([(padding + corner_radius + offset, padding + offset), 
+                   (width - padding - corner_radius - offset, padding + offset)], fill=color, width=1)
+        draw.line([(padding + corner_radius + offset, height - padding - offset), 
+                   (width - padding - corner_radius - offset, height - padding - offset)], fill=color, width=1)
+        draw.line([(padding + offset, padding + corner_radius + offset), 
+                   (padding + offset, height - padding - corner_radius - offset)], fill=color, width=1)
+        draw.line([(width - padding - offset, padding + corner_radius + offset), 
+                   (width - padding - offset, height - padding - corner_radius - offset)], fill=color, width=1)
     
     # Save the image
-    output_path = "/Users/chaeho/Documents/project-Gemi/Documentation/assets/dmg-background-enhanced.png"
-    img.save(output_path, "PNG", optimize=True)
-    print(f"Created enhanced DMG background: {output_path}")
-    
-    return output_path
+    img.save(output_path, 'PNG')
+    print(f"Created beautiful DMG background: {output_path}")
 
 if __name__ == "__main__":
-    create_dmg_background()
+    # Get the script directory
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(script_dir)
+    
+    # Output to Documentation/assets
+    output_dir = os.path.join(project_root, "Documentation", "assets")
+    os.makedirs(output_dir, exist_ok=True)
+    
+    output_path = os.path.join(output_dir, "dmg-background-premium-auto.png")
+    
+    # Create the background
+    create_dmg_background(output_path=output_path)
+    
+    # Also create a clean version without arrow
+    img_clean = Image.new('RGBA', (600, 400), (255, 255, 255, 255))
+    draw_clean = ImageDraw.Draw(img_clean)
+    
+    # Gradient only version
+    for y in range(400):
+        ratio = y / 400
+        r = int(250 - ratio * 5)
+        g = int(248 - ratio * 8)
+        b = int(252 - ratio * 2)
+        draw_clean.rectangle([(0, y), (600, y + 1)], fill=(r, g, b))
+    
+    try:
+        title_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 32)
+        subtitle_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 16)
+    except:
+        title_font = ImageFont.load_default()
+        subtitle_font = ImageFont.load_default()
+    
+    # Just title and subtitle
+    welcome_text = "Welcome to Gemi"
+    text_bbox = draw_clean.textbbox((0, 0), welcome_text, font=title_font)
+    text_width = text_bbox[2] - text_bbox[0]
+    text_x = (600 - text_width) // 2
+    
+    draw_clean.text((text_x + 2, 42), welcome_text, fill=(200, 200, 200, 100), font=title_font)
+    draw_clean.text((text_x, 40), welcome_text, fill=(80, 80, 80, 255), font=title_font)
+    
+    subtitle = "Your private AI diary, powered by Gemma"
+    text_bbox = draw_clean.textbbox((0, 0), subtitle, font=subtitle_font)
+    text_width = text_bbox[2] - text_bbox[0]
+    text_x = (600 - text_width) // 2
+    draw_clean.text((text_x, 80), subtitle, fill=(120, 120, 120, 255), font=subtitle_font)
+    
+    clean_path = os.path.join(output_dir, "dmg-background-clean-auto.png")
+    img_clean.save(clean_path, 'PNG')
+    print(f"Created clean DMG background: {clean_path}")
