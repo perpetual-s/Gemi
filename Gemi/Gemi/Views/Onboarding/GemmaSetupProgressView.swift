@@ -492,7 +492,7 @@ struct StepIndicator: View {
                             Text(step.description)
                                 .font(.system(size: 12))
                                 .foregroundColor(.white.opacity(0.6))
-                            Text("Model size: 15.7 GB")
+                            Text("Model size: 15.74 GB")
                                 .font(.system(size: 11))
                                 .foregroundColor(.white.opacity(0.4))
                         }

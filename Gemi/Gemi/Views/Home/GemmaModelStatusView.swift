@@ -194,7 +194,7 @@ struct GemmaModelStatusView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Download Gemma 3n")
                                 .font(.system(size: 16, weight: .semibold))
-                            Text("15.7GB download • One-time setup")
+                            Text("15.74GB download • One-time setup")
                                 .font(.system(size: 12))
                                 .opacity(0.8)
                         }
@@ -593,7 +593,7 @@ struct GemmaModelStatusView: View {
             // Model info
             HStack(spacing: 40) {
                 ModelInfoItem(label: "Model", value: "Gemma 3n E4B")
-                ModelInfoItem(label: "Size", value: "15.7GB")
+                ModelInfoItem(label: "Size", value: "15.74GB")
                 ModelInfoItem(label: "Device", value: modelManager.deviceInfo)
                 ModelInfoItem(label: "Status", value: "Active")
             }
@@ -769,7 +769,7 @@ struct GemmaDetailsView: View {
                         SpecRow(label: "Model Architecture", value: "MatFormer (Matryoshka Transformer)")
                         SpecRow(label: "Parameters", value: "8B (runs like 4B with PLE)")
                         SpecRow(label: "Context Length", value: "32,768 tokens")
-                        SpecRow(label: "Download Size", value: "~15.7GB")
+                        SpecRow(label: "Download Size", value: "15.74GB")
                         SpecRow(label: "Memory Usage", value: "4-6GB RAM")
                         SpecRow(label: "Required macOS", value: "12.3 or later")
                     }
@@ -1000,7 +1000,7 @@ class GemmaModelManager: ObservableObject {
     }
     
     private func calculateTimeEstimate(progress: Double) -> String {
-        // More realistic time estimate for 15.7GB download
+        // More realistic time estimate for 15.74GB download
         guard progress > 0.01 else {
             return "Estimating time..."
         }
@@ -1009,7 +1009,7 @@ class GemmaModelManager: ObservableObject {
         
         // Estimate based on typical download speeds
         // Assuming 10-50 Mbps average home internet
-        // 15.7GB at 25 Mbps = ~84 minutes
+        // 15.74GB at 25 Mbps = ~84 minutes
         let baseMinutes = 84.0
         let estimatedMinutes = Int(remainingProgress * baseMinutes)
         

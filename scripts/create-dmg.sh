@@ -43,6 +43,15 @@ else
     echo "The app will not be able to download models without the HuggingFace token."
 fi
 
+# Verify no server artifacts
+if [[ -d "$APP/Contents/Resources/GemiServer.app" ]]; then
+    echo -e "${RED}❌ Error: Found old GemiServer.app in the build!${NC}"
+    echo -e "${YELLOW}This is from an old build. Please run:${NC}"
+    echo "  ./scripts/clean-build.sh"
+    echo "  Then rebuild in Xcode before creating DMG"
+    exit 1
+fi
+
 # Check for create-dmg
 if command -v create-dmg &> /dev/null; then
     echo -e "${BLUE}Creating beautiful DMG with background...${NC}"
@@ -114,57 +123,11 @@ if [[ $SUCCESS -ne 0 ]]; then
         cp "$BACKGROUND" "$TEMP_DIR/.background/background.png"
     fi
     
-    # Create DMG
+    # Create DMG directly from temp directory
     rm -f "$DMG_PATH"
-    
-    # Create temporary DMG
-    TEMP_DMG="/tmp/gemi-temp-$$.dmg"
-    hdiutil create -size 150m -fs HFS+ -volname "$VOLUME_NAME" "$TEMP_DMG"
-    
-    # Mount it
-    DEVICE=$(hdiutil attach -readwrite -noverify -nobrowse "$TEMP_DMG" | egrep '^/dev/' | sed 1q | awk '{print $1}')
-    MOUNT="/Volumes/$VOLUME_NAME"
-    
-    # Wait for mount
-    sleep 1
-    
-    # Copy everything
-    cp -R "$TEMP_DIR"/* "$MOUNT/" || { echo "Failed to copy files"; hdiutil detach "$DEVICE" -quiet; exit 1; }
-    cp -R "$TEMP_DIR"/.background "$MOUNT/" 2>/dev/null || true
-    
-    # Try to set window properties
-    echo '
-       tell application "Finder"
-         tell disk "'"$VOLUME_NAME"'"
-           open
-           set current view of container window to icon view
-           set toolbar visible of container window to false
-           set statusbar visible of container window to false
-           set bounds of container window to {200, 100, 860, 500}
-           set viewOptions to icon view options of container window
-           set arrangement of viewOptions to not arranged
-           set icon size of viewOptions to 128
-           try
-             set background picture of viewOptions to file ".background:background.png"
-           end try
-           set position of item "Gemi.app" of container window to {180, 185}
-           set position of item "Applications" of container window to {480, 185}
-           update without registering applications
-           delay 2
-           close
-         end tell
-       end tell
-    ' | osascript
-    
-    # Unmount
-    sync
-    hdiutil detach "$DEVICE" -quiet
-    
-    # Convert to compressed
-    hdiutil convert "$TEMP_DMG" -format UDZO -o "$DMG_PATH" -quiet
+    hdiutil create -volname "$VOLUME_NAME" -srcfolder "$TEMP_DIR" -ov -format UDZO "$DMG_PATH"
     
     # Clean up
-    rm -f "$TEMP_DMG"
     rm -rf "$TEMP_DIR"
 fi
 

@@ -142,7 +142,7 @@ class ModelSetupService: ObservableObject {
             let isModelComplete = await ModelCache.shared.isModelComplete()
             if !isModelComplete {
                 currentStep = .downloadingModel
-                statusMessage = "Preparing to download Gemma 3n model (15.7 GB)..."
+                statusMessage = "Preparing to download Gemma 3n model (15.74 GB)..."
                 progress = 0.2
                 
                 // Set up observers for download progress

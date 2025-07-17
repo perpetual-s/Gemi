@@ -24,45 +24,60 @@ struct ModelDownloadProgressView: View {
     
     private var timeRemaining: String {
         guard progress > 0 && progress < 1 else { return "" }
+        guard totalBytes > 0 && bytesDownloaded >= 0 else { return "Calculating..." }
         
         // Calculate based on download speed
-        if downloadSpeed > 0 {
-            let remainingBytes = totalBytes - bytesDownloaded
+        if downloadSpeed > 0 && bytesDownloaded > 0 {
+            let remainingBytes = max(0, totalBytes - bytesDownloaded)
             let remainingSeconds = Double(remainingBytes) / downloadSpeed
             
-            if remainingSeconds < 60 {
-                return "Less than a minute remaining"
-            } else if remainingSeconds < 3600 {
-                let minutes = Int(remainingSeconds / 60)
-                return "\(minutes) minute\(minutes == 1 ? "" : "s") remaining"
-            } else {
-                let hours = Int(remainingSeconds / 3600)
-                let minutes = Int((remainingSeconds.truncatingRemainder(dividingBy: 3600)) / 60)
-                return "\(hours)h \(minutes)m remaining"
-            }
-        }
-        
-        // Fallback: estimate based on progress and elapsed time
-        if let startTime = downloadStartTime {
-            let elapsed = Date().timeIntervalSince(startTime)
-            if elapsed > 5 { // Only show after 5 seconds
-                let estimatedTotal = elapsed / progress
-                let remaining = estimatedTotal - elapsed
-                
-                if remaining < 60 {
+            // Sanity check - if estimate is unrealistic, fall back to progress-based calculation
+            if remainingSeconds > 0 && remainingSeconds < 86400 { // Less than 24 hours
+                if remainingSeconds < 60 {
                     return "Less than a minute remaining"
-                } else if remaining < 3600 {
-                    let minutes = Int(remaining / 60)
+                } else if remainingSeconds < 3600 {
+                    let minutes = Int(remainingSeconds / 60)
                     return "\(minutes) minute\(minutes == 1 ? "" : "s") remaining"
                 } else {
-                    let hours = Int(remaining / 3600)
-                    let minutes = Int((remaining.truncatingRemainder(dividingBy: 3600)) / 60)
-                    return "\(hours)h \(minutes)m remaining"
+                    let hours = Int(remainingSeconds / 3600)
+                    let minutes = Int((remainingSeconds.truncatingRemainder(dividingBy: 3600)) / 60)
+                    if minutes > 0 {
+                        return "\(hours)h \(minutes)m remaining"
+                    } else {
+                        return "\(hours) hour\(hours == 1 ? "" : "s") remaining"
+                    }
                 }
             }
         }
         
-        return "Calculating..."
+        // Fallback: estimate based on progress and elapsed time
+        if let startTime = downloadStartTime, progress > 0.01 { // Need at least 1% progress
+            let elapsed = Date().timeIntervalSince(startTime)
+            if elapsed > 10 { // Only show after 10 seconds for more accuracy
+                let estimatedTotal = elapsed / progress
+                let remaining = estimatedTotal - elapsed
+                
+                // Sanity check
+                if remaining > 0 && remaining < 86400 { // Less than 24 hours
+                    if remaining < 60 {
+                        return "Less than a minute remaining"
+                    } else if remaining < 3600 {
+                        let minutes = Int(remaining / 60)
+                        return "\(minutes) minute\(minutes == 1 ? "" : "s") remaining"
+                    } else {
+                        let hours = Int(remaining / 3600)
+                        let minutes = Int((remaining.truncatingRemainder(dividingBy: 3600)) / 60)
+                        if minutes > 0 {
+                            return "\(hours)h \(minutes)m remaining"
+                        } else {
+                            return "\(hours) hour\(hours == 1 ? "" : "s") remaining"
+                        }
+                    }
+                }
+            }
+        }
+        
+        return "Calculating time remaining..."
     }
     
     var body: some View {
@@ -332,20 +347,20 @@ struct ModelDownloadProgressView: View {
     
     private func shouldShowAsComplete(_ filename: String) -> Bool {
         // More accurate file completion detection based on file sizes
-        // Total size is ~15.7GB, calculate cumulative progress for each file
+        // Total size is 15.74GB, calculate cumulative progress for each file
         let fileSizes: [(String, Double)] = [
             ("config.json", 4_540),                    // 4.54 KB
             ("tokenizer.json", 35_026_124),            // 33.4 MB
             ("tokenizer_config.json", 1_258_291),      // 1.2 MB  
             ("model.safetensors.index.json", 175_104), // 171 KB
-            ("model-00001.safetensors", 3_308_257_280), // 3.08 GB
-            ("model-00002.safetensors", 5_338_316_800), // 4.97 GB
-            ("model-00003.safetensors", 5_359_288_320), // 4.99 GB
-            ("model-00004.safetensors", 2_856_321_024)  // 2.66 GB
+            ("model-00001.safetensors", 3_308_757_694), // 3.08 GB (adjusted)
+            ("model-00002.safetensors", 5_338_826_957), // 4.97 GB (adjusted)
+            ("model-00003.safetensors", 5_359_807_932), // 4.99 GB (adjusted)
+            ("model-00004.safetensors", 2_856_820_498)  // 2.66 GB (adjusted)
         ]
         
         var cumulativeSize: Double = 0
-        let totalSize: Double = 16_873_421_483 // ~15.7 GB total
+        let totalSize: Double = 16_900_677_140 // 15.74 GB total as reported by user
         
         for (file, size) in fileSizes {
             cumulativeSize += size
