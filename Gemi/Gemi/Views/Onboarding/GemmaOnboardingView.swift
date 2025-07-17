@@ -2,7 +2,6 @@ import SwiftUI
 
 /// Beautiful onboarding experience for Gemma 3n setup
 struct GemmaOnboardingView: View {
-    @StateObject private var modelManager = GemmaModelManager()
     @StateObject private var authManager = AuthenticationManager.shared
     @State private var currentPage = 0
     @State private var showingProgressSetup = false
@@ -66,10 +65,6 @@ struct GemmaOnboardingView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea(.all)
-        .onAppear {
-            // Don't check status immediately - server isn't running yet
-            modelManager.status = .notInstalled
-        }
     }
     
     // MARK: - Background
