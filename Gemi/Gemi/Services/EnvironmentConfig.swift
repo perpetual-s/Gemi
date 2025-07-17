@@ -15,16 +15,29 @@ final class EnvironmentConfig {
     private static func loadEnvironmentSync() -> [String: String] {
         var config: [String: String] = [:]
         
+        print("🔍 Looking for .env file...")
+        
         // Look for .env file in the app bundle
         if let envPath = Bundle.main.path(forResource: ".env", ofType: nil) {
+            print("✅ Found .env at: \(envPath)")
             config.merge(loadFromPath(envPath)) { _, new in new }
+        } else {
+            print("⚠️ .env not found via Bundle.main.path")
         }
         
         // Also check in the app's resources directory
         let resourcesURL = Bundle.main.resourceURL?.appendingPathComponent(".env")
         if let resourcesURL = resourcesURL, FileManager.default.fileExists(atPath: resourcesURL.path) {
+            print("✅ Found .env at: \(resourcesURL.path)")
             config.merge(loadFromPath(resourcesURL.path)) { _, new in new }
+        } else {
+            print("⚠️ .env not found in Resources directory")
+            if let resourcesURL = Bundle.main.resourceURL {
+                print("   Resources path: \(resourcesURL.path)")
+            }
         }
+        
+        print("📋 Loaded \(config.count) environment variables")
         
         return config
     }

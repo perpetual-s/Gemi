@@ -171,6 +171,9 @@ final class ModelDownloader: NSObject, ObservableObject {
         // We always have a token now - embedded for zero friction
         guard let token = SettingsManager.shared.getHuggingFaceToken() else {
             // This should never happen with embedded token
+            print("❌ CRITICAL: No HuggingFace token found!")
+            print("   - Check if .env file exists in app bundle")
+            print("   - Verify DMG was created with create-dmg.sh script")
             throw ModelError.downloadFailed("Configuration error: No authentication token found")
         }
         

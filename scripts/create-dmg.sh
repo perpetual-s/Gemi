@@ -30,7 +30,18 @@ echo -e "${GREEN}✓ Found${NC}"
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DMG_PATH="$PROJECT_ROOT/Gemi.dmg"
 VOLUME_NAME="Gemi"
-BACKGROUND="$PROJECT_ROOT/Documentation/assets/dmg-background-clean-premium.png"
+BACKGROUND="$PROJECT_ROOT/Documentation/assets/dmg-background-enhanced.png"
+
+# Copy .env file into app bundle if it exists
+ENV_FILE="$PROJECT_ROOT/.env"
+if [[ -f "$ENV_FILE" ]]; then
+    echo -e "${BLUE}Including .env file in app bundle...${NC}"
+    cp "$ENV_FILE" "$APP/Contents/Resources/" || echo -e "${RED}Warning: Could not copy .env file${NC}"
+    echo -e "${GREEN}✓ .env file included${NC}"
+else
+    echo -e "${RED}⚠️  Warning: .env file not found at project root${NC}"
+    echo "The app will not be able to download models without the HuggingFace token."
+fi
 
 # Check for create-dmg
 if command -v create-dmg &> /dev/null; then
@@ -43,11 +54,11 @@ if command -v create-dmg &> /dev/null; then
     create-dmg \
         --volname "$VOLUME_NAME" \
         --window-pos 200 120 \
-        --window-size 600 400 \
-        --icon-size 100 \
-        --icon "Gemi.app" 150 200 \
+        --window-size 660 400 \
+        --icon-size 128 \
+        --icon "Gemi.app" 180 185 \
         --hide-extension "Gemi.app" \
-        --app-drop-link 450 200 \
+        --app-drop-link 480 185 \
         --background "$BACKGROUND" \
         --no-internet-enable \
         "$DMG_PATH" \
@@ -67,11 +78,11 @@ else
             create-dmg \
                 --volname "$VOLUME_NAME" \
                 --window-pos 200 120 \
-                --window-size 600 400 \
-                --icon-size 100 \
-                --icon "Gemi.app" 150 200 \
+                --window-size 660 400 \
+                --icon-size 128 \
+                --icon "Gemi.app" 180 185 \
                 --hide-extension "Gemi.app" \
-                --app-drop-link 450 200 \
+                --app-drop-link 480 185 \
                 --background "$BACKGROUND" \
                 --no-internet-enable \
                 "$DMG_PATH" \
@@ -111,11 +122,14 @@ if [[ $SUCCESS -ne 0 ]]; then
     hdiutil create -size 150m -fs HFS+ -volname "$VOLUME_NAME" "$TEMP_DMG"
     
     # Mount it
-    DEVICE=$(hdiutil attach -readwrite -noverify "$TEMP_DMG" | egrep '^/dev/' | sed 1q | awk '{print $1}')
+    DEVICE=$(hdiutil attach -readwrite -noverify -nobrowse "$TEMP_DMG" | egrep '^/dev/' | sed 1q | awk '{print $1}')
     MOUNT="/Volumes/$VOLUME_NAME"
     
+    # Wait for mount
+    sleep 1
+    
     # Copy everything
-    cp -R "$TEMP_DIR"/* "$MOUNT/"
+    cp -R "$TEMP_DIR"/* "$MOUNT/" || { echo "Failed to copy files"; hdiutil detach "$DEVICE" -quiet; exit 1; }
     cp -R "$TEMP_DIR"/.background "$MOUNT/" 2>/dev/null || true
     
     # Try to set window properties
@@ -126,13 +140,15 @@ if [[ $SUCCESS -ne 0 ]]; then
            set current view of container window to icon view
            set toolbar visible of container window to false
            set statusbar visible of container window to false
-           set bounds of container window to {200, 100, 800, 500}
+           set bounds of container window to {200, 100, 860, 500}
            set viewOptions to icon view options of container window
            set arrangement of viewOptions to not arranged
-           set icon size of viewOptions to 100
+           set icon size of viewOptions to 128
            try
              set background picture of viewOptions to file ".background:background.png"
            end try
+           set position of item "Gemi.app" of container window to {180, 185}
+           set position of item "Applications" of container window to {480, 185}
            update without registering applications
            delay 2
            close
