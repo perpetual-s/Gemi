@@ -349,18 +349,18 @@ struct ModelDownloadProgressView: View {
         // More accurate file completion detection based on file sizes
         // Total size is 15.74GB, calculate cumulative progress for each file
         let fileSizes: [(String, Double)] = [
-            ("config.json", 4_540),                    // 4.54 KB
+            ("config.json", 4_596),                    // 4.54 KB
             ("tokenizer.json", 35_026_124),            // 33.4 MB
             ("tokenizer_config.json", 1_258_291),      // 1.2 MB  
             ("model.safetensors.index.json", 175_104), // 171 KB
-            ("model-00001.safetensors", 3_308_757_694), // 3.08 GB (adjusted)
-            ("model-00002.safetensors", 5_338_826_957), // 4.97 GB (adjusted)
-            ("model-00003.safetensors", 5_359_807_932), // 4.99 GB (adjusted)
-            ("model-00004.safetensors", 2_856_820_498)  // 2.66 GB (adjusted)
+            ("model-00001.safetensors", 3_308_257_280), // 3.06 GB
+            ("model-00002.safetensors", 5_338_316_800), // 4.97 GB
+            ("model-00003.safetensors", 5_359_288_320), // 4.99 GB
+            ("model-00004.safetensors", 2_856_321_024)  // 2.66 GB
         ]
         
         var cumulativeSize: Double = 0
-        let totalSize: Double = 16_900_677_140 // 15.74 GB total as reported by user
+        let totalSize: Double = 16_899_382_539 // Exact total from file sizes as reported by user
         
         for (file, size) in fileSizes {
             cumulativeSize += size

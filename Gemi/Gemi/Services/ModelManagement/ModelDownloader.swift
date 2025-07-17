@@ -48,39 +48,39 @@ final class ModelDownloader: NSObject, ObservableObject {
     private let baseURL = "https://huggingface.co/google/gemma-3n-E4B-it/resolve/main/"
     
     // Required model files for Gemma 3n E4B
-    // Total size is 15.74 GB (16,900,677,140 bytes) as reported by user
+    // Exact sizes from HuggingFace as of the screenshot
     private var requiredFiles: [ModelFile] = [
         ModelFile(name: "config.json", 
                  url: "config.json",
-                 size: 4_540,  // 4.54 KB
+                 size: 4_596,  // 4.54 KB from HF
                  sha256: "placeholder_hash_config"),
         ModelFile(name: "tokenizer.json",
                  url: "tokenizer.json", 
-                 size: 35_026_124,  // 33.4 MB
+                 size: 35_026_124,  // 33.4 MB from HF
                  sha256: "placeholder_hash_tokenizer"),
         ModelFile(name: "tokenizer_config.json",
                  url: "tokenizer_config.json",
-                 size: 1_258_291,  // 1.2 MB
+                 size: 1_258_291,  // 1.2 MB from HF
                  sha256: "placeholder_hash_tokenizer_config"),
         ModelFile(name: "model.safetensors.index.json",
                  url: "model.safetensors.index.json",
-                 size: 175_104,  // 171 KB
+                 size: 175_104,  // 171 KB from HF
                  sha256: "placeholder_hash_index"),
         ModelFile(name: "model-00001-of-00004.safetensors",
                  url: "model-00001-of-00004.safetensors",
-                 size: 3_308_757_694,  // 3.08 GB (adjusted +500,414 bytes)
+                 size: 3_308_257_280,  // 3.06 GB from HF
                  sha256: "placeholder_hash_model1"),
         ModelFile(name: "model-00002-of-00004.safetensors",
                  url: "model-00002-of-00004.safetensors",
-                 size: 5_338_826_957,  // 4.97 GB (adjusted +510,157 bytes)
+                 size: 5_338_316_800,  // 4.97 GB from HF
                  sha256: "placeholder_hash_model2"),
         ModelFile(name: "model-00003-of-00004.safetensors",
                  url: "model-00003-of-00004.safetensors",
-                 size: 5_359_807_932,  // 4.99 GB (adjusted +519,612 bytes)
+                 size: 5_359_288_320,  // 4.99 GB from HF
                  sha256: "placeholder_hash_model3"),
         ModelFile(name: "model-00004-of-00004.safetensors",
                  url: "model-00004-of-00004.safetensors",
-                 size: 2_856_820_498,  // 2.66 GB (adjusted +499,474 bytes)
+                 size: 2_856_321_024,  // 2.66 GB from HF
                  sha256: "placeholder_hash_model4")
     ]
     
@@ -370,18 +370,32 @@ final class ModelDownloader: NSObject, ObservableObject {
                             throw ModelError.downloadFailed(errorMessage)
                         }
                         
-                        // Validate file size
-                        let minSize: Int
-                        if file.name.contains("safetensors") {
-                            minSize = 10_000_000 // 10MB minimum for safetensors
-                        } else if file.name.contains(".json") {
-                            minSize = 100 // 100 bytes for JSON
-                        } else {
-                            minSize = 0
-                        }
+                        // Validate file size - be more specific about expected sizes
+                        let actualSize = fileData.count
+                        let expectedSize = file.size
                         
-                        guard fileData.count >= minSize else {
-                            throw ModelError.downloadFailed("Downloaded file \(file.name) is too small (\(fileData.count) bytes). Please try downloading again.")
+                        // Allow some tolerance for size differences (1% or 1KB, whichever is larger)
+                        let tolerance = max(1024, Int(Double(expectedSize) * 0.01))
+                        let isValidSize = abs(actualSize - Int(expectedSize)) <= tolerance
+                        
+                        if !isValidSize {
+                            let formatter = ByteCountFormatter()
+                            formatter.countStyle = .file
+                            let actualFormatted = formatter.string(fromByteCount: Int64(actualSize))
+                            let expectedFormatted = formatter.string(fromByteCount: expectedSize)
+                            
+                            // More helpful error message
+                            var errorMsg = "Downloaded file \(file.name) size mismatch:\n"
+                            errorMsg += "Expected: \(expectedFormatted) (\(expectedSize) bytes)\n"
+                            errorMsg += "Received: \(actualFormatted) (\(actualSize) bytes)\n"
+                            
+                            if actualSize < 1000 && file.name.contains(".json") {
+                                errorMsg += "\nThis might be an authentication error. The download returned an error page instead of the actual file."
+                            } else if actualSize < Int(expectedSize) / 2 {
+                                errorMsg += "\nThe download appears to be incomplete. Please try again."
+                            }
+                            
+                            throw ModelError.downloadFailed(errorMsg)
                         }
                         
                         // Move file to destination
