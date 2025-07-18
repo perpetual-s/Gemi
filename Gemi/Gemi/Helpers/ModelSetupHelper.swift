@@ -65,15 +65,13 @@ struct ModelSetupHelper {
                 Please try again.
                 """
                 
-            case .extractionFailed(let reason):
+            case .authenticationRequired:
                 return """
-                Failed to extract model: \(reason)
+                Authentication required.
                 
-                Please ensure you have enough disk space (20GB recommended).
+                For mlx-community models: No token needed!
+                For other models: Please add your HuggingFace token.
                 """
-                
-            case .authenticationRequired(let message):
-                return message
                 
             case .modelNotLoaded:
                 return """
@@ -100,6 +98,13 @@ struct ModelSetupHelper {
                 The model files may be corrupted or incomplete.
                 
                 Please delete the model folder and download again.
+                """
+                
+            case .sizeMismatch, .hashMismatch, .networkError, .fileSystemError, .cancelled:
+                return """
+                An error occurred: \(modelError.localizedDescription)
+                
+                Please try again or restart the app.
                 """
             }
         }

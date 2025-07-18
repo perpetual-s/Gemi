@@ -66,15 +66,11 @@ struct ManualSetupView: View {
                         
                         VStack(alignment: .leading, spacing: 4) {
                             ForEach(ModelConfiguration.requiredFiles, id: \.name) { file in
-                                let formatter = ByteCountFormatter()
-                                formatter.countStyle = .file
-                                let sizeString = formatter.string(fromByteCount: file.size)
-                                let displayString = "\(file.name) (\(sizeString))"
                                 HStack(spacing: 8) {
                                     Image(systemName: "doc.fill")
                                         .font(.system(size: 12))
                                         .foregroundColor(.white.opacity(0.5))
-                                    Text(displayString)
+                                    Text("\(file.name) (\(formatFileSize(file.size)))")
                                         .font(.system(size: 13, design: .monospaced))
                                         .foregroundColor(.white.opacity(0.7))
                                 }
@@ -278,5 +274,11 @@ struct ManualSetupView: View {
                 endPoint: .bottomTrailing
             )
         )
+    }
+    
+    private func formatFileSize(_ bytes: Int64) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: bytes)
     }
 }

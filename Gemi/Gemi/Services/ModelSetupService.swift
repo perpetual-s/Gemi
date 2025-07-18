@@ -20,7 +20,6 @@ class ModelSetupService: ObservableObject {
     
     private let chatService = NativeChatService.shared
     let modelDownloader = UltimateModelDownloader()  // Using the most reliable downloader
-    private let simpleDownloader = SimpleModelDownloader()
     
     enum SetupStep: String, CaseIterable {
         case checkingModel = "Checking Model"
@@ -190,29 +189,7 @@ class ModelSetupService: ObservableObject {
                     self?.downloadSpeed = speed
                 }
                 
-                do {
-                    try await modelDownloader.startDownload()
-                } catch {
-                    print("❌ Primary downloader failed: \(error)")
-                    print("🔄 Falling back to simple downloader...")
-                    
-                    // Update UI for simple download
-                    self.statusMessage = "Using simplified download (no detailed progress)..."
-                    self.downloaderState = .downloading(file: "Downloading model files...", progress: 0.5)
-                    
-                    // Observe simple downloader status
-                    let statusObserver = simpleDownloader.$statusMessage.sink { [weak self] status in
-                        self?.statusMessage = status
-                    }
-                    
-                    // Try simple downloader
-                    try await simpleDownloader.downloadModel()
-                    statusObserver.cancel()
-                    
-                    // Update state to show completion
-                    self.downloaderState = .completed
-                    self.progress = 0.9
-                }
+                try await modelDownloader.startDownload()
                 
                 downloadObserver.cancel()
                 bytesObserver.cancel()

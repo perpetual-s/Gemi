@@ -114,7 +114,7 @@ struct ModelErrorRecovery {
                         action: .retry,
                         description: "Resume the download from where it left off",
                         handler: {
-                            try await ModelDownloader().resumeDownload()
+                            try await UltimateModelDownloader().startDownload()
                         }
                     ))
                 }
@@ -125,7 +125,7 @@ struct ModelErrorRecovery {
                     description: "Clear corrupted files and download again",
                     handler: {
                         try await clearModelCache()
-                        try await ModelDownloader().startDownload()
+                        try await UltimateModelDownloader().startDownload()
                     }
                 ))
                 

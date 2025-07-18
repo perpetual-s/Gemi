@@ -74,7 +74,7 @@ final class NativeChatService: ObservableObject {
     // MARK: - Properties
     
     private let model = GemmaMLXModel()
-    private let modelDownloader = ModelDownloader()
+    private let modelDownloader = UltimateModelDownloader()
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Initialization

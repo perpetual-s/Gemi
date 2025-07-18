@@ -188,9 +188,7 @@ final class UltimateModelDownloader: NSObject, ObservableObject {
         }
         
         guard let validToken = token else {
-            throw ModelError.authenticationRequired(
-                "No authentication token found. Please ensure the .env file is included in the app bundle or add your HuggingFace token in settings."
-            )
+            throw ModelError.authenticationRequired
         }
         
         // Verify token works
@@ -235,9 +233,9 @@ final class UltimateModelDownloader: NSObject, ObservableObject {
             case 200:
                 return // Success
             case 401:
-                throw ModelError.authenticationRequired("Invalid token. Please check your HuggingFace token.")
+                throw ModelError.authenticationRequired
             case 403:
-                throw ModelError.authenticationRequired("Access forbidden. Please accept the model license on HuggingFace.")
+                throw ModelError.authenticationRequired
             default:
                 throw ModelError.downloadFailed("Authentication check failed: HTTP \(httpResponse.statusCode)")
             }

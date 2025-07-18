@@ -6,6 +6,7 @@ enum ModelError: LocalizedError {
     case downloadFailed(String)
     case verificationFailed(String)
     case modelNotFound
+    case modelNotLoaded
     case invalidConfiguration
     case invalidFormat(String)
     case sizeMismatch(expected: Int64, actual: Int64)
@@ -24,6 +25,8 @@ enum ModelError: LocalizedError {
             return "Verification failed: \(reason)"
         case .modelNotFound:
             return "Model not found at expected location"
+        case .modelNotLoaded:
+            return "Model is not loaded. Please wait for initialization to complete."
         case .invalidConfiguration:
             return "Invalid model configuration"
         case .invalidFormat(let reason):

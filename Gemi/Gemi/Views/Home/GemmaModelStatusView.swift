@@ -872,7 +872,7 @@ class GemmaModelManager: ObservableObject {
     @Published var downloadTimeEstimate = "Calculating..."
     
     private let chatService = NativeChatService.shared
-    private let modelDownloader = ModelDownloader()
+    private let modelDownloader = UltimateModelDownloader()
     private var checkTimer: Timer?
     
     enum ModelStatus: Equatable {

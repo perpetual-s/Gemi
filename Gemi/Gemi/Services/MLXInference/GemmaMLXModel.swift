@@ -546,7 +546,7 @@ struct ProcessedImage {
 }
 
 // MARK: - Errors
-// ModelError cases are defined in ModelDownloader.swift
+// ModelError cases are defined in ModelError.swift
 
 // MARK: - Helper Components
 
