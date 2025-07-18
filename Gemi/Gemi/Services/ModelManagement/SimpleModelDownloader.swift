@@ -75,13 +75,15 @@ final class SimpleModelDownloader: ObservableObject {
     }
     
     private func downloadFile(_ file: ModelFile, token: String, to localPath: URL) async throws {
-        let urlString = "https://huggingface.co/google/gemma-3n-E4B-it/resolve/main/\(file.name)?download=true"
+        let urlString = "https://huggingface.co/google/gemma-3n-E4B-it/resolve/main/\(file.name)"
         guard let url = URL(string: urlString) else {
             throw SimpleDownloadError.invalidURL
         }
         
         var request = URLRequest(url: url)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("Gemi/1.0", forHTTPHeaderField: "User-Agent")
+        request.setValue("application/octet-stream", forHTTPHeaderField: "Accept")
         request.timeoutInterval = 300 // 5 minutes per file
         
         // Try up to 3 times
@@ -93,8 +95,25 @@ final class SimpleModelDownloader: ObservableObject {
                 
                 // Check response
                 if let httpResponse = response as? HTTPURLResponse {
+                    // Check content type
+                    if let contentType = httpResponse.value(forHTTPHeaderField: "Content-Type"),
+                       contentType.contains("text/html") {
+                        print("❌ Server returned HTML instead of binary data")
+                        throw SimpleDownloadError.authenticationFailed
+                    }
+                    
                     switch httpResponse.statusCode {
                     case 200:
+                        // Verify it's not an HTML error page
+                        let fileAttributes = try FileManager.default.attributesOfItem(atPath: tempURL.path)
+                        let fileSize = fileAttributes[.size] as? Int64 ?? 0
+                        
+                        // Check if file is suspiciously small (likely HTML error)
+                        if fileSize < 10000 && !file.name.contains(".json") {
+                            print("❌ Downloaded file too small, likely HTML error page")
+                            throw SimpleDownloadError.authenticationFailed
+                        }
+                        
                         // Success - move file
                         try? FileManager.default.removeItem(at: localPath)
                         try FileManager.default.moveItem(at: tempURL, to: localPath)
@@ -134,7 +153,7 @@ enum SimpleDownloadError: LocalizedError {
         case .invalidURL:
             return "Invalid download URL"
         case .authenticationFailed:
-            return "Authentication failed. Please accept the Gemma model license at huggingface.co/google/gemma-3n-E4B-it"
+            return "Authentication failed. Please: 1) Accept the Gemma model license at huggingface.co/google/gemma-3n-E4B-it, and 2) Ensure your HuggingFace token has WRITE permissions (not just read)"
         case .httpError(let code):
             return "Download failed with error code: \(code)"
         }
