@@ -343,16 +343,25 @@ struct GemmaSetupProgressView: View {
                         title: "Authentication Required",
                         message: "The model requires authentication to download. This has been configured incorrectly.",
                         primaryAction: (
-                            title: "Contact Support",
+                            title: "Try Again",
                             action: {
-                                NSWorkspace.shared.open(URL(string: "https://github.com/yourusername/gemi/issues")!)
+                                print("🔄 Try Again button pressed (auth error)")
+                                Task { @MainActor in
+                                    setupManager.error = nil
+                                    setupManager.currentStep = .checkingModel
+                                    setupManager.statusMessage = "Retrying..."
+                                    setupManager.progress = 0.0
+                                    setupManager.isComplete = false
+                                    try? await Task.sleep(nanoseconds: 100_000_000)
+                                    setupManager.startSetup()
+                                }
                             }
                         ),
                         secondaryAction: (
-                            title: "Try Again",
+                            title: "Manual Setup",
                             action: {
-                                setupManager.error = nil
-                                setupManager.startSetup()
+                                print("📁 Manual Setup button pressed")
+                                ModelSetupHelper.openManualSetup()
                             }
                         )
                     )
@@ -364,13 +373,22 @@ struct GemmaSetupProgressView: View {
                         primaryAction: (
                             title: "Retry Download",
                             action: {
-                                setupManager.error = nil
-                                setupManager.startSetup()
+                                print("🔄 Retry Download button pressed")
+                                Task { @MainActor in
+                                    setupManager.error = nil
+                                    setupManager.currentStep = .checkingModel
+                                    setupManager.statusMessage = "Retrying..."
+                                    setupManager.progress = 0.0
+                                    setupManager.isComplete = false
+                                    try? await Task.sleep(nanoseconds: 100_000_000)
+                                    setupManager.startSetup()
+                                }
                             }
                         ),
                         secondaryAction: (
                             title: "Manual Setup",
                             action: {
+                                print("📁 Manual Setup button pressed")
                                 ModelSetupHelper.openManualSetup()
                             }
                         )
@@ -383,13 +401,24 @@ struct GemmaSetupProgressView: View {
                         primaryAction: (
                             title: "Retry Setup",
                             action: {
-                                setupManager.error = nil
-                                setupManager.startSetup()
+                                print("🔄 Retry Setup button pressed")
+                                Task { @MainActor in
+                                    setupManager.error = nil
+                                    // Reset states
+                                    setupManager.currentStep = .checkingModel
+                                    setupManager.statusMessage = "Retrying..."
+                                    setupManager.progress = 0.0
+                                    setupManager.isComplete = false
+                                    // Small delay to ensure UI updates
+                                    try? await Task.sleep(nanoseconds: 100_000_000)
+                                    setupManager.startSetup()
+                                }
                             }
                         ),
                         secondaryAction: (
                             title: "Manual Setup",
                             action: {
+                                print("📁 Manual Setup button pressed")
                                 ModelSetupHelper.openManualSetup()
                             }
                         )

@@ -20,6 +20,7 @@ class ModelSetupService: ObservableObject {
     
     private let chatService = NativeChatService.shared
     let modelDownloader = ModelDownloader()
+    private let simpleDownloader = SimpleModelDownloader()
     
     enum SetupStep: String, CaseIterable {
         case checkingModel = "Checking Model"
@@ -189,7 +190,30 @@ class ModelSetupService: ObservableObject {
                     self?.downloadSpeed = speed
                 }
                 
-                try await modelDownloader.startDownload()
+                do {
+                    try await modelDownloader.startDownload()
+                } catch {
+                    print("❌ Primary downloader failed: \(error)")
+                    print("🔄 Falling back to simple downloader...")
+                    
+                    // Update UI for simple download
+                    self.statusMessage = "Using simplified download (no detailed progress)..."
+                    self.downloaderState = .downloading(file: "Downloading model files...", progress: 0.5)
+                    
+                    // Observe simple downloader status
+                    let statusObserver = simpleDownloader.$statusMessage.sink { [weak self] status in
+                        self?.statusMessage = status
+                    }
+                    
+                    // Try simple downloader
+                    try await simpleDownloader.downloadModel()
+                    statusObserver.cancel()
+                    
+                    // Update state to show completion
+                    self.downloaderState = .completed
+                    self.progress = 0.9
+                }
+                
                 downloadObserver.cancel()
                 bytesObserver.cancel()
                 totalBytesObserver.cancel()
@@ -237,8 +261,22 @@ class ModelSetupService: ObservableObject {
             }
         } catch {
             // Generic error - provide helpful message
-            self.error = .downloadFailed("Setup encountered an issue. Please try again. If the problem persists, delete the model folder and re-download.")
-            statusMessage = "Setup issue - please retry"
+            print("❌ Setup failed with error: \(error)")
+            print("❌ Error type: \(type(of: error))")
+            print("❌ Error details: \(error.localizedDescription)")
+            
+            // More specific error message based on the actual error
+            let errorMessage: String
+            if error.localizedDescription.contains("401") || error.localizedDescription.contains("403") {
+                errorMessage = "Authentication failed. Please ensure you have accepted the Gemma model license at huggingface.co"
+            } else if error.localizedDescription.contains("network") || error.localizedDescription.contains("connection") {
+                errorMessage = "Network connection failed. Please check your internet and try again."
+            } else {
+                errorMessage = "Download failed: \(error.localizedDescription)"
+            }
+            
+            self.error = .downloadFailed(errorMessage)
+            statusMessage = errorMessage
         }
     }
     

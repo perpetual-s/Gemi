@@ -16,11 +16,20 @@ final class EnvironmentConfig {
         var config: [String: String] = [:]
         
         print("🔍 Looking for .env file...")
+        print("📁 Bundle path: \(Bundle.main.bundlePath)")
+        print("📁 Resource path: \(Bundle.main.resourcePath ?? "nil")")
         
         // Look for .env file in the app bundle
         if let envPath = Bundle.main.path(forResource: ".env", ofType: nil) {
             print("✅ Found .env at: \(envPath)")
             config.merge(loadFromPath(envPath)) { _, new in new }
+            
+            // Verify token was loaded
+            if let token = config["HUGGINGFACE_TOKEN"], !token.isEmpty {
+                print("✅ HuggingFace token loaded successfully (first 7 chars: \(String(token.prefix(7)))...)")
+            } else {
+                print("❌ CRITICAL: .env file found but no HUGGINGFACE_TOKEN!")
+            }
         } else {
             print("⚠️ .env not found via Bundle.main.path")
         }
