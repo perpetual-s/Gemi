@@ -105,7 +105,7 @@ struct MultimodalNotificationBanner: View {
                     
                     // Learn more button
                     Button {
-                        NSWorkspace.shared.open(URL(string: "https://huggingface.co/google/gemma-3n-e4b-it")!)
+                        NSWorkspace.shared.open(URL(string: "https://huggingface.co/\(ModelConfiguration.modelID)")!)
                     } label: {
                         HStack {
                             Image(systemName: "info.circle")

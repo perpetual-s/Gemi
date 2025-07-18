@@ -44,45 +44,16 @@ final class ModelDownloader: NSObject, ObservableObject {
     
     // MARK: - Properties
     
-    private let modelID = "google/gemma-3n-E4B-it"
-    private let baseURL = "https://huggingface.co/google/gemma-3n-E4B-it/resolve/main/"
+    private let modelID = ModelConfiguration.modelID
+    private let baseURL = ModelConfiguration.baseURL
     
-    // Required model files for Gemma 3n E4B
-    // Exact sizes from HuggingFace API as of 2025-07-18
-    private var requiredFiles: [ModelFile] = [
-        ModelFile(name: "config.json", 
-                 url: "config.json",
-                 size: 4_596,  // 4.54 KB from HF
-                 sha256: "placeholder_hash_config"),
-        ModelFile(name: "tokenizer.json",
-                 url: "tokenizer.json", 
-                 size: 35_026_124,  // 33.4 MB from HF
-                 sha256: "placeholder_hash_tokenizer"),
-        ModelFile(name: "tokenizer_config.json",
-                 url: "tokenizer_config.json",
-                 size: 1_258_291,  // 1.2 MB from HF
-                 sha256: "placeholder_hash_tokenizer_config"),
-        ModelFile(name: "model.safetensors.index.json",
-                 url: "model.safetensors.index.json",
-                 size: 171_423,  // 167.4 KB - actual size from HF API
-                 sha256: "placeholder_hash_index"),
-        ModelFile(name: "model-00001-of-00004.safetensors",
-                 url: "model-00001-of-00004.safetensors",
-                 size: 3_077_103_824,  // 2.87 GB - actual size from HF API
-                 sha256: "placeholder_hash_model1"),
-        ModelFile(name: "model-00002-of-00004.safetensors",
-                 url: "model-00002-of-00004.safetensors",
-                 size: 4_966_792_808,  // 4.63 GB - actual size from HF API
-                 sha256: "placeholder_hash_model2"),
-        ModelFile(name: "model-00003-of-00004.safetensors",
-                 url: "model-00003-of-00004.safetensors",
-                 size: 4_992_870_216,  // 4.65 GB - actual size from HF API
-                 sha256: "placeholder_hash_model3"),
-        ModelFile(name: "model-00004-of-00004.safetensors",
-                 url: "model-00004-of-00004.safetensors",
-                 size: 2_663_414_864,  // 2.48 GB - actual size from HF API
-                 sha256: "placeholder_hash_model4")
-    ]
+    // Required model files from ModelConfiguration
+    private var requiredFiles: [ModelFile] = ModelConfiguration.requiredFiles.map { file in
+        ModelFile(name: file.name,
+                 url: file.name,
+                 size: file.size,
+                 sha256: "placeholder_hash_\(file.name)")
+    }
     
     private var downloadTasks: [URLSessionDownloadTask] = []
     private var session: URLSession!

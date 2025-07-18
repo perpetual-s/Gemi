@@ -32,7 +32,7 @@ final class AIConfiguration: ObservableObject {
     }
     
     private enum Defaults {
-        static let selectedModel = "google/gemma-3n-e4b-it"
+        static let selectedModel = ModelConfiguration.modelID
         static let temperature = 0.7
         static let maxTokens = 2048
     }
@@ -79,8 +79,8 @@ final class AIConfiguration: ObservableObject {
     
     /// Get available models
     func getAvailableModels() -> [String] {
-        // For now, only Gemma 3n E4B is supported
-        return ["google/gemma-3n-e4b-it"]
+        // For now, only the mlx-community 4-bit model is supported
+        return [ModelConfiguration.modelID]
     }
 }
 

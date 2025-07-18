@@ -180,18 +180,10 @@ final class HuggingFaceAPI {
     }
 }
 
-// MARK: - ModelDownloader Extension
+// MARK: - Helper Functions
 
-extension ModelDownloader {
-    /// Fetch and cache file metadata from HuggingFace API
-    func fetchFileMetadata() async throws -> [HuggingFaceAPI.FileMetadata] {
-        let repoId = "google/gemma-3n-E4B-it"
-        return try await HuggingFaceAPI.shared.getFileMetadata(repoId: repoId)
-    }
-    
-    /// Get SHA256 for a specific file
-    func getFileSHA256(_ filename: String) async throws -> String? {
-        let metadata = try await fetchFileMetadata()
-        return metadata.first { $0.filename == filename }?.sha256
-    }
+// Helper function to fetch file metadata for current model
+func fetchModelFileMetadata() async throws -> [HuggingFaceAPI.FileMetadata] {
+    let repoId = ModelConfiguration.modelID
+    return try await HuggingFaceAPI.shared.getFileMetadata(repoId: repoId)
 }

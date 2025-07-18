@@ -7,7 +7,7 @@ actor AIService {
     
     // MARK: - Properties
     
-    private var modelName = "google/gemma-3n-e4b-it"
+    private var modelName = ModelConfiguration.modelID
     
     // Connection state caching
     private var lastHealthCheck: Date?

@@ -14,12 +14,12 @@ class ModelSetupService: ObservableObject {
     @Published var downloadedBytes: Int64 = 0
     @Published var totalDownloadBytes: Int64 = 0
     @Published var currentDownloadFile: String = ""
-    @Published var downloaderState: ModelDownloader.DownloadState = .notStarted
+    @Published var downloaderState: UltimateModelDownloader.DownloadState = .notStarted
     @Published var downloadStartTime: Date?
     @Published var downloadSpeed: Double = 0
     
     private let chatService = NativeChatService.shared
-    let modelDownloader = ModelDownloader()
+    let modelDownloader = UltimateModelDownloader()  // Using the most reliable downloader
     private let simpleDownloader = SimpleModelDownloader()
     
     enum SetupStep: String, CaseIterable {

@@ -9,7 +9,7 @@ final class SimpleModelDownloader: ObservableObject {
     @Published var error: String?
     
     private let modelPath = ModelCache.shared.modelPath
-    private let requiredFiles = ModelFileSpecs.gemma3nE4B
+    private let requiredFiles = ModelConfiguration.requiredFiles
     
     func downloadModel() async throws {
         isDownloading = true
@@ -35,7 +35,7 @@ final class SimpleModelDownloader: ObservableObject {
                 // Skip if already exists and valid
                 if FileManager.default.fileExists(atPath: localPath.path) {
                     if let attributes = try? FileManager.default.attributesOfItem(atPath: localPath.path),
-                       let fileSize = attributes[.size] as? Int64,
+                       let fileSize = attributes[FileAttributeKey.size] as? Int64,
                        abs(fileSize - file.size) < (file.size / 20) { // 5% tolerance
                         print("✅ File already exists: \(file.name)")
                         continue
@@ -74,8 +74,8 @@ final class SimpleModelDownloader: ObservableObject {
         return ""
     }
     
-    private func downloadFile(_ file: ModelFile, token: String, to localPath: URL) async throws {
-        let urlString = "https://huggingface.co/google/gemma-3n-E4B-it/resolve/main/\(file.name)"
+    private func downloadFile(_ file: (name: String, size: Int64), token: String, to localPath: URL) async throws {
+        let urlString = "\(ModelConfiguration.baseURL)\(file.name)"
         guard let url = URL(string: urlString) else {
             throw SimpleDownloadError.invalidURL
         }
@@ -106,7 +106,7 @@ final class SimpleModelDownloader: ObservableObject {
                     case 200:
                         // Verify it's not an HTML error page
                         let fileAttributes = try FileManager.default.attributesOfItem(atPath: tempURL.path)
-                        let fileSize = fileAttributes[.size] as? Int64 ?? 0
+                        let fileSize = fileAttributes[FileAttributeKey.size] as? Int64 ?? 0
                         
                         // Check if file is suspiciously small (likely HTML error)
                         if fileSize < 10000 && !file.name.contains(".json") {
@@ -153,7 +153,7 @@ enum SimpleDownloadError: LocalizedError {
         case .invalidURL:
             return "Invalid download URL"
         case .authenticationFailed:
-            return "Authentication failed. Please: 1) Accept the Gemma model license at huggingface.co/google/gemma-3n-E4B-it, and 2) Ensure your HuggingFace token has WRITE permissions (not just read)"
+            return "Authentication failed. Please: 1) Accept the model license at huggingface.co/\(ModelConfiguration.modelID), and 2) Ensure your HuggingFace token has WRITE permissions (not just read)"
         case .httpError(let code):
             return "Download failed with error code: \(code)"
         }

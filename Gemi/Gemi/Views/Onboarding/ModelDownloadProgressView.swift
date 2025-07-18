@@ -3,7 +3,7 @@ import SwiftUI
 /// Beautiful download progress view for model installation
 struct ModelDownloadProgressView: View {
     let progress: Double
-    let downloadState: ModelDownloader.DownloadState
+    let downloadState: UltimateModelDownloader.DownloadState
     let currentFile: String
     let bytesDownloaded: Int64
     let totalBytes: Int64

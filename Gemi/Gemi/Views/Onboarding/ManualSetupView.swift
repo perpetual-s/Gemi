@@ -43,7 +43,7 @@ struct ManualSetupView: View {
                             .font(.system(size: 14))
                             .foregroundColor(.white.opacity(0.8))
                         
-                        Link(destination: URL(string: "https://huggingface.co/google/gemma-3n-E4B-it/tree/main")!) {
+                        Link(destination: URL(string: "https://huggingface.co/\(ModelConfiguration.modelID)/tree/main")!) {
                             HStack {
                                 Image(systemName: "link")
                                 Text("Open HuggingFace Repository")
@@ -59,27 +59,22 @@ struct ManualSetupView: View {
                             )
                         }
                         
-                        Text("Required files (15.74 GB total):")
+                        Text("Required files (\(ModelConfiguration.totalSizeFormatted) total):")
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.white.opacity(0.8))
                             .padding(.top, 8)
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            ForEach([
-                                "config.json (4.54 KB)",
-                                "tokenizer.json (33.4 MB)",
-                                "tokenizer_config.json (1.2 MB)",
-                                "model.safetensors.index.json (171 KB)",
-                                "model-00001-of-00004.safetensors (3.06 GB)",
-                                "model-00002-of-00004.safetensors (4.97 GB)",
-                                "model-00003-of-00004.safetensors (4.99 GB)",
-                                "model-00004-of-00004.safetensors (2.66 GB)"
-                            ], id: \.self) { file in
+                            ForEach(ModelConfiguration.requiredFiles, id: \.name) { file in
+                                let formatter = ByteCountFormatter()
+                                formatter.countStyle = .file
+                                let sizeString = formatter.string(fromByteCount: file.size)
+                                let displayString = "\(file.name) (\(sizeString))"
                                 HStack(spacing: 8) {
                                     Image(systemName: "doc.fill")
                                         .font(.system(size: 12))
                                         .foregroundColor(.white.opacity(0.5))
-                                    Text(file)
+                                    Text(displayString)
                                         .font(.system(size: 13, design: .monospaced))
                                         .foregroundColor(.white.opacity(0.7))
                                 }

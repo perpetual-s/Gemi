@@ -47,69 +47,20 @@ final class UltimateModelDownloader: NSObject, ObservableObject {
     
     // MARK: - Properties
     
-    private let modelID = "google/gemma-3n-E4B-it"
-    private let baseURL = "https://huggingface.co/google/gemma-3n-E4B-it/resolve/main/"
-    private let cdnURL = "https://cdn-lfs.huggingface.co/google/gemma-3n-E4B-it/"
+    private let modelID = ModelConfiguration.modelID
+    private let baseURL = ModelConfiguration.baseURL
+    private let cdnURL = ModelConfiguration.cdnURL
     
-    // Exact file sizes from HuggingFace (verified from the screenshot)
-    private let requiredFiles: [ModelFile] = [
+    // File sizes from ModelConfiguration for mlx-community/gemma-3n-E4B-it-4bit
+    private let requiredFiles: [ModelFile] = ModelConfiguration.requiredFiles.map { file in
         ModelFile(
-            name: "config.json",
-            url: "config.json",
-            size: 4_540,  // Matches .gitattributes
-            sha256: nil,
-            alternativeURLs: []
-        ),
-        ModelFile(
-            name: "tokenizer.json",
-            url: "tokenizer.json",
-            size: 33_440_000,  // 33.4 MB
-            sha256: nil,
-            alternativeURLs: []
-        ),
-        ModelFile(
-            name: "tokenizer_config.json",
-            url: "tokenizer_config.json",
-            size: 1_258_291,  // 1.2 MB
-            sha256: nil,
-            alternativeURLs: []
-        ),
-        ModelFile(
-            name: "model.safetensors.index.json",
-            url: "model.safetensors.index.json",
-            size: 171_000,  // 171 KB - CRITICAL: This was wrong before!
-            sha256: nil,
-            alternativeURLs: []
-        ),
-        ModelFile(
-            name: "model-00001-of-00004.safetensors",
-            url: "model-00001-of-00004.safetensors",
-            size: 3_308_257_280,  // 3.06 GB
-            sha256: nil,
-            alternativeURLs: []
-        ),
-        ModelFile(
-            name: "model-00002-of-00004.safetensors",
-            url: "model-00002-of-00004.safetensors",
-            size: 5_338_316_800,  // 4.97 GB
-            sha256: nil,
-            alternativeURLs: []
-        ),
-        ModelFile(
-            name: "model-00003-of-00004.safetensors",
-            url: "model-00003-of-00004.safetensors",
-            size: 5_359_288_320,  // 4.99 GB
-            sha256: nil,
-            alternativeURLs: []
-        ),
-        ModelFile(
-            name: "model-00004-of-00004.safetensors",
-            url: "model-00004-of-00004.safetensors",
-            size: 2_621_440_000,  // 2.66 GB
+            name: file.name,
+            url: file.name,
+            size: file.size,
             sha256: nil,
             alternativeURLs: []
         )
-    ]
+    }
     
     private var session: URLSession!
     private var downloadTasks: [URLSessionDownloadTask] = []
