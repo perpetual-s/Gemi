@@ -155,6 +155,14 @@ final class UltimateModelDownloader: NSObject, ObservableObject {
         var token: String? = nil
         var tokenSource = ""
         
+        // mlx-community models are NOT gated - no authentication required!
+        if modelID.starts(with: "mlx-community/") {
+            print("✅ Using public mlx-community model - no authentication required")
+            detailedStatus = "Public model - no token needed"
+            return ""
+        }
+        
+        // For other models, check authentication sources
         // 1. Check embedded .env file
         if let envToken = EnvironmentConfig.shared.huggingFaceToken {
             token = envToken

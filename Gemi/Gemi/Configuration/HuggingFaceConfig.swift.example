@@ -3,13 +3,15 @@ import Foundation
 /// HuggingFace Configuration
 /// 
 /// SETUP INSTRUCTIONS:
-/// 1. Copy this file to HuggingFaceConfig.swift (remove .example)
-/// 2. Replace YOUR_TOKEN_HERE with your actual HuggingFace token
-/// 3. CRITICAL: Token MUST have WRITE permissions (not just read)
-/// 4. Get your token from: https://huggingface.co/settings/tokens
-/// 5. Accept the model license at: https://huggingface.co/google/gemma-3n-E4B-it
+/// For mlx-community models: NO TOKEN REQUIRED!
+/// The mlx-community/gemma-3n-E4B-it-4bit model is public and doesn't need authentication.
 /// 
-/// This file is gitignored to protect your token
+/// For other models (optional):
+/// 1. Copy this file to HuggingFaceConfig.swift (remove .example)
+/// 2. Replace YOUR_TOKEN_HERE with your HuggingFace token if needed
+/// 3. Get tokens from: https://huggingface.co/settings/tokens
+/// 
+/// This file is gitignored to protect your token if you add one
 struct HuggingFaceConfig {
     static let token = "YOUR_TOKEN_HERE"
     

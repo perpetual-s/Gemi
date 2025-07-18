@@ -39,7 +39,7 @@ done
 echo -e "${BLUE}=== Gemi DMG Builder ===${NC}"
 echo -e "${BLUE}Project root: $PROJECT_ROOT${NC}"
 
-# Step 1: Check for .env file
+# Step 1: Check for .env file (optional for mlx-community models)
 echo -e "\n${YELLOW}Checking for .env file...${NC}"
 if [ -f "$PROJECT_ROOT/.env" ]; then
     echo -e "${GREEN}✓ Found .env file${NC}"
@@ -47,19 +47,18 @@ if [ -f "$PROJECT_ROOT/.env" ]; then
     if grep -q "HUGGINGFACE_TOKEN=" "$PROJECT_ROOT/.env"; then
         echo -e "${GREEN}✓ HuggingFace token found in .env${NC}"
     else
-        echo -e "${RED}✗ Warning: HUGGINGFACE_TOKEN not found in .env file${NC}"
-        echo -e "${YELLOW}  Model downloads may fail without the token${NC}"
+        echo -e "${YELLOW}ℹ HUGGINGFACE_TOKEN not found in .env file${NC}"
+        echo -e "${GREEN}  This is OK - mlx-community models don't require authentication${NC}"
     fi
 else
-    echo -e "${RED}✗ .env file not found at $PROJECT_ROOT/.env${NC}"
-    echo -e "${YELLOW}  Creating template .env file...${NC}"
+    echo -e "${YELLOW}ℹ .env file not found at $PROJECT_ROOT/.env${NC}"
+    echo -e "${GREEN}  This is OK - mlx-community models don't require authentication${NC}"
+    echo -e "${YELLOW}  Creating optional .env file for future use...${NC}"
     cat > "$PROJECT_ROOT/.env" << 'EOF'
-# HuggingFace token for accessing Gemma models
-# Replace with your actual token from https://huggingface.co/settings/tokens
-HUGGINGFACE_TOKEN=your_token_here
+# Optional: HuggingFace token for accessing gated models
+# Not required for mlx-community/gemma-3n-E4B-it-4bit
+# HUGGINGFACE_TOKEN=your_token_here
 EOF
-    echo -e "${RED}  Please edit .env and add your HuggingFace token${NC}"
-    exit 1
 fi
 
 # Step 2: Build the app (unless skipped)
@@ -125,19 +124,23 @@ fi
 
 echo -e "${GREEN}✓ Found app at: $APP_PATH${NC}"
 
-# Step 4: Verify .env is in the app bundle
-echo -e "\n${YELLOW}Verifying .env in app bundle...${NC}"
-if [ -f "$APP_PATH/Contents/Resources/.env" ]; then
-    echo -e "${GREEN}✓ .env file is included in app bundle${NC}"
-else
-    echo -e "${YELLOW}⚠ .env not found in app bundle, copying it now...${NC}"
-    cp "$PROJECT_ROOT/.env" "$APP_PATH/Contents/Resources/"
+# Step 4: Optionally copy .env to app bundle (not required for mlx-community models)
+echo -e "\n${YELLOW}Checking .env in app bundle...${NC}"
+if [ -f "$PROJECT_ROOT/.env" ]; then
     if [ -f "$APP_PATH/Contents/Resources/.env" ]; then
-        echo -e "${GREEN}✓ .env file copied to app bundle${NC}"
+        echo -e "${GREEN}✓ .env file is included in app bundle${NC}"
     else
-        echo -e "${RED}✗ Failed to copy .env to app bundle${NC}"
-        exit 1
+        echo -e "${YELLOW}ℹ Copying .env to app bundle...${NC}"
+        cp "$PROJECT_ROOT/.env" "$APP_PATH/Contents/Resources/"
+        if [ -f "$APP_PATH/Contents/Resources/.env" ]; then
+            echo -e "${GREEN}✓ .env file copied to app bundle${NC}"
+        else
+            echo -e "${YELLOW}⚠ Could not copy .env to app bundle${NC}"
+            echo -e "${GREEN}  This is OK - mlx-community models don't require authentication${NC}"
+        fi
     fi
+else
+    echo -e "${GREEN}ℹ No .env file needed - using public mlx-community model${NC}"
 fi
 
 # Step 5: Create the DMG
