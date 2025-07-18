@@ -13,6 +13,7 @@ struct GemmaOnboardingView: View {
     @State private var isSettingUpPassword = false
     @State private var passwordError = ""
     @State private var showPasswordError = false
+    @State private var contentOpacity: Double = 1.0
     @Environment(\.dismiss) var dismiss
     
     let onComplete: () -> Void
@@ -57,6 +58,7 @@ struct GemmaOnboardingView: View {
                 ))
             } else {
                 welcomeFlow
+                    .opacity(contentOpacity)
                     .transition(.asymmetric(
                         insertion: .move(edge: .leading).combined(with: .opacity),
                         removal: .move(edge: .trailing).combined(with: .opacity)
@@ -356,6 +358,12 @@ struct GemmaOnboardingView: View {
                             password: password,
                             enableBiometric: enableBiometric
                         )
+                        // Fade out content first
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            contentOpacity = 0.0
+                        }
+                        // Then show setup after fade completes
+                        try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
                         withAnimation(.spring(response: 0.4)) {
                             showingProgressSetup = true
                         }
@@ -377,8 +385,16 @@ struct GemmaOnboardingView: View {
                 }
             } else {
                 // Existing user from Settings
-                withAnimation(.spring(response: 0.4)) {
-                    showingProgressSetup = true
+                Task {
+                    // Fade out content first
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        contentOpacity = 0.0
+                    }
+                    // Then show setup after fade completes
+                    try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
+                    withAnimation(.spring(response: 0.4)) {
+                        showingProgressSetup = true
+                    }
                 }
             }
         }
