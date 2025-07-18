@@ -18,7 +18,7 @@ PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 BUILD_DIR="$PROJECT_ROOT/Gemi/build"
 DERIVED_DATA_PATH="$HOME/Library/Developer/Xcode/DerivedData"
 APP_NAME="Gemi"
-DMG_NAME="Gemi-Installer"
+DMG_NAME="Gemi"
 SKIP_BUILD=false
 
 # Parse arguments
@@ -97,15 +97,29 @@ APP_PATH=""
 # First check our custom build directory
 if [ -d "$BUILD_DIR/DerivedData/Build/Products/Release/$APP_NAME.app" ]; then
     APP_PATH="$BUILD_DIR/DerivedData/Build/Products/Release/$APP_NAME.app"
+    echo -e "${YELLOW}Found in custom build directory${NC}"
 else
     # Fall back to searching in default DerivedData
     echo -e "${YELLOW}Searching in DerivedData...${NC}"
-    APP_PATH=$(find "$DERIVED_DATA_PATH" -name "$APP_NAME.app" -path "*/Release/*" -type d | head -n 1)
+    
+    # Look for Release build first
+    APP_PATH=$(find "$DERIVED_DATA_PATH" -name "$APP_NAME.app" -path "*/Release/*" -type d 2>/dev/null | head -n 1)
+    
+    # If no Release build, look for Debug build
+    if [ -z "$APP_PATH" ]; then
+        echo -e "${YELLOW}No Release build found, looking for Debug build...${NC}"
+        APP_PATH=$(find "$DERIVED_DATA_PATH" -name "$APP_NAME.app" -path "*/Debug/*" -type d 2>/dev/null | head -n 1)
+        
+        if [ -n "$APP_PATH" ]; then
+            echo -e "${YELLOW}⚠ Found Debug build. For production, build with Release configuration.${NC}"
+        fi
+    fi
 fi
 
 if [ -z "$APP_PATH" ] || [ ! -d "$APP_PATH" ]; then
     echo -e "${RED}✗ Could not find $APP_NAME.app${NC}"
     echo -e "${YELLOW}  Make sure to build the app in Xcode first${NC}"
+    echo -e "${YELLOW}  You can build it with: xcodebuild -project Gemi/Gemi.xcodeproj -scheme Gemi -configuration Release${NC}"
     exit 1
 fi
 
