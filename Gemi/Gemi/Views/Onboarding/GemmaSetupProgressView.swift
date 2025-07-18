@@ -12,6 +12,7 @@ struct GemmaSetupProgressView: View {
     @State private var hasCalledCompletion = false
     @State private var contentOpacity: Double = 0.0
     @State private var hasStartedSetup = false
+    @State private var showContent = false
     // @State private var showingTokenView = false // No longer needed - embedded token
     
     var body: some View {
@@ -26,9 +27,11 @@ struct GemmaSetupProgressView: View {
                         removal: .move(edge: .top).combined(with: .opacity)
                     ))
             } else {
-                contentView
-                    .opacity(contentOpacity)
-                    .transition(.opacity)
+                if showContent && hasStartedSetup {
+                    contentView
+                        .opacity(contentOpacity)
+                        .transition(.opacity)
+                }
             }
         }
         .onAppear {
@@ -36,6 +39,14 @@ struct GemmaSetupProgressView: View {
             // Smooth fade-in to prevent flash of initial state
             Task {
                 // Small delay to ensure view is fully rendered
+                try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+                
+                // Show content container
+                withAnimation(.easeIn(duration: 0.01)) {
+                    showContent = true
+                }
+                
+                // Wait a bit more for the container to be ready
                 try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
                 
                 // Fade in content
@@ -46,7 +57,7 @@ struct GemmaSetupProgressView: View {
                 // Start setup after content is visible
                 if !hasStartedSetup {
                     hasStartedSetup = true
-                    try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
+                    try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
                     setupManager.startSetup()
                 }
             }
