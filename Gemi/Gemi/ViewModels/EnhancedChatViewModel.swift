@@ -122,7 +122,7 @@ final class EnhancedChatViewModel: ObservableObject {
                 }
                 
                 if !isHealthy {
-                    print("AI model health check failed")
+                    print("AI model not loaded")
                 } else {
                     // Check if current model supports multimodal
                     let isMultimodal = await aiService.isMultimodalModel()
@@ -140,8 +140,8 @@ final class EnhancedChatViewModel: ObservableObject {
                 }
                 print("AI model status check error: \(error)")
                 
-                // Don't show error alerts for connection checks
-                // The UI will show the connection status
+                // Don't show error alerts for model status checks
+                // The UI will show the model status
             }
         }
     }

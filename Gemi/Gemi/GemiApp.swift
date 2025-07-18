@@ -10,7 +10,6 @@ import SwiftUI
 @main
 struct GemiApp: App {
     @StateObject private var authManager = AuthenticationManager.shared
-    @StateObject private var modelManager = GemmaModelManager()
     @AppStorage("hasCompletedGemmaOnboarding") private var hasCompletedOnboarding = false
     @State private var showingOnboarding = false
     @State private var hasCheckedOnboarding = false
@@ -18,8 +17,29 @@ struct GemiApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                // New users go directly to beautiful onboarding (which includes password setup)
-                if authManager.requiresInitialSetup || shouldShowOnboarding {
+                // CRITICAL: Show loading state while checking onboarding status
+                // This prevents ANY main UI from appearing before onboarding check
+                if !hasCheckedOnboarding {
+                    // Beautiful loading screen while checking
+                    ZStack {
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.1, green: 0.05, blue: 0.2),
+                                Color(red: 0.05, green: 0.05, blue: 0.15)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                        .ignoresSafeArea()
+                        
+                        ProgressView()
+                            .controlSize(.large)
+                            .tint(.white)
+                    }
+                    .frame(width: 900, height: 700)
+                    .frame(maxWidth: 900, maxHeight: 700)
+                } else if authManager.requiresInitialSetup || shouldShowOnboarding {
+                    // New users go directly to beautiful onboarding (which includes password setup)
                     GemmaOnboardingView {
                         withAnimation(.easeInOut(duration: 0.5)) {
                             hasCompletedOnboarding = true
@@ -37,6 +57,7 @@ struct GemiApp: App {
             }
             .animation(.easeInOut(duration: 0.3), value: authManager.isAuthenticated)
             .animation(.easeInOut(duration: 0.3), value: authManager.requiresInitialSetup)
+            .animation(.easeInOut(duration: 0.3), value: hasCheckedOnboarding)
             .task {
                 // Check onboarding needs immediately
                 await checkOnboardingStatus()

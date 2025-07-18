@@ -538,15 +538,15 @@ struct GemiChatView: View {
         VStack {
             Spacer()
             
-            // Subtle connection notice at bottom
+            // Model loading notice at bottom
             VStack(spacing: 12) {
                 // Small indicator
                 HStack(spacing: 8) {
                     Circle()
-                        .fill(Color.red)
+                        .fill(Color.orange)
                         .frame(width: 8, height: 8)
                     
-                    Text("AI model not loaded")
+                    Text("AI model not ready")
                         .font(Theme.Typography.caption)
                         .foregroundColor(Theme.Colors.secondaryText)
                     
@@ -554,7 +554,7 @@ struct GemiChatView: View {
                         .font(Theme.Typography.caption)
                         .foregroundColor(Theme.Colors.tertiaryText)
                     
-                    Button("Reconnect") {
+                    Button("Load Model") {
                         viewModel.checkAIConnection()
                     }
                     .font(Theme.Typography.caption)
@@ -574,7 +574,7 @@ struct GemiChatView: View {
                 )
                 .shadow(color: Color.black.opacity(0.1), radius: 8, y: 4)
                 
-                Text("Messages won't be sent until connection is restored")
+                Text("Messages require the AI model to be loaded")
                     .font(Theme.Typography.footnote)
                     .foregroundColor(Theme.Colors.tertiaryText)
                     .multilineTextAlignment(.center)
