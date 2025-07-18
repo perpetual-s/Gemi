@@ -145,7 +145,7 @@ final class DownloadDiagnostics: ObservableObject {
             if let httpResponse = response as? HTTPURLResponse {
                 if httpResponse.statusCode == 200 {
                     if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                        let isPrivate = json["private"] as? Bool ?? false
+                        let _ = json["private"] as? Bool ?? false
                         let isGated = json["gated"] as? Bool ?? false
                         
                         if isGated {
