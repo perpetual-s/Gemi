@@ -100,6 +100,25 @@ final class ModelCache {
         setupDirectories()
     }
     
+    /// Clean up partial downloads (resume data files)
+    func cleanupPartialDownloads() {
+        let fileManager = FileManager.default
+        
+        do {
+            let contents = try fileManager.contentsOfDirectory(at: modelPath, includingPropertiesForKeys: nil)
+            
+            // Remove .download files (resume data)
+            for url in contents {
+                if url.pathExtension == "download" {
+                    try? fileManager.removeItem(at: url)
+                    print("🧹 Cleaned up partial download: \(url.lastPathComponent)")
+                }
+            }
+        } catch {
+            // Directory might not exist yet
+        }
+    }
+    
     /// Clear temporary cache files
     func clearTemporaryCache() throws {
         if FileManager.default.fileExists(atPath: cacheDirectory.path) {
