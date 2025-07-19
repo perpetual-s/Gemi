@@ -14,6 +14,7 @@ struct GemmaSetupProgressView: View {
     @State private var hasStartedSetup = false
     @State private var showContent = false
     @State private var showingDiagnostics = false
+    @State private var showingCelebration = false
     // @State private var showingTokenView = false // No longer needed - embedded token
     
     var body: some View {
@@ -68,6 +69,21 @@ struct GemmaSetupProgressView: View {
                         .opacity(contentOpacity)
                         .transition(.opacity)
                 }
+            }
+        }
+        .overlay {
+            if showingCelebration {
+                OnboardingCompletionView(
+                    userName: UserDefaults.standard.string(forKey: "userName"),
+                    onContinue: {
+                        hasCalledCompletion = true
+                        onComplete()
+                    }
+                )
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
+                    removal: .scale(scale: 1.05).combined(with: .opacity)
+                ))
             }
         }
         .onAppear {
@@ -298,8 +314,9 @@ struct GemmaSetupProgressView: View {
                             icon: "checkmark.circle.fill",
                             action: {
                                 guard !hasCalledCompletion else { return }
-                                hasCalledCompletion = true
-                                onComplete()
+                                withAnimation(.spring()) {
+                                    showingCelebration = true
+                                }
                             }
                         )
                         .transition(.scale.combined(with: .opacity))
