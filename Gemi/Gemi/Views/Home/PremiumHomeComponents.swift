@@ -224,9 +224,9 @@ struct TimeBasedIcon: View {
     }
 }
 
-// MARK: - Stat Card
+// MARK: - Premium Stat Card
 
-struct StatCard: View {
+struct PremiumStatCard: View {
     let value: String
     let label: String
     let icon: String

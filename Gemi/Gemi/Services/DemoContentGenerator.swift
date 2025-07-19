@@ -8,7 +8,7 @@ final class DemoContentGenerator {
     private let databaseManager = DatabaseManager.shared
     
     /// Demo entries that showcase Gemi's capabilities
-    private let demoEntries: [(title: String, content: String, mood: String, daysAgo: Int)] = [
+    private let demoEntries: [(title: String, content: String, mood: Mood?, daysAgo: Int)] = [
         (
             title: "🌅 Morning Reflections",
             content: """
@@ -21,7 +21,7 @@ final class DemoContentGenerator {
             
             Sometimes I wonder if anyone else feels this sense of possibility in the early morning hours. It's like the universe is whispering that today could be different, today could be extraordinary.
             """,
-            mood: "peaceful",
+            mood: .peaceful,
             daysAgo: 0
         ),
         (
@@ -35,7 +35,7 @@ final class DemoContentGenerator {
             
             Note to future self: When stuck, take a walk. The answers often come when you stop forcing them.
             """,
-            mood: "excited",
+            mood: .excited,
             daysAgo: 1
         ),
         (
@@ -49,7 +49,7 @@ final class DemoContentGenerator {
             
             Gemi helped me prepare for this conversation. Looking back at past entries, I could see my patterns, my triggers, my growth. Having an AI that remembers my journey is like having a wise friend who's been there through it all.
             """,
-            mood: "thoughtful",
+            mood: nil,
             daysAgo: 3
         ),
         (
@@ -68,7 +68,7 @@ final class DemoContentGenerator {
             
             The future feels bright and full of possibility.
             """,
-            mood: "motivated",
+            mood: .accomplished,
             daysAgo: 5
         ),
         (
@@ -84,7 +84,7 @@ final class DemoContentGenerator {
             
             Tomorrow, I'll face the world again. But tonight, I'm just human, beautifully imperfect and trying my best.
             """,
-            mood: "vulnerable",
+            mood: .anxious,
             daysAgo: 7
         ),
         (
@@ -98,7 +98,7 @@ final class DemoContentGenerator {
             
             Attached a photo of today's painting. It's messy and imperfect and absolutely perfect in its imperfection. Just like life.
             """,
-            mood: "creative",
+            mood: .happy,
             daysAgo: 10
         ),
         (
@@ -118,7 +118,7 @@ final class DemoContentGenerator {
             
             Celebrating these small victories because they matter. They're the building blocks of the life I'm creating.
             """,
-            mood: "proud",
+            mood: .accomplished,
             daysAgo: 14
         ),
         (
@@ -134,7 +134,7 @@ final class DemoContentGenerator {
             
             What a gift it is to be human.
             """,
-            mood: "peaceful",
+            mood: .peaceful,
             daysAgo: 21
         )
     ]
@@ -162,33 +162,37 @@ final class DemoContentGenerator {
             
             let entry = JournalEntry(
                 id: UUID(),
+                createdAt: date,
+                modifiedAt: date,
                 title: demo.title,
                 content: demo.content,
                 mood: demo.mood,
-                createdAt: date,
-                modifiedAt: date,
-                isFavorite: index < 3, // Favorite the most recent ones
-                hasVoiceNote: index == 2, // Add voice note indicator
-                summary: nil
+                isFavorite: index < 3 // Favorite the most recent ones
             )
             
-            await databaseManager.createEntry(entry)
+            do {
+                try await databaseManager.saveEntry(entry)
+            } catch {
+                print("Failed to save entry: \(error)")
+            }
             
             // Small delay to ensure proper ordering
             try? await Task.sleep(nanoseconds: 100_000_000)
         }
         
         // Generate memories
-        for memory in demoMemories {
-            let memory = Memory(
-                id: UUID(),
-                content: memory,
-                metadata: "",
-                createdAt: Date(),
-                source: "journal_entry"
+        for memoryContent in demoMemories {
+            // For demo memories, we'll use a dummy source entry ID
+            let memoryData = MemoryData(
+                content: memoryContent,
+                sourceEntryID: UUID()
             )
             
-            await databaseManager.createMemory(memory)
+            do {
+                try await databaseManager.saveMemory(memoryData)
+            } catch {
+                print("Failed to save memory: \(error)")
+            }
         }
         
         // Create sample conversations
@@ -197,16 +201,22 @@ final class DemoContentGenerator {
     
     /// Generate sample AI conversations
     private func generateSampleConversations() async {
+        // For now, we'll skip generating sample conversations since Chat type is not available
+        // This would need to be integrated with the actual chat storage system
+        /*
         let sampleChats = [
             Chat(
                 id: UUID(),
                 messages: [
                     ChatHistoryMessage(
+                        id: UUID(),
                         role: .user,
                         content: "I've been feeling stuck creatively lately. Any suggestions?",
+                        images: nil,
                         timestamp: Date()
                     ),
                     ChatHistoryMessage(
+                        id: UUID(),
                         role: .assistant,
                         content: """
                         I noticed from your entries that walking has helped you breakthrough problems before - like when you solved that work challenge! 
@@ -215,6 +225,7 @@ final class DemoContentGenerator {
                         
                         What if you combined both - take a walk to your favorite art supply store? The journey itself might spark something. 🎨
                         """,
+                        images: nil,
                         timestamp: Date()
                     )
                 ],
@@ -225,11 +236,14 @@ final class DemoContentGenerator {
                 id: UUID(),
                 messages: [
                     ChatHistoryMessage(
+                        id: UUID(),
                         role: .user,
                         content: "Help me prepare for a difficult conversation I need to have",
+                        images: nil,
                         timestamp: Date()
                     ),
                     ChatHistoryMessage(
+                        id: UUID(),
                         role: .assistant,
                         content: """
                         I remember you recently had a breakthrough conversation with your mom. You mentioned feeling lighter afterward, even though it was difficult.
@@ -241,6 +255,7 @@ final class DemoContentGenerator {
                         
                         What specific conversation are you preparing for? I'm here to help you think through it.
                         """,
+                        images: nil,
                         timestamp: Date()
                     )
                 ],
@@ -254,6 +269,7 @@ final class DemoContentGenerator {
             // Save to whatever chat storage mechanism is used
             print("Demo chat created: \(chat.id)")
         }
+        */
     }
     
     /// Clear existing content for clean demo
@@ -261,12 +277,19 @@ final class DemoContentGenerator {
         // Only clear if running in demo mode
         guard UserDefaults.standard.bool(forKey: "isDemoMode") else { return }
         
-        for entry in databaseManager.entries {
-            await databaseManager.deleteEntry(entry)
-        }
-        
-        for memory in databaseManager.memories {
-            await databaseManager.deleteMemory(memory)
+        // Load existing entries and memories
+        do {
+            let entries = try await databaseManager.loadEntries()
+            for entry in entries {
+                try await databaseManager.deleteEntry(entry.id)
+            }
+            
+            let memories = try await databaseManager.loadAllMemories()
+            for memory in memories {
+                try await databaseManager.deleteMemoryByID(memory.id)
+            }
+        } catch {
+            print("Error clearing content: \(error)")
         }
     }
     

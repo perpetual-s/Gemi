@@ -2,7 +2,8 @@ import SwiftUI
 
 /// Premium home view with award-winning animations and interactions
 struct PremiumHomeView: View {
-    @StateObject private var databaseManager = DatabaseManager.shared
+    @State private var entries: [JournalEntry] = []
+    @State private var memories: [Memory] = []
     @State private var hoveredCard: String? = nil
     @State private var heroScale: CGFloat = 0.8
     @State private var heroOpacity: Double = 0
@@ -71,6 +72,9 @@ struct PremiumHomeView: View {
             .onAppear {
                 startAnimations()
                 checkFirstTimeUser()
+                Task {
+                    await loadData()
+                }
             }
             .onContinuousHover { phase in
                 switch phase {
@@ -89,51 +93,61 @@ struct PremiumHomeView: View {
     private var dynamicBackground: some View {
         ZStack {
             // Base gradient
-            LinearGradient(
-                colors: backgroundColors,
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-            .animation(.easeInOut(duration: 5), value: currentHour)
+            baseGradientLayer
             
             // Animated mesh gradient overlay
-            TimelineView(.animation(minimumInterval: 0.1)) { _ in
-                Canvas { context, size in
-                    let time = Date().timeIntervalSince1970
-                    
-                    for i in 0..<3 {
-                        let phase = Double(i) * 2.1
-                        let x = size.width * 0.5 + sin(time * 0.3 + phase) * size.width * 0.3
-                        let y = size.height * 0.5 + cos(time * 0.4 + phase) * size.height * 0.3
-                        
-                        let gradient = RadialGradient(
-                            colors: [
-                                Theme.Colors.ambientColor(for: currentHour).opacity(0.3),
-                                Color.clear
-                            ],
-                            center: .center,
-                            startRadius: 50,
-                            endRadius: 300
-                        )
-                        
-                        context.fill(
-                            Circle().path(in: CGRect(x: x - 150, y: y - 150, width: 300, height: 300)),
-                            with: .radialGradient(
-                                Gradient(colors: [
-                                    Theme.Colors.ambientColor(for: currentHour).opacity(0.3),
-                                    Color.clear
-                                ]),
-                                center: .center,
-                                startRadius: 50,
-                                endRadius: 150
-                            )
-                        )
-                    }
-                }
-                .blur(radius: 60)
-                .opacity(0.6)
+            animatedMeshOverlay
+        }
+    }
+    
+    private var baseGradientLayer: some View {
+        LinearGradient(
+            colors: backgroundColors,
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .ignoresSafeArea()
+        .animation(.easeInOut(duration: 5), value: currentHour)
+    }
+    
+    private var animatedMeshOverlay: some View {
+        TimelineView(.animation(minimumInterval: 0.1)) { _ in
+            Canvas { context, size in
+                let time = Date().timeIntervalSince1970
+                drawAnimatedOrbs(context: context, size: size, time: time)
             }
+            .blur(radius: 60)
+            .opacity(0.6)
+        }
+    }
+    
+    private func drawAnimatedOrbs(context: GraphicsContext, size: CGSize, time: Double) {
+        for i in 0..<3 {
+            let phase = Double(i) * 2.1
+            let x = size.width * 0.5 + sin(time * 0.3 + phase) * size.width * 0.3
+            let y = size.height * 0.5 + cos(time * 0.4 + phase) * size.height * 0.3
+            
+            let orbRect = CGRect(x: x - 150, y: y - 150, width: 300, height: 300)
+            let colors = [ambientColor(for: currentHour).opacity(0.3), Color.clear]
+            
+            context.fill(
+                Circle().path(in: orbRect),
+                with: .radialGradient(
+                    Gradient(colors: colors),
+                    center: CGPoint(x: orbRect.midX, y: orbRect.midY),
+                    startRadius: 50,
+                    endRadius: 150
+                )
+            )
+        }
+    }
+    
+    private func ambientColor(for hour: Int) -> Color {
+        switch hour {
+        case 5..<12: return .orange
+        case 12..<17: return .yellow
+        case 17..<21: return .orange
+        default: return .indigo
         }
     }
     
@@ -277,22 +291,22 @@ struct PremiumHomeView: View {
                 .foregroundStyle(Color.primary)
             
             HStack(spacing: 20) {
-                StatCard(
+                PremiumStatCard(
                     value: "\(entryCount)",
                     label: "Entries",
                     icon: "doc.text.fill",
                     color: .blue
                 )
                 
-                StatCard(
+                PremiumStatCard(
                     value: streakText,
                     label: "Current Streak",
                     icon: "flame.fill",
                     color: .orange
                 )
                 
-                StatCard(
-                    value: "\(databaseManager.memories.count)",
+                PremiumStatCard(
+                    value: "\(memories.count)",
                     label: "Memories",
                     icon: "sparkles",
                     color: .purple
@@ -346,15 +360,24 @@ struct PremiumHomeView: View {
     }
     
     private var backgroundColors: [Color] {
-        Theme.Colors.timeBasedGradient(for: currentHour)
+        switch currentHour {
+        case 5..<12:
+            return [Color(red: 0.95, green: 0.8, blue: 0.6), Color(red: 0.9, green: 0.7, blue: 0.5)]
+        case 12..<17:
+            return [Color(red: 0.6, green: 0.8, blue: 0.95), Color(red: 0.5, green: 0.7, blue: 0.9)]
+        case 17..<21:
+            return [Color(red: 0.9, green: 0.6, blue: 0.4), Color(red: 0.8, green: 0.5, blue: 0.3)]
+        default:
+            return [Color(red: 0.2, green: 0.2, blue: 0.4), Color(red: 0.1, green: 0.1, blue: 0.3)]
+        }
     }
     
     private var hasEntries: Bool {
-        !databaseManager.entries.isEmpty
+        !entries.isEmpty
     }
     
     private var entryCount: Int {
-        databaseManager.entries.count
+        entries.count
     }
     
     private var streakText: String {
@@ -398,6 +421,20 @@ struct PremiumHomeView: View {
                     showTutorial = true
                 }
             }
+        }
+    }
+    
+    private func loadData() async {
+        let databaseManager = DatabaseManager.shared
+        do {
+            self.entries = try await databaseManager.loadEntries()
+            self.memories = try await databaseManager.loadAllMemories().map { memoryData in
+                Memory(id: memoryData.id, content: memoryData.content, sourceEntryID: memoryData.sourceEntryID, extractedAt: memoryData.extractedAt)
+            }
+        } catch {
+            print("Failed to load data: \(error)")
+            self.entries = []
+            self.memories = []
         }
     }
 }
