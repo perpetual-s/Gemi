@@ -80,13 +80,8 @@ fi
 
 echo -e "${GREEN}✓ Found app at: $APP_PATH${NC}"
 
-# Check if .env needs to be copied to app bundle
-echo -e "\n${BLUE}Checking .env in app bundle...${NC}"
-if [ -f "$PROJECT_ROOT/.env" ] && [ ! -f "$APP_PATH/Contents/Resources/.env" ]; then
-    echo -e "${YELLOW}ℹ Copying .env to app bundle...${NC}"
-    cp "$PROJECT_ROOT/.env" "$APP_PATH/Contents/Resources/"
-    echo -e "${GREEN}✓ .env file copied to app bundle${NC}"
-fi
+# No need to copy .env for mlx-community models
+# They don't require authentication
 
 # Create DMG
 DMG_NAME="Gemi-$(date +%Y%m%d).dmg"
@@ -104,12 +99,12 @@ rm -rf "$PROJECT_ROOT/.dmg-temp" 2>/dev/null || true
 TEMP_DIR="$PROJECT_ROOT/.dmg-temp"
 mkdir -p "$TEMP_DIR"
 
-echo -e "${BLUE}🔍 Locating Gemi.app...${NC}"
-echo -e "${GREEN}✓ Found at: $APP_PATH${NC}"
+echo -e "${BLUE}🔍 Using Gemi.app...${NC}"
+echo -e "${GREEN}✓ Located at: $APP_PATH${NC}"
 
 echo -e "\n${BLUE}📦 Preparing app bundle...${NC}"
-echo -e "   Including authentication..."
-echo -e "   ${GREEN}✓ Zero-friction setup included${NC}"
+echo -e "   ${GREEN}✓ No authentication required${NC}"
+echo -e "   ${GREEN}✓ Models download automatically${NC}"
 
 echo -e "\n${BLUE}🎨 Creating installer layout...${NC}"
 echo -e "   Copying Gemi.app..."
@@ -145,38 +140,34 @@ fi
 
 echo -e "${BLUE}🎨 Applying beautiful layout...${NC}"
 
-# Set custom icon positions using AppleScript
-osascript <<EOF > /dev/null 2>&1
-tell application "Finder"
-    tell disk "Welcome to Gemi"
-        open
-        set current view of container window to icon view
-        set toolbar visible of container window to false
-        set statusbar visible of container window to false
-        set the bounds of container window to {400, 100, 900, 500}
-        set viewOptions to the icon view options of container window
-        set arrangement of viewOptions to not arranged
-        set icon size of viewOptions to 100
-        set background picture of viewOptions to POSIX file ""
-        set position of item "Gemi.app" of container window to {150, 200}
-        set position of item "Applications" of container window to {350, 200}
-        close
-        open
-        update without registering applications
-        delay 2
+# Set custom icon positions using AppleScript (with error handling)
+osascript > /dev/null 2>&1 <<EOF || true
+try
+    tell application "Finder"
+        tell disk "Welcome to Gemi"
+            open
+            set current view of container window to icon view
+            set toolbar visible of container window to false
+            set statusbar visible of container window to false
+            set the bounds of container window to {400, 100, 900, 500}
+            set viewOptions to the icon view options of container window
+            set arrangement of viewOptions to not arranged
+            set icon size of viewOptions to 100
+            set position of item "Gemi.app" of container window to {150, 200}
+            set position of item "Applications" of container window to {350, 200}
+            close
+            open
+            update without registering applications
+            delay 1
+        end tell
     end tell
-end tell
+on error errMsg
+    -- Silently ignore Finder errors
+end try
 EOF
 
-# Try to set custom volume icon if SetFile is available
-if command -v SetFile >/dev/null 2>&1; then
-    echo -e "\n   Setting custom volume icon..."
-    # Only try if the volume exists and is accessible
-    if [ -d "$VOLUME" ]; then
-        # Skip .Trashes operations that cause errors
-        SetFile -a C "$VOLUME" 2>/dev/null || true
-    fi
-fi
+# Skip SetFile operations entirely to avoid .Trashes errors
+# The DMG will work fine without custom volume attributes
 
 # Make sure everything is flushed to disk
 sync

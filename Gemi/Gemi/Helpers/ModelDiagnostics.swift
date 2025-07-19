@@ -116,18 +116,10 @@ class ModelDiagnostics {
             print("  ✗ Authentication not configured")
         }
         
-        // Check environment config
-        print("\n📁 Environment Configuration:")
-        print("  .env search paths:")
-        if let envPath = Bundle.main.path(forResource: ".env", ofType: nil) {
-            print("    ✓ Found in bundle: \(envPath)")
-        } else {
-            print("    ✗ Not found in bundle")
-        }
-        if let resourcesURL = Bundle.main.resourceURL?.appendingPathComponent(".env") {
-            print("    → Resources path: \(resourcesURL.path)")
-            print("    → Exists: \(FileManager.default.fileExists(atPath: resourcesURL.path))")
-        }
+        // Check model configuration
+        print("\n📁 Model Configuration:")
+        print("  Model: \(ModelConfiguration.modelID)")
+        print("  ✓ Using public mlx-community model - no authentication required")
         
         let modelCache = ModelCache.shared
         let modelPath = modelCache.modelPath

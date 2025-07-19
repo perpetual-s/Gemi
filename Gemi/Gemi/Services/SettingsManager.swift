@@ -38,19 +38,12 @@ class SettingsManager: ObservableObject {
         }
     }
     
-    /// Retrieve HuggingFace token - uses embedded token for zero-friction experience
+    /// Retrieve HuggingFace token - only needed for non-mlx-community models
     func getHuggingFaceToken() -> String? {
-        // First check .env file for the token
-        if let envToken = EnvironmentConfig.shared.huggingFaceToken,
-           !envToken.isEmpty {
-            return envToken
-        }
+        // mlx-community models don't need authentication
+        // This is kept for potential future use with other models
         
-        // For production builds, the token should be in .env file
-        // which is NOT committed to git (it's in .gitignore)
-        // This provides zero-friction experience without exposing tokens
-        
-        // Fallback: check Keychain for any user-provided token
+        // Check Keychain for any user-provided token
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrAccount as String: tokenKey,
@@ -81,9 +74,9 @@ class SettingsManager: ObservableObject {
         hasHuggingFaceToken = false
     }
     
-    /// Check if token exists (either in .env or in Keychain)
+    /// Check if token exists in Keychain
     private func checkTokenExists() {
-        hasEnvironmentToken = EnvironmentConfig.shared.huggingFaceToken != nil
+        hasEnvironmentToken = false // No longer using .env files
         hasHuggingFaceToken = getHuggingFaceToken() != nil
     }
 }

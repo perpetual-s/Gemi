@@ -186,54 +186,36 @@ final class DownloadDiagnostics: ObservableObject {
     private func testAuthentication() async {
         addResult(test: "Authentication", status: .checking)
         
-        var details: [String] = []
-        var hasValidToken = false
+        // mlx-community models don't require authentication
+        let modelID = ModelConfiguration.modelID
         
-        // Check .env file
-        if EnvironmentConfig.shared.huggingFaceToken != nil {
-            details.append("✅ .env file found")
-            hasValidToken = true
+        if modelID.starts(with: "mlx-community/") {
+            updateResult(
+                test: "Authentication",
+                status: .success,
+                detail: "✅ Using public mlx-community model - no authentication required",
+                solution: nil
+            )
         } else {
-            details.append("❌ .env file missing")
-        }
-        
-        // Check Keychain
-        if SettingsManager.shared.getHuggingFaceToken() != nil {
-            details.append("✅ Keychain token found")
-            hasValidToken = true
-        }
-        
-        // Test token validity
-        if hasValidToken {
-            if let token = EnvironmentConfig.shared.huggingFaceToken ?? SettingsManager.shared.getHuggingFaceToken() {
-                do {
-                    let url = URL(string: "https://huggingface.co/google/gemma-3n-E4B-it/resolve/main/config.json")!
-                    var request = URLRequest(url: url)
-                    request.httpMethod = "HEAD"
-                    request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-                    
-                    let (_, response) = try await URLSession.shared.data(for: request)
-                    if let httpResponse = response as? HTTPURLResponse {
-                        if httpResponse.statusCode == 200 {
-                            details.append("✅ Token is valid")
-                        } else {
-                            details.append("❌ Token rejected (HTTP \(httpResponse.statusCode))")
-                            hasValidToken = false
-                        }
-                    }
-                } catch {
-                    details.append("❌ Token validation failed")
-                    hasValidToken = false
-                }
+            // For other models, check if token exists
+            var details: [String] = []
+            var hasValidToken = false
+            
+            // Check Keychain
+            if SettingsManager.shared.getHuggingFaceToken() != nil {
+                details.append("✅ Keychain token found")
+                hasValidToken = true
+            } else {
+                details.append("❌ No token found")
             }
+            
+            updateResult(
+                test: "Authentication",
+                status: hasValidToken ? .success : .warning,
+                detail: details.joined(separator: ", "),
+                solution: hasValidToken ? nil : "Add HuggingFace token via Settings for non-public models"
+            )
         }
-        
-        updateResult(
-            test: "Authentication",
-            status: hasValidToken ? .success : .failure,
-            detail: details.joined(separator: ", "),
-            solution: hasValidToken ? nil : "Add HUGGINGFACE_TOKEN to .env file or use Manual Setup"
-        )
     }
     
     private func testModelDirectory() async {
