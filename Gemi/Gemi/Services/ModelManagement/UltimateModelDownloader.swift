@@ -14,7 +14,7 @@ final class UltimateModelDownloader: NSObject, ObservableObject {
     @Published var currentFile: String = ""
     @Published var error: Error?
     @Published var bytesDownloaded: Int64 = 0
-    @Published var totalBytes: Int64 = 5_852_501_976 // Exact total from HuggingFace for mlx-community model
+    @Published var totalBytes: Int64 = 5_854_280_607 // Updated total for mlx-community model files
     @Published var downloadStartTime: Date?
     @Published var downloadSpeed: Double = 0
     @Published var detailedStatus: String = ""

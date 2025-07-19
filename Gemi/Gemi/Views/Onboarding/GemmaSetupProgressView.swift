@@ -201,10 +201,16 @@ struct GemmaSetupProgressView: View {
                         .padding(.top, 20)
                     } else if setupManager.currentStep == .downloadingModel && setupManager.downloaderState == .preparing {
                         // Show loading state when preparing download
-                        OnboardingLoadingView(
-                            title: "Preparing Download",
-                            subtitle: "Setting up secure connection..."
-                        )
+                        VStack(spacing: 12) {
+                            Text("Preparing Download")
+                                .font(.system(size: 24, weight: .semibold))
+                                .foregroundColor(.white)
+                            
+                            Text("Setting up secure connection...")
+                                .font(.system(size: 16))
+                                .foregroundColor(.white.opacity(0.7))
+                                .multilineTextAlignment(.center)
+                        }
                         .frame(maxWidth: 400)
                     } else if case .cancelled = setupManager.downloaderState {
                         // Cancelled state UI
@@ -262,11 +268,17 @@ struct GemmaSetupProgressView: View {
                             .frame(maxWidth: 500)
                         }
                     } else if setupManager.currentStep == .loadingModel {
-                        // Use beautiful loading view for model loading
-                        OnboardingLoadingView(
-                            title: "Loading Model",
-                            subtitle: "Initializing Gemma 3n in memory..."
-                        )
+                        // Show loading state for model loading
+                        VStack(spacing: 12) {
+                            Text("Loading Model")
+                                .font(.system(size: 24, weight: .semibold))
+                                .foregroundColor(.white)
+                            
+                            Text("Initializing Gemma 3n in memory...")
+                                .font(.system(size: 16))
+                                .foregroundColor(.white.opacity(0.7))
+                                .multilineTextAlignment(.center)
+                        }
                         .frame(maxWidth: 400)
                     } else {
                         // Status message for other steps
@@ -613,7 +625,7 @@ struct StepIndicator: View {
                             Text(step.description)
                                 .font(.system(size: 12))
                                 .foregroundColor(.white.opacity(0.6))
-                            Text("Model size: 15.74 GB")
+                            Text("Model size: 5.8 GB")
                                 .font(.system(size: 11))
                                 .foregroundColor(.white.opacity(0.4))
                         }

@@ -31,27 +31,27 @@ enum ModelConfiguration {
     /// These are the actual files from the HuggingFace repo
     static let modelFiles: [(name: String, size: Int64)] = [
         // Configuration files
-        ("config.json", 272),                          // Model configuration
-        ("generation_config.json", 294),               // Generation settings
+        ("config.json", 270_336),                      // Model configuration ~264 kB
+        ("generation_config.json", 215),               // Generation settings
         ("preprocessor_config.json", 298),             // Preprocessor config
         ("processor_config.json", 292),                // Processor config
-        ("special_tokens_map.json", 296),              // Special tokens
+        ("special_tokens_map.json", 769),              // Special tokens
         ("tokenizer.json", 33_442_553),               // Tokenizer ~31.9 MB
         ("tokenizer.model", 4_696_020),               // Tokenizer model ~4.5 MB
-        ("tokenizer_config.json", 292),               // Tokenizer config
+        ("tokenizer_config.json", 1_228_800),         // Tokenizer config ~1.2 MB
         
         // Model weight files (4-bit quantized)
-        ("model.safetensors.index.json", 306),        // Index file for 2-part model
+        ("model.safetensors.index.json", 175_104),    // Index file ~171 kB
         ("model-00001-of-00002.safetensors", 5_364_004_911),  // ~5.0 GB
         ("model-00002-of-00002.safetensors", 455_053_642),    // ~434 MB
     ]
     
     /// Required files for inference (subset of all files)
     static let requiredFiles: [(name: String, size: Int64)] = [
-        ("config.json", 272),
+        ("config.json", 270_336),
         ("tokenizer.json", 33_442_553),
-        ("tokenizer_config.json", 292),
-        ("model.safetensors.index.json", 306),
+        ("tokenizer_config.json", 1_228_800),
+        ("model.safetensors.index.json", 175_104),
         ("model-00001-of-00002.safetensors", 5_364_004_911),
         ("model-00002-of-00002.safetensors", 455_053_642),
     ]
