@@ -57,6 +57,7 @@ python-inference-server/hf_token.txt
 
 # Scripts
 reset_gemi.sh
+scripts/
 
 # Log files
 *.log
