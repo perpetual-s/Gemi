@@ -298,10 +298,8 @@ final class GemmaMLXModel: ObservableObject {
     private func loadSafetensors() async throws {
         // Load safetensors weights
         let weightFiles = [
-            "model-00001-of-00004.safetensors",
-            "model-00002-of-00004.safetensors",
-            "model-00003-of-00004.safetensors",
-            "model-00004-of-00004.safetensors"
+            "model-00001-of-00002.safetensors",
+            "model-00002-of-00002.safetensors"
         ]
         
         guard let model = self.model else { return }

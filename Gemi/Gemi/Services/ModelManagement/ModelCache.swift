@@ -46,10 +46,8 @@ final class ModelCache {
             "tokenizer.json",
             "tokenizer_config.json",
             "model.safetensors.index.json",
-            "model-00001-of-00004.safetensors",
-            "model-00002-of-00004.safetensors",
-            "model-00003-of-00004.safetensors",
-            "model-00004-of-00004.safetensors"
+            "model-00001-of-00002.safetensors",
+            "model-00002-of-00002.safetensors"
         ]
         
         for file in requiredFiles {

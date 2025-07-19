@@ -219,7 +219,7 @@ final class GemmaTextGenerator {
         let requiredFiles = [
             "config.json",
             "tokenizer.json",
-            "model-00001-of-00004.safetensors"
+            "model-00001-of-00002.safetensors"
         ]
         
         for file in requiredFiles {

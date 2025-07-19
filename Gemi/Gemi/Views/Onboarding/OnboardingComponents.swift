@@ -276,6 +276,21 @@ struct OnboardingErrorView: View {
     let message: String
     let primaryAction: (title: String, action: () -> Void)?
     let secondaryAction: (title: String, action: () -> Void)?
+    let diagnosticsAction: (() -> Void)?
+    
+    init(
+        title: String,
+        message: String,
+        primaryAction: (title: String, action: () -> Void)? = nil,
+        secondaryAction: (title: String, action: () -> Void)? = nil,
+        diagnosticsAction: (() -> Void)? = nil
+    ) {
+        self.title = title
+        self.message = message
+        self.primaryAction = primaryAction
+        self.secondaryAction = secondaryAction
+        self.diagnosticsAction = diagnosticsAction
+    }
     
     var body: some View {
         VStack(spacing: 32) {
@@ -318,21 +333,38 @@ struct OnboardingErrorView: View {
             }
             
             if primaryAction != nil || secondaryAction != nil {
-                HStack(spacing: 16) {
-                    if let secondary = secondaryAction {
-                        OnboardingButton(
-                            secondary.title,
-                            style: .secondary,
-                            action: secondary.action
-                        )
+                VStack(spacing: 16) {
+                    HStack(spacing: 16) {
+                        if let secondary = secondaryAction {
+                            OnboardingButton(
+                                secondary.title,
+                                style: .secondary,
+                                action: secondary.action
+                            )
+                        }
+                        
+                        if let primary = primaryAction {
+                            OnboardingButton(
+                                primary.title,
+                                style: .primary,
+                                action: primary.action
+                            )
+                        }
                     }
                     
-                    if let primary = primaryAction {
-                        OnboardingButton(
-                            primary.title,
-                            style: .primary,
-                            action: primary.action
-                        )
+                    if let diagnostics = diagnosticsAction {
+                        Button {
+                            diagnostics()
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "stethoscope")
+                                    .font(.caption)
+                                Text("Run Diagnostics")
+                                    .font(.caption)
+                            }
+                            .foregroundStyle(.white.opacity(0.6))
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }

@@ -14,7 +14,7 @@ final class UltimateModelDownloader: NSObject, ObservableObject {
     @Published var currentFile: String = ""
     @Published var error: Error?
     @Published var bytesDownloaded: Int64 = 0
-    @Published var totalBytes: Int64 = 16_862_421_539 // Exact total from HuggingFace
+    @Published var totalBytes: Int64 = 5_852_501_976 // Exact total from HuggingFace for mlx-community model
     @Published var downloadStartTime: Date?
     @Published var downloadSpeed: Double = 0
     @Published var detailedStatus: String = ""
@@ -149,18 +149,40 @@ final class UltimateModelDownloader: NSObject, ObservableObject {
     
     /// Ensure we have valid authentication
     private func ensureAuthentication() async throws -> String {
-        detailedStatus = "Getting authentication token..."
-        
-        // Try multiple sources in order
-        var token: String? = nil
-        var tokenSource = ""
+        detailedStatus = "Checking model access..."
         
         // mlx-community models are NOT gated - no authentication required!
         if modelID.starts(with: "mlx-community/") {
             print("✅ Using public mlx-community model - no authentication required")
-            detailedStatus = "Public model - no token needed"
+            detailedStatus = "Using public model (no authentication needed)"
+            
+            // Verify the model is accessible without auth
+            let testURL = URL(string: "https://huggingface.co/\(modelID)/resolve/main/config.json")!
+            var request = URLRequest(url: testURL)
+            request.httpMethod = "HEAD"
+            request.setValue("Gemi/1.0", forHTTPHeaderField: "User-Agent")
+            
+            do {
+                let (_, response) = try await session.data(for: request)
+                if let httpResponse = response as? HTTPURLResponse {
+                    if httpResponse.statusCode == 200 {
+                        print("✅ Model is accessible without authentication")
+                        return ""
+                    } else {
+                        print("⚠️ Model returned status code: \(httpResponse.statusCode)")
+                    }
+                }
+            } catch {
+                print("⚠️ Failed to verify model access: \(error)")
+            }
+            
+            // Still return empty token for mlx-community models
             return ""
         }
+        
+        // For other models, check authentication sources
+        var token: String? = nil
+        var tokenSource = ""
         
         // For other models, check authentication sources
         // 1. Check embedded .env file
@@ -313,10 +335,19 @@ final class UltimateModelDownloader: NSObject, ObservableObject {
                     
                     // Log error details
                     print("❌ Download failed for \(file.name): \(error)")
-                    detailedStatus = "Retrying \(file.name) in \(attempt + 2) seconds..."
                     
-                    // Exponential backoff
-                    try await Task.sleep(nanoseconds: UInt64((attempt + 2) * 1_000_000_000))
+                    // Provide more informative status messages
+                    if error.localizedDescription.contains("error page") {
+                        detailedStatus = "Server error - trying alternative URL..."
+                    } else if error.localizedDescription.contains("size mismatch") {
+                        detailedStatus = "File validation failed - retrying..."
+                    } else {
+                        detailedStatus = "Retrying \(file.name) (attempt \(attempt + 2)/\(maxRetriesPerFile))..."
+                    }
+                    
+                    // Exponential backoff with shorter initial delay
+                    let delay = min(Double(attempt + 1) * 0.5, 5.0) // Max 5 seconds
+                    try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                 }
             }
             
@@ -329,19 +360,34 @@ final class UltimateModelDownloader: NSObject, ObservableObject {
     
     /// Select URL based on attempt number
     private func selectURL(for file: ModelFile, attempt: Int) -> URL {
+        // For mlx-community models, construct URLs properly
+        let filename = file.url
+        
         switch attempt {
         case 0, 1:
-            // Primary URL
-            return URL(string: baseURL + file.url)!
+            // Primary URL - use the standard HuggingFace URL format
+            let urlString = "https://huggingface.co/\(modelID)/resolve/main/\(filename)"
+            print("🔗 Attempt \(attempt + 1): Using URL: \(urlString)")
+            return URL(string: urlString)!
+            
         case 2, 3:
-            // CDN fallback
-            return URL(string: cdnURL + file.url)!
+            // CDN fallback - use the CDN URL format
+            let revision = "main"
+            let cdnString = "https://cdn-lfs-us-1.huggingface.co/repos/3d/78/3d78fbdee19c4e3303cd88c2c31c14e2c3026e8a97ae8f77e528f0e388b43173/\(filename)?response-content-disposition=inline%3B+filename*%3DUTF-8%27%27\(filename)&Expires=1738519849&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTczODUxOTg0OX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2RuLWxmcy11cy0xLmh1Z2dpbmdmYWNlLmNvL3JlcG9zLzNkLzc4LzNkNzhmYmRlZTE5YzRlMzMwM2NkODhjMmMzMWMxNGUyYzMwMjZlOGE5N2FlOGY3N2U1MjhmMGUzODhiNDMxNzMvKj9yZXNwb25zZS1jb250ZW50LWRpc3Bvc2l0aW9uPSoifV19&Signature=iu7AamgJBPHQ7QJa0xSaQ4F1FnqFUXDPnFdGT5J8PbBBKnfJyT2EUnT6NRY9GcOJ%7E5o1kJlGQejUi7e4Spe8vsOX9CdJBCOZOJJENZE6EWN0JsTPqOQDzrW8llUZNhv%7E7xxBGUBkNLN7aWNMgbQXDirbOoK9wUdGCz92BdvKz8OsQCgBBFE7QyoLRBKzQz5OuJN8I%7E4PJOV5k9Y%7ErUkUoQu8VFHO6gMJRKBm3xGg6LAz-cBABGfnkQ7S0MzOpF43E3PkTlXXO8I7zBGYIgYwEeIJT0LdF6sQ3m0XMcXsA-g7o9mbT9Pl-MLIy%7ElW8HWJf5-s0h8Mxso0CL0Wt0EVg__&Key-Pair-Id=K24J24Z295AEI9"
+            // For now, fallback to the standard URL since CDN URLs are temporary
+            let fallbackString = "https://huggingface.co/\(modelID)/resolve/main/\(filename)"
+            print("🔗 Attempt \(attempt + 1): Using fallback URL: \(fallbackString)")
+            return URL(string: fallbackString)!
+            
         default:
             // Try alternative URLs if available
             if attempt - 4 < file.alternativeURLs.count {
                 return URL(string: file.alternativeURLs[attempt - 4])!
             }
-            return URL(string: baseURL + file.url)!
+            // Final fallback to primary URL
+            let urlString = "https://huggingface.co/\(modelID)/resolve/main/\(filename)"
+            print("🔗 Attempt \(attempt + 1): Final fallback to: \(urlString)")
+            return URL(string: urlString)!
         }
     }
     
@@ -392,6 +438,18 @@ final class UltimateModelDownloader: NSObject, ObservableObject {
             finalData = partialData + downloadedData
         } else {
             finalData = downloadedData
+        }
+        
+        // Check for HTML error pages (common when auth fails or URL is wrong)
+        if finalData.count > 10000 && file.size < 10000 {
+            // Likely an HTML error page
+            let preview = String(data: finalData.prefix(1000), encoding: .utf8) ?? ""
+            if preview.lowercased().contains("<!doctype html") || preview.lowercased().contains("<html") {
+                print("❌ Detected HTML error page for \(file.name)")
+                throw ModelError.downloadFailed(
+                    "Server returned an error page instead of \(file.name). This usually means authentication is required or the URL is incorrect."
+                )
+            }
         }
         
         // Validate size

@@ -39,27 +39,8 @@ done
 echo -e "${BLUE}=== Gemi DMG Builder ===${NC}"
 echo -e "${BLUE}Project root: $PROJECT_ROOT${NC}"
 
-# Step 1: Check for .env file (optional for mlx-community models)
-echo -e "\n${YELLOW}Checking for .env file...${NC}"
-if [ -f "$PROJECT_ROOT/.env" ]; then
-    echo -e "${GREEN}✓ Found .env file${NC}"
-    # Verify it contains HuggingFace token
-    if grep -q "HUGGINGFACE_TOKEN=" "$PROJECT_ROOT/.env"; then
-        echo -e "${GREEN}✓ HuggingFace token found in .env${NC}"
-    else
-        echo -e "${YELLOW}ℹ HUGGINGFACE_TOKEN not found in .env file${NC}"
-        echo -e "${GREEN}  This is OK - mlx-community models don't require authentication${NC}"
-    fi
-else
-    echo -e "${YELLOW}ℹ .env file not found at $PROJECT_ROOT/.env${NC}"
-    echo -e "${GREEN}  This is OK - mlx-community models don't require authentication${NC}"
-    echo -e "${YELLOW}  Creating optional .env file for future use...${NC}"
-    cat > "$PROJECT_ROOT/.env" << 'EOF'
-# Optional: HuggingFace token for accessing gated models
-# Not required for mlx-community/gemma-3n-E4B-it-4bit
-# HUGGINGFACE_TOKEN=your_token_here
-EOF
-fi
+# Step 1: Note about authentication
+echo -e "\n${GREEN}ℹ Using mlx-community models - no authentication required${NC}"
 
 # Step 2: Build the app (unless skipped)
 if [ "$SKIP_BUILD" = false ]; then
@@ -124,24 +105,8 @@ fi
 
 echo -e "${GREEN}✓ Found app at: $APP_PATH${NC}"
 
-# Step 4: Optionally copy .env to app bundle (not required for mlx-community models)
-echo -e "\n${YELLOW}Checking .env in app bundle...${NC}"
-if [ -f "$PROJECT_ROOT/.env" ]; then
-    if [ -f "$APP_PATH/Contents/Resources/.env" ]; then
-        echo -e "${GREEN}✓ .env file is included in app bundle${NC}"
-    else
-        echo -e "${YELLOW}ℹ Copying .env to app bundle...${NC}"
-        cp "$PROJECT_ROOT/.env" "$APP_PATH/Contents/Resources/"
-        if [ -f "$APP_PATH/Contents/Resources/.env" ]; then
-            echo -e "${GREEN}✓ .env file copied to app bundle${NC}"
-        else
-            echo -e "${YELLOW}⚠ Could not copy .env to app bundle${NC}"
-            echo -e "${GREEN}  This is OK - mlx-community models don't require authentication${NC}"
-        fi
-    fi
-else
-    echo -e "${GREEN}ℹ No .env file needed - using public mlx-community model${NC}"
-fi
+# Step 4: No need to copy .env for mlx-community models
+echo -e "\n${GREEN}✓ No authentication files needed${NC}"
 
 # Step 5: Create the DMG
 echo -e "\n${YELLOW}Creating DMG installer...${NC}"
@@ -150,40 +115,26 @@ echo -e "\n${YELLOW}Creating DMG installer...${NC}"
 rm -f "$PROJECT_ROOT/$DMG_NAME.dmg"
 rm -f "$PROJECT_ROOT/$DMG_NAME-tmp.dmg"
 
-# Run the DMG creation script
-if [ -f "$SCRIPT_DIR/create-dmg.sh" ]; then
-    cd "$PROJECT_ROOT"
-    "$SCRIPT_DIR/create-dmg.sh" "$APP_PATH"
+# Use the final DMG creation script
+cd "$PROJECT_ROOT"
+"$SCRIPT_DIR/create-dmg-final.sh" "$APP_PATH"
+
+if [ -f "$PROJECT_ROOT/$DMG_NAME-Installer.dmg" ]; then
+    echo -e "${GREEN}✓ DMG created successfully: $DMG_NAME-Installer.dmg${NC}"
     
-    if [ -f "$PROJECT_ROOT/$DMG_NAME.dmg" ]; then
-        echo -e "${GREEN}✓ DMG created successfully: $DMG_NAME.dmg${NC}"
-        
-        # Show file info
-        DMG_SIZE=$(du -h "$PROJECT_ROOT/$DMG_NAME.dmg" | cut -f1)
-        echo -e "${BLUE}  Size: $DMG_SIZE${NC}"
-        echo -e "${BLUE}  Location: $PROJECT_ROOT/$DMG_NAME.dmg${NC}"
-        
-        # Open in Finder
-        echo -e "\n${YELLOW}Opening DMG location in Finder...${NC}"
-        open -R "$PROJECT_ROOT/$DMG_NAME.dmg"
-    else
-        echo -e "${RED}✗ DMG creation failed${NC}"
-        exit 1
-    fi
+    # Show file info
+    DMG_SIZE=$(du -h "$PROJECT_ROOT/$DMG_NAME-Installer.dmg" | cut -f1)
+    echo -e "${BLUE}  Size: $DMG_SIZE${NC}"
+    echo -e "${BLUE}  Location: $PROJECT_ROOT/$DMG_NAME-Installer.dmg${NC}"
+    
+    # Open in Finder
+    echo -e "\n${YELLOW}Opening DMG location in Finder...${NC}"
+    open -R "$PROJECT_ROOT/$DMG_NAME-Installer.dmg"
 else
-    echo -e "${RED}✗ create-dmg.sh not found at $SCRIPT_DIR/create-dmg.sh${NC}"
+    echo -e "${RED}✗ DMG creation failed${NC}"
     exit 1
 fi
 
 echo -e "\n${GREEN}=== Build Complete ===${NC}"
-echo -e "${BLUE}Your production-ready DMG is at: $PROJECT_ROOT/$DMG_NAME.dmg${NC}"
-
-# Optional: Mount and show the DMG
-read -p "Would you like to mount and view the DMG? (y/n) " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    echo -e "${YELLOW}Mounting DMG...${NC}"
-    hdiutil attach "$PROJECT_ROOT/$DMG_NAME.dmg"
-fi
-
+echo -e "${BLUE}Your production-ready DMG is at: $PROJECT_ROOT/$DMG_NAME-Installer.dmg${NC}"
 echo -e "\n${GREEN}✓ All done!${NC}"

@@ -139,7 +139,7 @@ final class DownloadDiagnostics: ObservableObject {
         addResult(test: "HuggingFace Access", status: .checking)
         
         do {
-            let url = URL(string: "https://huggingface.co/api/models/google/gemma-3n-E4B-it")!
+            let url = URL(string: "https://huggingface.co/api/models/mlx-community/gemma-3n-E4B-it-4bit")!
             let (data, response) = try await URLSession.shared.data(from: url)
             
             if let httpResponse = response as? HTTPURLResponse {
@@ -153,7 +153,7 @@ final class DownloadDiagnostics: ObservableObject {
                                 test: "HuggingFace Access",
                                 status: .warning,
                                 detail: "Model is gated - requires accepting license",
-                                solution: "Visit https://huggingface.co/google/gemma-3n-E4B-it and accept the license agreement"
+                                solution: "Visit https://huggingface.co/mlx-community/gemma-3n-E4B-it-4bit and accept the license agreement"
                             )
                         } else {
                             updateResult(
@@ -283,7 +283,7 @@ final class DownloadDiagnostics: ObservableObject {
         addResult(test: "Network Speed", status: .checking)
         
         // Download a small test file
-        let testURL = URL(string: "https://huggingface.co/google/gemma-3n-E4B-it/resolve/main/config.json")!
+        let testURL = URL(string: "https://huggingface.co/mlx-community/gemma-3n-E4B-it-4bit/resolve/main/config.json")!
         let startTime = Date()
         
         do {
@@ -387,7 +387,7 @@ final class DownloadDiagnostics: ObservableObject {
         addResult(test: "Resume Support", status: .checking)
         
         do {
-            let url = URL(string: "https://huggingface.co/google/gemma-3n-E4B-it/resolve/main/model-00001-of-00004.safetensors")!
+            let url = URL(string: "https://huggingface.co/mlx-community/gemma-3n-E4B-it-4bit/resolve/main/model-00001-of-00002.safetensors")!
             var request = URLRequest(url: url)
             request.httpMethod = "HEAD"
             request.setValue("bytes=0-1023", forHTTPHeaderField: "Range")

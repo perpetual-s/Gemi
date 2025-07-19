@@ -13,13 +13,49 @@ struct GemmaSetupProgressView: View {
     @State private var contentOpacity: Double = 0.0
     @State private var hasStartedSetup = false
     @State private var showContent = false
+    @State private var showingDiagnostics = false
     // @State private var showingTokenView = false // No longer needed - embedded token
     
     var body: some View {
         ZStack {
             backgroundGradient
             
-            if let error = setupManager.error {
+            if showingDiagnostics {
+                // Show diagnostics overlay
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(.spring()) {
+                            showingDiagnostics = false
+                        }
+                    }
+                
+                DownloadDiagnosticsView(
+                    onDismiss: {
+                        withAnimation(.spring()) {
+                            showingDiagnostics = false
+                        }
+                    },
+                    onRetry: {
+                        withAnimation(.spring()) {
+                            showingDiagnostics = false
+                        }
+                        Task { @MainActor in
+                            setupManager.error = nil
+                            setupManager.currentStep = .checkingModel
+                            setupManager.statusMessage = "Retrying..."
+                            setupManager.progress = 0.0
+                            setupManager.isComplete = false
+                            try? await Task.sleep(nanoseconds: 100_000_000)
+                            setupManager.startSetup()
+                        }
+                    }
+                )
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.8).combined(with: .opacity),
+                    removal: .scale(scale: 0.8).combined(with: .opacity)
+                ))
+            } else if let error = setupManager.error {
                 // Use our beautiful error view instead of basic alert
                 errorView(for: error)
                     .transition(.asymmetric(
@@ -391,7 +427,12 @@ struct GemmaSetupProgressView: View {
                                 print("📁 Manual Setup button pressed")
                                 ModelSetupHelper.openManualSetup()
                             }
-                        )
+                        ),
+                        diagnosticsAction: {
+                            withAnimation(.spring()) {
+                                showingDiagnostics = true
+                            }
+                        }
                     )
                 } else {
                     // Generic download error
@@ -421,7 +462,12 @@ struct GemmaSetupProgressView: View {
                                 print("📁 Manual Setup button pressed")
                                 ModelSetupHelper.openManualSetup()
                             }
-                        )
+                        ),
+                        diagnosticsAction: {
+                            withAnimation(.spring()) {
+                                showingDiagnostics = true
+                            }
+                        }
                     )
                 }
                 

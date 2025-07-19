@@ -254,9 +254,7 @@ struct ModelDownloadProgressView: View {
                             "tokenizer_config.json",
                             "model.safetensors.index.json",
                             "model-00001.safetensors",
-                            "model-00002.safetensors",
-                            "model-00003.safetensors",
-                            "model-00004.safetensors"
+                            "model-00002.safetensors"
                         ], id: \.self) { file in
                             FileProgressIndicator(
                                 filename: file,
@@ -349,18 +347,16 @@ struct ModelDownloadProgressView: View {
         // More accurate file completion detection based on file sizes
         // Total size is 15.74GB, calculate cumulative progress for each file
         let fileSizes: [(String, Double)] = [
-            ("config.json", 4_596),                    // 4.54 KB
-            ("tokenizer.json", 35_026_124),            // 33.4 MB
-            ("tokenizer_config.json", 1_258_291),      // 1.2 MB  
-            ("model.safetensors.index.json", 175_104), // 171 KB
-            ("model-00001.safetensors", 3_308_257_280), // 3.06 GB
-            ("model-00002.safetensors", 5_338_316_800), // 4.97 GB
-            ("model-00003.safetensors", 5_359_288_320), // 4.99 GB
-            ("model-00004.safetensors", 2_856_321_024)  // 2.66 GB
+            ("config.json", 272),                      // 272 bytes
+            ("tokenizer.json", 33_442_553),            // 31.9 MB
+            ("tokenizer_config.json", 292),            // 292 bytes  
+            ("model.safetensors.index.json", 306),     // 306 bytes
+            ("model-00001.safetensors", 5_364_004_911), // 5.0 GB
+            ("model-00002.safetensors", 455_053_642)    // 434 MB
         ]
         
         var cumulativeSize: Double = 0
-        let totalSize: Double = 16_899_382_539 // Exact total from file sizes as reported by user
+        let totalSize: Double = 5_852_501_976 // Exact total from mlx-community model
         
         for (file, size) in fileSizes {
             cumulativeSize += size
@@ -418,10 +414,10 @@ struct ModelDownloadProgressView_Previews: PreviewProvider {
             Color.black
             ModelDownloadProgressView(
                 progress: 0.45,
-                downloadState: .downloading(file: "model-00002-of-00004.safetensors", progress: 0.45),
-                currentFile: "model-00002-of-00004.safetensors",
-                bytesDownloaded: 7_065_950_208,
-                totalBytes: 15_737_835_520,
+                downloadState: .downloading(file: "model-00002-of-00002.safetensors", progress: 0.45),
+                currentFile: "model-00002-of-00002.safetensors",
+                bytesDownloaded: 2_632_126_890,
+                totalBytes: 5_852_501_976,
                 downloadStartTime: Date().addingTimeInterval(-300), // 5 minutes ago
                 downloadSpeed: 10_000_000, // 10 MB/s
                 onCancel: {}

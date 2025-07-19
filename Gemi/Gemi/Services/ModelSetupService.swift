@@ -75,11 +75,19 @@ class ModelSetupService: ObservableObject {
                 return "Model files not found. Please download the model first."
             case .downloadFailed(let reason):
                 // Clean up technical messages for users
-                return reason
-                    .replacingOccurrences(of: "HTTP 401", with: "Connection error")
-                    .replacingOccurrences(of: "HTTP 403", with: "Access error")
-                    .replacingOccurrences(of: "authentication", with: "connection")
-                    .replacingOccurrences(of: "Authentication", with: "Connection")
+                if reason.contains("error page") {
+                    return "The download server returned an error. This is usually temporary - please try again."
+                } else if reason.contains("Size mismatch") {
+                    return "Downloaded file was corrupted. The download will retry automatically."
+                } else if reason.contains("HTTP 401") || reason.contains("HTTP 403") {
+                    return "Access error. The model configuration may need updating."
+                } else if reason.contains("network") || reason.contains("connection") {
+                    return "Network connection lost. Please check your internet connection."
+                } else {
+                    return reason
+                        .replacingOccurrences(of: "authentication", with: "connection")
+                        .replacingOccurrences(of: "Authentication", with: "Connection")
+                }
             case .loadFailed:
                 return "Model setup encountered an issue. Please try again."
             case .authenticationRequired:
@@ -142,7 +150,7 @@ class ModelSetupService: ObservableObject {
             let isModelComplete = await ModelCache.shared.isModelComplete()
             if !isModelComplete {
                 currentStep = .downloadingModel
-                statusMessage = "Preparing to download Gemma 3n model (15.74 GB)..."
+                statusMessage = "Preparing to download Gemma 3n model (5.8 GB)..."
                 progress = 0.2
                 
                 // Set up observers for download progress
@@ -156,7 +164,7 @@ class ModelSetupService: ObservableObject {
                         self.statusMessage = "Preparing download..."
                     case .downloading(let file, let progress):
                         let percent = Int(progress * 100)
-                        self.statusMessage = "Downloading model files... \(percent)%\n⏱ This may take 20-60 minutes depending on your connection"
+                        self.statusMessage = "Downloading \(file)... \(percent)%\n⏱ This may take 10-30 minutes depending on your connection"
                         self.progress = 0.2 + (progress * 0.6) // Scale to 20-80% of total progress
                         self.downloadProgress = progress
                         self.currentDownloadFile = file

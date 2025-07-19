@@ -31,29 +31,29 @@ enum ModelConfiguration {
     /// These are the actual files from the HuggingFace repo
     static let modelFiles: [(name: String, size: Int64)] = [
         // Configuration files
-        ("config.json", 4_596),                        // Model configuration
-        ("generation_config.json", 215),               // Generation settings
-        ("preprocessor_config.json", 1_150),           // Preprocessor config
-        ("processor_config.json", 90),                 // Processor config
-        ("special_tokens_map.json", 760),              // Special tokens
-        ("tokenizer.json", 35_026_124),               // Tokenizer ~33.4 MB
-        ("tokenizer.model", 4_240_000),               // Tokenizer model (approx)
-        ("tokenizer_config.json", 1_258_291),         // Tokenizer config
+        ("config.json", 272),                          // Model configuration
+        ("generation_config.json", 294),               // Generation settings
+        ("preprocessor_config.json", 298),             // Preprocessor config
+        ("processor_config.json", 292),                // Processor config
+        ("special_tokens_map.json", 296),              // Special tokens
+        ("tokenizer.json", 33_442_553),               // Tokenizer ~31.9 MB
+        ("tokenizer.model", 4_696_020),               // Tokenizer model ~4.5 MB
+        ("tokenizer_config.json", 292),               // Tokenizer config
         
         // Model weight files (4-bit quantized)
-        ("model.safetensors.index.json", 16_956),     // Index file for 2-part model
-        ("model-00001-of-00002.safetensors", 3_118_465_088),  // ~2.9 GB
-        ("model-00002-of-00002.safetensors", 3_029_598_816),  // ~2.8 GB
+        ("model.safetensors.index.json", 306),        // Index file for 2-part model
+        ("model-00001-of-00002.safetensors", 5_364_004_911),  // ~5.0 GB
+        ("model-00002-of-00002.safetensors", 455_053_642),    // ~434 MB
     ]
     
     /// Required files for inference (subset of all files)
     static let requiredFiles: [(name: String, size: Int64)] = [
-        ("config.json", 4_596),
-        ("tokenizer.json", 35_026_124),
-        ("tokenizer_config.json", 1_258_291),
-        ("model.safetensors.index.json", 16_956),
-        ("model-00001-of-00002.safetensors", 3_118_465_088),
-        ("model-00002-of-00002.safetensors", 3_029_598_816),
+        ("config.json", 272),
+        ("tokenizer.json", 33_442_553),
+        ("tokenizer_config.json", 292),
+        ("model.safetensors.index.json", 306),
+        ("model-00001-of-00002.safetensors", 5_364_004_911),
+        ("model-00002-of-00002.safetensors", 455_053_642),
     ]
     
     /// Total size of all required files
