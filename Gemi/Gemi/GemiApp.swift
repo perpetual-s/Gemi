@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import MLX
 
 @main
 struct GemiApp: App {
@@ -13,6 +14,19 @@ struct GemiApp: App {
     @AppStorage("hasCompletedGemmaOnboarding") private var hasCompletedOnboarding = false
     @State private var showingOnboarding = false
     @State private var hasCheckedOnboarding = false
+    
+    init() {
+        // Configure MLX memory limits for optimal performance
+        // This is critical for managing the 5.8GB model on Apple Silicon
+        MLX.GPU.set(cacheLimit: 1024 * 1024 * 1024) // 1GB cache
+        MLX.GPU.set(memoryLimit: 8 * 1024 * 1024 * 1024) // 8GB limit
+        
+        // Log MLX configuration
+        print("🧠 MLX Memory Configuration:")
+        print("   Cache Limit: 1GB")
+        print("   Memory Limit: 8GB")
+        print("   Device: Apple Silicon GPU")
+    }
     
     var body: some Scene {
         WindowGroup {

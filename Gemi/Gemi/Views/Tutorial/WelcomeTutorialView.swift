@@ -281,7 +281,7 @@ struct TutorialCard: View {
         .onAppear {
             appear = true
         }
-        .onChange(of: currentStep) { _ in
+        .onChange(of: currentStep) { oldValue, newValue in
             appear = false
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 appear = true
