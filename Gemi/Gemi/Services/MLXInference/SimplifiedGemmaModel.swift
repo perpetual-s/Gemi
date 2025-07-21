@@ -69,12 +69,12 @@ final class SimplifiedGemmaModel: ObservableObject {
             // 3. Initialize model components
             setupModelArchitecture()
             
-            // 4. Warm up model to eliminate slow first token
-            await warmUpModel()
-            
-            // 5. Model is ready
+            // 4. Model is ready
             isLoaded = true
             print("✅ Model loaded successfully")
+            
+            // 5. Warm up model to eliminate slow first token (after marking as loaded)
+            await warmUpModel()
             
         } catch {
             self.error = error
@@ -156,7 +156,16 @@ final class SimplifiedGemmaModel: ObservableObject {
     
     /// Warm up the model with a dummy generation to eliminate slow first token
     private func warmUpModel() async {
-        guard let tokenizer = self.tokenizer else { return }
+        // Ensure model is fully loaded with all components initialized
+        guard isLoaded,
+              let tokenizer = self.tokenizer,
+              embeddings != nil,
+              norm != nil,
+              output != nil,
+              !layers.isEmpty else {
+            print("⚠️ Model not fully initialized, skipping warm-up")
+            return
+        }
         
         print("🔥 Warming up model...")
         
