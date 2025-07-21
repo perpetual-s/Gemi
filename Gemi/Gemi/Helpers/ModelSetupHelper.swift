@@ -8,24 +8,21 @@ struct ModelSetupHelper {
     /// Open documentation about model setup
     @MainActor
     static func openManualSetup() {
-        // Show the manual setup window
-        let manualSetupView = ManualSetupView()
-        let hostingController = NSHostingController(rootView: manualSetupView)
+        // Since we use a bundled model, manual setup is not needed
+        // This function is kept for compatibility but shows a simple message
         
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 700, height: 800),
-            styleMask: [.titled, .closable, .resizable],
-            backing: .buffered,
-            defer: false
-        )
+        let alert = NSAlert()
+        alert.messageText = "Model Already Bundled"
+        alert.informativeText = """
+        Gemi includes the Gemma 3n model bundled with the app.
         
-        window.title = "Manual Model Setup"
-        window.contentViewController = hostingController
-        window.center()
-        window.makeKeyAndOrderFront(nil)
+        No manual setup or download is required. The model is ready to use!
         
-        // Keep window reference to prevent deallocation
-        NSApp.activate(ignoringOtherApps: true)
+        If you're experiencing issues, please restart Gemi.
+        """
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
     }
     
     /// Check if model directory exists

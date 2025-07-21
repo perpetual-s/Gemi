@@ -40,6 +40,9 @@ struct SimplifiedModelStatusView: View {
         .onAppear {
             modelManager.startMonitoring()
         }
+        .onDisappear {
+            modelManager.stopMonitoring()
+        }
     }
     
     private var statusIcon: some View {
@@ -118,7 +121,7 @@ class SimplifiedModelManager: ObservableObject {
     @Published var actionButtonTitle = ""
     
     private let chatService = NativeChatService.shared
-    private var checkTimer: Timer?
+    @MainActor private var checkTimer: Timer?
     
     enum ModelStatus {
         case checking
@@ -149,6 +152,12 @@ class SimplifiedModelManager: ObservableObject {
                 self.checkModelStatus()
             }
         }
+    }
+    
+    @MainActor
+    func stopMonitoring() {
+        checkTimer?.invalidate()
+        checkTimer = nil
     }
     
     func performAction() {
@@ -197,7 +206,5 @@ class SimplifiedModelManager: ObservableObject {
         }
     }
     
-    deinit {
-        checkTimer?.invalidate()
-    }
+    // Timer cleanup handled by view lifecycle - MainActor isolated
 }

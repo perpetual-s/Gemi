@@ -108,13 +108,9 @@ class ModelDiagnostics {
     static func diagnoseModelFiles() {
         print("\n=== Gemma 3n Model Diagnostics ===\n")
         
-        // Check HuggingFace token
+        // Check authentication (not needed for bundled model)
         print("🔐 Authentication Status:")
-        if SettingsManager.shared.getHuggingFaceToken() != nil {
-            print("  ✓ Authentication configured")
-        } else {
-            print("  ✗ Authentication not configured")
-        }
+        print("  ✓ No authentication needed (bundled model)")
         
         // Check model configuration
         print("\n📁 Model Configuration:")
@@ -315,33 +311,8 @@ class ModelDiagnostics {
                 print("   Response: HTTP \(httpResponse.statusCode)")
             }
             
-            // Test with token if available
-            if let token = SettingsManager.shared.getHuggingFaceToken() {
-                print("\n2️⃣ Testing with authentication token...")
-                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-                
-                let (data, responseWithAuth) = try await URLSession.shared.data(for: request)
-                if let httpResponse = responseWithAuth as? HTTPURLResponse {
-                    print("   Response: HTTP \(httpResponse.statusCode)")
-                    
-                    if httpResponse.statusCode == 200 {
-                        print("   ✅ Authentication successful!")
-                        
-                        // Try to parse model info
-                        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                            print("   Model ID: \(json["id"] ?? "unknown")")
-                            print("   Gated: \(json["gated"] ?? "unknown")")
-                        }
-                    } else if httpResponse.statusCode == 401 {
-                        print("   ❌ Authentication failed - invalid token")
-                    } else if httpResponse.statusCode == 403 {
-                        print("   ❌ Access forbidden - need to accept model license")
-                        print("   → Visit: https://huggingface.co/google/gemma-3n-E4B-it")
-                    }
-                }
-            } else {
-                print("\n⚠️  No token available for authenticated test")
-            }
+            // Bundled model - no authentication test needed
+            print("\n2️⃣ Authentication test skipped (bundled model)")
             
             // Test actual file download
             print("\n3️⃣ Testing file download (config.json)...")
@@ -349,9 +320,7 @@ class ModelDiagnostics {
             var fileRequest = URLRequest(url: URL(string: fileURL)!)
             fileRequest.setValue("Gemi/1.0", forHTTPHeaderField: "User-Agent")
             
-            if let token = SettingsManager.shared.getHuggingFaceToken() {
-                fileRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            }
+            // Bundled model - no authentication needed
             
             let (fileData, fileResponse) = try await URLSession.shared.data(for: fileRequest)
             if let httpResponse = fileResponse as? HTTPURLResponse {
