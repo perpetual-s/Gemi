@@ -22,12 +22,14 @@ final class SimplifiedGemmaModel: ObservableObject {
     
     // Model components - using MLX's built-in modules
     private var embeddings: Embedding?
+    private var embedProjection: Linear?  // Project from embedDim to hiddenSize
     private var layers: [TransformerBlock] = []
     private var norm: RMSNorm?
     private var output: Linear?
     
     // Model configuration - Gemma 3n E4B (from config.json)
     private let hiddenSize = 2048  // text_config.hidden_size
+    private let embedDim = 256     // Actual embedding dimension for multimodal model
     private let numLayers = 35     // text_config.num_hidden_layers
     private let numHeads = 8       // text_config.num_attention_heads
     private let vocabSize = 262400 // text_config.vocab_size
@@ -160,6 +162,7 @@ final class SimplifiedGemmaModel: ObservableObject {
         guard isLoaded,
               let tokenizer = self.tokenizer,
               embeddings != nil,
+              embedProjection != nil,
               norm != nil,
               output != nil,
               !layers.isEmpty else {
@@ -188,7 +191,12 @@ final class SimplifiedGemmaModel: ObservableObject {
     
     private func setupModelArchitecture() {
         // Simple architecture setup using MLX modules
-        embeddings = Embedding(embeddingCount: vocabSize, dimensions: hiddenSize)
+        // IMPORTANT: The actual Gemma 3n uses 256-dim embeddings with per-layer projection
+        // We'll create embeddings with the actual embedding dimension first
+        embeddings = Embedding(embeddingCount: vocabSize, dimensions: embedDim)
+        
+        // Create projection layer to map from embedDim to hiddenSize
+        embedProjection = Linear(embedDim, hiddenSize, bias: false)
         
         // Create transformer layers
         for _ in 0..<numLayers {
@@ -210,13 +218,54 @@ final class SimplifiedGemmaModel: ObservableObject {
     private func loadWeightsIntoModules() {
         print("🔄 Loading Gemma 3n AltUp weights into model...")
         
+        // Debug: Print available weight keys to understand model structure
+        print("📊 Available weight keys (sample):")
+        let sortedKeys = weights.keys.sorted()
+        for (index, key) in sortedKeys.enumerated() {
+            if index < 30 || key.contains("embed") || key.contains("projection") {
+                if let shape = weights[key]?.shape {
+                    print("   - \(key): \(shape)")
+                }
+            }
+        }
+        print("   ... total \(sortedKeys.count) weights")
+        
         // Load embedding weights - Note: multimodal model uses language_model.model prefix
         let embeddingKey = "language_model.model.embed_tokens.weight"
         if let embWeight = weights[embeddingKey] {
+            print("🔍 Found embedding weight shape: \(embWeight.shape)")
+            
             var params = ModuleParameters()
             params["weight"] = .value(embWeight)
             embeddings?.update(parameters: params)
             print("✅ Loaded embedding weights: \(embWeight.shape)")
+            
+            // Note: The actual model uses Per-Layer Embeddings (PLE) which we're simplifying
+            // by using a linear projection from 256 to 2048 dimensions
+            
+            // Check for embedding projection weights
+            let projectionKeys = [
+                "language_model.model.embed_projection.weight",
+                "language_model.model.embed_tokens_projection.weight",
+                "model.embed_projection.weight"
+            ]
+            
+            var projectionLoaded = false
+            for key in projectionKeys {
+                if let projWeight = weights[key] {
+                    print("🔍 Found embedding projection weight: \(key) with shape: \(projWeight.shape)")
+                    var params = ModuleParameters()
+                    params["weight"] = .value(projWeight)
+                    embedProjection?.update(parameters: params)
+                    projectionLoaded = true
+                    break
+                }
+            }
+            
+            if !projectionLoaded {
+                print("⚠️ No embedding projection weights found, will use random initialization")
+                print("   Tried keys: \(projectionKeys)")
+            }
         } else {
             // Try without language_model prefix for text-only models
             if let embWeight = weights["model.embed_tokens.weight"] {
@@ -362,6 +411,7 @@ final class SimplifiedGemmaModel: ObservableObject {
     
     private func forward(tokens: [Int]) throws -> MLXArray {
         guard let embeddings = embeddings,
+              let embedProjection = embedProjection,
               let norm = norm,
               let output = output else {
             throw ModelError.modelNotLoaded
@@ -369,14 +419,33 @@ final class SimplifiedGemmaModel: ObservableObject {
         
         // Convert tokens to MLXArray
         let inputArray = MLXArray(tokens.map { Int32($0) })
+        print("🔍 Input tokens shape: \(inputArray.shape)")
         
-        // Embed tokens
+        // Embed tokens - this gives us 256-dim embeddings
         var hidden = embeddings(inputArray)
+        print("🔍 After embedding shape: \(hidden.shape)")
+        print("🔍 Embedding dimensions: \(hidden.shape.last ?? -1)")
+        
+        // Project embeddings from 256 to 2048 dimensions
+        hidden = embedProjection(hidden)
+        print("🔍 After projection shape: \(hidden.shape)")
+        print("🔍 Projected dimensions: \(hidden.shape.last ?? -1)")
         
         // Pass through transformer layers
-        for layer in layers {
+        for (i, layer) in layers.enumerated() {
+            let beforeShape = hidden.shape
             hidden = layer(hidden)
+            if i == 0 {  // Only print for first layer to avoid spam
+                print("🔍 After layer \(i) shape: \(hidden.shape)")
+                if beforeShape != hidden.shape {
+                    print("⚠️ Shape changed in layer \(i): \(beforeShape) -> \(hidden.shape)")
+                }
+            }
         }
+        
+        print("🔍 Before final norm shape: \(hidden.shape)")
+        print("🔍 Hidden last dimension: \(hidden.shape.last ?? -1)")
+        print("🔍 RMSNorm expects dimension: \(hiddenSize)")
         
         // Final norm and output
         hidden = norm(hidden)
