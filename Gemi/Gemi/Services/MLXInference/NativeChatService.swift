@@ -107,7 +107,7 @@ final class NativeChatService: ObservableObject {
                     let prompt = formatPrompt(from: request.messages)
                     
                     // Extract images if present
-                    let images = try extractImages(from: request.messages)
+                    let _ = try extractImages(from: request.messages)
                     
                     // Generate response with simplified API
                     var responseText = ""

@@ -38,7 +38,7 @@ class SimplifiedModelSetupService: ObservableObject {
         }
     }
     
-    enum SetupError: LocalizedError {
+    enum SetupError: LocalizedError, Equatable {
         case modelNotFound
         case loadFailed(String)
         

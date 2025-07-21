@@ -161,8 +161,8 @@ final class SimplifiedGemmaModel: ObservableObject {
         // }
         
         // Load transformer layer weights
-        for (i, layer) in layers.enumerated() {
-            let prefix = "model.layers.\(i)"
+        for (i, _) in layers.enumerated() {
+            let _ = "model.layers.\(i)"
             // Skip weight loading for now
             // layer.loadWeights(from: weights, prefix: prefix)
         }
