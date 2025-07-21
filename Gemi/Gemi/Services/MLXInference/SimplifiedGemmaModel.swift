@@ -69,7 +69,10 @@ final class SimplifiedGemmaModel: ObservableObject {
             // 3. Initialize model components
             setupModelArchitecture()
             
-            // 4. Model is ready
+            // 4. Warm up model to eliminate slow first token
+            await warmUpModel()
+            
+            // 5. Model is ready
             isLoaded = true
             print("✅ Model loaded successfully")
             
@@ -118,6 +121,14 @@ final class SimplifiedGemmaModel: ObservableObject {
                         let text = tokenizer.decode([nextToken])
                         continuation.yield(text)
                         
+                        // Memory management: evaluate tensors to free intermediate memory
+                        MLX.eval(logits)
+                        
+                        // Periodically clear GPU cache to prevent memory buildup
+                        if tokens.count % 50 == 0 {
+                            MLX.GPU.clearCache()
+                        }
+                        
                         // Allow cancellation
                         if Task.isCancelled || !isGenerating {
                             break
@@ -142,6 +153,29 @@ final class SimplifiedGemmaModel: ObservableObject {
     }
     
     // MARK: - Private Methods
+    
+    /// Warm up the model with a dummy generation to eliminate slow first token
+    private func warmUpModel() async {
+        guard let tokenizer = self.tokenizer else { return }
+        
+        print("🔥 Warming up model...")
+        
+        do {
+            // Simple warm-up prompt
+            let warmupTokens = tokenizer.encode("Hello")
+            
+            // Generate one token to warm up all model layers
+            _ = try forward(tokens: warmupTokens)
+            
+            // Clear any memory used during warm-up
+            MLX.GPU.clearCache()
+            
+            print("✅ Model warmed up")
+        } catch {
+            print("⚠️ Model warm-up failed: \(error)")
+            // Non-critical error, continue anyway
+        }
+    }
     
     private func setupModelArchitecture() {
         // Simple architecture setup using MLX modules
@@ -250,6 +284,9 @@ final class SimplifiedGemmaModel: ObservableObject {
                     print("  ⚠️ No norm2 weights found for layer \(i)")
                 }
                 
+                // Load transformer block weights (attention and MLP)
+                layer.loadWeights(from: weights, prefix: prefix)
+                
                 // Document available weights for AltUp architecture:
                 let components = [
                     // AltUp components
@@ -336,22 +373,64 @@ final class SimplifiedGemmaModel: ObservableObject {
         hidden = norm(hidden)
         let logits = output(hidden)
         
+        // Evaluate intermediate tensors to free memory
+        MLX.eval(hidden)
+        
         // Return logits for the last token
         return logits[-1, .ellipsis]
     }
     
     private func sampleToken(logits: MLXArray, temperature: Float, topK: Int, topP: Float) throws -> Int {
+        // MLX Swift provides simpler sampling approaches
+        // For now, we'll use temperature sampling with categorical distribution
+        
+        if temperature == 0 {
+            // ArgMax sampling - pick the most likely token
+            return MLX.argMax(logits, axis: -1).item(Int.self)
+        }
+        
         // Apply temperature
         let scaledLogits = logits / temperature
-        
-        // Simple temperature-based sampling
-        // TODO: Implement proper topK/topP when MLX Swift API is documented
         
         // Convert to probabilities
         let probs = MLX.softmax(scaledLogits, axis: -1)
         
+        // TopK filtering - simplified version
+        // We'll use a basic approach: only keep tokens with high enough probability
+        var filteredProbs = probs
+        
+        if topK > 0 && topK < vocabSize {
+            // Get the sorted indices
+            _ = MLX.argSort(probs, axis: -1)
+            
+            // Create a mask for top K values
+            // This is a simplified approach - in production, use dedicated samplers
+            let threshold = Float(1.0 / Float(topK * 2))  // Simple heuristic
+            filteredProbs = MLX.where(probs .>= threshold, probs, MLXArray.zeros(probs.shape))
+            
+            // Renormalize
+            let sum = MLX.sum(filteredProbs, axis: -1, keepDims: true)
+            if sum.item(Float.self) > 0 {
+                filteredProbs = filteredProbs / sum
+            }
+        }
+        
+        // TopP filtering - simplified version  
+        if topP > 0 && topP < 1 {
+            // Use a probability threshold based on topP
+            // This is a simplified nucleus sampling
+            let threshold = (1.0 - topP) / Float(vocabSize)
+            filteredProbs = MLX.where(filteredProbs .>= threshold, filteredProbs, MLXArray.zeros(filteredProbs.shape))
+            
+            // Renormalize
+            let sum = MLX.sum(filteredProbs, axis: -1, keepDims: true)
+            if sum.item(Float.self) > 0 {
+                filteredProbs = filteredProbs / sum
+            }
+        }
+        
         // Sample from distribution
-        let sampled = MLXRandom.categorical(probs)
+        let sampled = MLXRandom.categorical(filteredProbs)
         
         return sampled.item(Int.self)
     }
