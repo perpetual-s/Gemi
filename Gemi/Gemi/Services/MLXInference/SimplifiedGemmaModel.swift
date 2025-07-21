@@ -26,9 +26,9 @@ final class SimplifiedGemmaModel: ObservableObject {
     private var norm: RMSNorm?
     private var output: Linear?
     
-    // Model configuration
+    // Model configuration - Gemma 3n E4B
     private let hiddenSize = 3072
-    private let numLayers = 32
+    private let numLayers = 35  // AltUp architecture has 35 layers
     private let numHeads = 16
     private let vocabSize = 256128
     
@@ -50,8 +50,20 @@ final class SimplifiedGemmaModel: ObservableObject {
             
             for file in modelFiles {
                 let url = modelCache.modelPath.appendingPathComponent(file)
-                let fileWeights = try MLX.loadArrays(url: url)
+                print("🔍 Loading weights from: \(url.path)")
+                
+                // Ensure the file exists before trying to load
+                guard FileManager.default.fileExists(atPath: url.path) else {
+                    throw ModelError.setupFailed("Model file not found: \(url.path)")
+                }
+                
+                // Convert to absolute file URL to ensure MLX gets the correct path
+                let absoluteURL = URL(fileURLWithPath: url.path)
+                print("🔍 Absolute URL: \(absoluteURL)")
+                
+                let fileWeights = try MLX.loadArrays(url: absoluteURL)
                 weights.merge(fileWeights) { _, new in new }
+                print("✅ Loaded \(fileWeights.count) weight arrays from \(file)")
             }
             
             // 3. Initialize model components
@@ -143,72 +155,160 @@ final class SimplifiedGemmaModel: ObservableObject {
         norm = RMSNorm(dimensions: hiddenSize, eps: 1e-6)
         output = Linear(hiddenSize, vocabSize, bias: false)
         
+        // Initialize final norm weight to prevent crashes
+        var normParams = ModuleParameters()
+        normParams["weight"] = .value(MLXArray.ones([hiddenSize]))
+        norm?.update(parameters: normParams)
+        
         // Load weights into modules
         loadWeightsIntoModules()
     }
     
     private func loadWeightsIntoModules() {
-        print("🔄 Loading Gemma 3n weights into model...")
+        print("🔄 Loading Gemma 3n AltUp weights into model...")
         
-        // Load embedding weights
-        if let embWeight = weights["model.embed_tokens.weight"] {
+        // Load embedding weights - Note: multimodal model uses language_model.model prefix
+        let embeddingKey = "language_model.model.embed_tokens.weight"
+        if let embWeight = weights[embeddingKey] {
             var params = ModuleParameters()
             params["weight"] = .value(embWeight)
             embeddings?.update(parameters: params)
             print("✅ Loaded embedding weights: \(embWeight.shape)")
         } else {
-            print("⚠️ Embedding weights not found in model")
+            // Try without language_model prefix for text-only models
+            if let embWeight = weights["model.embed_tokens.weight"] {
+                var params = ModuleParameters()
+                params["weight"] = .value(embWeight)
+                embeddings?.update(parameters: params)
+                print("✅ Loaded embedding weights (text-only model): \(embWeight.shape)")
+            } else {
+                print("⚠️ Embedding weights not found. Tried:")
+                print("   - \(embeddingKey)")
+                print("   - model.embed_tokens.weight")
+            }
         }
         
-        // Load transformer layer weights
-        for (i, _) in layers.enumerated() {
-            let prefix = "model.layers.\(i)"
+        // Load transformer layer weights - AltUp architecture
+        for (i, layer) in layers.enumerated() {
+            // Gemma 3n uses language_model.model prefix
+            let multimodalPrefix = "language_model.model.layers.\(i)"
+            let textOnlyPrefix = "model.layers.\(i)"
             
-            // Check if we have weights for this layer
-            if weights["\(prefix).self_attn.q_proj.weight"] != nil {
-                print("✅ Found weights for layer \(i)")
+            // Check which prefix has weights - AltUp uses different component names
+            let prefix = if weights["\(multimodalPrefix).laurel.linear_left.weight"] != nil {
+                multimodalPrefix  // AltUp architecture
+            } else if weights["\(multimodalPrefix).self_attn.q_proj.weight"] != nil {
+                multimodalPrefix  // Standard attention
+            } else if weights["\(textOnlyPrefix).self_attn.q_proj.weight"] != nil {
+                textOnlyPrefix
+            } else {
+                ""
+            }
+            
+            if !prefix.isEmpty {
+                print("✅ Found weights for layer \(i) (prefix: \(prefix))")
                 
-                // Note: TransformerBlock from MLXNN doesn't expose internal structure
-                // for weight loading. In production, you would either:
-                // 1. Use a custom transformer implementation (like GemmaTransformerBlock)
-                // 2. Submit a PR to MLX-Swift to add weight loading support
-                // 3. Initialize layers with weights directly
-                
-                // For now, document what weights are available:
-                let availableWeights = [
-                    "self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj", "self_attn.o_proj",
-                    "mlp.gate_proj", "mlp.up_proj", "mlp.down_proj",
-                    "input_layernorm", "post_attention_layernorm"
+                // CRITICAL: Load layer normalization weights to prevent crash
+                // Try both naming conventions for layer norms
+                let norm1Keys = [
+                    "\(prefix).input_layernorm.weight",
+                    "\(prefix).ln_1.weight"
                 ]
                 
-                for component in availableWeights {
-                    if weights["\(prefix).\(component).weight"] != nil {
-                        print("  ✓ \(component) weights available")
+                var norm1Loaded = false
+                for key in norm1Keys {
+                    if let normWeight = weights[key] {
+                        var params = ModuleParameters()
+                        params["weight"] = .value(normWeight)
+                        layer.norm1.update(parameters: params)
+                        print("  ✓ Loaded norm1 weights from \(key)")
+                        norm1Loaded = true
+                        break
                     }
                 }
+                if !norm1Loaded {
+                    print("  ⚠️ No norm1 weights found for layer \(i)")
+                }
+                
+                let norm2Keys = [
+                    "\(prefix).post_attention_layernorm.weight",
+                    "\(prefix).ln_2.weight"
+                ]
+                
+                var norm2Loaded = false
+                for key in norm2Keys {
+                    if let normWeight = weights[key] {
+                        var params = ModuleParameters()
+                        params["weight"] = .value(normWeight)
+                        layer.norm2.update(parameters: params)
+                        print("  ✓ Loaded norm2 weights from \(key)")
+                        norm2Loaded = true
+                        break
+                    }
+                }
+                if !norm2Loaded {
+                    print("  ⚠️ No norm2 weights found for layer \(i)")
+                }
+                
+                // Document available weights for AltUp architecture:
+                let components = [
+                    // AltUp components
+                    "laurel.linear_left", "laurel.linear_right",
+                    "altup.modality_router", "altup.router_norm",
+                    "input_layernorm", "post_attention_layernorm",
+                    // Standard components (may not exist in AltUp)
+                    "self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj", "self_attn.o_proj",
+                    "mlp.gate_proj", "mlp.up_proj", "mlp.down_proj"
+                ]
+                
+                var foundCount = 0
+                for component in components {
+                    if weights["\(prefix).\(component).weight"] != nil {
+                        foundCount += 1
+                    }
+                }
+                print("  ✓ Found \(foundCount)/\(components.count) expected weights")
             } else {
                 print("⚠️ No weights found for layer \(i)")
             }
         }
         
         // Load normalization weights
-        if let normWeight = weights["model.norm.weight"] {
-            var params = ModuleParameters()
-            params["weight"] = .value(normWeight)
-            norm?.update(parameters: params)
-            print("✅ Loaded norm weights: \(normWeight.shape)")
-        } else {
-            print("⚠️ Norm weights not found in model")
+        let normKeys = ["language_model.model.norm.weight", "model.norm.weight"]
+        var normLoaded = false
+        for key in normKeys {
+            if let normWeight = weights[key] {
+                var params = ModuleParameters()
+                params["weight"] = .value(normWeight)
+                norm?.update(parameters: params)
+                print("✅ Loaded norm weights from \(key): \(normWeight.shape)")
+                normLoaded = true
+                break
+            }
+        }
+        if !normLoaded {
+            print("⚠️ Norm weights not found. Tried: \(normKeys)")
         }
         
-        // Load output projection weights
-        if let outputWeight = weights["lm_head.weight"] {
-            var params = ModuleParameters()
-            params["weight"] = .value(outputWeight)
-            output?.update(parameters: params)
-            print("✅ Loaded output weights: \(outputWeight.shape)")
-        } else {
-            print("⚠️ Output weights not found in model")
+        // Load output projection weights - AltUp uses altup_unembed_projections
+        let outputKeys = [
+            "language_model.model.altup_unembed_projections.0.weight",
+            "language_model.model.lm_head.weight",
+            "lm_head.weight"
+        ]
+        var outputLoaded = false
+        for key in outputKeys {
+            if let outputWeight = weights[key] {
+                var params = ModuleParameters()
+                params["weight"] = .value(outputWeight)
+                output?.update(parameters: params)
+                print("✅ Loaded output weights from \(key): \(outputWeight.shape)")
+                outputLoaded = true
+                break
+            }
+        }
+        if !outputLoaded {
+            print("⚠️ Output weights not found. Tried: \(outputKeys)")
         }
         
         print("✅ Weight loading complete")
@@ -287,6 +387,15 @@ private class TransformerBlock: Module {
         self.norm2 = RMSNorm(dimensions: dimensions, eps: 1e-6)
         
         super.init()
+        
+        // Initialize RMSNorm weights to ones to prevent crashes
+        var norm1Params = ModuleParameters()
+        norm1Params["weight"] = .value(MLXArray.ones([dimensions]))
+        self.norm1.update(parameters: norm1Params)
+        
+        var norm2Params = ModuleParameters()
+        norm2Params["weight"] = .value(MLXArray.ones([dimensions]))
+        self.norm2.update(parameters: norm2Params)
     }
     
     func callAsFunction(_ x: MLXArray) -> MLXArray {

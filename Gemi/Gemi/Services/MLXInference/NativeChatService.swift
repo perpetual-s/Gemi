@@ -79,6 +79,11 @@ final class NativeChatService: ObservableObject {
     // MARK: - Initialization
     
     private init() {
+        // Debug model path once at startup
+        #if DEBUG
+        ModelCache.shared.debugModelPath()
+        #endif
+        
         setupBindings()
         Task {
             await checkModelStatus()

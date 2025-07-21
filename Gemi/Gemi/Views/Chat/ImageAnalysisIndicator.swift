@@ -112,7 +112,7 @@ struct EnhancedAttachmentPreview: View {
         VStack(alignment: .leading, spacing: 8) {
             // Image with analysis indicator
             ImageAnalysisIndicator(
-                imageData: attachment.data,
+                imageData: extractImageData(from: attachment),
                 isAnalyzing: isAnalyzing
             )
             
@@ -141,15 +141,30 @@ struct EnhancedAttachmentPreview: View {
         // Simulate analysis time
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             withAnimation(.spring()) {
-                isAnalyzing = false
+                self.isAnalyzing = false
                 
                 // Generate contextual result based on attachment
-                if let imageData = attachment.data,
-                   let analysis = MultimodalSimulator.analyzeImage(imageData) {
-                    analysisResult = "Detected: \(analysis.description) • Mood: \(analysis.mood)"
+                if let imageData = self.extractImageData(from: self.attachment) {
+                    let analysis = MultimodalSimulator.analyzeImage(imageData)
+                    self.analysisResult = "Detected: \(analysis.description) • Mood: \(analysis.mood)"
                 }
             }
         }
+    }
+    
+    private func extractImageData(from attachment: AttachmentManager.Attachment) -> Data? {
+        if let base64Data = attachment.base64Data {
+            // Handle base64 encoded images
+            if base64Data.hasPrefix("data:image") {
+                let components = base64Data.components(separatedBy: ",")
+                if components.count > 1 {
+                    return Data(base64Encoded: components[1])
+                }
+            } else {
+                return Data(base64Encoded: base64Data)
+            }
+        }
+        return nil
     }
 }
 
@@ -165,22 +180,32 @@ extension StreamingMessageBubble {
                         .replacingOccurrences(of: "data:image/jpeg;base64,", with: "")
                         .replacingOccurrences(of: "data:image/png;base64,", with: "")) {
                         
-                        let attachment = AttachmentManager.Attachment(
-                            id: UUID(),
-                            type: .image,
-                            data: imageData,
-                            url: nil
-                        )
-                        
-                        EnhancedAttachmentPreview(attachment: attachment)
+                        if let nsImage = NSImage(data: imageData) {
+                            let attachment = AttachmentManager.Attachment(
+                                type: .image(nsImage),
+                                url: nil,
+                                base64Data: images[index],
+                                thumbnail: nsImage,
+                                fileName: "image_\(index).png",
+                                fileSize: Int64(imageData.count)
+                            )
+                            
+                            EnhancedAttachmentPreview(attachment: attachment)
+                        }
                     }
                 }
                 
                 // Message text
-                messageContent()
+                Text(message.content)
+                    .font(.body)
+                    .foregroundColor(.primary)
+                    .textSelection(.enabled)
             }
         } else {
-            messageContent()
+            Text(message.content)
+                .font(.body)
+                .foregroundColor(.primary)
+                .textSelection(.enabled)
         }
     }
 }
@@ -207,7 +232,7 @@ struct ImageAnalysisIndicator_Previews: PreviewProvider {
     
     static func createSampleImage() -> Data? {
         let size = CGSize(width: 300, height: 200)
-        guard let image = NSImage(size: size) else { return nil }
+        let image = NSImage(size: size)
         
         image.lockFocus()
         NSColor.systemBlue.withAlphaComponent(0.3).setFill()

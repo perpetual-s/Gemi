@@ -14,6 +14,7 @@ enum ModelError: LocalizedError {
     case networkError(Error)
     case fileSystemError(Error)
     case cancelled
+    case setupFailed(String)
     
     var errorDescription: String? {
         switch self {
@@ -41,6 +42,8 @@ enum ModelError: LocalizedError {
             return "File system error: \(error.localizedDescription)"
         case .cancelled:
             return "Operation cancelled"
+        case .setupFailed(let reason):
+            return "Setup failed: \(reason)"
         }
     }
     

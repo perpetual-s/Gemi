@@ -1,4 +1,6 @@
 import Foundation
+import CoreGraphics
+import ImageIO
 
 /// Helper for testing Chat with Gemi feature
 @MainActor
@@ -34,15 +36,18 @@ final class ChatTestHelper {
                     images: nil
                 )
             ],
+            model: "gemma-3n",
             stream: false,
             options: NativeChatService.ChatOptions(
                 temperature: 0.7,
-                maxTokens: 100
+                maxTokens: 100,
+                topK: 40,
+                topP: 0.95
             )
         )
         
         do {
-            for try await response in chatService.generate(request: request) {
+            for try await response in try await chatService.chat(request) {
                 if response.done {
                     print("✅ Response: \(response.message.content)")
                     print("   Tokens: \(response.evalCount ?? 0)")
@@ -76,15 +81,18 @@ final class ChatTestHelper {
                     images: ["data:image/png;base64,\(base64Image)"]
                 )
             ],
+            model: "gemma-3n",
             stream: false,
             options: NativeChatService.ChatOptions(
                 temperature: 0.7,
-                maxTokens: 150
+                maxTokens: 150,
+                topK: 40,
+                topP: 0.95
             )
         )
         
         do {
-            for try await response in chatService.generate(request: request) {
+            for try await response in try await chatService.chat(request) {
                 if response.done {
                     print("✅ Multimodal Response: \(response.message.content)")
                 }

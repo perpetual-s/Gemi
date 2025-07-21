@@ -19,16 +19,54 @@ final class ModelCache {
         applicationSupportURL.appendingPathComponent("Models", isDirectory: true)
     }
     
+    /// Cached model path - computed once and stored
+    private var _cachedModelPath: URL?
+    
     /// Path to the Gemma 3n model
     var modelPath: URL {
-        // Check if model is bundled with the app
-        if let bundledModelPath = Bundle.main.path(forResource: "mlx-gemma-3n-E4B-it-4bit", ofType: nil) {
-            print("✅ Using bundled model from app resources")
-            return URL(fileURLWithPath: bundledModelPath)
+        // Return cached path if already computed
+        if let cached = _cachedModelPath {
+            return cached
+        }
+        
+        // Compute the path once
+        let path = computeModelPath()
+        _cachedModelPath = path
+        return path
+    }
+    
+    /// Debug method to print model path information
+    func debugModelPath() {
+        print("🔍 Bundle path: \(Bundle.main.bundlePath)")
+        print("🔍 Bundle resource path: \(Bundle.main.resourcePath ?? "nil")")
+        print("🔍 Bundle resource URL: \(Bundle.main.resourceURL?.path ?? "nil")")
+        print("📁 Model path: \(modelPath.path)")
+        
+        if let contents = try? FileManager.default.contentsOfDirectory(at: modelPath, includingPropertiesForKeys: nil) {
+            print("📁 Model directory contents: \(contents.map { $0.lastPathComponent }.joined(separator: ", "))")
+        }
+    }
+    
+    /// Compute the model path (called only once)
+    private func computeModelPath() -> URL {
+        // Check at bundle root level
+        if let bundleResourceURL = Bundle.main.resourceURL {
+            let bundledModelURL = bundleResourceURL.appendingPathComponent("mlx-gemma-3n-E4B-it-4bit")
+            
+            if FileManager.default.fileExists(atPath: bundledModelURL.path) {
+                print("✅ Using bundled model at: \(bundledModelURL.path)")
+                return bundledModelURL
+            }
+        }
+        
+        // Try using url(forResource:withExtension:)
+        if let bundledModelURL = Bundle.main.url(forResource: "mlx-gemma-3n-E4B-it-4bit", withExtension: nil) {
+            print("✅ Using bundled model at: \(bundledModelURL.path)")
+            return bundledModelURL
         }
         
         // Fallback to Application Support for downloaded models
-        print("⚠️ Bundled model not found, checking Application Support")
+        print("⚠️ Bundled model not found, using Application Support")
         return modelsDirectory.appendingPathComponent("gemma-3n-e4b-it", isDirectory: true)
     }
     
@@ -53,13 +91,14 @@ final class ModelCache {
             "config.json",
             "tokenizer.json",
             "tokenizer_config.json",
-            "model.safetensors.index.json",
+            // "model.safetensors.index.json",  // Index is optional/broken
             "model-00001-of-00002.safetensors",
             "model-00002-of-00002.safetensors"
         ]
         
         // Check if we're using a bundled model
-        let isBundled = modelPath.path.contains(Bundle.main.bundlePath)
+        let isBundled = modelPath.path.contains(Bundle.main.bundlePath) || 
+                       modelPath.path.contains(Bundle.main.resourceURL?.path ?? "")
         
         for file in requiredFiles {
             let filePath = modelPath.appendingPathComponent(file)
@@ -112,7 +151,8 @@ final class ModelCache {
     /// Clear all cached models
     func clearCache() throws {
         // Only clear models in Application Support, never bundled models
-        let isBundled = modelPath.path.contains(Bundle.main.bundlePath)
+        let isBundled = modelPath.path.contains(Bundle.main.bundlePath) || 
+                       modelPath.path.contains(Bundle.main.resourceURL?.path ?? "")
         if isBundled {
             print("⚠️ Cannot clear bundled model cache")
             return
@@ -193,7 +233,8 @@ final class ModelCache {
             )
             
             // Only create model-specific directory if not using bundled model
-            let isBundled = modelPath.path.contains(Bundle.main.bundlePath)
+            let isBundled = modelPath.path.contains(Bundle.main.bundlePath) || 
+                           modelPath.path.contains(Bundle.main.resourceURL?.path ?? "")
             if !isBundled {
                 try FileManager.default.createDirectory(
                     at: modelPath,

@@ -46,7 +46,7 @@
 				"Models/mlx-gemma-3n-E4B-it-4bit/config.json",
 				"Models/mlx-gemma-3n-E4B-it-4bit/model-00001-of-00002.safetensors",
 				"Models/mlx-gemma-3n-E4B-it-4bit/model-00002-of-00002.safetensors",
-				"Models/mlx-gemma-3n-E4B-it-4bit/model.safetensors.index.json",
+				"Models/mlx-gemma-3n-E4B-it-4bit/model.safetensors.index.json.wrong",
 				"Models/mlx-gemma-3n-E4B-it-4bit/tokenizer_config.json",
 				"Models/mlx-gemma-3n-E4B-it-4bit/tokenizer.json",
 			);

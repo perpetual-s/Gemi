@@ -97,7 +97,7 @@ struct ModelSetupHelper {
                 Please delete the model folder and download again.
                 """
                 
-            case .sizeMismatch, .hashMismatch, .networkError, .fileSystemError, .cancelled:
+            case .sizeMismatch, .hashMismatch, .networkError, .fileSystemError, .cancelled, .setupFailed:
                 return """
                 An error occurred: \(modelError.localizedDescription)
                 

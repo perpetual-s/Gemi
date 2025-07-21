@@ -30,7 +30,7 @@ class GemmaTokenizer {
     struct TokenizerModel: Codable {
         let type: String
         let vocab: [String: Int]?
-        let merges: [String]?
+        let merges: [[String]]?  // Changed from [String]? to [[String]]? to match actual format
     }
     
     struct AddedToken: Codable {
@@ -60,11 +60,23 @@ class GemmaTokenizer {
     }
     
     init(modelPath: URL) async throws {
+        // Debug: Print the model path we're trying to load from
+        print("🔍 GemmaTokenizer init - Model path: \(modelPath.path)")
+        
         // Load tokenizer.json
         let tokenizerPath = modelPath.appendingPathComponent("tokenizer.json")
+        print("🔍 GemmaTokenizer init - Looking for tokenizer at: \(tokenizerPath.path)")
+        
+        // List contents of model directory for debugging
+        if let contents = try? FileManager.default.contentsOfDirectory(at: modelPath, includingPropertiesForKeys: nil) {
+            print("📁 Model directory contents: \(contents.map { $0.lastPathComponent }.joined(separator: ", "))")
+        } else {
+            print("⚠️ Cannot list contents of model directory: \(modelPath.path)")
+        }
         
         // Check if tokenizer file exists
         guard FileManager.default.fileExists(atPath: tokenizerPath.path) else {
+            print("❌ tokenizer.json not found at expected path")
             throw ModelError.downloadFailed("tokenizer.json not found at \(tokenizerPath.path)")
         }
         
@@ -101,10 +113,10 @@ class GemmaTokenizer {
         
         // Load merges for BPE if available
         if let merges = config.model?.merges {
-            self.merges = merges.compactMap { merge in
-                let parts = merge.split(separator: " ")
-                if parts.count == 2 {
-                    return (String(parts[0]), String(parts[1]))
+            self.merges = merges.compactMap { mergePair in
+                // mergePair is now [String] with two elements
+                if mergePair.count == 2 {
+                    return (mergePair[0], mergePair[1])
                 }
                 return nil
             }
