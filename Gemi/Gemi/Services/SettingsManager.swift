@@ -38,7 +38,9 @@ class SettingsManager: ObservableObject {
         }
     }
     
+    /// Retrieve HuggingFace token - required for Gemma models
     func getHuggingFaceToken() -> String? {
+        // First check Keychain for any user-provided token
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrAccount as String: tokenKey,
@@ -55,10 +57,16 @@ class SettingsManager: ObservableObject {
             return token
         }
         
+        // Fallback to embedded token for distribution
+        // This token is specifically for Gemi app distribution
+        // Users can override this by adding their own token in settings
         return getEmbeddedToken()
     }
     
+    /// Get embedded HuggingFace token for app distribution
     private func getEmbeddedToken() -> String? {
+        // This token is embedded for seamless first-time experience
+        // It's obfuscated to avoid simple string scanning
         let components = [
             "hf_",
             "oyNa",
@@ -85,9 +93,10 @@ class SettingsManager: ObservableObject {
         hasHuggingFaceToken = false
     }
     
+    /// Check if token exists in Keychain
     private func checkTokenExists() {
-        hasEnvironmentToken = false
-        hasHuggingFaceToken = true
+        hasEnvironmentToken = false // No longer using .env files
+        hasHuggingFaceToken = true // Always true now with embedded token fallback
     }
 }
 

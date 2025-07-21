@@ -21,7 +21,13 @@ final class ModelCache {
     
     /// Path to the Gemma 3n model
     var modelPath: URL {
-        modelsDirectory.appendingPathComponent("gemma-3n-e4b-it", isDirectory: true)
+        // First, check if model is bundled with the app
+        if let bundledModelPath = Bundle.main.path(forResource: "mlx-gemma-3n-E4B-it-4bit", ofType: nil, inDirectory: "Models") {
+            return URL(fileURLWithPath: bundledModelPath)
+        }
+        
+        // Fallback to Application Support for downloaded models
+        return modelsDirectory.appendingPathComponent("gemma-3n-e4b-it", isDirectory: true)
     }
     
     /// Cache directory for temporary files
@@ -50,11 +56,22 @@ final class ModelCache {
             "model-00002-of-00002.safetensors"
         ]
         
+        // Check if we're using a bundled model
+        let isBundled = modelPath.path.contains(Bundle.main.bundlePath)
+        
         for file in requiredFiles {
             let filePath = modelPath.appendingPathComponent(file)
             if !FileManager.default.fileExists(atPath: filePath.path) {
+                // For bundled models, log the missing file for debugging
+                if isBundled {
+                    print("⚠️ Bundled model missing file: \(file)")
+                }
                 return false
             }
+        }
+        
+        if isBundled {
+            print("✅ Using bundled model at: \(modelPath.path)")
         }
         
         return true
@@ -92,6 +109,13 @@ final class ModelCache {
     
     /// Clear all cached models
     func clearCache() throws {
+        // Only clear models in Application Support, never bundled models
+        let isBundled = modelPath.path.contains(Bundle.main.bundlePath)
+        if isBundled {
+            print("⚠️ Cannot clear bundled model cache")
+            return
+        }
+        
         if FileManager.default.fileExists(atPath: modelsDirectory.path) {
             try FileManager.default.removeItem(at: modelsDirectory)
         }
@@ -166,12 +190,15 @@ final class ModelCache {
                 attributes: nil
             )
             
-            // Create model-specific directory
-            try FileManager.default.createDirectory(
-                at: modelPath,
-                withIntermediateDirectories: true,
-                attributes: nil
-            )
+            // Only create model-specific directory if not using bundled model
+            let isBundled = modelPath.path.contains(Bundle.main.bundlePath)
+            if !isBundled {
+                try FileManager.default.createDirectory(
+                    at: modelPath,
+                    withIntermediateDirectories: true,
+                    attributes: nil
+                )
+            }
             
             // Create Cache directory
             try FileManager.default.createDirectory(
