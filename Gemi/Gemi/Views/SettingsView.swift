@@ -441,7 +441,7 @@ struct SettingsView: View {
                 VStack(spacing: 20) {
                     // Status indicator
                     HStack {
-                        GemmaModelStatusView(isCompact: true)
+                        SimplifiedModelStatusView()
                     }
                     
                     Divider()
