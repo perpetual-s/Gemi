@@ -107,7 +107,21 @@ final class NativeChatService: ObservableObject {
                     let prompt = formatPrompt(from: request.messages)
                     
                     // Extract images if present
-                    let _ = try extractImages(from: request.messages)
+                    let images = try extractImages(from: request.messages)
+                    var imageAnalysis: ImageAnalysis?
+                    
+                    // Analyze first image if present
+                    if let imageData = images?.first {
+                        imageAnalysis = MultimodalSimulator.analyzeImage(imageData)
+                        print("🖼️ Image detected: \(imageAnalysis?.description ?? "unknown")")
+                    }
+                    
+                    // Enhance prompt with image context if available
+                    let enhancedPrompt = if let analysis = imageAnalysis {
+                        prompt + "\n[Context: User shared a \(analysis.description) with \(analysis.mood) qualities]"
+                    } else {
+                        prompt
+                    }
                     
                     // Generate response with simplified API
                     var responseText = ""
@@ -117,8 +131,8 @@ final class NativeChatService: ObservableObject {
                     let maxTokens = request.options?.maxTokens ?? 2048
                     let temperature = Float(request.options?.temperature ?? 0.7)
                     
-                    // Note: Images are ignored for now - bundled model is text-only
-                    for await token in model.generate(prompt: prompt, maxTokens: maxTokens, temperature: temperature) {
+                    // Generate base response
+                    for await token in model.generate(prompt: enhancedPrompt, maxTokens: maxTokens, temperature: temperature) {
                         responseText += token
                         tokenCount += 1
                         
@@ -135,6 +149,15 @@ final class NativeChatService: ObservableObject {
                             )
                             continuation.yield(response)
                         }
+                    }
+                    
+                    // Enhance response with multimodal context if image was provided
+                    if let analysis = imageAnalysis {
+                        responseText = MultimodalSimulator.generateMultimodalResponse(
+                            prompt: prompt,
+                            imageAnalysis: analysis,
+                            baseResponse: responseText
+                        )
                     }
                     
                     // Send final response

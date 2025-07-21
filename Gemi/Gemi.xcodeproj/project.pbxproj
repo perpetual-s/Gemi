@@ -37,9 +37,27 @@
 		8CE77D922E19B5CB00AF7A09 /* GemiUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GemiUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		8CD296572E2E01D300D3E729 /* Exceptions for "Gemi" folder in "Gemi" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Models/mlx-gemma-3n-E4B-it-4bit/config.json",
+				"Models/mlx-gemma-3n-E4B-it-4bit/model-00001-of-00002.safetensors",
+				"Models/mlx-gemma-3n-E4B-it-4bit/model-00002-of-00002.safetensors",
+				"Models/mlx-gemma-3n-E4B-it-4bit/model.safetensors.index.json",
+				"Models/mlx-gemma-3n-E4B-it-4bit/tokenizer_config.json",
+				"Models/mlx-gemma-3n-E4B-it-4bit/tokenizer.json",
+			);
+			target = 8CE77D792E19B5CA00AF7A09 /* Gemi */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8CE77D7C2E19B5CA00AF7A09 /* Gemi */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8CD296572E2E01D300D3E729 /* Exceptions for "Gemi" folder in "Gemi" target */,
+			);
 			path = Gemi;
 			sourceTree = "<group>";
 		};

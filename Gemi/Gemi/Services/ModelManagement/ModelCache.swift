@@ -21,7 +21,23 @@ final class ModelCache {
     
     /// Path to the Gemma 3n model
     var modelPath: URL {
-        // First, check if model is bundled with the app
+        // For development: Use direct path to model in source directory
+        #if DEBUG
+        let projectPath = URL(fileURLWithPath: #file)
+            .deletingLastPathComponent()  // Remove ModelCache.swift
+            .deletingLastPathComponent()  // Remove ModelManagement
+            .deletingLastPathComponent()  // Remove Services
+            .deletingLastPathComponent()  // Remove Gemi
+            .appendingPathComponent("Models")
+            .appendingPathComponent("mlx-gemma-3n-E4B-it-4bit")
+        
+        if FileManager.default.fileExists(atPath: projectPath.path) {
+            print("🔧 DEBUG: Using model from source directory: \(projectPath.path)")
+            return projectPath
+        }
+        #endif
+        
+        // Production: Check if model is bundled with the app
         if let bundledModelPath = Bundle.main.path(forResource: "mlx-gemma-3n-E4B-it-4bit", ofType: nil, inDirectory: "Models") {
             return URL(fileURLWithPath: bundledModelPath)
         }
