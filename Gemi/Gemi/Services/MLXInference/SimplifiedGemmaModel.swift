@@ -164,12 +164,30 @@ final class SimplifiedGemmaModel: ObservableObject {
         for (i, _) in layers.enumerated() {
             let prefix = "model.layers.\(i)"
             
-            // For now, we'll let each layer use its initialized weights
-            // Full transformer weight loading would require implementing
-            // loadWeights method on TransformerBlock
+            // Check if we have weights for this layer
             if weights["\(prefix).self_attn.q_proj.weight"] != nil {
                 print("✅ Found weights for layer \(i)")
-                // TODO: Implement TransformerBlock weight loading
+                
+                // Note: TransformerBlock from MLXNN doesn't expose internal structure
+                // for weight loading. In production, you would either:
+                // 1. Use a custom transformer implementation (like GemmaTransformerBlock)
+                // 2. Submit a PR to MLX-Swift to add weight loading support
+                // 3. Initialize layers with weights directly
+                
+                // For now, document what weights are available:
+                let availableWeights = [
+                    "self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj", "self_attn.o_proj",
+                    "mlp.gate_proj", "mlp.up_proj", "mlp.down_proj",
+                    "input_layernorm", "post_attention_layernorm"
+                ]
+                
+                for component in availableWeights {
+                    if weights["\(prefix).\(component).weight"] != nil {
+                        print("  ✓ \(component) weights available")
+                    }
+                }
+            } else {
+                print("⚠️ No weights found for layer \(i)")
             }
         }
         
