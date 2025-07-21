@@ -73,8 +73,7 @@ final class NativeChatService: ObservableObject {
     
     // MARK: - Properties
     
-    private let model = GemmaMLXModel()
-    private let modelDownloader = UltimateModelDownloader()
+    private let model = SimplifiedGemmaModel()
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Initialization
@@ -110,21 +109,16 @@ final class NativeChatService: ObservableObject {
                     // Extract images if present
                     let images = try extractImages(from: request.messages)
                     
-                    // Configure generation
-                    let config = GemmaMLXModel.GenerationConfig(
-                        maxTokens: request.options?.maxTokens ?? 2048,
-                        temperature: request.options?.temperature ?? 0.7,
-                        topK: request.options?.topK ?? 50,
-                        topP: request.options?.topP ?? 0.95,
-                        repetitionPenalty: 1.1
-                    )
-                    
-                    // Generate response
+                    // Generate response with simplified API
                     var responseText = ""
                     let startTime = Date()
                     var tokenCount = 0
                     
-                    for await token in model.generate(prompt: prompt, images: images, config: config) {
+                    let maxTokens = request.options?.maxTokens ?? 2048
+                    let temperature = Float(request.options?.temperature ?? 0.7)
+                    
+                    // Note: Images are ignored for now - bundled model is text-only
+                    for await token in model.generate(prompt: prompt, maxTokens: maxTokens, temperature: temperature) {
                         responseText += token
                         tokenCount += 1
                         
@@ -193,14 +187,9 @@ final class NativeChatService: ObservableObject {
         }
     }
     
-    /// Download the model if needed
-    func downloadModelIfNeeded() async throws {
-        let isComplete = await ModelCache.shared.isModelComplete()
-        guard !isComplete else {
-            return
-        }
-        
-        try await modelDownloader.startDownload()
+    /// Check if model is ready (for bundled model)
+    func checkModelReady() async -> Bool {
+        return await ModelCache.shared.isModelComplete()
     }
     
     /// Cancel ongoing generation
@@ -212,15 +201,6 @@ final class NativeChatService: ObservableObject {
     // MARK: - Private Methods
     
     private func setupBindings() {
-        // Bind model loading progress
-        model.$loadProgress
-            .sink { [weak self] progress in
-                if progress > 0 && progress < 1 {
-                    self?.modelStatus = .loading(progress: progress)
-                }
-            }
-            .store(in: &cancellables)
-        
         // Bind model loaded state
         model.$isLoaded
             .sink { [weak self] isLoaded in
@@ -231,21 +211,12 @@ final class NativeChatService: ObservableObject {
             }
             .store(in: &cancellables)
         
-        // Bind downloader state
-        modelDownloader.$downloadState
-            .sink { [weak self] state in
-                switch state {
-                case .downloading(_, let progress):
-                    self?.modelStatus = .loading(progress: progress * 0.5) // First 50% is download
-                case .completed:
-                    Task {
-                        try? await self?.loadModel()
-                    }
-                case .failed(let error):
-                    self?.modelStatus = .error(error)
-                default:
-                    break
-                }
+        // Bind model error state
+        model.$error
+            .compactMap { $0 }
+            .sink { [weak self] error in
+                self?.modelStatus = .error(error.localizedDescription)
+                self?.connectionStatus = .error(error.localizedDescription)
             }
             .store(in: &cancellables)
     }
