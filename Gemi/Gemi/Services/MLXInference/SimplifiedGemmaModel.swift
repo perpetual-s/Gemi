@@ -26,11 +26,11 @@ final class SimplifiedGemmaModel: ObservableObject {
     private var norm: RMSNorm?
     private var output: Linear?
     
-    // Model configuration - Gemma 3n E4B
-    private let hiddenSize = 3072
-    private let numLayers = 35  // AltUp architecture has 35 layers
-    private let numHeads = 16
-    private let vocabSize = 256128
+    // Model configuration - Gemma 3n E4B (from config.json)
+    private let hiddenSize = 2048  // text_config.hidden_size
+    private let numLayers = 35     // text_config.num_hidden_layers
+    private let numHeads = 8       // text_config.num_attention_heads
+    private let vocabSize = 262400 // text_config.vocab_size
     
     // MARK: - Public Methods
     
