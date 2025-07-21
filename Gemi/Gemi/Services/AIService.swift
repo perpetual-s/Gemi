@@ -86,13 +86,14 @@ actor AIService {
             
             for try await response in chatStream {
                 // Convert native response to expected format
+                // Always include the message for streaming responses
                 let chatResponse = ChatResponse(
                     model: modelName,
                     created_at: ISO8601DateFormatter().string(from: Date()),
-                    message: response.done ? ChatMessage(
+                    message: ChatMessage(
                         role: .assistant,
                         content: response.message.content
-                    ) : nil,
+                    ),
                     done: response.done,
                     total_duration: response.totalDuration,
                     eval_count: response.evalCount,
