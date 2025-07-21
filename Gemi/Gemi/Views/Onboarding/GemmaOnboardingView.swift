@@ -45,7 +45,7 @@ struct GemmaOnboardingView: View {
             
             // Content based on state
             if showingProgressSetup {
-                GemmaSetupProgressView(
+                SimplifiedSetupProgressView(
                     onComplete: safeComplete,
                     onSkip: {
                         showingProgressSetup = false
