@@ -181,43 +181,55 @@ struct OllamaSetupView: View {
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(.white)
                 
-                Text("Open Terminal and run this command:")
+                Text("Choose your installation method:")
                     .font(.system(size: 16))
                     .foregroundColor(.white.opacity(0.8))
             }
             
-            CommandBox(
-                command: "brew install ollama",
-                description: "Installs Ollama using Homebrew"
-            ) {
-                copyToClipboard("brew install ollama")
-            }
-            
-            OnboardingFeatureCard(
-                items: [
-                    (icon: "info.circle.fill", text: "Don't have Homebrew? Visit brew.sh")
-                ]
-            )
-            .onTapGesture {
-                NSWorkspace.shared.open(URL(string: "https://brew.sh")!)
-            }
-            
-            Divider()
-                .background(Color.white.opacity(0.2))
-            
-            VStack(spacing: 12) {
-                Text("Alternative: Download from Ollama.com")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.white.opacity(0.8))
-                
-                OnboardingButton(
-                    "Download Ollama",
-                    icon: "arrow.down.circle",
-                    style: .secondary,
-                    action: {
-                        NSWorkspace.shared.open(URL(string: "https://ollama.com/download")!)
+            VStack(spacing: 20) {
+                // Option 1: Homebrew
+                VStack(spacing: 12) {
+                    Text("Option 1: Install via Homebrew")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.7))
+                    
+                    CommandBox(
+                        command: "brew install ollama",
+                        description: "For developers comfortable with Terminal"
+                    ) {
+                        copyToClipboard("brew install ollama")
                     }
-                )
+                }
+                
+                HStack(spacing: 16) {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.2))
+                        .frame(height: 1)
+                    
+                    Text("OR")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.6))
+                    
+                    Rectangle()
+                        .fill(Color.white.opacity(0.2))
+                        .frame(height: 1)
+                }
+                
+                // Option 2: Direct download
+                VStack(spacing: 12) {
+                    Text("Option 2: Download Installer")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.7))
+                    
+                    OnboardingButton(
+                        "Download Ollama.dmg",
+                        icon: "arrow.down.circle",
+                        style: .secondary,
+                        action: {
+                            NSWorkspace.shared.open(URL(string: "https://ollama.com/download")!)
+                        }
+                    )
+                }
             }
         }
         .padding(.horizontal, 30)
