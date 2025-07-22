@@ -538,46 +538,61 @@ struct GemiChatView: View {
         VStack {
             Spacer()
             
-            // Model loading notice at bottom
-            VStack(spacing: 12) {
-                // Small indicator
-                HStack(spacing: 8) {
+            // Ollama not running notice
+            VStack(spacing: 16) {
+                // Status indicator
+                HStack(spacing: 12) {
                     Circle()
                         .fill(Color.orange)
                         .frame(width: 8, height: 8)
                     
-                    Text("AI model not ready")
-                        .font(Theme.Typography.caption)
+                    Text("Ollama not running")
+                        .font(Theme.Typography.body)
                         .foregroundColor(Theme.Colors.secondaryText)
-                    
-                    Text("•")
-                        .font(Theme.Typography.caption)
-                        .foregroundColor(Theme.Colors.tertiaryText)
-                    
-                    Button("Load Model") {
-                        viewModel.checkAIConnection()
+                }
+                
+                // Action buttons
+                VStack(spacing: 8) {
+                    Button {
+                        // Open Terminal and run ollama serve
+                        if let url = URL(string: "x-terminal://ollama serve") {
+                            NSWorkspace.shared.open(url)
+                        } else {
+                            // Fallback: open Terminal app
+                            NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: "/System/Applications/Utilities/Terminal.app"), configuration: NSWorkspace.OpenConfiguration())
+                        }
+                    } label: {
+                        Label("Start Ollama in Terminal", systemImage: "terminal")
+                            .font(Theme.Typography.caption)
+                            .fontWeight(.medium)
                     }
-                    .font(Theme.Typography.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(Theme.Colors.primaryAccent)
-                    .buttonStyle(.plain)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    
+                    Text("Run: ollama serve")
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundColor(Theme.Colors.tertiaryText)
+                        .textSelection(.enabled)
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .padding(.vertical, 12)
                 .background(
-                    Capsule()
-                        .fill(Theme.Colors.cardBackground.opacity(0.9))
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Theme.Colors.cardBackground.opacity(0.95))
                         .overlay(
-                            Capsule()
+                            RoundedRectangle(cornerRadius: 12)
                                 .strokeBorder(Theme.Colors.divider.opacity(0.3), lineWidth: 1)
                         )
                 )
                 .shadow(color: Color.black.opacity(0.1), radius: 8, y: 4)
                 
-                Text("Messages require the AI model to be loaded")
-                    .font(Theme.Typography.footnote)
-                    .foregroundColor(Theme.Colors.tertiaryText)
-                    .multilineTextAlignment(.center)
+                // Retry button
+                Button("Check Again") {
+                    viewModel.checkAIConnection()
+                }
+                .font(Theme.Typography.caption)
+                .foregroundColor(Theme.Colors.primaryAccent)
+                .buttonStyle(.plain)
             }
             .padding(.bottom, 20)
         }

@@ -20,11 +20,7 @@ struct GemiApp: App {
         print("   API: http://localhost:11434")
         print("   Model: gemma3n:latest")
         print("   Features: Full multimodal support")
-        
-        // Ensure OllamaChatService is initialized and starts Ollama
-        Task {
-            _ = OllamaChatService.shared
-        }
+        print("   Note: Start Ollama manually with 'ollama serve'")
     }
     
     var body: some Scene {

@@ -93,9 +93,9 @@ final class OllamaChatService: ObservableObject {
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
         self.session = URLSession(configuration: config)
         
-        // Start Ollama automatically when app launches
+        // Check Ollama status on launch (don't try to start due to sandbox)
         Task {
-            await startOllamaOnLaunch()
+            await checkInitialStatus()
         }
     }
     
@@ -104,14 +104,8 @@ final class OllamaChatService: ObservableObject {
     /// Send a chat request with streaming response
     func chat(_ request: ChatRequest) async throws -> AsyncThrowingStream<ChatResponse, Error> {
         // Ensure Ollama is running
-        if !(await isOllamaRunning()) {
-            // Try to start Ollama
-            try await startOllamaIfNeeded()
-            
-            // Check again after starting
-            guard await isOllamaRunning() else {
-                throw OllamaError.notRunning
-            }
+        guard await isOllamaRunning() else {
+            throw OllamaError.notRunning
         }
         
         // Ensure model is available
@@ -293,52 +287,6 @@ final class OllamaChatService: ObservableObject {
     
     // MARK: - Private Methods
     
-    private func startOllamaOnLaunch() async {
-        connectionStatus = .connecting
-        
-        // Check if Ollama is already running
-        if await isOllamaRunning() {
-            print("🦙 Ollama already running")
-            connectionStatus = .connected
-            
-            if await isModelAvailable(defaultModel) {
-                modelStatus = .loaded
-            } else {
-                modelStatus = .notLoaded
-            }
-            return
-        }
-        
-        // Try to start Ollama automatically
-        print("🦙 Starting Ollama automatically...")
-        do {
-            try await startOllamaIfNeeded()
-            
-            // Wait a bit for Ollama to fully start
-            try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
-            
-            // Check if it's running now
-            if await isOllamaRunning() {
-                print("✅ Ollama started successfully")
-                connectionStatus = .connected
-                
-                if await isModelAvailable(defaultModel) {
-                    modelStatus = .loaded
-                } else {
-                    modelStatus = .notLoaded
-                    // Optionally trigger model download here
-                }
-            } else {
-                print("⚠️ Ollama failed to start automatically")
-                connectionStatus = .disconnected
-                modelStatus = .notLoaded
-            }
-        } catch {
-            print("❌ Failed to start Ollama: \(error)")
-            connectionStatus = .disconnected
-            modelStatus = .notLoaded
-        }
-    }
     
     private func checkInitialStatus() async {
         connectionStatus = .connecting
