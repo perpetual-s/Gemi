@@ -345,12 +345,14 @@ struct OllamaSetupView: View {
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
                     
-                    Button("Open Setup Guide") {
-                        NSWorkspace.shared.open(URL(string: "https://github.com/ollama/ollama#macos")!)
-                    }
-                    .font(.system(size: 14))
-                    .foregroundColor(.blue)
-                    .underline()
+                    OnboardingButton(
+                        "Open Setup Guide",
+                        icon: "book.fill",
+                        style: .secondary,
+                        action: {
+                            NSWorkspace.shared.open(URL(string: "https://github.com/ollama/ollama#macos")!)
+                        }
+                    )
                 }
             }
         }
@@ -507,10 +509,10 @@ struct StatusCard: View {
         
         var backgroundColor: Color {
             switch self {
-            case .success: return .green.opacity(0.1)
-            case .warning: return .orange.opacity(0.1)
-            case .error: return .red.opacity(0.1)
-            case .info: return .blue.opacity(0.1)
+            case .success: return .green.opacity(0.15)
+            case .warning: return .orange.opacity(0.15)
+            case .error: return .red.opacity(0.15)
+            case .info: return .blue.opacity(0.15)
             }
         }
     }
@@ -524,10 +526,11 @@ struct StatusCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.headline)
+                    .foregroundColor(.white)
                 
                 Text(description)
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.white.opacity(0.8))
             }
             
             Spacer()
@@ -535,12 +538,32 @@ struct StatusCard: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(status.backgroundColor)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            status.backgroundColor,
+                            status.backgroundColor.opacity(0.6)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(iconColor.opacity(0.3), lineWidth: 1)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            iconColor.opacity(0.4),
+                            iconColor.opacity(0.2)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
         )
+        .shadow(color: iconColor.opacity(0.2), radius: 8, x: 0, y: 4)
     }
 }
 
