@@ -7,7 +7,7 @@ actor AIService {
     
     // MARK: - Properties
     
-    private var modelName = ModelConfiguration.modelID
+    private let modelName = "gemma3n:latest"
     
     // Connection state caching
     private var lastHealthCheck: Date?

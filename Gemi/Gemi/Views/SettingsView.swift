@@ -439,9 +439,21 @@ struct SettingsView: View {
                 iconColor: .purple
             ) {
                 VStack(spacing: 20) {
-                    // Status indicator
+                    // Ollama Status
                     HStack {
-                        SimplifiedModelStatusView()
+                        Image(systemName: "server.rack")
+                            .font(.system(size: 20))
+                            .foregroundColor(.blue)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Ollama Backend")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text("gemma3n:latest")
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
                     }
                     
                     Divider()
@@ -450,9 +462,9 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Model Management")
+                                Text("Ollama Setup")
                                     .font(.system(size: 14, weight: .semibold))
-                                Text("Download or update Gemma 3n model")
+                                Text("Configure Ollama and Gemma 3n model")
                                     .font(.system(size: 12))
                                     .foregroundColor(.secondary)
                             }

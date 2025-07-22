@@ -32,7 +32,7 @@ final class AIConfiguration: ObservableObject {
     }
     
     private enum Defaults {
-        static let selectedModel = ModelConfiguration.modelID
+        static let selectedModel = "gemma3n:latest"
         static let temperature = 0.7
         static let maxTokens = 2048
     }
@@ -40,16 +40,12 @@ final class AIConfiguration: ObservableObject {
     // MARK: - Computed Properties
     var isMultimodalModel: Bool {
         // Gemma 3n is always multimodal
-        return selectedModel.contains("gemma-3n")
-    }
-    
-    var modelPath: URL {
-        ModelCache.shared.modelPath
+        return true
     }
     
     var estimatedMemoryUsage: Int64 {
-        // Rough estimate based on model
-        return 4 * 1024 * 1024 * 1024 // 4GB for E4B model
+        // Rough estimate for Ollama model
+        return 4 * 1024 * 1024 * 1024 // 4GB for Gemma 3n
     }
     
     // MARK: - Initialization
@@ -79,8 +75,8 @@ final class AIConfiguration: ObservableObject {
     
     /// Get available models
     func getAvailableModels() -> [String] {
-        // For now, only the mlx-community 4-bit model is supported
-        return [ModelConfiguration.modelID]
+        // Return Ollama models
+        return ["gemma3n:latest", "gemma3n:e2b", "gemma3n:e4b"]
     }
 }
 

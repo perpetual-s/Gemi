@@ -93,9 +93,9 @@ final class OllamaChatService: ObservableObject {
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
         self.session = URLSession(configuration: config)
         
-        // Start initial health check
+        // Start Ollama automatically when app launches
         Task {
-            await checkInitialStatus()
+            await startOllamaOnLaunch()
         }
     }
     
@@ -293,6 +293,53 @@ final class OllamaChatService: ObservableObject {
     
     // MARK: - Private Methods
     
+    private func startOllamaOnLaunch() async {
+        connectionStatus = .connecting
+        
+        // Check if Ollama is already running
+        if await isOllamaRunning() {
+            print("🦙 Ollama already running")
+            connectionStatus = .connected
+            
+            if await isModelAvailable(defaultModel) {
+                modelStatus = .loaded
+            } else {
+                modelStatus = .notLoaded
+            }
+            return
+        }
+        
+        // Try to start Ollama automatically
+        print("🦙 Starting Ollama automatically...")
+        do {
+            try await startOllamaIfNeeded()
+            
+            // Wait a bit for Ollama to fully start
+            try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+            
+            // Check if it's running now
+            if await isOllamaRunning() {
+                print("✅ Ollama started successfully")
+                connectionStatus = .connected
+                
+                if await isModelAvailable(defaultModel) {
+                    modelStatus = .loaded
+                } else {
+                    modelStatus = .notLoaded
+                    // Optionally trigger model download here
+                }
+            } else {
+                print("⚠️ Ollama failed to start automatically")
+                connectionStatus = .disconnected
+                modelStatus = .notLoaded
+            }
+        } catch {
+            print("❌ Failed to start Ollama: \(error)")
+            connectionStatus = .disconnected
+            modelStatus = .notLoaded
+        }
+    }
+    
     private func checkInitialStatus() async {
         connectionStatus = .connecting
         
@@ -332,13 +379,14 @@ final class OllamaChatService: ObservableObject {
     }
     
     private func startOllamaIfNeeded() async throws {
-        // First check if Ollama is installed
+        // First check if Ollama is installed and get its path
         let checkProcess = Process()
         checkProcess.executableURL = URL(fileURLWithPath: "/usr/bin/which")
         checkProcess.arguments = ["ollama"]
         
         let pipe = Pipe()
         checkProcess.standardOutput = pipe
+        checkProcess.standardError = FileHandle.nullDevice
         
         try checkProcess.run()
         checkProcess.waitUntilExit()
@@ -347,26 +395,51 @@ final class OllamaChatService: ObservableObject {
             throw OllamaError.notInstalled
         }
         
-        // Try to start Ollama serve
+        // Get the actual ollama path
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        guard let ollamaPath = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !ollamaPath.isEmpty else {
+            throw OllamaError.notInstalled
+        }
+        
+        // Check if Ollama is already running
+        if await isOllamaRunning() {
+            return
+        }
+        
+        // Try to start Ollama serve in background
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/local/bin/ollama")
+        process.executableURL = URL(fileURLWithPath: ollamaPath)
         process.arguments = ["serve"]
         
         // Redirect output to avoid console spam
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
         
-        try process.run()
+        // Configure for background operation
+        process.qualityOfService = .background
         
-        // Wait for server to start (max 10 seconds)
-        for _ in 0..<20 {
+        do {
+            try process.run()
+            
+            // Don't wait for process to exit - it runs in background
+            // Instead, poll for server availability
+            for _ in 0..<20 {
+                try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                if await isOllamaRunning() {
+                    return
+                }
+            }
+            
+            throw OllamaError.startupTimeout
+        } catch {
+            // If process fails to start, it might already be running
+            // Check one more time
             if await isOllamaRunning() {
                 return
             }
-            try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+            throw error
         }
-        
-        throw OllamaError.startupTimeout
     }
     
     private func pullModel(_ model: String) async throws -> AsyncStream<PullProgress> {

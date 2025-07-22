@@ -5,7 +5,6 @@ struct GemmaOnboardingView: View {
     @StateObject private var authManager = AuthenticationManager.shared
     @State private var currentPage = 0
     @State private var showingOllamaSetup = false
-    @State private var showingProgressSetup = false
     @State private var hasCompletedOnboarding = false
     @State private var password = ""
     @State private var confirmPassword = ""
@@ -47,24 +46,9 @@ struct GemmaOnboardingView: View {
             // Content based on state
             if showingOllamaSetup {
                 OllamaSetupView {
-                    // Once Ollama is set up, continue to model download
-                    withAnimation(.spring()) {
-                        showingOllamaSetup = false
-                        showingProgressSetup = true
-                    }
+                    // Once Ollama is set up, complete onboarding
+                    safeComplete()
                 }
-                .transition(.asymmetric(
-                    insertion: .move(edge: .trailing).combined(with: .opacity),
-                    removal: .move(edge: .leading).combined(with: .opacity)
-                ))
-            } else if showingProgressSetup {
-                SimplifiedSetupProgressView(
-                    onComplete: safeComplete,
-                    onSkip: {
-                        showingProgressSetup = false
-                        safeComplete()
-                    }
-                )
                 .transition(.asymmetric(
                     insertion: .move(edge: .trailing).combined(with: .opacity),
                     removal: .move(edge: .leading).combined(with: .opacity)
