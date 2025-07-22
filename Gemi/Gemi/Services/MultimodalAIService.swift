@@ -388,8 +388,10 @@ final class MultimodalAIService: ObservableObject {
     
     /// Check if multimodal processing is available
     func checkAvailability() async -> (vision: Bool, speech: Bool) {
-        let visionAvailable = await visionService.isAvailable()
-        let speechAvailable = speechService.isAvailable()
+        // Vision is always available on macOS
+        let visionAvailable = true
+        // Speech recognition requires checking authorization
+        let speechAvailable = await quickAudio.requestAuthorization() == .authorized
         
         return (vision: visionAvailable, speech: speechAvailable)
     }

@@ -97,7 +97,7 @@ final class QuickAudioService: ObservableObject {
         }
     }
     
-    private func requestAuthorization() async -> SFSpeechRecognizerAuthorizationStatus {
+    func requestAuthorization() async -> SFSpeechRecognizerAuthorizationStatus {
         await withCheckedContinuation { continuation in
             SFSpeechRecognizer.requestAuthorization { status in
                 continuation.resume(returning: status)

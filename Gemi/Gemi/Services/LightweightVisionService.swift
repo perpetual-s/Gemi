@@ -64,9 +64,7 @@ final class LightweightVisionService: ObservableObject {
             return "content" // Default fallback
         }
         
-        if let classification = classificationResult {
-            description += " showing \(classification)"
-        }
+        description += " showing \(classificationResult)"
         
         return description
     }
@@ -80,7 +78,7 @@ final class LightweightVisionService: ObservableObject {
                     let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
                     try handler.perform([request])
                     
-                    guard let results = request.results as? [VNClassificationObservation],
+                    guard let results = request.results,
                           !results.isEmpty else {
                         continuation.resume(returning: "content")
                         return
@@ -152,7 +150,7 @@ final class LightweightVisionService: ObservableObject {
                     let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
                     try handler.perform([request])
                     
-                    guard let results = request.results as? [VNRecognizedTextObservation],
+                    guard let results = request.results,
                           !results.isEmpty else {
                         continuation.resume(returning: nil)
                         return
