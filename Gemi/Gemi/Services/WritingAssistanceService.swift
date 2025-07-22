@@ -52,7 +52,7 @@ final class WritingAssistanceService: ObservableObject {
         )
         
         do {
-            // Use chat API for suggestions
+            // Use chat API for suggestions with contextual temperature
             let messages = [
                 ChatMessage(role: .system, content: """
                 You are a helpful writing assistant for a personal journal app.
@@ -63,7 +63,7 @@ final class WritingAssistanceService: ObservableObject {
             ]
             
             var fullResponse = ""
-            let stream = await AIService.shared.chat(messages: messages)
+            let stream = await AIService.shared.chatWithContext(messages: messages)
             
             for try await response in stream {
                 if let content = response.message?.content {
@@ -155,7 +155,7 @@ final class WritingAssistanceService: ObservableObject {
         ]
         
         var response = ""
-        let stream = await AIService.shared.chat(messages: messages)
+        let stream = await AIService.shared.chatWithContext(messages: messages)
         
         for try await chunk in stream {
             if let content = chunk.message?.content {
@@ -189,7 +189,7 @@ final class WritingAssistanceService: ObservableObject {
         ]
         
         var response = ""
-        let stream = await AIService.shared.chat(messages: messages)
+        let stream = await AIService.shared.chatWithContext(messages: messages)
         
         for try await chunk in stream {
             if let content = chunk.message?.content {
@@ -234,7 +234,7 @@ final class WritingAssistanceService: ObservableObject {
         ]
         
         var response = ""
-        let stream = await AIService.shared.chat(messages: messages)
+        let stream = await AIService.shared.chatWithContext(messages: messages)
         
         for try await chunk in stream {
             if let content = chunk.message?.content {
@@ -254,9 +254,16 @@ final class WritingAssistanceService: ObservableObject {
     ) -> String {
         let basePrompt = """
         <instructions>
-        You are an intelligent writing assistant for a personal journal app.
-        Provide helpful, specific suggestions based on the current writing context.
-        Be encouraging and supportive while offering concrete ideas.
+        You are Gemi, an intelligent writing assistant powered by Gemma 3n.
+        You excel at understanding context, emotions, and creative expression across 140+ languages.
+        Provide helpful, specific suggestions that honor the writer's voice and emotional state.
+        
+        <capabilities>
+        - Multilingual understanding: Respond in the same language as the user
+        - Emotional intelligence: Recognize and respond to emotional cues
+        - Creative expression: Generate vivid, engaging continuations
+        - Cultural awareness: Respect diverse perspectives and expressions
+        </capabilities>
         
         <format_rules>
         - DO NOT use markdown formatting like **bold** or *italic*
@@ -264,6 +271,7 @@ final class WritingAssistanceService: ObservableObject {
         - Write in plain, natural language
         - Use simple punctuation and clear sentences
         - Each suggestion should be a complete thought
+        - Match the writer's tone and style naturally
         </format_rules>
         </instructions>
         

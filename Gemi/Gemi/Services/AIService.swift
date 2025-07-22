@@ -66,13 +66,22 @@ actor AIService {
         }
     }
     
+    /// Generate a response with contextual temperature adjustment
+    func chatWithContext(messages: [ChatMessage]) -> AsyncThrowingStream<ChatResponse, Error> {
+        AsyncThrowingStream { continuation in
+            Task {
+                await self.performChatRequest(messages: messages, continuation: continuation, useContextualTemperature: true)
+            }
+        }
+    }
+    
     /// Check if the current model supports multimodal input
     func isMultimodalModel() async -> Bool {
         // Gemma 3n via Ollama is always multimodal
         return true
     }
     
-    private func performChatRequest(messages: [ChatMessage], continuation: AsyncThrowingStream<ChatResponse, Error>.Continuation) async {
+    private func performChatRequest(messages: [ChatMessage], continuation: AsyncThrowingStream<ChatResponse, Error>.Continuation, useContextualTemperature: Bool = false) async {
         do {
             // Ensure Ollama is ready
             if !(try await checkHealth()) {
@@ -94,15 +103,28 @@ actor AIService {
                 )
             }
             
+            // Use configuration from AIConfiguration for dynamic control
+            let config = await AIConfiguration.shared
+            
+            // Determine temperature based on context if requested
+            let effectiveTemperature: Double
+            if useContextualTemperature, let lastUserMessage = messages.last(where: { $0.role == .user }) {
+                effectiveTemperature = await config.getContextualTemperature(for: lastUserMessage.content)
+            } else {
+                effectiveTemperature = await config.temperature
+            }
+            
+            let maxTokens = await config.maxTokens
+            
             let request = OllamaChatService.ChatRequest(
                 messages: ollamaMessages,
                 model: modelName,
                 stream: true,
                 options: OllamaChatService.ChatOptions(
-                    temperature: 0.7,
-                    maxTokens: 2048,
-                    topK: 40,
-                    topP: 0.9
+                    temperature: effectiveTemperature,
+                    maxTokens: maxTokens,
+                    topK: 64,  // Gemma 3n optimal setting
+                    topP: 0.95  // Gemma 3n optimal setting
                 )
             )
             

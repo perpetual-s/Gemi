@@ -33,7 +33,7 @@ final class AIConfiguration: ObservableObject {
     
     private enum Defaults {
         static let selectedModel = "gemma3n:latest"
-        static let temperature = 0.7
+        static let temperature = 1.0  // Optimal for Gemma 3n creative writing
         static let maxTokens = 2048
     }
     
@@ -65,6 +65,51 @@ final class AIConfiguration: ObservableObject {
         selectedModel = Defaults.selectedModel
         temperature = Defaults.temperature
         maxTokens = Defaults.maxTokens
+    }
+    
+    /// Get optimized temperature based on conversation context
+    /// Using Gemma 3n optimal settings: base 1.0 with contextual adjustments
+    func getContextualTemperature(for messageContent: String) -> Double {
+        let lowercased = messageContent.lowercased()
+        
+        // Check if this is a writing assistance request
+        if lowercased.contains("continue") || lowercased.contains("ideas") ||
+           lowercased.contains("improve") || lowercased.contains("suggest") {
+            // Writing assistance contexts - use optimal Gemma 3n creative temperature
+            if lowercased.contains("continue writing") || lowercased.contains("what happens next") {
+                return 0.7  // Continuation: coherent flow
+            } else if lowercased.contains("ideas") || lowercased.contains("explore") {
+                return 0.8  // Ideation: creative exploration
+            } else if lowercased.contains("improve") || lowercased.contains("style") {
+                return 0.3  // Style improvement: precision
+            } else if lowercased.contains("emotion") || lowercased.contains("feeling") {
+                return 0.6  // Emotional exploration: balanced
+            } else if lowercased.contains("stuck") || lowercased.contains("block") {
+                return 0.9  // Writer's block: high creativity
+            }
+        }
+        
+        // Creative writing or storytelling - Gemma 3n sweet spot
+        if lowercased.contains("story") || lowercased.contains("imagine") || 
+           lowercased.contains("dream") || lowercased.contains("creative") {
+            return 1.0  // Optimal for Gemma 3n creative tasks
+        }
+        
+        // Emotional processing - slightly lower for coherence
+        if lowercased.contains("feel") || lowercased.contains("emotion") ||
+           lowercased.contains("sad") || lowercased.contains("happy") ||
+           lowercased.contains("angry") || lowercased.contains("anxious") {
+            return 0.8
+        }
+        
+        // Seeking advice or clarity - lower temperature for accuracy
+        if lowercased.contains("advice") || lowercased.contains("should i") ||
+           lowercased.contains("what do you think") || lowercased.contains("help me understand") {
+            return 0.5
+        }
+        
+        // Default to Gemma 3n optimal temperature
+        return 1.0
     }
     
     /// Check if model is ready
