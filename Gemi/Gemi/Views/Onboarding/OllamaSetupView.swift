@@ -74,8 +74,8 @@ struct OllamaSetupView: View {
                             .multilineTextAlignment(.center)
                     }
                 }
-                .padding(.top, 40)
-                .padding(.horizontal, 60)
+                .padding(.top, 60)
+                .padding(.horizontal, 50)
             
                 // Enhanced progress indicator
                 HStack(spacing: 20) {
@@ -125,7 +125,7 @@ struct OllamaSetupView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.horizontal, 60)
+            .padding(.horizontal, 50)
             
                 // Premium footer buttons
                 HStack(spacing: 16) {
@@ -159,28 +159,52 @@ struct OllamaSetupView: View {
                     Spacer()
                     
                     if currentStep < 2 {
-                        OnboardingButton(
-                            "Next",
-                            icon: "arrow.right",
-                            style: .primary
-                        ) {
+                        Button(action: {
                             withAnimation(.spring()) {
                                 currentStep += 1
                             }
+                        }) {
+                            HStack(spacing: 8) {
+                                Text("Next")
+                                    .font(.system(size: 16, weight: .semibold))
+                                Image(systemName: "arrow.right")
+                                    .font(.system(size: 14, weight: .semibold))
+                            }
+                            .foregroundColor(.black)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 12)
+                            .background(
+                                Capsule()
+                                    .fill(Color.white)
+                                    .shadow(color: .white.opacity(0.3), radius: 10, x: 0, y: 5)
+                            )
                         }
+                        .buttonStyle(PlainButtonStyle())
                     } else if ollamaStatus == .ready {
-                        OnboardingButton(
-                            "Get Started",
-                            icon: "sparkles",
-                            style: .primary
-                        ) {
+                        Button(action: {
                             onCompletion()
+                        }) {
+                            HStack(spacing: 8) {
+                                Text("Get Started")
+                                    .font(.system(size: 16, weight: .semibold))
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 14, weight: .semibold))
+                            }
+                            .foregroundColor(.black)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 12)
+                            .background(
+                                Capsule()
+                                    .fill(Color.white)
+                                    .shadow(color: .white.opacity(0.3), radius: 10, x: 0, y: 5)
+                            )
                         }
+                        .buttonStyle(PlainButtonStyle())
                         .keyboardShortcut(.return)
                     }
                 }
-                .padding(.horizontal, 60)
-                .padding(.bottom, 40)
+                .padding(.horizontal, 50)
+                .padding(.bottom, 30)
             
                 // Copy confirmation toast
                 if showCopyConfirmation {
