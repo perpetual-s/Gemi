@@ -147,7 +147,7 @@ final class SpeechTranscriptionService: ObservableObject {
             recognizers[locale.identifier] = SFSpeechRecognizer(locale: locale)
         }
         
-        logger.info("Initialized support for \(availableLanguages.count) languages")
+        logger.info("Initialized support for \(self.availableLanguages.count) languages")
     }
     
     // MARK: - Public Methods
@@ -269,6 +269,8 @@ final class SpeechTranscriptionService: ObservableObject {
         currentTask = nil
         isTranscribing = false
         currentSegment = ""
+        
+        // Note: AVAudioSession is not needed on macOS
     }
     
     /// Generate natural language description of audio
@@ -338,7 +340,7 @@ final class SpeechTranscriptionService: ObservableObject {
         return recognizer
     }
     
-    private func configureRequest(_ request: SFSpeechURLRecognitionRequest, with options: TranscriptionOptions) {
+    private func configureRequest(_ request: SFSpeechRecognitionRequest, with options: TranscriptionOptions) {
         request.shouldReportPartialResults = options.shouldReportPartialResults
         request.taskHint = options.taskHint
         
@@ -375,7 +377,6 @@ final class SpeechTranscriptionService: ObservableObject {
     ) async throws -> IntermediateResult {
         
         return try await withCheckedThrowingContinuation { continuation in
-            var allSegments: [TranscriptionSegment] = []
             var alternatives: [[TranscriptionSegment]] = []
             var lastUpdateTime: TimeInterval = 0
             
@@ -404,7 +405,6 @@ final class SpeechTranscriptionService: ObservableObject {
                         if result.isFinal {
                             // Process final results
                             let segments = self.processSegments(from: result.bestTranscription)
-                            allSegments = segments
                             
                             // Process alternatives if requested
                             if options.includeAlternatives {
@@ -488,9 +488,20 @@ final class SpeechTranscriptionService: ObservableObject {
             }
             
             // Default to system language or English
-            if let systemLanguage = Locale.current.languageCode,
-               let matchingLocale = availableLanguages.first(where: { 
-                   $0.languageCode == systemLanguage 
+            let systemLanguage: String?
+            if #available(macOS 13, *) {
+                systemLanguage = Locale.current.language.languageCode?.identifier
+            } else {
+                systemLanguage = Locale.current.languageCode
+            }
+            
+            if let systemLang = systemLanguage,
+               let matchingLocale = self.availableLanguages.first(where: { locale in
+                   if #available(macOS 13, *) {
+                       return locale.language.languageCode?.identifier == systemLang
+                   } else {
+                       return locale.languageCode == systemLang
+                   }
                }) {
                 return matchingLocale
             }
@@ -570,10 +581,8 @@ final class SpeechTranscriptionService: ObservableObject {
         with recognizer: SFSpeechRecognizer,
         options: TranscriptionOptions
     ) async throws {
-        // Configure audio session for recording
-        let audioSession = AVAudioSession.sharedInstance()
-        try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
-        try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+        // Note: AVAudioSession is not needed on macOS
+        // macOS handles audio permissions differently
         
         // Create recognition request
         let request = SFSpeechAudioBufferRecognitionRequest()

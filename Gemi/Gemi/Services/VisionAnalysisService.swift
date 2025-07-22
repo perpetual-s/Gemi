@@ -419,15 +419,14 @@ final class VisionAnalysisService: ObservableObject {
     }
     
     private func processRequests(_ requests: [VNRequest], on cgImage: CGImage, totalCount: Int) async throws -> ProcessingResults {
-        var results = ProcessingResults()
-        
-        // Process on background queue
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<ProcessingResults, Error>) in
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<ProcessingResults, Error>) in
             processingQueue.async { [weak self] in
                 guard let self = self else {
                     continuation.resume(throwing: AnalysisError.processingFailed("Service deallocated"))
                     return
                 }
+                
+                var results = ProcessingResults()
                 
                 do {
                     let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
@@ -438,10 +437,11 @@ final class VisionAnalysisService: ObservableObject {
                     // Process results from each request
                     for request in requests {
                         processedCount += 1
+                        let currentProgress = Double(processedCount) / Double(totalCount)
                         
                         // Update progress on main thread
-                        DispatchQueue.main.async {
-                            self.processingProgress = Double(processedCount) / Double(totalCount)
+                        Task { @MainActor in
+                            self.processingProgress = currentProgress
                         }
                         
                         switch request {
@@ -484,7 +484,7 @@ final class VisionAnalysisService: ObservableObject {
     }
     
     // Sync versions for background processing
-    private func processTextResultsSync(_ observations: [VNRecognizedTextObservation]?) -> String {
+    nonisolated private func processTextResultsSync(_ observations: [VNRecognizedTextObservation]?) -> String {
         guard let observations = observations else { return "" }
         
         return observations
@@ -494,7 +494,7 @@ final class VisionAnalysisService: ObservableObject {
             .joined(separator: " ")
     }
     
-    private func processFaceResultsSync(_ observations: [VNFaceObservation]?) -> [FaceDetail] {
+    nonisolated private func processFaceResultsSync(_ observations: [VNFaceObservation]?) -> [FaceDetail] {
         guard let observations = observations else { return [] }
         
         return observations.map { face in
@@ -512,7 +512,7 @@ final class VisionAnalysisService: ObservableObject {
         }
     }
     
-    private func processBarcodeResultsSync(_ observations: [VNBarcodeObservation]?) -> [BarcodeInfo] {
+    nonisolated private func processBarcodeResultsSync(_ observations: [VNBarcodeObservation]?) -> [BarcodeInfo] {
         guard let observations = observations else { return [] }
         
         return observations.compactMap { barcode in
@@ -524,14 +524,14 @@ final class VisionAnalysisService: ObservableObject {
         }
     }
     
-    private func processSaliencyResultsSync(_ observations: [VNSaliencyImageObservation]?) -> [CGRect] {
+    nonisolated private func processSaliencyResultsSync(_ observations: [VNSaliencyImageObservation]?) -> [CGRect] {
         guard let observations = observations,
               let saliency = observations.first else { return [] }
         
         return saliency.salientObjects?.map { $0.boundingBox } ?? []
     }
     
-    private func processHorizonResultsSync(_ observations: [VNHorizonObservation]?) -> HorizonInfo? {
+    nonisolated private func processHorizonResultsSync(_ observations: [VNHorizonObservation]?) -> HorizonInfo? {
         guard let horizon = observations?.first else { return nil }
         
         return HorizonInfo(
@@ -629,21 +629,30 @@ final class VisionAnalysisService: ObservableObject {
                                    z: ciImage.extent.size.width,
                                    w: ciImage.extent.size.height)
         
-        guard let filter = CIFilter(name: "CIAreaAverage"),
-              let outputImage = filter.outputImage else { return [] }
+        guard let filter = CIFilter(name: "CIAreaAverage") else { return [] }
         
         filter.setValue(ciImage, forKey: kCIInputImageKey)
         filter.setValue(extentVector, forKey: kCIInputExtentKey)
         
+        guard let outputImage = filter.outputImage else { return [] }
+        
         // Get average color
-        let context = CIContext()
+        let context = CIContext(options: [.useSoftwareRenderer: false])
         var bitmap = [UInt8](repeating: 0, count: 4)
+        
+        // Ensure we have a valid output bounds
+        let outputBounds = outputImage.extent
+        guard !outputBounds.isEmpty && outputBounds.width > 0 && outputBounds.height > 0 else {
+            logger.warning("Output image has invalid bounds, skipping color extraction")
+            return []
+        }
+        
         context.render(outputImage,
                       toBitmap: &bitmap,
                       rowBytes: 4,
                       bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
                       format: .RGBA8,
-                      colorSpace: nil)
+                      colorSpace: CGColorSpace(name: CGColorSpace.sRGB))
         
         let avgColor = NSColor(
             red: CGFloat(bitmap[0]) / 255.0,

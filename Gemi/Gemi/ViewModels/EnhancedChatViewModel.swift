@@ -19,6 +19,8 @@ final class EnhancedChatViewModel: ObservableObject {
     private let aiService = AIService.shared
     private let memoryManager = MemoryManager.shared
     private let aiCoordinator = GemiAICoordinator.shared
+    private let multimodalService = MultimodalAIService.shared
+    private let attachmentManager = AttachmentManager.shared
     private var connectionMonitorTask: Task<Void, Never>?
     private var currentStreamingTask: Task<Void, Never>?
     private let messagesPersistenceKey = "com.gemi.chat.messages"
@@ -160,7 +162,29 @@ final class EnhancedChatViewModel: ObservableObject {
         // Clear error
         error = nil
         
-        // Add user message with images if provided
+        // Process multimodal content if we have attachments
+        var processedContent = content
+        
+        // If we have attachments, create multimodal context
+        if !attachmentManager.attachments.isEmpty {
+            do {
+                let multimodalContext = try await multimodalService.createMultimodalContext(for: content)
+                processedContent = multimodalContext.enhancedPrompt
+                
+                // Clear attachments after processing
+                attachmentManager.clearAttachments()
+            } catch {
+                print("Multimodal processing error: \(error)")
+                self.error = error
+                // Show user-friendly error message
+                let errorMessage = "⚠️ Unable to process attachment: \(error.localizedDescription). Continuing with text-only message."
+                let systemMessage = ChatHistoryMessage(role: .assistant, content: errorMessage)
+                messages.append(systemMessage)
+                // Continue with original content if processing fails
+            }
+        }
+        
+        // Add user message with original content (for display)
         let userMessage = ChatHistoryMessage(role: .user, content: content, images: images)
         messages.append(userMessage)
         
@@ -193,7 +217,7 @@ final class EnhancedChatViewModel: ObservableObject {
         }
         
         // Convert existing messages to AI format
-        let existingMessages = messages.dropLast().map { msg in
+        let existingMessages = messages.dropLast().dropLast().map { msg in
             ChatMessage(
                 role: ChatMessage.Role(rawValue: msg.role.rawValue) ?? .user,
                 content: msg.content,
@@ -201,6 +225,9 @@ final class EnhancedChatViewModel: ObservableObject {
             )
         }
         aiMessages.append(contentsOf: existingMessages)
+        
+        // Add the current message with processed content (for multimodal)
+        aiMessages.append(ChatMessage(role: .user, content: processedContent, images: nil))
         
         // Stream the response
         currentStreamingTask = Task { [weak self] in

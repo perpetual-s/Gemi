@@ -606,14 +606,9 @@ struct GemiChatView: View {
         
         messageText = ""
         
-        // Get base64 images from attachments
-        let images = attachmentManager.getBase64Images()
-        
-        // Clear attachments after getting images
-        attachmentManager.clearAttachments()
-        
+        // The ViewModel will handle attachments via MultimodalAIService
         Task {
-            await viewModel.sendMessage(trimmedMessage, images: images.isEmpty ? nil : images)
+            await viewModel.sendMessage(trimmedMessage)
         }
     }
     
