@@ -27,184 +27,124 @@ struct OllamaSetupView: View {
             backgroundGradient
             
             VStack(spacing: 0) {
-                // Header with enhanced styling
-                VStack(spacing: 20) {
-                    // Animated icon container
-                    ZStack {
-                        // Glow effect
-                        Circle()
-                            .fill(
-                                RadialGradient(
-                                    colors: [
-                                        Color.blue.opacity(0.3),
-                                        Color.purple.opacity(0.1),
-                                        Color.clear
-                                    ],
-                                    center: .center,
-                                    startRadius: 5,
-                                    endRadius: 60
-                                )
-                            )
-                            .frame(width: 120, height: 120)
-                            .blur(radius: 10)
-                            .scaleEffect(animateGradient ? 1.2 : 1.0)
-                            .animation(.easeInOut(duration: 2).repeatForever(autoreverses: true), value: animateGradient)
-                        
-                        // Terminal icon with gradient
-                        Image(systemName: "terminal.fill")
-                            .font(.system(size: 60))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [.blue, .purple, .pink],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .shadow(color: .blue.opacity(0.3), radius: 10, x: 0, y: 5)
-                    }
-                    
-                    VStack(spacing: 12) {
-                        Text("Set Up Ollama")
-                            .font(.system(size: 36, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                        
-                        Text("Gemi uses Ollama to run AI locally on your Mac")
-                            .font(.system(size: 18))
-                            .foregroundColor(.white.opacity(0.8))
-                            .multilineTextAlignment(.center)
-                    }
-                }
-                .padding(.top, 60)
-                .padding(.horizontal, 50)
-            
-                // Enhanced progress indicator
-                HStack(spacing: 20) {
-                    ForEach(0..<3) { index in
+                Spacer()
+                
+                // Content based on state
+                VStack(spacing: 40) {
+                    // Header with enhanced styling
+                    VStack(spacing: 32) {
+                        // Animated icon container
                         ZStack {
-                            // Background circle
+                            // Glow effect
                             Circle()
                                 .fill(
-                                    currentStep >= index ?
-                                    AnyShapeStyle(LinearGradient(
-                                        colors: [.blue, .purple],
+                                    LinearGradient(
+                                        colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.1)],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
-                                    )) :
-                                    AnyShapeStyle(Color.white.opacity(0.2))
+                                    )
                                 )
-                                .frame(width: 10, height: 10)
-                                .shadow(color: currentStep >= index ? .blue.opacity(0.5) : .clear, 
-                                       radius: 4, x: 0, y: 2)
+                                .frame(width: 180, height: 180)
+                                .blur(radius: 30)
                             
-                            // Animated ring for current step
-                            if currentStep == index {
-                                Circle()
-                                    .stroke(Color.white.opacity(0.6), lineWidth: 2)
-                                    .frame(width: 16, height: 16)
-                                    .scaleEffect(animateGradient ? 1.2 : 1.0)
-                                    .opacity(animateGradient ? 0.0 : 1.0)
-                                    .animation(.easeOut(duration: 1.5).repeatForever(autoreverses: false), value: animateGradient)
-                            }
+                            // Terminal icon with gradient
+                            Image(systemName: "terminal.fill")
+                                .font(.system(size: 100))
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [.blue, .purple],
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
+                                )
+                                .shadow(color: .blue.opacity(0.5), radius: 20)
                         }
-                        .animation(.spring(), value: currentStep)
+                        
+                        VStack(spacing: 16) {
+                            Text("Set Up Ollama")
+                                .font(.system(size: 42, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                            
+                            Text("Gemi uses Ollama to run AI locally on your Mac")
+                                .font(.system(size: 20))
+                                .foregroundColor(.white.opacity(0.8))
+                                .multilineTextAlignment(.center)
+                        }
+                    }
+                    .padding(.horizontal, 40)
+            
+                    // Content based on step
+                    Group {
+                        switch currentStep {
+                        case 0:
+                            installOllamaStep
+                        case 1:
+                            downloadModelStep
+                        case 2:
+                            verificationStep
+                        default:
+                            EmptyView()
+                        }
                     }
                 }
-                .padding(.vertical, 30)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                
+                Spacer()
+                
+                // Page indicators and navigation
+                VStack(spacing: 24) {
+                    // Custom page indicators matching GemmaOnboardingView
+                    StepProgressIndicator(totalSteps: 3, currentStep: currentStep)
             
-            // Content
-            Group {
-                switch currentStep {
-                case 0:
-                    installOllamaStep
-                case 1:
-                    downloadModelStep
-                case 2:
-                    verificationStep
-                default:
-                    EmptyView()
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.horizontal, 50)
-            
-                // Premium footer buttons
-                HStack(spacing: 16) {
+                    // Navigation buttons matching GemmaOnboardingView style
+                    if currentStep < 2 {
+                        OnboardingButton(
+                            "Continue",
+                            icon: "arrow.right",
+                            action: {
+                                withAnimation(.spring()) {
+                                    currentStep += 1
+                                }
+                            }
+                        )
+                    } else if ollamaStatus == .ready {
+                        OnboardingButton(
+                            "Get Started",
+                            icon: "sparkles",
+                            action: onCompletion
+                        )
+                        .keyboardShortcut(.return)
+                    } else {
+                        // Check status button when not ready
+                        OnboardingButton(
+                            isCheckingOllama ? "Checking..." : "Check Status",
+                            icon: isCheckingOllama ? nil : "arrow.clockwise",
+                            style: .secondary,
+                            isLoading: isCheckingOllama,
+                            action: {
+                                Task {
+                                    await checkOllamaStatus()
+                                }
+                            }
+                        )
+                        .disabled(isCheckingOllama)
+                    }
+                    
+                    // Back button when not on first step
                     if currentStep > 0 {
                         Button(action: {
                             withAnimation(.spring()) {
                                 currentStep -= 1
                             }
                         }) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "chevron.left")
-                                    .font(.system(size: 14, weight: .semibold))
-                                Text("Back")
-                                    .font(.system(size: 16, weight: .medium))
-                            }
-                            .foregroundColor(.white.opacity(0.8))
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 12)
-                            .background(
-                                Capsule()
-                                    .fill(Color.white.opacity(0.1))
-                                    .overlay(
-                                        Capsule()
-                                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                                    )
-                            )
+                            Text("Back")
+                                .font(.system(size: 16))
+                                .foregroundColor(.white.opacity(0.6))
                         }
                         .buttonStyle(PlainButtonStyle())
-                    }
-                    
-                    Spacer()
-                    
-                    if currentStep < 2 {
-                        Button(action: {
-                            withAnimation(.spring()) {
-                                currentStep += 1
-                            }
-                        }) {
-                            HStack(spacing: 8) {
-                                Text("Next")
-                                    .font(.system(size: 16, weight: .semibold))
-                                Image(systemName: "arrow.right")
-                                    .font(.system(size: 14, weight: .semibold))
-                            }
-                            .foregroundColor(.black)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 12)
-                            .background(
-                                Capsule()
-                                    .fill(Color.white)
-                                    .shadow(color: .white.opacity(0.3), radius: 10, x: 0, y: 5)
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    } else if ollamaStatus == .ready {
-                        Button(action: {
-                            onCompletion()
-                        }) {
-                            HStack(spacing: 8) {
-                                Text("Get Started")
-                                    .font(.system(size: 16, weight: .semibold))
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 14, weight: .semibold))
-                            }
-                            .foregroundColor(.black)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 12)
-                            .background(
-                                Capsule()
-                                    .fill(Color.white)
-                                    .shadow(color: .white.opacity(0.3), radius: 10, x: 0, y: 5)
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .keyboardShortcut(.return)
                     }
                 }
-                .padding(.horizontal, 50)
-                .padding(.bottom, 30)
+                .padding(.bottom, 60)
             
                 // Copy confirmation toast
                 if showCopyConfirmation {
@@ -238,16 +178,13 @@ struct OllamaSetupView: View {
         .task {
             await checkOllamaStatus()
         }
-        .onAppear {
-            animateGradient = true
-        }
     }
     
     // MARK: - Background Gradient
     
     private var backgroundGradient: some View {
         ZStack {
-            // Base gradient matching other onboarding views
+            // Base gradient matching GemmaOnboardingView exactly
             LinearGradient(
                 colors: [
                     Color(red: 0.1, green: 0.05, blue: 0.2),
@@ -258,21 +195,9 @@ struct OllamaSetupView: View {
             )
             .ignoresSafeArea(.all)
             
-            // Animated accent gradient
-            RadialGradient(
-                colors: [
-                    Color.blue.opacity(0.3),
-                    Color.purple.opacity(0.2),
-                    Color.clear
-                ],
-                center: .center,
-                startRadius: 50,
-                endRadius: 300
-            )
-            .scaleEffect(animateGradient ? 1.5 : 1.0)
-            .opacity(animateGradient ? 0.6 : 0.4)
-            .animation(.easeInOut(duration: 4).repeatForever(autoreverses: true), value: animateGradient)
-            .ignoresSafeArea(.all)
+            // Animated mesh gradient overlay matching GemmaOnboardingView
+            AnimatedGradientMesh()
+                .opacity(0.5)
         }
     }
     
@@ -280,14 +205,17 @@ struct OllamaSetupView: View {
     
     @ViewBuilder
     var installOllamaStep: some View {
-        VStack(spacing: 24) {
-            Text("Step 1: Install Ollama")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
+        VStack(spacing: 32) {
+            VStack(spacing: 16) {
+                Text("Step 1: Install Ollama")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                
+                Text("Open Terminal and run this command:")
+                    .font(.system(size: 18))
+                    .foregroundColor(.white.opacity(0.8))
             
-            Text("Open Terminal and run this command:")
-                .font(.system(size: 16))
-                .foregroundColor(.white.opacity(0.8))
+            }
             
             CommandBox(
                 command: "brew install ollama",
@@ -296,81 +224,48 @@ struct OllamaSetupView: View {
                 copyToClipboard("brew install ollama")
             }
             
-            HStack {
-                Image(systemName: "info.circle.fill")
-                    .foregroundColor(.blue)
-                Text("Don't have Homebrew? Visit ")
-                    .foregroundColor(.white.opacity(0.7))
-                    + Text("brew.sh")
-                    .foregroundColor(.blue)
-                    .underline()
-            }
-            .font(.footnote)
+            OnboardingFeatureCard(
+                items: [
+                    (icon: "info.circle.fill", text: "Don't have Homebrew? Visit brew.sh")
+                ]
+            )
             .onTapGesture {
                 NSWorkspace.shared.open(URL(string: "https://brew.sh")!)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.blue.opacity(0.1))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                    )
-            )
             
-            Divider()
-                .background(Color.white.opacity(0.2))
-                .padding(.vertical)
-            
-            Text("Alternative: Download from Ollama.com")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.white)
-            
-            Button(action: {
-                NSWorkspace.shared.open(URL(string: "https://ollama.com/download")!)
-            }) {
-                HStack(spacing: 10) {
-                    Image(systemName: "arrow.down.circle.fill")
-                        .font(.system(size: 18))
-                    Text("Download Ollama")
-                        .font(.system(size: 16, weight: .medium))
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 12)
-                .background(
-                    LinearGradient(
-                        colors: [.blue.opacity(0.6), .purple.opacity(0.6)],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
+            VStack(spacing: 16) {
+                Divider()
+                    .background(Color.white.opacity(0.2))
+                
+                Text("Alternative: Download from Ollama.com")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.white.opacity(0.8))
+                
+                OnboardingButton(
+                    "Download Ollama",
+                    icon: "arrow.down.circle",
+                    style: .secondary,
+                    action: {
+                        NSWorkspace.shared.open(URL(string: "https://ollama.com/download")!)
+                    }
                 )
-                .clipShape(Capsule())
-                .overlay(
-                    Capsule()
-                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                )
-                .shadow(color: .blue.opacity(0.3), radius: 10, x: 0, y: 5)
             }
-            .buttonStyle(PlainButtonStyle())
-            .scaleEffect(1.0)
-            
-            Spacer()
         }
+        .padding(.horizontal, 40)
     }
     
     @ViewBuilder
     var downloadModelStep: some View {
-        VStack(spacing: 24) {
-            Text("Step 2: Download Gemma 3n")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
-            
-            Text("Run these commands in Terminal:")
-                .font(.system(size: 16))
-                .foregroundColor(.white.opacity(0.8))
+        VStack(spacing: 32) {
+            VStack(spacing: 16) {
+                Text("Step 2: Download Gemma 3n")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                
+                Text("Run these commands in Terminal:")
+                    .font(.system(size: 18))
+                    .foregroundColor(.white.opacity(0.8))
+            }
             
             VStack(spacing: 16) {
                 CommandBox(
@@ -393,65 +288,26 @@ struct OllamaSetupView: View {
                 }
             }
             
-            // Enhanced progress indicator
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 12) {
-                    Image(systemName: "arrow.down.circle.fill")
-                        .foregroundColor(.blue)
-                        .font(.system(size: 20))
-                    Text("This downloads a 7.5GB model")
-                        .font(.system(size: 14))
-                        .foregroundColor(.white.opacity(0.9))
-                }
-                
-                HStack(spacing: 12) {
-                    Image(systemName: "clock.fill")
-                        .foregroundColor(.orange)
-                        .font(.system(size: 20))
-                    Text("Download time depends on your internet speed")
-                        .font(.system(size: 14))
-                        .foregroundColor(.white.opacity(0.9))
-                }
-                
-                HStack(spacing: 12) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                        .font(.system(size: 20))
-                    Text("You'll see progress in Terminal")
-                        .font(.system(size: 14))
-                        .foregroundColor(.white.opacity(0.9))
-                }
-            }
-            .padding(20)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.05),
-                                Color.white.opacity(0.02)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                    )
+            // Progress indicator using OnboardingFeatureCard
+            OnboardingFeatureCard(
+                items: [
+                    (icon: "arrow.down.circle.fill", text: "This downloads a 7.5GB model"),
+                    (icon: "clock.fill", text: "Download time depends on your internet speed"),
+                    (icon: "checkmark.circle.fill", text: "You'll see progress in Terminal")
+                ]
             )
-            .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
-            
-            Spacer()
         }
+        .padding(.horizontal, 40)
     }
     
     @ViewBuilder
     var verificationStep: some View {
-        VStack(spacing: 24) {
-            Text("Step 3: Verify Setup")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
+        VStack(spacing: 32) {
+            VStack(spacing: 16) {
+                Text("Step 3: Verify Setup")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+            }
             
             // Status display
             Group {
@@ -504,45 +360,6 @@ struct OllamaSetupView: View {
             }
             .transition(.opacity.combined(with: .scale))
             
-            // Premium check button
-            Button(action: {
-                Task {
-                    await checkOllamaStatus()
-                }
-            }) {
-                HStack(spacing: 10) {
-                    if isCheckingOllama {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    } else {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 16, weight: .medium))
-                    }
-                    Text(isCheckingOllama ? "Checking..." : "Check Again")
-                        .font(.system(size: 16, weight: .medium))
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 12)
-                .background(
-                    LinearGradient(
-                        colors: [.blue.opacity(0.6), .purple.opacity(0.6)],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .clipShape(Capsule())
-                .overlay(
-                    Capsule()
-                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                )
-                .shadow(color: .blue.opacity(0.3), radius: 10, x: 0, y: 5)
-            }
-            .buttonStyle(PlainButtonStyle())
-            .disabled(isCheckingOllama)
-            .opacity(isCheckingOllama ? 0.7 : 1.0)
-            
             if ollamaStatus != .ready {
                 VStack(spacing: 12) {
                     Text("Need help?")
@@ -558,9 +375,8 @@ struct OllamaSetupView: View {
                 }
                 .padding(.top)
             }
-            
-            Spacer()
         }
+        .padding(.horizontal, 40)
     }
     
     // MARK: - Helper Methods
