@@ -6,9 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-/* End PBXBuildFile section */
-
 /* Begin PBXContainerItemProxy section */
 		8CE77D892E19B5CB00AF7A09 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -31,7 +28,6 @@
 		8CE77D882E19B5CB00AF7A09 /* GemiTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GemiTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8CE77D922E19B5CB00AF7A09 /* GemiUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GemiUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
-
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8CE77D7C2E19B5CA00AF7A09 /* Gemi */ = {
@@ -573,7 +569,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
 	};
 	rootObject = 8CE77D722E19B5CA00AF7A09 /* Project object */;
 }
