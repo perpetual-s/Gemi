@@ -165,6 +165,10 @@ final class EnhancedChatViewModel: ObservableObject {
         // Process multimodal content if we have attachments
         var processedContent = content
         
+        // Add user message with original content and images (for display)
+        let userMessage = ChatHistoryMessage(role: .user, content: content, images: images)
+        messages.append(userMessage)
+        
         // If we have attachments, create multimodal context
         if !attachmentManager.attachments.isEmpty {
             do {
@@ -183,10 +187,6 @@ final class EnhancedChatViewModel: ObservableObject {
                 // Continue with original content if processing fails
             }
         }
-        
-        // Add user message with original content (for display)
-        let userMessage = ChatHistoryMessage(role: .user, content: content, images: images)
-        messages.append(userMessage)
         
         // Start typing indicator
         isTyping = true

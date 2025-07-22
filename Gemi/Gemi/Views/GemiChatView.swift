@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import AppKit
 
 /// Main chat interface for conversations with Gemi
 /// Rebuilt from scratch with proper layout and beautiful UI
@@ -604,11 +605,14 @@ struct GemiChatView: View {
         let trimmedMessage = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedMessage.isEmpty else { return }
         
+        // Get base64 images from attachments
+        let images = attachmentManager.getBase64Images()
+        
         messageText = ""
         
         // The ViewModel will handle attachments via MultimodalAIService
         Task {
-            await viewModel.sendMessage(trimmedMessage)
+            await viewModel.sendMessage(trimmedMessage, images: images.isEmpty ? nil : images)
         }
     }
     
@@ -684,52 +688,61 @@ struct MessageBubble: View {
                     .background(Circle().fill(Color.purple.opacity(0.1)))
             }
             
-            VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 8) {
+            VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 4) {
                 // Images if present
                 if let images = message.images, !images.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(images, id: \.self) { base64Image in
-                                if let data = Data(base64Encoded: base64Image),
-                                   let image = NSImage(data: data) {
-                                    Image(nsImage: image)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(maxHeight: 200)
-                                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Theme.Colors.divider.opacity(0.3), lineWidth: 1)
-                                        )
-                                }
+                    VStack(spacing: 4) {
+                        ForEach(Array(images.enumerated()), id: \.offset) { index, base64Image in
+                            if let data = Data(base64Encoded: base64Image),
+                               let image = NSImage(data: data) {
+                                Image(nsImage: image)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(maxWidth: 300, maxHeight: 300)
+                                    .background(Color.black)
+                                    .clipShape(RoundedRectangle(cornerRadius: 18))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 18)
+                                            .stroke(message.role == .user ? Color.clear : Theme.Colors.divider.opacity(0.2), lineWidth: 0.5)
+                                    )
+                                    .contextMenu {
+                                        Button("Copy Image") {
+                                            NSPasteboard.general.clearContents()
+                                            NSPasteboard.general.setData(data, forType: .tiff)
+                                        }
+                                        Button("Save Image...") {
+                                            saveImage(image)
+                                        }
+                                    }
                             }
                         }
                     }
-                    .frame(maxWidth: 400)
                 }
                 
                 // Message content with better streaming support
-                Group {
-                    if isStreaming && message.content.isEmpty {
-                        // Show placeholder while waiting for content
-                        Text(" ")
-                            .font(Theme.Typography.body)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                    } else {
-                        Text(message.content)
-                            .font(Theme.Typography.body)
-                            .foregroundColor(message.role == .user ? .white : .primary)
-                            .lineSpacing(2)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .textSelection(.enabled)
-                            .fixedSize(horizontal: false, vertical: true)
+                if !message.content.isEmpty || isStreaming {
+                    Group {
+                        if isStreaming && message.content.isEmpty {
+                            // Show placeholder while waiting for content
+                            Text(" ")
+                                .font(Theme.Typography.body)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                        } else {
+                            Text(message.content)
+                                .font(Theme.Typography.body)
+                                .foregroundColor(message.role == .user ? .white : .primary)
+                                .lineSpacing(2)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .textSelection(.enabled)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
+                    .background(bubbleBackground)
+                    .cornerRadius(18)
+                    .animation(nil, value: message.content)  // Disable animation for content changes
                 }
-                .background(bubbleBackground)
-                .cornerRadius(18)
-                .animation(nil, value: message.content)  // Disable animation for content changes
                 
                 // Timestamp (on hover)
                 if isHovered && !isStreaming {
@@ -771,6 +784,25 @@ struct MessageBubble: View {
                 )
             } else {
                 Theme.Colors.cardBackground
+            }
+        }
+    }
+    
+    private func saveImage(_ image: NSImage) {
+        let savePanel = NSSavePanel()
+        savePanel.allowedContentTypes = [UTType.png, UTType.jpeg]
+        savePanel.nameFieldStringValue = "Gemi Image"
+        
+        savePanel.begin { result in
+            if result == .OK, let url = savePanel.url {
+                if let tiffData = image.tiffRepresentation,
+                   let bitmapImage = NSBitmapImageRep(data: tiffData) {
+                    let imageData = savePanel.url?.pathExtension == "jpg" || savePanel.url?.pathExtension == "jpeg"
+                        ? bitmapImage.representation(using: .jpeg, properties: [:])
+                        : bitmapImage.representation(using: .png, properties: [:])
+                    
+                    try? imageData?.write(to: url)
+                }
             }
         }
     }
