@@ -20,7 +20,7 @@ final class MultimodalAIService: ObservableObject {
     // MARK: - Private Properties
     
     private let logger = Logger(subsystem: "com.gemi", category: "MultimodalAI")
-    private let visionService = VisionAnalysisService.shared
+    private let lightweightVision = LightweightVisionService.shared
     private let speechService = SpeechTranscriptionService.shared
     private let attachmentManager = AttachmentManager.shared
     private let ollamaService = OllamaChatService.shared
@@ -180,70 +180,31 @@ final class MultimodalAIService: ObservableObject {
     private func processImage(_ image: NSImage, attachment: AttachmentManager.Attachment) async throws -> (description: String, metadata: [String: Any]) {
         logger.debug("Processing image: \(attachment.fileName)")
         
-        // Perform comprehensive Vision analysis
-        let analysisResult = try await visionService.analyzeImage(
-            image,
-            options: VisionAnalysisService.AnalysisOptions(
-                extractText: true,
-                classifyImage: true,
-                detectObjects: true,
-                detectFaces: true,
-                analyzeComposition: true
-            )
-        )
+        // Quick analysis for speed
+        let quickDescription = try await lightweightVision.quickAnalyze(image)
         
-        // Build rich description
-        var description = "I'm looking at an image"
+        // Build description
+        var description = "I'm looking at "
         
-        // Add file info
         if !attachment.fileName.isEmpty {
-            description += " (file: '\(attachment.fileName)')"
+            description += "'\(attachment.fileName)' - "
         }
         
-        description += ". "
+        description += quickDescription
         
-        // Add classifications
-        if !analysisResult.classifications.isEmpty {
-            let topClassifications = analysisResult.classifications
-                .prefix(3)
-                .map { $0.identifier }
-                .joined(separator: ", ")
-            description += "The image contains: \(topClassifications). "
+        // Try text extraction only if likely to contain text
+        if quickDescription.contains("document") || quickDescription.contains("text") || quickDescription.contains("screenshot") {
+            if let extractedText = await lightweightVision.quickTextExtraction(image) {
+                description += ". The text reads: \"\(extractedText)\""
+            }
         }
         
-        // Add detected text
-        if !analysisResult.extractedText.isEmpty {
-            description += "I can see text in the image that reads: \"\(analysisResult.extractedText)\". "
-        }
-        
-        // Add object detection results
-        if !analysisResult.detectedObjects.isEmpty {
-            description += "I detected \(analysisResult.detectedObjects.count) distinct object(s) in the scene. "
-        }
-        
-        // Add face detection
-        if analysisResult.faceCount > 0 {
-            description += "There are \(analysisResult.faceCount) face(s) visible. "
-        }
-        
-        // Add scene analysis
-        if let sceneAnalysis = analysisResult.additionalInfo["scene_analysis"] as? String {
-            description += sceneAnalysis + " "
-        }
-        
-        // Build metadata
-        var metadata: [String: Any] = [
-            "width": image.size.width,
-            "height": image.size.height,
-            "hasText": !analysisResult.extractedText.isEmpty,
-            "objectCount": analysisResult.detectedObjects.count,
-            "faceCount": analysisResult.faceCount,
-            "topClassification": analysisResult.classifications.first?.identifier ?? "unknown"
+        // Build minimal metadata for speed
+        let metadata: [String: Any] = [
+            "width": Int(image.size.width),
+            "height": Int(image.size.height),
+            "fileName": attachment.fileName
         ]
-        
-        if analysisResult.dominantColors.count > 0 {
-            metadata["dominantColors"] = analysisResult.dominantColors
-        }
         
         return (description: description.trimmingCharacters(in: .whitespaces), metadata: metadata)
     }
