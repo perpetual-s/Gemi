@@ -73,7 +73,7 @@ final class AIConfiguration: ObservableObject {
     
     /// Check if model is ready
     func isModelReady() async -> Bool {
-        let health = await NativeChatService.shared.health()
+        let health = await OllamaChatService.shared.health()
         return health.modelLoaded
     }
     

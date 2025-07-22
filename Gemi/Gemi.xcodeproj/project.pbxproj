@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8CD296592E2E02AC00D3E729 /* mlx-gemma-3n-E4B-it-4bit in Resources */ = {isa = PBXBuildFile; fileRef = 8CD296582E2E02AC00D3E729 /* mlx-gemma-3n-E4B-it-4bit */; };
 		8CF9939E2E299742000E6436 /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = 8CF9939D2E299742000E6436 /* MLX */; };
 		8CF993A02E299742000E6436 /* MLXFFT in Frameworks */ = {isa = PBXBuildFile; productRef = 8CF9939F2E299742000E6436 /* MLXFFT */; };
 		8CF993A22E299742000E6436 /* MLXFast in Frameworks */ = {isa = PBXBuildFile; productRef = 8CF993A12E299742000E6436 /* MLXFast */; };
@@ -33,33 +32,15 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		8CD296582E2E02AC00D3E729 /* mlx-gemma-3n-E4B-it-4bit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "mlx-gemma-3n-E4B-it-4bit"; path = "Gemi/Models/mlx-gemma-3n-E4B-it-4bit"; sourceTree = "<group>"; };
 		8CE77D7A2E19B5CA00AF7A09 /* Gemi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Gemi.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8CE77D882E19B5CB00AF7A09 /* GemiTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GemiTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8CE77D922E19B5CB00AF7A09 /* GemiUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GemiUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		8CD296572E2E01D300D3E729 /* Exceptions for "Gemi" folder in "Gemi" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"Models/mlx-gemma-3n-E4B-it-4bit/config.json",
-				"Models/mlx-gemma-3n-E4B-it-4bit/model-00001-of-00002.safetensors",
-				"Models/mlx-gemma-3n-E4B-it-4bit/model-00002-of-00002.safetensors",
-				"Models/mlx-gemma-3n-E4B-it-4bit/model.safetensors.index.json.wrong",
-				"Models/mlx-gemma-3n-E4B-it-4bit/tokenizer_config.json",
-				"Models/mlx-gemma-3n-E4B-it-4bit/tokenizer.json",
-			);
-			target = 8CE77D792E19B5CA00AF7A09 /* Gemi */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8CE77D7C2E19B5CA00AF7A09 /* Gemi */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				8CD296572E2E01D300D3E729 /* Exceptions for "Gemi" folder in "Gemi" target */,
-			);
 			path = Gemi;
 			sourceTree = "<group>";
 		};
@@ -108,7 +89,6 @@
 		8CE77D712E19B5CA00AF7A09 = {
 			isa = PBXGroup;
 			children = (
-				8CD296582E2E02AC00D3E729 /* mlx-gemma-3n-E4B-it-4bit */,
 				8CE77D7C2E19B5CA00AF7A09 /* Gemi */,
 				8CE77D8B2E19B5CB00AF7A09 /* GemiTests */,
 				8CE77D952E19B5CB00AF7A09 /* GemiUITests */,
@@ -254,7 +234,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8CD296592E2E02AC00D3E729 /* mlx-gemma-3n-E4B-it-4bit in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

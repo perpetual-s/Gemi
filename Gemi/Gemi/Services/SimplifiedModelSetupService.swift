@@ -1,8 +1,8 @@
 import Foundation
 import Combine
 
-/// Simplified model setup service for bundled MLX model
-/// No downloading - just validation and loading
+/// Model setup service for Ollama integration
+/// Verifies Ollama is running and model is ready
 @MainActor
 class SimplifiedModelSetupService: ObservableObject {
     @Published var currentStep: SetupStep = .checkingModel
@@ -11,7 +11,7 @@ class SimplifiedModelSetupService: ObservableObject {
     @Published var isComplete: Bool = false
     @Published var error: SetupError?
     
-    private let chatService = NativeChatService.shared
+    private let chatService = OllamaChatService.shared
     
     enum SetupStep: String, CaseIterable {
         case checkingModel = "Checking Model"
@@ -21,11 +21,11 @@ class SimplifiedModelSetupService: ObservableObject {
         var description: String {
             switch self {
             case .checkingModel:
-                return "Checking bundled Gemma 3n model..."
+                return "Verifying Gemma 3n is available..."
             case .loadingModel:
-                return "Loading model into memory..."
+                return "Initializing Gemma 3n model..."
             case .complete:
-                return "Setup complete! Gemma 3n is ready."
+                return "All set! Gemi is ready to use."
             }
         }
         
@@ -45,18 +45,18 @@ class SimplifiedModelSetupService: ObservableObject {
         var errorDescription: String? {
             switch self {
             case .modelNotFound:
-                return "Bundled model not found"
+                return "Gemma 3n model not found in Ollama"
             case .loadFailed(let reason):
-                return "Failed to load model: \(reason)"
+                return "Failed to initialize model: \(reason)"
             }
         }
         
         var recoverySuggestion: String? {
             switch self {
             case .modelNotFound:
-                return "Please reinstall Gemi to restore the bundled model"
+                return "Please run 'ollama run gemma3n:latest' in Terminal"
             case .loadFailed:
-                return "Try restarting Gemi to free up memory"
+                return "Make sure Ollama is running with 'ollama serve'"
             }
         }
     }
@@ -71,38 +71,38 @@ class SimplifiedModelSetupService: ObservableObject {
         do {
             // Step 1: Check if model is already loaded
             currentStep = .checkingModel
-            statusMessage = "Checking for bundled model..."
+            statusMessage = "Checking Ollama connection..."
             progress = 0.2
             
             let health = await chatService.health()
             if health.modelLoaded {
                 // Model already loaded
                 currentStep = .complete
-                statusMessage = "Model already loaded!"
+                statusMessage = "Gemma 3n is ready!"
                 progress = 1.0
                 isComplete = true
                 return
             }
             
-            // Step 2: Verify bundled model exists
+            // Step 2: Verify model exists in Ollama
             let isModelReady = await chatService.checkModelReady()
             if !isModelReady {
                 throw SetupError.modelNotFound
             }
             
             progress = 0.4
-            statusMessage = "Found bundled model, preparing to load..."
+            statusMessage = "Found Gemma 3n, initializing..."
             
-            // Step 3: Load the model
+            // Step 3: Initialize the model
             currentStep = .loadingModel
-            statusMessage = "Loading Gemma 3n model into memory..."
+            statusMessage = "Starting Gemma 3n model..."
             progress = 0.6
             
             try await chatService.loadModel()
             
             // Step 4: Complete
             currentStep = .complete
-            statusMessage = "Model loaded successfully!"
+            statusMessage = "Gemi is ready to use!"
             progress = 1.0
             isComplete = true
             

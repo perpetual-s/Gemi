@@ -120,7 +120,7 @@ class SimplifiedModelManager: ObservableObject {
     @Published var showActionButton = false
     @Published var actionButtonTitle = ""
     
-    private let chatService = NativeChatService.shared
+    private let chatService = OllamaChatService.shared
     @MainActor private var checkTimer: Timer?
     
     enum ModelStatus {

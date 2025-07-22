@@ -144,9 +144,9 @@ struct EnhancedAttachmentPreview: View {
                 self.isAnalyzing = false
                 
                 // Generate contextual result based on attachment
-                if let imageData = self.extractImageData(from: self.attachment) {
-                    let analysis = MultimodalSimulator.analyzeImage(imageData)
-                    self.analysisResult = "Detected: \(analysis.description) • Mood: \(analysis.mood)"
+                if let _ = self.extractImageData(from: self.attachment) {
+                    // Ollama will handle image analysis directly
+                    self.analysisResult = "Image ready for AI analysis"
                 }
             }
         }

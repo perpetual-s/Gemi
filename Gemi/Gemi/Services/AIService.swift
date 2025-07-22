@@ -1,7 +1,7 @@
 import Foundation
 
-/// Service for AI inference using native MLX implementation
-/// Provides multimodal support for text, images, and audio
+/// Service for AI inference using Ollama
+/// Provides stable multimodal support for text, images, and audio
 actor AIService {
     static let shared = AIService()
     
@@ -17,7 +17,10 @@ actor AIService {
     // MARK: - Initialization
     
     private init() {
-        // No initialization needed for native implementation
+        // Initialize Ollama connection on startup
+        Task {
+            await checkAndSetupOllama()
+        }
     }
     
     // MARK: - Health Check
@@ -31,7 +34,7 @@ actor AIService {
         }
         
         // Access MainActor-isolated shared instance and call health
-        let health = await NativeChatService.shared.health()
+        let health = await OllamaChatService.shared.health()
         let isReady = health.healthy && health.modelLoaded
         
         // Cache the result
@@ -41,9 +44,20 @@ actor AIService {
         return isReady
     }
     
+    // MARK: - Private Methods
+    
+    private func checkAndSetupOllama() async {
+        // Check if Ollama is installed and running
+        let health = await OllamaChatService.shared.health()
+        if !health.healthy {
+            // Try to start Ollama if installed
+            _ = try? await OllamaInstaller.shared.startOllamaServer()
+        }
+    }
+    
     // MARK: - Chat with Streaming
     
-    /// Generate a response using native MLX inference with streaming
+    /// Generate a response using Ollama with streaming
     func chat(messages: [ChatMessage]) -> AsyncThrowingStream<ChatResponse, Error> {
         AsyncThrowingStream { continuation in
             Task {
@@ -54,26 +68,37 @@ actor AIService {
     
     /// Check if the current model supports multimodal input
     func isMultimodalModel() async -> Bool {
-        // Gemma 3n is always multimodal
+        // Gemma 3n via Ollama is always multimodal
         return true
     }
     
     private func performChatRequest(messages: [ChatMessage], continuation: AsyncThrowingStream<ChatResponse, Error>.Continuation) async {
         do {
-            // Convert messages to native format
-            let nativeMessages = messages.map { msg in
-                NativeChatService.ChatMessage(
+            // Ensure Ollama is ready
+            if !(try await checkHealth()) {
+                // Try to setup Ollama if not ready
+                await checkAndSetupOllama()
+                
+                // Check again
+                if !(try await checkHealth()) {
+                    throw AIServiceError.serviceUnavailable("Ollama is not ready. Please ensure it's installed and running.")
+                }
+            }
+            
+            // Convert messages to Ollama format
+            let ollamaMessages = messages.map { msg in
+                OllamaChatService.ChatMessage(
                     role: msg.role.rawValue,
                     content: msg.content,
                     images: msg.images
                 )
             }
             
-            let request = NativeChatService.ChatRequest(
-                messages: nativeMessages,
+            let request = OllamaChatService.ChatRequest(
+                messages: ollamaMessages,
                 model: modelName,
                 stream: true,
-                options: NativeChatService.ChatOptions(
+                options: OllamaChatService.ChatOptions(
                     temperature: 0.7,
                     maxTokens: 2048,
                     topK: 40,
@@ -81,11 +106,11 @@ actor AIService {
                 )
             )
             
-            // Get streaming response from native service
-            let chatStream = try await NativeChatService.shared.chat(request)
+            // Get streaming response from Ollama
+            let chatStream = try await OllamaChatService.shared.chat(request)
             
             for try await response in chatStream {
-                // Convert native response to expected format
+                // Convert Ollama response to expected format
                 // Always include the message for streaming responses
                 let chatResponse = ChatResponse(
                     model: modelName,

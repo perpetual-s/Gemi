@@ -4,6 +4,7 @@ import SwiftUI
 struct GemmaOnboardingView: View {
     @StateObject private var authManager = AuthenticationManager.shared
     @State private var currentPage = 0
+    @State private var showingOllamaSetup = false
     @State private var showingProgressSetup = false
     @State private var hasCompletedOnboarding = false
     @State private var password = ""
@@ -44,7 +45,19 @@ struct GemmaOnboardingView: View {
             backgroundGradient
             
             // Content based on state
-            if showingProgressSetup {
+            if showingOllamaSetup {
+                OllamaSetupView {
+                    // Once Ollama is set up, continue to model download
+                    withAnimation(.spring()) {
+                        showingOllamaSetup = false
+                        showingProgressSetup = true
+                    }
+                }
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .leading).combined(with: .opacity)
+                ))
+            } else if showingProgressSetup {
                 SimplifiedSetupProgressView(
                     onComplete: safeComplete,
                     onSkip: {
@@ -362,10 +375,10 @@ struct GemmaOnboardingView: View {
                         withAnimation(.easeOut(duration: 0.2)) {
                             contentOpacity = 0.0
                         }
-                        // Then show setup after fade completes
+                        // Then show Ollama setup after fade completes
                         try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
                         withAnimation(.spring(response: 0.4)) {
-                            showingProgressSetup = true
+                            showingOllamaSetup = true
                         }
                     } catch {
                         await MainActor.run {
@@ -390,10 +403,10 @@ struct GemmaOnboardingView: View {
                     withAnimation(.easeOut(duration: 0.2)) {
                         contentOpacity = 0.0
                     }
-                    // Then show setup after fade completes
+                    // Then show Ollama setup after fade completes
                     try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
                     withAnimation(.spring(response: 0.4)) {
-                        showingProgressSetup = true
+                        showingOllamaSetup = true
                     }
                 }
             }

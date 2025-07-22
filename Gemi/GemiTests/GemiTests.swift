@@ -25,8 +25,8 @@ struct GemiTests {
         #expect(model.loadProgress == 0.0)
     }
     
-    @Test func testNativeChatServiceHealthCheck() async throws {
-        let service = await NativeChatService.shared
+    @Test func testOllamaChatServiceHealthCheck() async throws {
+        let service = await OllamaChatService.shared
         let health = await service.health()
         
         // Health returns a simple structure

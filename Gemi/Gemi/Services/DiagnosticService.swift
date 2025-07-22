@@ -165,7 +165,7 @@ actor DiagnosticService {
                 return DiagnosticResult(
                     component: "AI Model",
                     status: .warning,
-                    message: "MLX inference engine ready but model not loaded",
+                    message: "Ollama is running but model not loaded",
                     details: "Model is being downloaded or loaded"
                 )
             }

@@ -10,7 +10,7 @@ final class ChatTestHelper {
     static func testTextGeneration() async {
         print("\n🧪 Testing Text Generation...")
         
-        let chatService = NativeChatService.shared
+        let chatService = OllamaChatService.shared
         
         // Check if model is loaded
         let health = await chatService.health()
@@ -28,9 +28,9 @@ final class ChatTestHelper {
         }
         
         // Test text generation
-        let request = NativeChatService.ChatRequest(
+        let request = OllamaChatService.ChatRequest(
             messages: [
-                NativeChatService.ChatMessage(
+                OllamaChatService.ChatMessage(
                     role: "user",
                     content: "Hello, Gemi! How are you today?",
                     images: nil
@@ -38,7 +38,7 @@ final class ChatTestHelper {
             ],
             model: "gemma-3n",
             stream: false,
-            options: NativeChatService.ChatOptions(
+            options: OllamaChatService.ChatOptions(
                 temperature: 0.7,
                 maxTokens: 100,
                 topK: 40,
@@ -71,11 +71,11 @@ final class ChatTestHelper {
         
         let base64Image = testImageData.base64EncodedString()
         
-        let chatService = NativeChatService.shared
+        let chatService = OllamaChatService.shared
         
-        let request = NativeChatService.ChatRequest(
+        let request = OllamaChatService.ChatRequest(
             messages: [
-                NativeChatService.ChatMessage(
+                OllamaChatService.ChatMessage(
                     role: "user",
                     content: "What do you see in this image?",
                     images: ["data:image/png;base64,\(base64Image)"]
@@ -83,7 +83,7 @@ final class ChatTestHelper {
             ],
             model: "gemma-3n",
             stream: false,
-            options: NativeChatService.ChatOptions(
+            options: OllamaChatService.ChatOptions(
                 temperature: 0.7,
                 maxTokens: 150,
                 topK: 40,

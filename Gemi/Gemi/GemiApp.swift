@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import MLX
 
 @main
 struct GemiApp: App {
@@ -16,16 +15,11 @@ struct GemiApp: App {
     @State private var hasCheckedOnboarding = false
     
     init() {
-        // Configure MLX memory limits for optimal performance
-        // This is critical for managing the 5.8GB model on Apple Silicon
-        MLX.GPU.set(cacheLimit: 1024 * 1024 * 1024) // 1GB cache
-        MLX.GPU.set(memoryLimit: 8 * 1024 * 1024 * 1024) // 8GB limit
-        
-        // Log MLX configuration
-        print("🧠 MLX Memory Configuration:")
-        print("   Cache Limit: 1GB")
-        print("   Memory Limit: 8GB")
-        print("   Device: Apple Silicon GPU")
+        // Initialize Ollama connection on app startup
+        print("🦙 Gemi starting with Ollama backend")
+        print("   API: http://localhost:11434")
+        print("   Model: gemma3n:latest")
+        print("   Features: Full multimodal support")
     }
     
     var body: some Scene {
@@ -139,7 +133,7 @@ struct GemiApp: App {
         }
         
         // If not completed, check if model is loaded
-        let isModelReady = await NativeChatService.shared.health().modelLoaded
+        let isModelReady = await OllamaChatService.shared.health().modelLoaded
         
         // Show onboarding if:
         // 1. Never completed onboarding AND
