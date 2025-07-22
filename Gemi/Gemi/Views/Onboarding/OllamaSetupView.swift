@@ -22,137 +22,111 @@ struct OllamaSetupView: View {
     }
     
     var body: some View {
-        ZStack {
-            // Beautiful gradient background matching other onboarding views
-            backgroundGradient
+        VStack(spacing: 0) {
+            Spacer()
             
-            VStack(spacing: 0) {
-                Spacer()
-                
-                // Content based on step
-                Group {
-                    switch currentStep {
-                    case 0:
-                        installOllamaStep
-                    case 1:
-                        downloadModelStep
-                    case 2:
-                        verificationStep
-                    default:
-                        EmptyView()
-                    }
+            // Content based on step
+            Group {
+                switch currentStep {
+                case 0:
+                    installOllamaStep
+                case 1:
+                    downloadModelStep
+                case 2:
+                    verificationStep
+                default:
+                    EmptyView()
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                
-                Spacer()
-                
-                // Page indicators and navigation
-                VStack(spacing: 24) {
-                    // Custom page indicators matching GemmaOnboardingView
-                    StepProgressIndicator(totalSteps: 3, currentStep: currentStep)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             
-                    // Navigation buttons matching GemmaOnboardingView style
-                    if currentStep < 2 {
-                        OnboardingButton(
-                            "Continue",
-                            icon: "arrow.right",
-                            action: {
-                                withAnimation(.spring()) {
-                                    currentStep += 1
-                                }
-                            }
-                        )
-                    } else if ollamaStatus == .ready {
-                        OnboardingButton(
-                            "Get Started",
-                            icon: "sparkles",
-                            action: onCompletion
-                        )
-                        .keyboardShortcut(.return)
-                    } else {
-                        // Check status button when not ready
-                        OnboardingButton(
-                            isCheckingOllama ? "Checking..." : "Check Status",
-                            icon: isCheckingOllama ? nil : "arrow.clockwise",
-                            style: .secondary,
-                            isLoading: isCheckingOllama,
-                            action: {
-                                Task {
-                                    await checkOllamaStatus()
-                                }
-                            }
-                        )
-                        .disabled(isCheckingOllama)
-                    }
-                    
-                    // Back button when not on first step
-                    if currentStep > 0 {
-                        Button(action: {
+            Spacer()
+            
+            // Page indicators and navigation
+            VStack(spacing: 24) {
+                // Custom page indicators matching GemmaOnboardingView
+                StepProgressIndicator(totalSteps: 3, currentStep: currentStep)
+                
+                // Navigation buttons matching GemmaOnboardingView style
+                if currentStep < 2 {
+                    OnboardingButton(
+                        "Continue",
+                        icon: "arrow.right",
+                        action: {
                             withAnimation(.spring()) {
-                                currentStep -= 1
+                                currentStep += 1
                             }
-                        }) {
-                            Text("Back")
-                                .font(.system(size: 16))
-                                .foregroundColor(.white.opacity(0.6))
                         }
-                        .buttonStyle(PlainButtonStyle())
-                    }
+                    )
+                } else if ollamaStatus == .ready {
+                    OnboardingButton(
+                        "Get Started",
+                        icon: "sparkles",
+                        action: onCompletion
+                    )
+                    .keyboardShortcut(.return)
+                } else {
+                    // Check status button when not ready
+                    OnboardingButton(
+                        isCheckingOllama ? "Checking..." : "Check Status",
+                        icon: isCheckingOllama ? nil : "arrow.clockwise",
+                        style: .secondary,
+                        isLoading: isCheckingOllama,
+                        action: {
+                            Task {
+                                await checkOllamaStatus()
+                            }
+                        }
+                    )
+                    .disabled(isCheckingOllama)
                 }
-                .padding(.bottom, 40)
+                
+                // Back button when not on first step
+                if currentStep > 0 {
+                    Button(action: {
+                        withAnimation(.spring()) {
+                            currentStep -= 1
+                        }
+                    }) {
+                        Text("Back")
+                            .font(.system(size: 16))
+                            .foregroundColor(.white.opacity(0.6))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            .padding(.bottom, 40)
             
-                // Copy confirmation toast
-                if showCopyConfirmation {
-                    VStack {
-                        HStack {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                            Text("Command copied!")
-                                .font(.footnote)
-                                .foregroundColor(.white)
-                            Text(copiedCommand)
-                                .font(.footnote.monospaced())
-                                .foregroundColor(.white.opacity(0.8))
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(
-                            Capsule()
-                                .fill(Color.black.opacity(0.8))
-                                .background(.ultraThinMaterial)
-                        )
-                        .transition(.move(edge: .top).combined(with: .opacity))
+            // Copy confirmation toast
+            if showCopyConfirmation {
+                VStack {
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                        Text("Command copied!")
+                            .font(.footnote)
+                            .foregroundColor(.white)
+                        Text(copiedCommand)
+                            .font(.footnote.monospaced())
+                            .foregroundColor(.white.opacity(0.8))
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                    .padding(.top, 20)
-                    .allowsHitTesting(false)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule()
+                            .fill(Color.black.opacity(0.8))
+                            .background(.ultraThinMaterial)
+                    )
+                    .transition(.move(edge: .top).combined(with: .opacity))
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .padding(.top, 20)
+                .allowsHitTesting(false)
             }
         }
         .frame(width: 700, height: 600)
         .task {
             await checkOllamaStatus()
-        }
-    }
-    
-    // MARK: - Background Gradient
-    
-    private var backgroundGradient: some View {
-        ZStack {
-            // Base gradient matching GemmaOnboardingView exactly
-            LinearGradient(
-                colors: [
-                    Color(red: 0.1, green: 0.05, blue: 0.2),
-                    Color(red: 0.05, green: 0.05, blue: 0.15)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea(.all)
-            
-            // Animated mesh gradient overlay matching GemmaOnboardingView
-            AnimatedGradientMesh()
-                .opacity(0.5)
         }
     }
     
