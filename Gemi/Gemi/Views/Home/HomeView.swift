@@ -818,9 +818,13 @@ struct PrivacyFeatureCard: View {
                     .font(.system(size: 13))
                     .foregroundColor(.secondary)
                     .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            
+            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(height: 100)
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: Theme.smallCornerRadius)
@@ -878,9 +882,13 @@ struct GemmaFeatureCard: View {
                     .font(.system(size: 13))
                     .foregroundColor(.secondary)
                     .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            
+            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(height: 100)
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: Theme.smallCornerRadius)
