@@ -1,7 +1,7 @@
 import Foundation
 
 /// Environment configuration service
-/// NOTE: .env files are no longer needed for mlx-community models
+/// Manages application environment settings
 @MainActor
 final class EnvironmentConfig {
     static let shared = EnvironmentConfig()
@@ -9,9 +9,9 @@ final class EnvironmentConfig {
     private let config: [String: String]
     
     private init() {
-        // No longer load .env files - mlx-community models don't need authentication
+        // Initialize with empty configuration
         self.config = [:]
-        print("✅ Using mlx-community models - no authentication required")
+        print("✅ Environment configuration initialized")
     }
     
     /// Get value for a key (kept for compatibility)
@@ -19,8 +19,8 @@ final class EnvironmentConfig {
         return nil // No environment values needed
     }
     
-    /// Get HuggingFace token - always returns nil for mlx-community models
+    /// Get HuggingFace token - not needed for Ollama
     var huggingFaceToken: String? {
-        return nil // mlx-community models don't need tokens
+        return nil // Ollama handles model management
     }
 }

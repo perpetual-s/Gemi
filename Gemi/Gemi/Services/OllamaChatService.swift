@@ -1,7 +1,7 @@
 import Foundation
 
 /// Production-grade Ollama chat service for Gemi
-/// Replaces MLX-Swift with stable, multimodal-capable inference
+/// Provides stable, multimodal-capable AI inference
 @MainActor
 final class OllamaChatService: ObservableObject {
     static let shared = OllamaChatService()
