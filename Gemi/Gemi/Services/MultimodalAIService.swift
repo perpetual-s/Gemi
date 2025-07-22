@@ -90,7 +90,7 @@ final class MultimodalAIService: ObservableObject {
     
     /// Process all current attachments and create enhanced context for AI
     func createMultimodalContext(for message: String) async throws -> MultimodalContext {
-        logger.info("Creating multimodal context for message with \(attachmentManager.attachments.count) attachments")
+        logger.info("Creating multimodal context for message with \(self.attachmentManager.attachments.count) attachments")
         
         let startTime = Date()
         isProcessing = true
@@ -255,7 +255,17 @@ final class MultimodalAIService: ObservableObject {
         
         // Get audio duration
         let asset = AVURLAsset(url: url)
-        let duration = CMTimeGetSeconds(asset.duration)
+        let duration = try await withCheckedThrowingContinuation { continuation in
+            asset.loadValuesAsynchronously(forKeys: ["duration"]) {
+                let status = asset.statusOfValue(forKey: "duration", error: nil)
+                if status == .loaded {
+                    let duration = CMTimeGetSeconds(asset.duration)
+                    continuation.resume(returning: duration)
+                } else {
+                    continuation.resume(throwing: ProcessingError.speechProcessingFailed("Failed to load audio duration"))
+                }
+            }
+        }
         
         // Transcribe audio
         let transcriptionResult = try await speechService.transcribeAudioFile(
@@ -481,92 +491,5 @@ final class MultimodalAIService: ObservableObject {
     private var averageProcessingTime: TimeInterval {
         guard processedAttachmentsCount > 0 else { return 0 }
         return totalProcessingTime / Double(processedAttachmentsCount)
-    }
-}
-
-// MARK: - Supporting Services
-
-@MainActor
-final class VisionAnalysisService: ObservableObject {
-    static let shared = VisionAnalysisService()
-    
-    struct AnalysisOptions {
-        var extractText = true
-        var classifyImage = true
-        var detectObjects = true
-        var detectFaces = false
-        var analyzeComposition = false
-    }
-    
-    struct AnalysisResult {
-        let extractedText: String
-        let classifications: [VNClassificationObservation]
-        let detectedObjects: [VNRecognizedObjectObservation]
-        let faceCount: Int
-        let dominantColors: [NSColor]
-        let additionalInfo: [String: Any]
-    }
-    
-    func analyzeImage(_ image: NSImage, options: AnalysisOptions = AnalysisOptions()) async throws -> AnalysisResult {
-        // Placeholder - would implement full Vision framework integration
-        return AnalysisResult(
-            extractedText: "",
-            classifications: [],
-            detectedObjects: [],
-            faceCount: 0,
-            dominantColors: [],
-            additionalInfo: [:]
-        )
-    }
-    
-    func isAvailable() async -> Bool {
-        return true
-    }
-}
-
-@MainActor
-final class SpeechTranscriptionService: ObservableObject {
-    static let shared = SpeechTranscriptionService()
-    
-    struct TranscriptionOptions {
-        enum Language {
-            case automatic
-            case specific(Locale)
-        }
-        
-        var language: Language = .automatic
-        var includeTimestamps = false
-        var includeConfidence = false
-        var includePunctuation = true
-    }
-    
-    struct TranscriptionResult {
-        let text: String
-        let segments: [TranscriptionSegment]
-        let detectedLanguage: String?
-        let averageConfidence: Float
-        let metadata: [String: Any]
-    }
-    
-    struct TranscriptionSegment {
-        let text: String
-        let timestamp: TimeInterval
-        let duration: TimeInterval
-        let confidence: Float
-    }
-    
-    func transcribeAudioFile(url: URL, options: TranscriptionOptions = TranscriptionOptions()) async throws -> TranscriptionResult {
-        // Placeholder - would implement full Speech framework integration
-        return TranscriptionResult(
-            text: "",
-            segments: [],
-            detectedLanguage: "en-US",
-            averageConfidence: 0.95,
-            metadata: [:]
-        )
-    }
-    
-    func isAvailable() -> Bool {
-        return SFSpeechRecognizer.authorizationStatus() == .authorized
     }
 }
