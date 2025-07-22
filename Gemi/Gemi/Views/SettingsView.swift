@@ -26,7 +26,7 @@ struct SettingsView: View {
     let journalStore: JournalStore
     @AppStorage("aiTemperature") private var aiTemperature = AIConfiguration.shared.temperature
     @AppStorage("aiMaxTokens") private var aiMaxTokens = AIConfiguration.shared.maxTokens
-    @AppStorage("selectedModel") private var selectedModel = "gemma-3n-e4b-it"
+    @AppStorage("selectedModel") private var selectedModel = "gemma3n:latest"
     @AppStorage("autoSaveInterval") private var autoSaveInterval = 3.0
     @AppStorage("enableMarkdown") private var enableMarkdown = true
     @AppStorage("defaultFont") private var defaultFont = "System"
@@ -420,7 +420,7 @@ struct SettingsView: View {
                             .font(.system(size: 14))
                             .foregroundColor(.blue)
                         
-                        Text("Recommended: **gemma-3n-e4b-it** (Google Gemma 3n E4B model) for optimal performance and privacy")
+                        Text("Recommended: **gemma3n:latest** (Google Gemma 3n E4B model) for optimal performance and privacy")
                             .font(.system(size: 13))
                             .foregroundColor(.secondary)
                     }
@@ -448,7 +448,7 @@ struct SettingsView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Ollama Backend")
                                 .font(.system(size: 14, weight: .semibold))
-                            Text("gemma3n:latest")
+                            Text("Local AI inference engine")
                                 .font(.system(size: 12))
                                 .foregroundColor(.secondary)
                         }
@@ -1041,13 +1041,13 @@ struct SettingsView: View {
     
     private func loadAvailableModels() {
         isLoadingModels = true
-        availableModels = ["gemma-3n-e4b-it"] // Default Gemma 3n model
+        availableModels = ["gemma3n:latest"] // Default Gemma 3n model
         
         Task {
             // TODO: Implement listLocalModels
-            let models: [String] = ["gemma-3n-e4b-it"]
+            let models: [String] = ["gemma3n:latest"]
             await MainActor.run {
-                availableModels = models.isEmpty ? ["gemma-3n-e4b-it"] : models
+                availableModels = models.isEmpty ? ["gemma3n:latest"] : models
                 isLoadingModels = false
             }
         }
