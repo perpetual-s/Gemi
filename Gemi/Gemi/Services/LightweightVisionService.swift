@@ -1,6 +1,6 @@
 import Foundation
 import AppKit
-import Vision
+@preconcurrency import Vision
 import os.log
 
 /// Lightweight vision service optimized for speed and diary context
@@ -61,7 +61,7 @@ final class LightweightVisionService: ObservableObject {
                     return result
                 }
             }
-            return nil
+            return "content" // Default fallback
         }
         
         if let classification = classificationResult {
@@ -71,36 +71,31 @@ final class LightweightVisionService: ObservableObject {
         return description
     }
     
-    private func performQuickClassification(_ cgImage: CGImage) async throws -> String {
+    nonisolated private func performQuickClassification(_ cgImage: CGImage) async throws -> String {
         return try await withCheckedThrowingContinuation { continuation in
-            let request = VNClassifyImageRequest { request, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-                
-                guard let results = request.results as? [VNClassificationObservation],
-                      !results.isEmpty else {
-                    continuation.resume(returning: "content")
-                    return
-                }
-                
-                // Get top 2 classifications for context
-                let topResults = results.prefix(2)
-                    .filter { $0.confidence > 0.3 }
-                    .map { $0.identifier.replacingOccurrences(of: "_", with: " ") }
-                
-                if topResults.isEmpty {
-                    continuation.resume(returning: "content")
-                } else {
-                    continuation.resume(returning: topResults.joined(separator: " and "))
-                }
-            }
-            
             DispatchQueue.global(qos: .userInitiated).async {
+                let request = VNClassifyImageRequest()
+                
                 do {
                     let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
                     try handler.perform([request])
+                    
+                    guard let results = request.results as? [VNClassificationObservation],
+                          !results.isEmpty else {
+                        continuation.resume(returning: "content")
+                        return
+                    }
+                    
+                    // Get top 2 classifications for context
+                    let topResults = results.prefix(2)
+                        .filter { $0.confidence > 0.3 }
+                        .map { $0.identifier.replacingOccurrences(of: "_", with: " ") }
+                    
+                    if topResults.isEmpty {
+                        continuation.resume(returning: "content")
+                    } else {
+                        continuation.resume(returning: topResults.joined(separator: " and "))
+                    }
                 } catch {
                     continuation.resume(throwing: error)
                 }
@@ -144,35 +139,34 @@ final class LightweightVisionService: ObservableObject {
         }
     }
     
-    private func performQuickTextRecognition(_ cgImage: CGImage) async throws -> String? {
+    nonisolated private func performQuickTextRecognition(_ cgImage: CGImage) async throws -> String? {
         return try await withCheckedThrowingContinuation { continuation in
-            let request = VNRecognizeTextRequest { request, error in
-                guard error == nil,
-                      let results = request.results as? [VNRecognizedTextObservation],
-                      !results.isEmpty else {
-                    continuation.resume(returning: nil)
-                    return
-                }
-                
-                let text = results.compactMap { $0.topCandidates(1).first?.string }
-                    .joined(separator: " ")
-                
-                // Only return if we found meaningful text
-                if text.count > 20 {
-                    continuation.resume(returning: text)
-                } else {
-                    continuation.resume(returning: nil)
-                }
-            }
-            
-            // Use fast mode for speed
-            request.recognitionLevel = .fast
-            request.usesLanguageCorrection = false
-            
             DispatchQueue.global(qos: .userInitiated).async {
+                let request = VNRecognizeTextRequest()
+                
+                // Use fast mode for speed
+                request.recognitionLevel = .fast
+                request.usesLanguageCorrection = false
+                
                 do {
                     let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
                     try handler.perform([request])
+                    
+                    guard let results = request.results as? [VNRecognizedTextObservation],
+                          !results.isEmpty else {
+                        continuation.resume(returning: nil)
+                        return
+                    }
+                    
+                    let text = results.compactMap { $0.topCandidates(1).first?.string }
+                        .joined(separator: " ")
+                    
+                    // Only return if we found meaningful text
+                    if text.count > 20 {
+                        continuation.resume(returning: text)
+                    } else {
+                        continuation.resume(returning: nil)
+                    }
                 } catch {
                     continuation.resume(returning: nil)
                 }
