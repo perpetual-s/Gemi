@@ -29,62 +29,17 @@ struct OllamaSetupView: View {
             VStack(spacing: 0) {
                 Spacer()
                 
-                // Content based on state
-                VStack(spacing: 24) {
-                    // Header with enhanced styling
-                    VStack(spacing: 20) {
-                        // Animated icon container
-                        ZStack {
-                            // Glow effect
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.1)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .frame(width: 100, height: 100)
-                                .blur(radius: 20)
-                            
-                            // Terminal icon with gradient
-                            Image(systemName: "terminal.fill")
-                                .font(.system(size: 60))
-                                .foregroundStyle(
-                                    LinearGradient(
-                                        colors: [.blue, .purple],
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                )
-                                .shadow(color: .blue.opacity(0.5), radius: 10)
-                        }
-                        
-                        VStack(spacing: 12) {
-                            Text("Set Up Ollama")
-                                .font(.system(size: 32, weight: .bold, design: .rounded))
-                                .foregroundColor(.white)
-                            
-                            Text("Gemi uses Ollama to run AI locally on your Mac")
-                                .font(.system(size: 16))
-                                .foregroundColor(.white.opacity(0.8))
-                                .multilineTextAlignment(.center)
-                        }
-                    }
-                    .padding(.horizontal, 30)
-            
-                    // Content based on step
-                    Group {
-                        switch currentStep {
-                        case 0:
-                            installOllamaStep
-                        case 1:
-                            downloadModelStep
-                        case 2:
-                            verificationStep
-                        default:
-                            EmptyView()
-                        }
+                // Content based on step
+                Group {
+                    switch currentStep {
+                    case 0:
+                        installOllamaStep
+                    case 1:
+                        downloadModelStep
+                    case 2:
+                        verificationStep
+                    default:
+                        EmptyView()
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -206,9 +161,50 @@ struct OllamaSetupView: View {
     @ViewBuilder
     var installOllamaStep: some View {
         VStack(spacing: 24) {
-            VStack(spacing: 12) {
+            // Icon and main title
+            VStack(spacing: 16) {
+                // Animated icon container
+                ZStack {
+                    // Glow effect
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.1)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 100, height: 100)
+                        .blur(radius: 20)
+                    
+                    // Terminal icon with gradient
+                    Image(systemName: "terminal.fill")
+                        .font(.system(size: 60))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.blue, .purple],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .shadow(color: .blue.opacity(0.5), radius: 10)
+                }
+                
+                VStack(spacing: 12) {
+                    Text("Set Up Ollama")
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                    
+                    Text("Gemi uses Ollama to run AI locally on your Mac")
+                        .font(.system(size: 16))
+                        .foregroundColor(.white.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                }
+            }
+            
+            VStack(spacing: 16) {
                 Text("Step 1: Install Ollama")
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(.white)
                 
                 Text("Open Terminal and run this command:")
@@ -232,10 +228,10 @@ struct OllamaSetupView: View {
                 NSWorkspace.shared.open(URL(string: "https://brew.sh")!)
             }
             
-            VStack(spacing: 16) {
-                Divider()
-                    .background(Color.white.opacity(0.2))
-                
+            Divider()
+                .background(Color.white.opacity(0.2))
+            
+            VStack(spacing: 12) {
                 Text("Alternative: Download from Ollama.com")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.white.opacity(0.8))
@@ -255,14 +251,14 @@ struct OllamaSetupView: View {
     
     @ViewBuilder
     var downloadModelStep: some View {
-        VStack(spacing: 24) {
-            VStack(spacing: 12) {
+        VStack(spacing: 32) {
+            VStack(spacing: 16) {
                 Text("Step 2: Download Gemma 3n")
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .font(.system(size: 32, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
                 
                 Text("Run these commands in Terminal:")
-                    .font(.system(size: 16))
+                    .font(.system(size: 18))
                     .foregroundColor(.white.opacity(0.8))
             }
             
@@ -301,12 +297,10 @@ struct OllamaSetupView: View {
     
     @ViewBuilder
     var verificationStep: some View {
-        VStack(spacing: 24) {
-            VStack(spacing: 12) {
-                Text("Step 3: Verify Setup")
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-            }
+        VStack(spacing: 32) {
+            Text("Step 3: Verify Setup")
+                .font(.system(size: 32, weight: .bold, design: .rounded))
+                .foregroundColor(.white)
             
             // Status display
             Group {
