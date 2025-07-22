@@ -21,7 +21,7 @@ final class MultimodalAIService: ObservableObject {
     
     private let logger = Logger(subsystem: "com.gemi", category: "MultimodalAI")
     private let lightweightVision = LightweightVisionService.shared
-    private let speechService = SpeechTranscriptionService.shared
+    private let quickAudio = QuickAudioService.shared
     private let attachmentManager = AttachmentManager.shared
     private let ollamaService = OllamaChatService.shared
     
@@ -214,67 +214,24 @@ final class MultimodalAIService: ObservableObject {
     private func processAudio(_ url: URL, attachment: AttachmentManager.Attachment) async throws -> (description: String, metadata: [String: Any]) {
         logger.debug("Processing audio: \(attachment.fileName)")
         
-        // Get audio duration
-        let asset = AVURLAsset(url: url)
-        let duration = try await withCheckedThrowingContinuation { continuation in
-            asset.loadValuesAsynchronously(forKeys: ["duration"]) {
-                let status = asset.statusOfValue(forKey: "duration", error: nil)
-                if status == .loaded {
-                    let duration = CMTimeGetSeconds(asset.duration)
-                    continuation.resume(returning: duration)
-                } else {
-                    continuation.resume(throwing: ProcessingError.speechProcessingFailed("Failed to load audio duration"))
-                }
-            }
-        }
+        // Quick transcription
+        let (text, duration) = try await quickAudio.quickTranscribe(url)
         
-        // Transcribe audio
-        let transcriptionResult = try await speechService.transcribeAudioFile(
-            url: url,
-            options: SpeechTranscriptionService.TranscriptionOptions(
-                language: .automatic,
-                includeTimestamps: true,
-                includeConfidence: true,
-                includePunctuation: true
-            )
+        // Generate simple description
+        let description = quickAudio.generateAudioDescription(
+            text: text,
+            duration: duration,
+            fileName: attachment.fileName
         )
         
-        // Build description
-        var description = "I'm listening to an audio recording"
-        
-        if !attachment.fileName.isEmpty {
-            description += " (file: '\(attachment.fileName)')"
-        }
-        
-        description += String(format: " that is %.1f seconds long. ", duration)
-        
-        // Add transcription
-        if !transcriptionResult.text.isEmpty {
-            description += "Here's what I heard: \"\(transcriptionResult.text)\" "
-            
-            // Add speaking rate if available
-            if let speakingRate = transcriptionResult.metadata["speakingRate"] as? Double {
-                description += String(format: "(speaking rate: %.0f words/minute) ", speakingRate)
-            }
-            
-            // Add detected emotion or tone if we implement it
-            if let tone = analyzeAudioTone(from: transcriptionResult) {
-                description += "The speaker sounds \(tone). "
-            }
-        } else {
-            description += "I couldn't transcribe any clear speech from this audio. "
-        }
-        
-        // Build metadata
+        // Build minimal metadata
         let metadata: [String: Any] = [
             "duration": duration,
-            "format": url.pathExtension,
-            "hasTranscription": !transcriptionResult.text.isEmpty,
-            "language": transcriptionResult.detectedLanguage ?? "unknown",
-            "confidence": transcriptionResult.averageConfidence
+            "fileName": attachment.fileName,
+            "hasTranscription": !text.isEmpty
         ]
         
-        return (description: description.trimmingCharacters(in: .whitespaces), metadata: metadata)
+        return (description: description, metadata: metadata)
     }
     
     // MARK: - Document Processing
