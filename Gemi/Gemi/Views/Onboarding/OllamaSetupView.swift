@@ -26,28 +26,40 @@ struct OllamaSetupView: View {
             Spacer()
             
             // Content based on step
-            Group {
+            ZStack {
                 switch currentStep {
                 case 0:
                     installOllamaStep
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        ))
                 case 1:
                     downloadModelStep
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        ))
                 case 2:
                     verificationStep
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        ))
                 default:
                     EmptyView()
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .animation(.spring(response: 0.5), value: currentStep)
             
             Spacer()
             
-            // Page indicators and navigation
+            // Fixed navigation area matching GemmaOnboardingView
             VStack(spacing: 24) {
-                // Custom page indicators matching GemmaOnboardingView
+                // Custom page indicators
                 StepProgressIndicator(totalSteps: 3, currentStep: currentStep)
                 
-                // Navigation buttons matching GemmaOnboardingView style
+                // Navigation buttons
                 if currentStep < 2 {
                     OnboardingButton(
                         "Continue",
@@ -95,36 +107,40 @@ struct OllamaSetupView: View {
                     .buttonStyle(PlainButtonStyle())
                 }
             }
-            .padding(.bottom, 40)
+            .padding(.bottom, 60)
             
-            // Copy confirmation toast
-            if showCopyConfirmation {
-                VStack {
-                    HStack {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
-                        Text("Command copied!")
-                            .font(.footnote)
-                            .foregroundColor(.white)
-                        Text(copiedCommand)
-                            .font(.footnote.monospaced())
-                            .foregroundColor(.white.opacity(0.8))
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(
-                        Capsule()
-                            .fill(Color.black.opacity(0.8))
-                            .background(.ultraThinMaterial)
-                    )
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .padding(.top, 20)
-                .allowsHitTesting(false)
-            }
         }
         .frame(width: 700, height: 600)
+        .overlay(
+            // Copy confirmation toast overlay
+            Group {
+                if showCopyConfirmation {
+                    VStack {
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                            Text("Command copied!")
+                                .font(.footnote)
+                                .foregroundColor(.white)
+                            Text(copiedCommand)
+                                .font(.footnote.monospaced())
+                                .foregroundColor(.white.opacity(0.8))
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            Capsule()
+                                .fill(Color.black.opacity(0.8))
+                                .background(.ultraThinMaterial)
+                        )
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .padding(.top, 20)
+                    .allowsHitTesting(false)
+                }
+            }
+        )
         .task {
             await checkOllamaStatus()
         }
@@ -340,19 +356,29 @@ struct OllamaSetupView: View {
             .transition(.opacity.combined(with: .scale))
             
             if ollamaStatus != .ready {
-                VStack(spacing: 12) {
-                    Text("Need help?")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.white)
+                VStack(spacing: 16) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "questionmark.circle")
+                            .font(.system(size: 16))
+                            .foregroundColor(.white.opacity(0.7))
+                        Text("Need help with setup?")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white.opacity(0.7))
+                    }
                     
-                    OnboardingButton(
-                        "Open Setup Guide",
-                        icon: "book.fill",
-                        style: .secondary,
-                        action: {
-                            NSWorkspace.shared.open(URL(string: "https://github.com/ollama/ollama#macos")!)
+                    Button(action: {
+                        NSWorkspace.shared.open(URL(string: "https://github.com/ollama/ollama#macos")!)
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "book.fill")
+                                .font(.system(size: 14))
+                            Text("Open Setup Guide")
+                                .font(.system(size: 14, weight: .medium))
                         }
-                    )
+                        .foregroundColor(.blue)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .help("Open Ollama documentation in your browser")
                 }
             }
         }
@@ -526,11 +552,11 @@ struct StatusCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.headline)
-                    .foregroundColor(.white)
+                    .foregroundColor(.primary)
                 
                 Text(description)
                     .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.8))
+                    .foregroundColor(.secondary)
             }
             
             Spacer()
