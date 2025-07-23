@@ -542,14 +542,28 @@ struct ProductionComposeView: View {
             HStack(spacing: 20) {
                 // Favorite toggle
                 Button {
-                    // Direct toggle without animation wrapper
-                    entry.isFavorite.toggle()
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        entry.isFavorite.toggle()
+                    }
                 } label: {
                     HStack(spacing: 6) {
-                        Image(systemName: entry.isFavorite ? "star.fill" : "star")
-                            .font(.system(size: 14))
-                            .foregroundColor(entry.isFavorite ? .yellow : .secondary)
-                            .symbolEffect(.bounce, value: entry.isFavorite)
+                        ZStack {
+                            // Glow effect
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(.yellow)
+                                .blur(radius: 8)
+                                .opacity(entry.isFavorite ? 0.6 : 0)
+                                .scaleEffect(entry.isFavorite ? 1.5 : 0.8)
+                                .animation(.easeOut(duration: 0.25), value: entry.isFavorite)
+                            
+                            // Main star
+                            Image(systemName: entry.isFavorite ? "star.fill" : "star")
+                                .font(.system(size: 14))
+                                .foregroundColor(entry.isFavorite ? .yellow : .secondary)
+                                .scaleEffect(entry.isFavorite ? 1.1 : 1.0)
+                                .animation(.spring(response: 0.25, dampingFraction: 0.6), value: entry.isFavorite)
+                        }
                         Text(entry.isFavorite ? "Favorited" : "Add to favorites")
                             .font(.system(size: 13))
                             .foregroundColor(entry.isFavorite ? .primary : .secondary)
@@ -559,6 +573,7 @@ struct ProductionComposeView: View {
                     .background(
                         RoundedRectangle(cornerRadius: 6)
                             .fill(entry.isFavorite ? Color.yellow.opacity(0.1) : Color.clear)
+                            .animation(.easeInOut(duration: 0.2), value: entry.isFavorite)
                     )
                 }
                 .buttonStyle(PlainButtonStyle())
