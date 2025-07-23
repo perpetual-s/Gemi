@@ -8,7 +8,7 @@ struct Theme {
     static let largeSpacing: CGFloat = 24
     
     static let sidebarWidth: CGFloat = 280
-    static let minWindowWidth: CGFloat = 900
+    static let minWindowWidth: CGFloat = 1050
     static let minWindowHeight: CGFloat = 520
     
     static let animationDuration: Double = 0.25

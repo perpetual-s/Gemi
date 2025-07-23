@@ -45,8 +45,8 @@ struct GemiApp: App {
                             .controlSize(.large)
                             .tint(.white)
                     }
-                    .frame(width: 900, height: 700)
-                    .frame(maxWidth: 900, maxHeight: 700)
+                    .frame(width: 1050, height: 700)
+                    .frame(maxWidth: 1050, maxHeight: 700)
                 } else if authManager.requiresInitialSetup || shouldShowOnboarding {
                     // New users go directly to beautiful onboarding (which includes password setup)
                     GemmaOnboardingView {
@@ -55,8 +55,8 @@ struct GemiApp: App {
                             showingOnboarding = false
                         }
                     }
-                    .frame(width: 900, height: 700)
-                    .frame(maxWidth: 900, maxHeight: 700)
+                    .frame(width: 1050, height: 700)
+                    .frame(maxWidth: 1050, maxHeight: 700)
                     .background(Color.black)
                 } else if authManager.isAuthenticated {
                     MainWindowView()

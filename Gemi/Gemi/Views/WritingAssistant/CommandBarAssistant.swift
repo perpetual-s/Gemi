@@ -103,11 +103,11 @@ struct CommandBarAssistant: View {
         }
         
         var preview: String {
-            String(text.prefix(100)) + (text.count > 100 ? "..." : "")
+            String(text.prefix(350)) + (text.count > 350 ? "..." : "")
         }
         
         var needsExpansion: Bool {
-            text.count > 100
+            text.count > 350
         }
     }
     
