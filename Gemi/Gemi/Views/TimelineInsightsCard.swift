@@ -1,8 +1,8 @@
 import SwiftUI
 import Charts
 
-/// AI-powered insights view showing patterns and analysis
-struct AIInsightsView: View {
+/// Quick insights card for timeline view showing journal patterns and analysis
+struct TimelineInsightsCard: View {
     let entries: [JournalEntry]
     @Environment(\.dismiss) private var dismiss
     @State private var selectedTab = InsightTab.overview

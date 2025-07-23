@@ -126,7 +126,7 @@ struct EnhancedTimelineView: View {
             analyzeMoodTrend()
         }
         .sheet(isPresented: $showingAIInsights) {
-            AIInsightsView(entries: journalStore.entries)
+            TimelineInsightsCard(entries: journalStore.entries)
         }
         .sheet(isPresented: Binding(
             get: { selectedEntryForChat != nil || showGeneralChat },
