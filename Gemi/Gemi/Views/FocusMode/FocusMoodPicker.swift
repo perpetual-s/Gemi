@@ -193,20 +193,23 @@ struct FocusTagChip: View {
     @State private var isHovered = false
     
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             Text("#\(tag)")
                 .font(.system(size: 13))
                 .foregroundColor(textColor.opacity(0.8))
+                .lineLimit(1)
             
             Button(action: onRemove) {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 14))
                     .foregroundColor(isHovered ? Color.red.opacity(0.8) : textColor.opacity(0.4))
+                    .frame(width: 18, height: 18)
             }
             .buttonStyle(PlainButtonStyle())
+            .contentShape(Rectangle())
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(textColor.opacity(0.1))

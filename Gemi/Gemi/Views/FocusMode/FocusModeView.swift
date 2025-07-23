@@ -115,11 +115,41 @@ struct FocusModeView: View {
             
             // Overlay panels
             if showSettings {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation {
+                            showSettings = false
+                        }
+                    }
+                
                 focusSettingsPanel
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             
             if showMetadata {
-                metadataPanel
+                HStack {
+                    Spacer()
+                    
+                    VStack {
+                        Spacer()
+                            .frame(height: 100)
+                        
+                        metadataPanel
+                        
+                        Spacer()
+                    }
+                    .padding(.trailing, 40)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(
+                    Color.black.opacity(0.001)
+                        .onTapGesture {
+                            withAnimation {
+                                showMetadata = false
+                            }
+                        }
+                )
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -479,7 +509,8 @@ struct FocusModeView: View {
             Spacer()
         }
         .padding(24)
-        .frame(width: 350, height: 400)
+        .frame(width: 350)
+        .frame(maxHeight: 500)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(settings.effectiveBackgroundColor)
@@ -490,9 +521,6 @@ struct FocusModeView: View {
             insertion: .scale(scale: 0.9).combined(with: .opacity),
             removal: .scale(scale: 0.9).combined(with: .opacity)
         ))
-        .offset(x: 0, y: 100)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-        .padding(.trailing, 40)
     }
     
     private var focusSettingsPanel: some View {
