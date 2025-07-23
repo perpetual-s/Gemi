@@ -8,6 +8,7 @@ struct WritersBlockBreaker: View {
     @State private var selectedCategory: PromptCategory = .inspiration
     @State private var currentPrompt: WritingPrompt?
     @State private var isGenerating = false
+    @Namespace private var scrollViewSpace
     
     struct WritingPrompt: Identifiable {
         let id = UUID()
@@ -93,20 +94,32 @@ struct WritersBlockBreaker: View {
             Divider()
             
             // Main content
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Current prompt
-                    if let prompt = currentPrompt {
-                        currentPromptCard(prompt)
+            ScrollViewReader { scrollProxy in
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // Invisible anchor for scroll to top
+                        Color.clear
+                            .frame(height: 1)
+                            .id("top")
+                        
+                        // Current prompt
+                        if let prompt = currentPrompt {
+                            currentPromptCard(prompt)
+                                .padding(.horizontal, 20)
+                                .padding(.top, 20)
+                        }
+                        
+                        // Quick exercises
+                        quickExercises
                             .padding(.horizontal, 20)
-                            .padding(.top, 20)
+                            .padding(.top, currentPrompt == nil ? 20 : 0)
+                        
                     }
-                    
-                    // Quick exercises
-                    quickExercises
-                        .padding(.horizontal, 20)
-                        .padding(.top, currentPrompt == nil ? 20 : 0)
-                    
+                }
+                .onChange(of: selectedCategory) { _, _ in
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        scrollProxy.scrollTo("top", anchor: .top)
+                    }
                 }
             }
             
