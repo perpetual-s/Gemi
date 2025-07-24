@@ -202,9 +202,9 @@ struct ProductionComposeView: View {
     
     private var productionHeader: some View {
         VStack(spacing: 0) {
-            HStack(alignment: .top, spacing: 16) {
-                // Left side - Title and greeting
-                VStack(alignment: .leading, spacing: 8) {
+            // Top section - Title and main actions
+            VStack(spacing: 16) {
+                HStack(alignment: .center, spacing: 16) {
                     // Large editorial title
                     Text(displayTitle)
                         .font(.system(size: 36, weight: .bold, design: .serif))
@@ -212,101 +212,155 @@ struct ProductionComposeView: View {
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                     
-                    // Time-aware greeting
-                    TimeAwareGreeting(journalStore: nil)
-                }
-                
-                Spacer()
-                
-                // Right side - Minimal actions
-                HStack(spacing: 12) {
-                    // Cancel button - subtle
-                    Button("Cancel") {
-                        analytics.endSession()
-                        if hasUnsavedChanges {
-                            // TODO: Show confirmation dialog
-                            onCancel()
-                        } else {
-                            onCancel()
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundColor(.secondary)
-                    .keyboardShortcut(.escape, modifiers: [])
+                    Spacer()
                     
-                    // Overflow menu
-                    HeaderOverflowMenu(
-                        showingMenu: $showingOverflowMenu,
-                        onFocusMode: onFocusMode != nil ? { onFocusMode?(entry) } : nil,
-                        onWritingPrompts: { showWritersBlockBreaker = true },
-                        onDocumentInfo: { showingDocumentInfo = true }
-                    )
-                    
-                    // Save button - ghost style when no changes
-                    Button(action: saveEntry) {
-                        HStack(spacing: 6) {
+                    // Right side - Main actions
+                    HStack(spacing: 12) {
+                        // Cancel button - subtle
+                        Button("Cancel") {
+                            analytics.endSession()
                             if hasUnsavedChanges {
-                                Circle()
-                                    .fill(Color.orange)
-                                    .frame(width: 6, height: 6)
+                                // TODO: Show confirmation dialog
+                                onCancel()
+                            } else {
+                                onCancel()
                             }
-                            Text("Save")
-                                .font(.system(size: 15, weight: .medium))
                         }
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundColor(hasUnsavedChanges ? .primary : .secondary)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(hasUnsavedChanges ? Color.accentColor.opacity(0.1) : Color.clear)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .strokeBorder(
-                                        hasUnsavedChanges ? Color.accentColor : Color.secondary.opacity(0.3),
-                                        lineWidth: 1
+                        .buttonStyle(.plain)
+                        .foregroundColor(.secondary)
+                        .keyboardShortcut(.escape, modifiers: [])
+                        
+                        // Focus Mode button
+                        if let onFocusMode = onFocusMode {
+                            Button {
+                                onFocusMode(entry)
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                        .font(.system(size: 14))
+                                    Text("Focus")
+                                        .font(.system(size: 14, weight: .medium))
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.clear)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .strokeBorder(Color.secondary.opacity(0.2), lineWidth: 1)
                                     )
                             )
-                    )
-                    .opacity(entry.content.isEmpty ? 0.5 : 1.0)
-                    .disabled(entry.content.isEmpty)
-                    .keyboardShortcut(.return, modifiers: .command)
-                    .help("Save entry (⌘Return)")
+                            .help("Enter distraction-free writing mode")
+                        }
+                        
+                        // Writing prompts - prominent feature button
+                        Button {
+                            showWritersBlockBreaker.toggle()
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "books.vertical")
+                                    .font(.system(size: 14))
+                                Text("Prompts")
+                                    .font(.system(size: 14, weight: .medium))
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundColor(showWritersBlockBreaker ? Theme.Colors.primaryAccent : .secondary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(showWritersBlockBreaker ? Theme.Colors.primaryAccent.opacity(0.1) : Color.clear)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .strokeBorder(
+                                            showWritersBlockBreaker ? Theme.Colors.primaryAccent : Color.secondary.opacity(0.2),
+                                            lineWidth: 1
+                                        )
+                                )
+                        )
+                        .help("Browse writing prompts and exercises")
+                        
+                        // Overflow menu (just Document Info now)
+                        HeaderOverflowMenu(
+                            showingMenu: $showingOverflowMenu,
+                            onFocusMode: nil, // No longer needed in menu
+                            onWritingPrompts: { }, // No longer needed in menu
+                            onDocumentInfo: { showingDocumentInfo = true }
+                        )
+                        
+                        // Save button - ghost style when no changes
+                        Button(action: saveEntry) {
+                            HStack(spacing: 6) {
+                                if hasUnsavedChanges {
+                                    Circle()
+                                        .fill(Color.orange)
+                                        .frame(width: 6, height: 6)
+                                }
+                                Text("Save")
+                                    .font(.system(size: 15, weight: .medium))
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundColor(hasUnsavedChanges ? .primary : .secondary)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(hasUnsavedChanges ? Color.accentColor.opacity(0.1) : Color.clear)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .strokeBorder(
+                                            hasUnsavedChanges ? Color.accentColor : Color.secondary.opacity(0.3),
+                                            lineWidth: 1
+                                        )
+                                )
+                        )
+                        .opacity(entry.content.isEmpty ? 0.5 : 1.0)
+                        .disabled(entry.content.isEmpty)
+                        .keyboardShortcut(.return, modifiers: .command)
+                        .help("Save entry (⌘Return)")
+                    }
+                }
+                
+                // Bottom section - Greeting and Writing Tools
+                HStack {
+                    // Time-aware greeting
+                    TimeAwareGreeting(journalStore: nil)
+                    
+                    Spacer()
+                    
+                    // Writing Tools hint
+                    Button(action: toggleCommandBar) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "wand.and.stars")
+                                .font(.system(size: 13))
+                            Text("Writing Tools")
+                                .font(.system(size: 13))
+                            Text("⌘K")
+                                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                .foregroundColor(.secondary.opacity(0.8))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(Color.secondary.opacity(0.1))
+                                )
+                        }
+                        .foregroundColor(showCommandBar ? Theme.Colors.primaryAccent : .secondary)
+                        .opacity(showCommandBar ? 1 : 0.8)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Open Writing Tools (⌘K)")
                 }
             }
             .padding(.horizontal, 40)
             .padding(.top, 24)
-            .padding(.bottom, 20)
-            
-            // Command bar hint - subtle and minimal
-            HStack {
-                Spacer()
-                
-                Button(action: toggleCommandBar) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "wand.and.stars")
-                            .font(.system(size: 13))
-                        Text("Writing Tools")
-                            .font(.system(size: 13))
-                        Text("⌘K")
-                            .font(.system(size: 11, weight: .medium, design: .monospaced))
-                            .foregroundColor(.secondary.opacity(0.8))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .fill(Color.secondary.opacity(0.1))
-                            )
-                    }
-                    .foregroundColor(showCommandBar ? Theme.Colors.primaryAccent : .secondary)
-                    .opacity(showCommandBar ? 1 : 0.8)
-                }
-                .buttonStyle(.plain)
-                .help("Open Writing Tools (⌘K)")
-            }
-            .padding(.horizontal, 40)
-            .padding(.bottom, 12)
+            .padding(.bottom, 16)
         }
         .background(
             ZStack {

@@ -11,7 +11,7 @@ struct HeaderOverflowMenu: View {
     @Binding var showingMenu: Bool
     
     let onFocusMode: (() -> Void)?
-    let onWritingPrompts: () -> Void
+    let onWritingPrompts: (() -> Void)?
     let onDocumentInfo: () -> Void
     
     @State private var menuOpacity: Double = 0
@@ -29,11 +29,13 @@ struct HeaderOverflowMenu: View {
                 .keyboardShortcut("f", modifiers: [.command, .shift])
             }
             
-            // Writing Prompts
-            Button {
-                onWritingPrompts()
-            } label: {
-                Label("Writing Prompts", systemImage: "books.vertical")
+            // Writing Prompts (only if provided)
+            if let onWritingPrompts = onWritingPrompts {
+                Button {
+                    onWritingPrompts()
+                } label: {
+                    Label("Writing Prompts", systemImage: "books.vertical")
+                }
             }
             
             Divider()
