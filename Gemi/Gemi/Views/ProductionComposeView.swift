@@ -43,6 +43,11 @@ struct ProductionComposeView: View {
     @State private var showCommandBar = false
     @State private var commandBarPosition = CGRect.zero
     
+    // New UI states
+    @State private var showingOverflowMenu = false
+    @State private var showingDocumentInfo = false
+    @StateObject private var placeholderService = PlaceholderService.shared
+    
     // Computed display title that updates properly
     private var displayTitle: String {
         if !entry.title.isEmpty {
@@ -197,128 +202,134 @@ struct ProductionComposeView: View {
     
     private var productionHeader: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 16) {
-                // Document icon with unsaved indicator
-                ZStack(alignment: .topTrailing) {
-                    Image(systemName: "doc.text")
-                        .font(.system(size: 20))
-                        .foregroundColor(.secondary)
-                    
-                    if hasUnsavedChanges {
-                        Circle()
-                            .fill(Color.orange)
-                            .frame(width: 8, height: 8)
-                            .offset(x: 4, y: -2)
-                    }
-                }
-                
-                VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .top, spacing: 16) {
+                // Left side - Title and greeting
+                VStack(alignment: .leading, spacing: 8) {
+                    // Large editorial title
                     Text(displayTitle)
-                        .font(.system(size: 16, weight: .semibold))
-                        .lineLimit(1)
+                        .font(.system(size: 36, weight: .bold, design: .serif))
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                     
-                    Text(entry.createdAt.formatted(date: .abbreviated, time: .shortened))
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
+                    // Time-aware greeting
+                    TimeAwareGreeting(journalStore: nil)
                 }
                 
                 Spacer()
                 
-                // Focus Mode button
-                if let onFocusMode = onFocusMode {
-                    Button {
-                        onFocusMode(entry)
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "arrow.up.left.and.arrow.down.right")
-                                .font(.system(size: 14))
-                            Text("Focus")
-                                .font(.system(size: 14))
+                // Right side - Minimal actions
+                HStack(spacing: 12) {
+                    // Cancel button - subtle
+                    Button("Cancel") {
+                        analytics.endSession()
+                        if hasUnsavedChanges {
+                            // TODO: Show confirmation dialog
+                            onCancel()
+                        } else {
+                            onCancel()
                         }
-                        .foregroundColor(.secondary)
                     }
                     .buttonStyle(.plain)
-                    .help("Enter distraction-free writing mode")
+                    .foregroundColor(.secondary)
+                    .keyboardShortcut(.escape, modifiers: [])
+                    
+                    // Overflow menu
+                    HeaderOverflowMenu(
+                        showingMenu: $showingOverflowMenu,
+                        onFocusMode: onFocusMode != nil ? { onFocusMode?(entry) } : nil,
+                        onWritingPrompts: { showWritersBlockBreaker = true },
+                        onDocumentInfo: { showingDocumentInfo = true }
+                    )
+                    
+                    // Save button - ghost style when no changes
+                    Button(action: saveEntry) {
+                        HStack(spacing: 6) {
+                            if hasUnsavedChanges {
+                                Circle()
+                                    .fill(Color.orange)
+                                    .frame(width: 6, height: 6)
+                            }
+                            Text("Save")
+                                .font(.system(size: 15, weight: .medium))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundColor(hasUnsavedChanges ? .primary : .secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(hasUnsavedChanges ? Color.accentColor.opacity(0.1) : Color.clear)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .strokeBorder(
+                                        hasUnsavedChanges ? Color.accentColor : Color.secondary.opacity(0.3),
+                                        lineWidth: 1
+                                    )
+                            )
+                    )
+                    .opacity(entry.content.isEmpty ? 0.5 : 1.0)
+                    .disabled(entry.content.isEmpty)
+                    .keyboardShortcut(.return, modifiers: .command)
+                    .help("Save entry (⌘Return)")
                 }
+            }
+            .padding(.horizontal, 40)
+            .padding(.top, 24)
+            .padding(.bottom, 20)
+            
+            // Command bar hint - subtle and minimal
+            HStack {
+                Spacer()
                 
-                // AI Assistant toggle - Command Bar style
-                Button {
-                    toggleCommandBar()
-                } label: {
+                Button(action: toggleCommandBar) {
                     HStack(spacing: 6) {
                         Image(systemName: "wand.and.stars")
-                            .font(.system(size: 14))
-                        Text("Tools")
-                            .font(.system(size: 14))
+                            .font(.system(size: 13))
+                        Text("Writing Tools")
+                            .font(.system(size: 13))
                         Text("⌘K")
-                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                            .foregroundColor(showCommandBar ? Theme.Colors.primaryAccent.opacity(0.9) : .secondary.opacity(0.8))
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 3)
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .foregroundColor(.secondary.opacity(0.8))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
                             .background(
-                                RoundedRectangle(cornerRadius: 5)
-                                    .fill(showCommandBar ? Theme.Colors.primaryAccent.opacity(0.15) : Color.secondary.opacity(0.1))
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(Color.secondary.opacity(0.1))
                             )
                     }
                     .foregroundColor(showCommandBar ? Theme.Colors.primaryAccent : .secondary)
+                    .opacity(showCommandBar ? 1 : 0.8)
                 }
                 .buttonStyle(.plain)
-                .keyboardShortcut("k", modifiers: .command)
                 .help("Open Writing Tools (⌘K)")
-                
-                // Writing prompts library
-                Button {
-                    showWritersBlockBreaker.toggle()
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "books.vertical")
-                            .font(.system(size: 14))
-                        Text("Prompts")
-                            .font(.system(size: 14))
-                    }
-                    .foregroundColor(showWritersBlockBreaker ? Theme.Colors.primaryAccent : .secondary)
-                }
-                .buttonStyle(.plain)
-                .help("Browse writing prompts and exercises")
-                
-                Divider()
-                    .frame(height: 20)
-                
-                // Action buttons
-                Button("Cancel") {
-                    // End analytics session without saving
-                    analytics.endSession()
-                    
-                    if hasUnsavedChanges {
-                        // Show confirmation dialog
-                        onCancel()
-                    } else {
-                        onCancel()
-                    }
-                }
-                .buttonStyle(.plain)
-                .foregroundColor(.secondary)
-                
-                Button("Save") {
-                    saveEntry()
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(entry.content.isEmpty)
-                .keyboardShortcut(.return, modifiers: .command)
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
+            .padding(.horizontal, 40)
+            .padding(.bottom, 12)
         }
         .background(
             ZStack {
-                VisualEffectView.headerView
+                // Subtle gradient background
+                LinearGradient(
+                    colors: [
+                        Color(NSColor.windowBackgroundColor),
+                        Color(NSColor.windowBackgroundColor).opacity(0.95)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                
                 VStack {
                     Spacer()
                     Divider()
-                        .opacity(0.3)
+                        .opacity(0.1)
                 }
             }
         )
+        .sheet(isPresented: $showingDocumentInfo) {
+            DocumentInfoSheet(entry: entry)
+        }
     }
     
     // MARK: - Title Section
@@ -349,13 +360,12 @@ struct ProductionComposeView: View {
         VStack(spacing: 0) {
             // Professional text editor
             ZStack(alignment: .topLeading) {
-                // Placeholder
+                // Dynamic placeholder
                 if entry.content.isEmpty {
-                    Text("Start writing...")
-                        .font(.system(size: 17, weight: .regular, design: .serif))
-                        .foregroundColor(.secondary.opacity(0.5))
+                    DynamicPlaceholder()
                         .padding(.top, 24)
                         .allowsHitTesting(false)
+                        .onTapGesture {} // Ensure it doesn't interfere
                 }
                 
                 // Custom text editor wrapper for better control
@@ -675,6 +685,9 @@ struct ProductionComposeView: View {
         // Track session analytics
         analytics.updateSessionWithWords(entry.wordCount)
         analytics.endSession()
+        
+        // Record entry for placeholder service
+        placeholderService.recordEntry()
         
         onSave(entry)
     }
