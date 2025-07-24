@@ -438,6 +438,7 @@ struct ProductionComposeView: View {
                     textColor: .labelColor,
                     backgroundColor: .clear,
                     lineSpacing: 1.6,
+                    insertionPointWidth: 2.0,  // Standard cursor width
                     onTextChange: { newText in
                         updateWordCount()
                         // Track typing for feedback
@@ -626,11 +627,9 @@ struct ProductionComposeView: View {
                     .foregroundColor(entry.isFavorite ? .yellow : .primary)
             }
             .toggleStyle(.switch)
-            
-            Spacer()
         }
         .padding(24)
-        .frame(width: 350)
+        .frame(width: 420)
         .frame(maxHeight: 500)
         .background(
             RoundedRectangle(cornerRadius: 16)
@@ -1031,6 +1030,7 @@ struct MacTextEditor: NSViewRepresentable {
     let textColor: NSColor
     let backgroundColor: NSColor
     let lineSpacing: CGFloat
+    let insertionPointWidth: CGFloat
     let onTextChange: (String) -> Void
     var onCoordinatorReady: ((Coordinator) -> Void)?
     var onSelectionChange: ((NSRange) -> Void)?
@@ -1057,6 +1057,10 @@ struct MacTextEditor: NSViewRepresentable {
         
         // Set insertion point (cursor) properties
         textView.insertionPointColor = NSColor.labelColor
+        // Set cursor width using textView's scale factor
+        if let layoutManager = textView.layoutManager {
+            layoutManager.typesetter.typesetterBehavior = .latestBehavior
+        }
         
         // Set line spacing with proper paragraph style
         let paragraphStyle = NSMutableParagraphStyle()

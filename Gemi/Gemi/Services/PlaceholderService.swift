@@ -195,7 +195,7 @@ struct DynamicPlaceholder: View {
     
     var body: some View {
         Text(placeholderService.currentPlaceholder)
-            .font(.system(size: 17, weight: .regular, design: .serif))
+            .font(.system(size: 17, weight: .regular))
             .foregroundColor(.secondary.opacity(0.5))
             .opacity(placeholderService.isTransitioning ? 0 : 1)
             .animation(.easeInOut(duration: 0.3), value: placeholderService.isTransitioning)
