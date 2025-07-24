@@ -45,7 +45,7 @@ struct HomeView: View {
             FloatingOrbsView()
             
             // Main content
-            ScrollView {
+            ScrollView(showsIndicators: false) {
                 VStack(spacing: 40) {
                     // Hero section
                     heroSection
@@ -75,7 +75,7 @@ struct HomeView: View {
                         .padding(.bottom, 40)
                 }
             }
-            .scrollIndicators(.hidden)
+            .scrollIndicators(.never)
         }
         .onAppear {
             animateIn()

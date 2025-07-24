@@ -29,7 +29,7 @@ struct EnhancedTimelineView: View {
                 }
                 
                 GeometryReader { geometry in
-                    ScrollView {
+                    ScrollView(showsIndicators: false) {
                         if groupedEntries.isEmpty {
                             // Empty state - centered vertically
                             VStack(spacing: 0) {
@@ -102,6 +102,7 @@ struct EnhancedTimelineView: View {
                             .padding(.vertical, 20)
                         }
                     }
+                    .scrollIndicators(.never)
                 }
             }
             .background(Theme.Colors.windowBackground)

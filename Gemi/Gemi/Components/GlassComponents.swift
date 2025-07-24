@@ -37,11 +37,11 @@ struct GlassCard<Content: View>: View {
                 ZStack {
                     // Base glass layer - more transparent
                     VisualEffectView.liquidGlass
-                        .opacity(0.6) // Make the glass effect more transparent
+                        .opacity(0.3) // Make the glass effect much more transparent
                         .overlay(
                             LinearGradient(
                                 colors: [
-                                    Color.white.opacity(isHovered ? 0.08 : 0.04), // Reduced opacity
+                                    Color.white.opacity(isHovered ? 0.05 : 0.02), // Further reduced opacity
                                     Color.clear
                                 ],
                                 startPoint: .topLeading,
@@ -70,7 +70,7 @@ struct GlassCard<Content: View>: View {
             )
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
             .shadow(
-                color: Color.black.opacity(isPressed ? 0.15 : (isHovered ? 0.08 : 0.05)), // Lighter shadows
+                color: Color.black.opacity(isPressed ? 0.1 : (isHovered ? 0.05 : 0.02)), // Much lighter shadows
                 radius: isPressed ? 6 : (isHovered ? 15 : 8),
                 x: 0,
                 y: isPressed ? 3 : (isHovered ? 8 : 4)
@@ -86,8 +86,8 @@ struct GlassCard<Content: View>: View {
                     .strokeBorder(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(isHovered ? 0.2 : 0.08), // More subtle borders
-                                Color.white.opacity(0.03),
+                                Color.white.opacity(isHovered ? 0.15 : 0.05), // Even more subtle borders
+                                Color.white.opacity(0.02),
                                 Color.clear
                             ],
                             startPoint: .topLeading,

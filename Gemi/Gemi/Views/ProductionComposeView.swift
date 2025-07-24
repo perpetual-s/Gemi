@@ -74,7 +74,7 @@ struct ProductionComposeView: View {
                 // Main editor area
                 GeometryReader { geometry in
                     ScrollViewReader { scrollProxy in
-                        ScrollView {
+                        ScrollView(showsIndicators: false) {
                             VStack(spacing: 0) {
                                 // Add spacer to center content vertically when minimal
                                 Spacer(minLength: 0)
@@ -107,6 +107,7 @@ struct ProductionComposeView: View {
                             }
                             .frame(minHeight: geometry.size.height)
                         }
+                        .scrollIndicators(.never)
                         .scrollDismissesKeyboard(.interactively)
                     }
                 }
