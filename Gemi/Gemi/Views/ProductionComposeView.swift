@@ -48,6 +48,10 @@ struct ProductionComposeView: View {
     @State private var showingDocumentInfo = false
     @StateObject private var placeholderService = PlaceholderService.shared
     
+    // Typing feedback states
+    @StateObject private var typingMetrics = TypingMetrics()
+    @State private var lastTypedPosition: CGPoint?
+    
     // Computed display title that updates properly
     private var displayTitle: String {
         if !entry.title.isEmpty {
@@ -120,6 +124,18 @@ struct ProductionComposeView: View {
                 // Professional footer
                 productionFooter
             }
+            
+            // Typing feedback layer (behind content)
+            TypingFeedbackLayer(
+                isTyping: $typingMetrics.isTyping,
+                typingSpeed: $typingMetrics.currentWPM,
+                lastKeyPosition: $lastTypedPosition
+            )
+            .zIndex(-1)
+            
+            // Milestone celebrations (on top)
+            MilestoneCelebrationView(currentWordCount: $wordCount)
+            .zIndex(100)
             
             // Command Bar Assistant overlay
             if showCommandBar {
@@ -416,8 +432,12 @@ struct ProductionComposeView: View {
                     textColor: .labelColor,
                     backgroundColor: .clear,
                     lineSpacing: 1.6,
-                    onTextChange: { _ in
+                    onTextChange: { newText in
                         updateWordCount()
+                        // Track typing for feedback
+                        if let lastChar = newText.last {
+                            typingMetrics.recordKeystroke(character: lastChar)
+                        }
                     },
                     onCoordinatorReady: { coordinator in
                         textEditorCoordinator = coordinator
