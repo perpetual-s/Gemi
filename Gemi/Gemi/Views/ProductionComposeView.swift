@@ -31,6 +31,9 @@ struct ProductionComposeView: View {
     @State private var selectedEmoji: String?
     @State private var textEditorCoordinator: MacTextEditor.Coordinator?
     
+    // Entry Details panel state
+    @State private var showEntryDetails = false
+    
     // Editor tracking for AI assistant
     @State private var selectedRange = NSRange(location: 0, length: 0)
     
@@ -93,14 +96,7 @@ struct ProductionComposeView: View {
                                     .animation(.easeOut(duration: 0.5).delay(0.2), value: contentOpacity)
                                     .id("content")
                                 
-                                // Metadata section
-                                metadataSection
-                                    .opacity(metadataOpacity)
-                                    .animation(.easeOut(duration: 0.5).delay(0.3), value: metadataOpacity)
-                                    .padding(.top, 32)
-                                    .padding(.horizontal, 40)
-                                    .padding(.bottom, 20)
-                                    .id("metadata")
+                                // Removed metadata section - now in Entry Details panel
                                 
                                 // Add spacer to center content vertically when minimal
                                 Spacer(minLength: 0)
@@ -152,6 +148,33 @@ struct ProductionComposeView: View {
                 .animation(.spring(response: 0.25, dampingFraction: 0.85), value: showCommandBar)
                 .zIndex(1000)
             }
+            
+            // Entry Details panel overlay
+            if showEntryDetails {
+                HStack {
+                    Spacer()
+                    
+                    VStack {
+                        Spacer()
+                            .frame(height: 100)
+                        
+                        entryDetailsPanel
+                        
+                        Spacer()
+                    }
+                    .padding(.trailing, 40)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(
+                    Color.black.opacity(0.001)
+                        .onTapGesture {
+                            withAnimation {
+                                showEntryDetails = false
+                            }
+                        }
+                )
+                .zIndex(900)
+            }
         }
         .frame(width: rootGeometry.size.width, height: rootGeometry.size.height)
         }
@@ -172,7 +195,6 @@ struct ProductionComposeView: View {
         .onAppear {
             titleOpacity = 1
             contentOpacity = 1
-            metadataOpacity = 1
             lastSavedContent = entry.content
             updateWordCount()
             
@@ -225,6 +247,28 @@ struct ProductionComposeView: View {
                     
                     // Right side - Main actions only
                     HStack(spacing: 12) {
+                        // Entry Details toggle
+                        Button {
+                            withAnimation(.spring(response: 0.3)) {
+                                showEntryDetails.toggle()
+                            }
+                        } label: {
+                            Image(systemName: "tag")
+                                .font(.system(size: 16))
+                                .foregroundColor(showEntryDetails ? Theme.Colors.primaryAccent : .secondary)
+                                .frame(width: 32, height: 32)
+                                .background(
+                                    Circle()
+                                        .fill(showEntryDetails ? Theme.Colors.primaryAccent.opacity(0.15) : Color.secondary.opacity(0.1))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .help("Entry details (mood, tags, favorite)")
+                        
+                        Divider()
+                            .frame(height: 20)
+                            .opacity(0.3)
+                        
                         // Cancel button - subtle
                         Button("Cancel") {
                             analytics.endSession()
@@ -524,113 +568,81 @@ struct ProductionComposeView: View {
         min(Double(wordCount) / 750.0, 1.0)
     }
     
-    // MARK: - Metadata Section
+    // MARK: - Entry Details Panel
     
-    private var metadataSection: some View {
-        HStack(spacing: 32) {
-            // Mood section - compact inline design
-            HStack(spacing: 12) {
-                Text("Mood")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(.secondary)
+    private var entryDetailsPanel: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            // Header
+            HStack {
+                Text("Entry Details")
+                    .font(.system(size: 18, weight: .semibold))
                 
-                if let mood = selectedMood {
-                    // Selected mood tag
-                    Button {
-                        // Show mood picker
-                        withAnimation(.easeInOut(duration: 0.15)) {
-                            selectedMood = nil
-                        }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Text(mood.emoji)
-                                .font(.system(size: 16))
-                            Text(mood.rawValue.capitalized)
-                                .font(.system(size: 12))
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.secondary.opacity(0.1))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .strokeBorder(Color.secondary.opacity(0.2), lineWidth: 1)
-                        )
+                Spacer()
+                
+                Button {
+                    withAnimation {
+                        showEntryDetails = false
                     }
-                    .buttonStyle(.plain)
-                } else {
-                    // Mood picker button
-                    Menu {
-                        ForEach(Mood.allCases, id: \.self) { mood in
-                            Button {
-                                withAnimation(.easeInOut(duration: 0.15)) {
-                                    selectedMood = mood
-                                    entry.mood = mood
-                                }
-                            } label: {
-                                HStack {
-                                    Text(mood.emoji)
-                                    Text(mood.rawValue.capitalized)
-                                }
-                            }
-                        }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "face.smiling")
-                                .font(.system(size: 12))
-                            Text("Add mood")
-                                .font(.system(size: 12))
-                        }
-                        .foregroundColor(.secondary.opacity(0.8))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .strokeBorder(Color.secondary.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [4]))
-                        )
-                    }
-                    .buttonStyle(.plain)
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.secondary.opacity(0.5))
                 }
+                .buttonStyle(.plain)
             }
             
-            // Favorite toggle - subtle inline
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    entry.isFavorite.toggle()
-                }
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: entry.isFavorite ? "star.fill" : "star")
-                        .font(.system(size: 12))
-                        .foregroundColor(entry.isFavorite ? .yellow : .secondary.opacity(0.8))
-                        .scaleEffect(entry.isFavorite ? 1.1 : 1.0)
-                        .animation(.spring(response: 0.25, dampingFraction: 0.6), value: entry.isFavorite)
-                    
-                    Text(entry.isFavorite ? "Favorited" : "Favorite")
-                        .font(.system(size: 12))
-                        .foregroundColor(entry.isFavorite ? .yellow.opacity(0.8) : .secondary.opacity(0.8))
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(entry.isFavorite ? Color.yellow.opacity(0.15) : Color.clear)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .strokeBorder(
-                                    entry.isFavorite ? Color.yellow.opacity(0.4) : Color.secondary.opacity(0.3), 
-                                    style: StrokeStyle(lineWidth: 1, dash: entry.isFavorite ? [] : [4])
-                                )
-                        )
+            // Mood selector
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Mood")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.secondary.opacity(0.8))
+                
+                ProductionMoodPicker(
+                    selectedMood: Binding(
+                        get: { selectedMood },
+                        set: { newMood in
+                            selectedMood = newMood
+                            entry.mood = newMood
+                        }
+                    )
                 )
             }
-            .buttonStyle(PlainButtonStyle())
+            
+            // Tags
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Tags")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.secondary.opacity(0.8))
+                
+                ProductionTagEditor(
+                    tags: $entry.tags
+                )
+            }
+            
+            // Favorite toggle
+            Toggle(isOn: $entry.isFavorite) {
+                Label("Mark as Favorite", systemImage: entry.isFavorite ? "star.fill" : "star")
+                    .font(.system(size: 14))
+                    .foregroundColor(entry.isFavorite ? .yellow : .primary)
+            }
+            .toggleStyle(.switch)
             
             Spacer()
         }
+        .padding(24)
+        .frame(width: 350)
+        .frame(maxHeight: 500)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(nsColor: .controlBackgroundColor))
+                .shadow(color: .black.opacity(0.2), radius: 20)
+        )
+        .transition(.asymmetric(
+            insertion: .scale(scale: 0.9).combined(with: .opacity),
+            removal: .scale(scale: 0.9).combined(with: .opacity)
+        ))
     }
+    
     
     // MARK: - Footer
     
@@ -858,7 +870,157 @@ struct ProductionMoodButton: View {
 
 // MARK: - Production Tag Editor
 
+struct ProductionTagEditor: View {
+    @Binding var tags: [String]
+    
+    @State private var newTag = ""
+    @State private var isAddingTag = false
+    @FocusState private var isInputFocused: Bool
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Existing tags
+            if !tags.isEmpty {
+                FlowLayout(spacing: 8) {
+                    ForEach(tags, id: \.self) { tag in
+                        ProductionTagChip(tag: tag) {
+                            if let index = tags.firstIndex(of: tag) {
+                                _ = withAnimation(.easeOut(duration: 0.2)) {
+                                    tags.remove(at: index)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Add tag button or input
+            if isAddingTag {
+                HStack {
+                    Image(systemName: "number")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary.opacity(0.5))
+                    
+                    TextField("Add tag", text: $newTag)
+                        .textFieldStyle(.plain)
+                        .frame(minWidth: 100)
+                        .focused($isInputFocused)
+                        .onSubmit {
+                            addTag()
+                        }
+                    
+                    Button("Add") {
+                        addTag()
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundColor(.primary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(Theme.Colors.primaryAccent.opacity(0.2))
+                    )
+                    .disabled(newTag.isEmpty)
+                    
+                    Button {
+                        withAnimation {
+                            isAddingTag = false
+                            newTag = ""
+                        }
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary.opacity(0.5))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(10)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.secondary.opacity(0.05))
+                )
+                .onAppear {
+                    isInputFocused = true
+                }
+            } else {
+                Button {
+                    withAnimation {
+                        isAddingTag = true
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 12, weight: .medium))
+                        Text("Add tag")
+                            .font(.system(size: 13))
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .foregroundColor(.secondary.opacity(0.6))
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .strokeBorder(Color.secondary.opacity(0.2), style: StrokeStyle(lineWidth: 1, dash: [4]))
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+    
+    private func addTag() {
+        let trimmedTag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedTag.isEmpty && !tags.contains(trimmedTag) {
+            withAnimation(.easeOut(duration: 0.2)) {
+                tags.append(trimmedTag)
+            }
+            newTag = ""
+            isAddingTag = false
+        }
+    }
+}
 
+struct ProductionTagChip: View {
+    let tag: String
+    let onRemove: () -> Void
+    
+    @State private var isHovered = false
+    
+    var body: some View {
+        HStack(spacing: 6) {
+            Text("#\(tag)")
+                .font(.system(size: 13))
+                .foregroundColor(.primary.opacity(0.8))
+                .lineLimit(1)
+            
+            Button(action: onRemove) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(isHovered ? Color.red.opacity(0.8) : .secondary.opacity(0.4))
+                    .frame(width: 18, height: 18)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .contentShape(Rectangle())
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.secondary.opacity(0.1))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .strokeBorder(
+                            isHovered ? Color.secondary.opacity(0.3) : Color.clear,
+                            lineWidth: 1
+                        )
+                )
+        )
+        .onHover { hovering in
+            withAnimation(.easeOut(duration: 0.15)) {
+                isHovered = hovering
+            }
+        }
+    }
+}
 
 // MARK: - Custom Text Editor
 
