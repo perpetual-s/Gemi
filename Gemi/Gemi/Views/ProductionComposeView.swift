@@ -214,7 +214,7 @@ struct ProductionComposeView: View {
                     
                     Spacer()
                     
-                    // Right side - Main actions
+                    // Right side - Main actions only
                     HStack(spacing: 12) {
                         // Cancel button - subtle
                         Button("Cancel") {
@@ -230,66 +230,11 @@ struct ProductionComposeView: View {
                         .foregroundColor(.secondary)
                         .keyboardShortcut(.escape, modifiers: [])
                         
-                        // Focus Mode button
-                        if let onFocusMode = onFocusMode {
-                            Button {
-                                onFocusMode(entry)
-                            } label: {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "arrow.up.left.and.arrow.down.right")
-                                        .font(.system(size: 14))
-                                    Text("Focus")
-                                        .font(.system(size: 14, weight: .medium))
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(Color.clear)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 6)
-                                            .strokeBorder(Color.secondary.opacity(0.2), lineWidth: 1)
-                                    )
-                            )
-                            .help("Enter distraction-free writing mode")
-                        }
-                        
-                        // Writing prompts - prominent feature button
-                        Button {
-                            showWritersBlockBreaker.toggle()
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "books.vertical")
-                                    .font(.system(size: 14))
-                                Text("Prompts")
-                                    .font(.system(size: 14, weight: .medium))
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundColor(showWritersBlockBreaker ? Theme.Colors.primaryAccent : .secondary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(showWritersBlockBreaker ? Theme.Colors.primaryAccent.opacity(0.1) : Color.clear)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .strokeBorder(
-                                            showWritersBlockBreaker ? Theme.Colors.primaryAccent : Color.secondary.opacity(0.2),
-                                            lineWidth: 1
-                                        )
-                                )
-                        )
-                        .help("Browse writing prompts and exercises")
-                        
                         // Overflow menu (just Document Info now)
                         HeaderOverflowMenu(
                             showingMenu: $showingOverflowMenu,
                             onFocusMode: nil, // No longer needed in menu
-                            onWritingPrompts: { }, // No longer needed in menu
+                            onWritingPrompts: nil, // No longer needed in menu
                             onDocumentInfo: { showingDocumentInfo = true }
                         )
                         
@@ -334,28 +279,69 @@ struct ProductionComposeView: View {
                     
                     Spacer()
                     
-                    // Writing Tools hint
-                    Button(action: toggleCommandBar) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "wand.and.stars")
-                                .font(.system(size: 13))
-                            Text("Writing Tools")
-                                .font(.system(size: 13))
-                            Text("⌘K")
-                                .font(.system(size: 11, weight: .medium, design: .monospaced))
-                                .foregroundColor(.secondary.opacity(0.8))
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 4)
-                                        .fill(Color.secondary.opacity(0.1))
-                                )
+                    // Writing tools section - all grouped together
+                    HStack(spacing: 16) {
+                        Divider()
+                            .frame(height: 20)
+                            .opacity(0.3)
+                        
+                        // Focus Mode
+                        if let onFocusMode = onFocusMode {
+                            Button {
+                                onFocusMode(entry)
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                        .font(.system(size: 13))
+                                    Text("Focus Mode")
+                                        .font(.system(size: 13))
+                                }
+                                .foregroundColor(.secondary)
+                                .opacity(0.9)
+                            }
+                            .buttonStyle(.plain)
+                            .help("Enter distraction-free writing mode")
                         }
-                        .foregroundColor(showCommandBar ? Theme.Colors.primaryAccent : .secondary)
-                        .opacity(showCommandBar ? 1 : 0.8)
+                        
+                        // Writing Prompts
+                        Button {
+                            showWritersBlockBreaker.toggle()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "books.vertical")
+                                    .font(.system(size: 13))
+                                Text("Prompts")
+                                    .font(.system(size: 13))
+                            }
+                            .foregroundColor(showWritersBlockBreaker ? Theme.Colors.primaryAccent : .secondary)
+                            .opacity(showWritersBlockBreaker ? 1 : 0.9)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Browse writing prompts and exercises")
+                        
+                        // Writing Tools (AI)
+                        Button(action: toggleCommandBar) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "wand.and.stars")
+                                    .font(.system(size: 13))
+                                Text("Writing Tools")
+                                    .font(.system(size: 13))
+                                Text("⌘K")
+                                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                    .foregroundColor(.secondary.opacity(0.8))
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .fill(Color.secondary.opacity(0.1))
+                                    )
+                            }
+                            .foregroundColor(showCommandBar ? Theme.Colors.primaryAccent : .secondary)
+                            .opacity(showCommandBar ? 1 : 0.9)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Open Writing Tools (⌘K)")
                     }
-                    .buttonStyle(.plain)
-                    .help("Open Writing Tools (⌘K)")
                 }
             }
             .padding(.horizontal, 40)
