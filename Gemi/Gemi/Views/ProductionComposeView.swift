@@ -75,81 +75,86 @@ struct ProductionComposeView: View {
     }
     
     var body: some View {
-        GeometryReader { rootGeometry in
-            ZStack {
-                VStack(spacing: 0) {
-                // Professional header
-                productionHeader
-                
-                // Main editor area
-                GeometryReader { geometry in
-                    ScrollViewReader { scrollProxy in
-                        ScrollView(showsIndicators: false) {
-                            VStack(spacing: 0) {
-                                // Add spacer to center content vertically when minimal
-                                Spacer(minLength: 0)
-                                    .frame(maxHeight: .infinity)
-                                
-                                // Professional content editor
-                                contentEditor(in: geometry)
-                                    .opacity(contentOpacity)
-                                    .animation(.easeOut(duration: 0.5).delay(0.2), value: contentOpacity)
-                                    .id("content")
-                                
-                                // Removed metadata section - now in Entry Details panel
-                                
-                                // Add spacer to center content vertically when minimal
-                                Spacer(minLength: 0)
-                                    .frame(maxHeight: .infinity)
+        ZStack {
+            GeometryReader { rootGeometry in
+                ZStack {
+                    VStack(spacing: 0) {
+                        // Professional header
+                        productionHeader
+                        
+                        // Main editor area
+                        GeometryReader { geometry in
+                            ScrollViewReader { scrollProxy in
+                                ScrollView(showsIndicators: false) {
+                                    VStack(spacing: 0) {
+                                        // Add spacer to center content vertically when minimal
+                                        Spacer(minLength: 0)
+                                            .frame(maxHeight: .infinity)
+                                        
+                                        // Professional content editor
+                                        contentEditor(in: geometry)
+                                            .opacity(contentOpacity)
+                                            .animation(.easeOut(duration: 0.5).delay(0.2), value: contentOpacity)
+                                            .id("content")
+                                        
+                                        // Removed metadata section - now in Entry Details panel
+                                        
+                                        // Add spacer to center content vertically when minimal
+                                        Spacer(minLength: 0)
+                                            .frame(maxHeight: .infinity)
+                                    }
+                                    .frame(minHeight: geometry.size.height)
+                                }
+                                .scrollIndicators(.never)
+                                .scrollDismissesKeyboard(.interactively)
                             }
-                            .frame(minHeight: geometry.size.height)
                         }
-                        .scrollIndicators(.never)
-                        .scrollDismissesKeyboard(.interactively)
+                    
+                        // Professional footer
+                        productionFooter
+                    }
+                    
+                    // Typing feedback layer (behind content)
+                    TypingFeedbackLayer(
+                        isTyping: $typingMetrics.isTyping,
+                        typingSpeed: $typingMetrics.currentWPM,
+                        lastKeyPosition: $lastTypedPosition
+                    )
+                    .zIndex(-1)
+                    
+                    // Milestone celebrations (on top)
+                    MilestoneCelebrationView(currentWordCount: $wordCount)
+                    .zIndex(100)
+                    
+                    // Command Bar Assistant overlay
+                    if showCommandBar {
+                        VStack {
+                            Spacer()
+                            CommandBarAssistant(
+                                isVisible: $showCommandBar,
+                                currentText: $entry.content,
+                                selectedRange: $selectedRange,
+                                cursorRect: $commandBarPosition,
+                                onSuggestionAccepted: { suggestion in
+                                    insertTextAtCursor(suggestion)
+                                }
+                            )
+                            .padding(.top, 100) // Ensure space from top
+                            Spacer()
+                        }
+                        .transition(.asymmetric(
+                            insertion: .scale(scale: 0.95, anchor: .top).combined(with: .opacity),
+                            removal: .scale(scale: 0.95, anchor: .top).combined(with: .opacity)
+                        ))
+                        .animation(.spring(response: 0.25, dampingFraction: 0.85), value: showCommandBar)
+                        .zIndex(1000)
                     }
                 }
-            
-                // Professional footer
-                productionFooter
+                .frame(width: rootGeometry.size.width, height: rootGeometry.size.height)
             }
+            .background(Color(nsColor: .textBackgroundColor))
             
-            // Typing feedback layer (behind content)
-            TypingFeedbackLayer(
-                isTyping: $typingMetrics.isTyping,
-                typingSpeed: $typingMetrics.currentWPM,
-                lastKeyPosition: $lastTypedPosition
-            )
-            .zIndex(-1)
-            
-            // Milestone celebrations (on top)
-            MilestoneCelebrationView(currentWordCount: $wordCount)
-            .zIndex(100)
-            
-            // Command Bar Assistant overlay
-            if showCommandBar {
-                VStack {
-                    Spacer()
-                    CommandBarAssistant(
-                        isVisible: $showCommandBar,
-                        currentText: $entry.content,
-                        selectedRange: $selectedRange,
-                        cursorRect: $commandBarPosition,
-                        onSuggestionAccepted: { suggestion in
-                            insertTextAtCursor(suggestion)
-                        }
-                    )
-                    .padding(.top, 100) // Ensure space from top
-                    Spacer()
-                }
-                .transition(.asymmetric(
-                    insertion: .scale(scale: 0.95, anchor: .top).combined(with: .opacity),
-                    removal: .scale(scale: 0.95, anchor: .top).combined(with: .opacity)
-                ))
-                .animation(.spring(response: 0.25, dampingFraction: 0.85), value: showCommandBar)
-                .zIndex(1000)
-            }
-            
-            // Entry Details panel overlay - exactly like Focus Mode
+            // Entry Details panel overlay - at top level
             if showEntryDetails {
                 Color.black.opacity(0.3)
                     .ignoresSafeArea()
@@ -158,7 +163,6 @@ struct ProductionComposeView: View {
                             showEntryDetails = false
                         }
                     }
-                    .zIndex(900)
                 
                 HStack {
                     Spacer()
@@ -174,12 +178,8 @@ struct ProductionComposeView: View {
                     .padding(.trailing, 40)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .zIndex(901)
             }
         }
-        .frame(width: rootGeometry.size.width, height: rootGeometry.size.height)
-        }
-        .background(Color(nsColor: .textBackgroundColor))
         .sheet(isPresented: $showWritersBlockBreaker) {
             WritersBlockBreaker(
                 isPresented: $showWritersBlockBreaker,
@@ -573,79 +573,81 @@ struct ProductionComposeView: View {
     // MARK: - Entry Details Panel
     
     private var entryDetailsPanel: some View {
-        RoundedRectangle(cornerRadius: 16)
-            .fill(Color(nsColor: .windowBackgroundColor))
-            .frame(width: 350)
-            .frame(maxHeight: 500)
-            .shadow(color: .black.opacity(0.2), radius: 20)
-            .overlay(
-                VStack(alignment: .leading, spacing: 24) {
-                    // Header
-                    HStack {
-                        Text("Entry Details")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.primary)
-                        
-                        Spacer()
-                        
-                        Button {
-                            withAnimation {
-                                showEntryDetails = false
-                            }
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(.primary.opacity(0.5))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    
-                    // Mood selector
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Mood")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.primary.opacity(0.8))
-                        
-                        FocusMoodPicker(
-                            selectedMood: Binding(
-                                get: { selectedMood },
-                                set: { newMood in
-                                    selectedMood = newMood
-                                    entry.mood = newMood
-                                }
-                            ),
-                            textColor: .primary
-                        )
-                    }
-                    
-                    // Tags
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Tags")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.primary.opacity(0.8))
-                        
-                        FocusTagEditor(
-                            tags: $entry.tags,
-                            textColor: .primary
-                        )
-                    }
-                    
-                    // Favorite toggle - exactly like Focus Mode
-                    Toggle(isOn: $entry.isFavorite) {
-                        Label("Mark as Favorite", systemImage: entry.isFavorite ? "star.fill" : "star")
-                            .font(.system(size: 14))
-                    }
-                    .toggleStyle(.switch)
+        ZStack {
+            // Background with shadow
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(nsColor: .windowBackgroundColor))
+                .shadow(color: .black.opacity(0.2), radius: 20)
+            
+            // Content
+            VStack(alignment: .leading, spacing: 24) {
+                // Header
+                HStack {
+                    Text("Entry Details")
+                        .font(.system(size: 18, weight: .semibold))
                     
                     Spacer()
+                    
+                    Button {
+                        withAnimation {
+                            showEntryDetails = false
+                        }
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.primary.opacity(0.5))
+                    }
+                    .buttonStyle(.plain)
                 }
-                .padding(24)
-            )
-            .foregroundColor(.primary)
-            .transition(.asymmetric(
-                insertion: .scale(scale: 0.9).combined(with: .opacity),
-                removal: .scale(scale: 0.9).combined(with: .opacity)
-            ))
+                
+                // Mood selector
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Mood")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.primary.opacity(0.8))
+                    
+                    FocusMoodPicker(
+                        selectedMood: Binding(
+                            get: { selectedMood },
+                            set: { newMood in
+                                selectedMood = newMood
+                                entry.mood = newMood
+                            }
+                        ),
+                        textColor: .primary
+                    )
+                }
+                
+                // Tags
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Tags")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.primary.opacity(0.8))
+                    
+                    FocusTagEditor(
+                        tags: $entry.tags,
+                        textColor: .primary
+                    )
+                }
+                
+                // Favorite toggle - exactly like Focus Mode
+                Toggle(isOn: $entry.isFavorite) {
+                    Label("Mark as Favorite", systemImage: entry.isFavorite ? "star.fill" : "star")
+                        .font(.system(size: 14))
+                }
+                .toggleStyle(.switch)
+                
+                Spacer()
+            }
+            .padding(24)
+        }
+        .frame(width: 350)
+        .frame(maxHeight: 500)
+        .foregroundColor(.primary)
+        .transition(.asymmetric(
+            insertion: .scale(scale: 0.9).combined(with: .opacity),
+            removal: .scale(scale: 0.9).combined(with: .opacity)
+        ))
     }
     
     
