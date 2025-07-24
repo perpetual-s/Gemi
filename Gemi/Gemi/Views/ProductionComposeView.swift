@@ -620,16 +620,55 @@ struct ProductionComposeView: View {
                 )
             }
             
-            // Favorite toggle
-            Toggle(isOn: $entry.isFavorite) {
-                Label("Mark as Favorite", systemImage: entry.isFavorite ? "star.fill" : "star")
-                    .font(.system(size: 14))
-                    .foregroundColor(entry.isFavorite ? .yellow : .primary)
+            // Favorite button
+            Button {
+                withAnimation(.spring(response: 0.25, dampingFraction: 0.6)) {
+                    entry.isFavorite.toggle()
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    ZStack {
+                        // Glow effect when favorited
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.yellow)
+                            .blur(radius: 10)
+                            .opacity(entry.isFavorite ? 0.6 : 0)
+                            .scaleEffect(entry.isFavorite ? 1.5 : 0.8)
+                            .animation(.easeOut(duration: 0.3), value: entry.isFavorite)
+                        
+                        // Main star
+                        Image(systemName: entry.isFavorite ? "star.fill" : "star")
+                            .font(.system(size: 20))
+                            .foregroundColor(entry.isFavorite ? .yellow : .secondary)
+                            .scaleEffect(entry.isFavorite ? 1.1 : 1.0)
+                            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: entry.isFavorite)
+                    }
+                    
+                    Text(entry.isFavorite ? "Favorited" : "Mark as Favorite")
+                        .font(.system(size: 14))
+                        .foregroundColor(entry.isFavorite ? .primary : .secondary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(entry.isFavorite ? Color.yellow.opacity(0.1) : Color.secondary.opacity(0.05))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .strokeBorder(
+                                    entry.isFavorite ? Color.yellow.opacity(0.3) : Color.secondary.opacity(0.2),
+                                    lineWidth: 1
+                                )
+                        )
+                )
             }
-            .toggleStyle(.switch)
+            .buttonStyle(.plain)
+            
+            Spacer()
         }
         .padding(24)
-        .frame(width: 420)
+        .frame(width: 350)
         .frame(maxHeight: 500)
         .background(
             RoundedRectangle(cornerRadius: 16)
@@ -806,7 +845,7 @@ struct ProductionMoodPicker: View {
     @Binding var selectedMood: Mood?
     
     let moods: [Mood] = Mood.allCases
-    let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 5)
+    let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
     
     var body: some View {
         LazyVGrid(columns: columns, spacing: 12) {
