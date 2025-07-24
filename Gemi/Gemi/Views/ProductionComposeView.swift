@@ -87,12 +87,6 @@ struct ProductionComposeView: View {
                                 Spacer(minLength: 0)
                                     .frame(maxHeight: .infinity)
                                 
-                                // Title section with subtle animations
-                                titleSection
-                                    .opacity(titleOpacity)
-                                    .animation(.easeOut(duration: 0.5).delay(0.1), value: titleOpacity)
-                                    .id("title")
-                                
                                 // Professional content editor
                                 contentEditor(in: geometry)
                                     .opacity(contentOpacity)
@@ -219,11 +213,12 @@ struct ProductionComposeView: View {
             // Top section - Title and main actions
             VStack(spacing: 16) {
                 HStack(alignment: .center, spacing: 16) {
-                    // Large editorial title
-                    Text(displayTitle)
+                    // Editable title in header
+                    TextField("Untitled Entry", text: $entry.title)
+                        .textFieldStyle(.plain)
                         .font(.system(size: 36, weight: .bold, design: .serif))
                         .foregroundColor(.primary)
-                        .lineLimit(2)
+                        .lineLimit(1)
                         .fixedSize(horizontal: false, vertical: true)
                     
                     Spacer()
@@ -376,27 +371,6 @@ struct ProductionComposeView: View {
         )
     }
     
-    // MARK: - Title Section
-    
-    private var titleSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Title with professional styling
-            TextField("Untitled", text: $entry.title, axis: .vertical)
-                .textFieldStyle(.plain)
-                .font(.system(size: 32, weight: .bold, design: .serif))
-                .lineLimit(1...3)
-                .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, 40)
-            .padding(.top, 32)
-            
-            // Subtle divider
-            Rectangle()
-                .fill(Color.secondary.opacity(0.1))
-                .frame(height: 1)
-                .padding(.horizontal, 40)
-                .padding(.top, 20)
-        }
-    }
     
     // MARK: - Content Editor
     
@@ -407,7 +381,7 @@ struct ProductionComposeView: View {
                 // Dynamic placeholder
                 if entry.content.isEmpty {
                     DynamicPlaceholder()
-                        .padding(.top, 24)
+                        .padding(.top, 40)
                         .allowsHitTesting(false)
                         .onTapGesture {} // Ensure it doesn't interfere
                 }
@@ -435,7 +409,7 @@ struct ProductionComposeView: View {
                     }
                 )
                 .frame(minHeight: 400)
-                .padding(.top, 20)
+                .padding(.top, 40)
             }
             .padding(.horizontal, 40)
             
