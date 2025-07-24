@@ -573,79 +573,79 @@ struct ProductionComposeView: View {
     // MARK: - Entry Details Panel
     
     private var entryDetailsPanel: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            // Header
-            HStack {
-                Text("Entry Details")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                Button {
-                    withAnimation {
-                        showEntryDetails = false
-                    }
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(.primary.opacity(0.5))
-                }
-                .buttonStyle(.plain)
-            }
-            
-            // Mood selector
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Mood")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.primary.opacity(0.8))
-                
-                FocusMoodPicker(
-                    selectedMood: Binding(
-                        get: { selectedMood },
-                        set: { newMood in
-                            selectedMood = newMood
-                            entry.mood = newMood
+        RoundedRectangle(cornerRadius: 16)
+            .fill(Color(nsColor: .windowBackgroundColor))
+            .frame(width: 350)
+            .frame(maxHeight: 500)
+            .shadow(color: .black.opacity(0.2), radius: 20)
+            .overlay(
+                VStack(alignment: .leading, spacing: 24) {
+                    // Header
+                    HStack {
+                        Text("Entry Details")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        Button {
+                            withAnimation {
+                                showEntryDetails = false
+                            }
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(.primary.opacity(0.5))
                         }
-                    ),
-                    textColor: .primary
-                )
-            }
-            
-            // Tags
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Tags")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.primary.opacity(0.8))
-                
-                FocusTagEditor(
-                    tags: $entry.tags,
-                    textColor: .primary
-                )
-            }
-            
-            // Favorite toggle - exactly like Focus Mode
-            Toggle(isOn: $entry.isFavorite) {
-                Label("Mark as Favorite", systemImage: entry.isFavorite ? "star.fill" : "star")
-                    .font(.system(size: 14))
-            }
-            .toggleStyle(.switch)
-            
-            Spacer()
-        }
-        .padding(24)
-        .frame(width: 350)
-        .frame(maxHeight: 500)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(nsColor: .windowBackgroundColor))
-                .shadow(color: .black.opacity(0.2), radius: 20)
-        )
-        .foregroundColor(.primary)
-        .transition(.asymmetric(
-            insertion: .scale(scale: 0.9).combined(with: .opacity),
-            removal: .scale(scale: 0.9).combined(with: .opacity)
-        ))
+                        .buttonStyle(.plain)
+                    }
+                    
+                    // Mood selector
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Mood")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.primary.opacity(0.8))
+                        
+                        FocusMoodPicker(
+                            selectedMood: Binding(
+                                get: { selectedMood },
+                                set: { newMood in
+                                    selectedMood = newMood
+                                    entry.mood = newMood
+                                }
+                            ),
+                            textColor: .primary
+                        )
+                    }
+                    
+                    // Tags
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Tags")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.primary.opacity(0.8))
+                        
+                        FocusTagEditor(
+                            tags: $entry.tags,
+                            textColor: .primary
+                        )
+                    }
+                    
+                    // Favorite toggle - exactly like Focus Mode
+                    Toggle(isOn: $entry.isFavorite) {
+                        Label("Mark as Favorite", systemImage: entry.isFavorite ? "star.fill" : "star")
+                            .font(.system(size: 14))
+                    }
+                    .toggleStyle(.switch)
+                    
+                    Spacer()
+                }
+                .padding(24)
+            )
+            .foregroundColor(.primary)
+            .transition(.asymmetric(
+                insertion: .scale(scale: 0.9).combined(with: .opacity),
+                removal: .scale(scale: 0.9).combined(with: .opacity)
+            ))
     }
     
     
