@@ -44,8 +44,6 @@ struct ProductionComposeView: View {
     @State private var commandBarPosition = CGRect.zero
     
     // New UI states
-    @State private var showingOverflowMenu = false
-    @State private var showingDocumentInfo = false
     @StateObject private var placeholderService = PlaceholderService.shared
     
     // Typing feedback states
@@ -246,13 +244,6 @@ struct ProductionComposeView: View {
                         .foregroundColor(.secondary)
                         .keyboardShortcut(.escape, modifiers: [])
                         
-                        // Overflow menu (just Document Info now)
-                        HeaderOverflowMenu(
-                            showingMenu: $showingOverflowMenu,
-                            onFocusMode: nil, // No longer needed in menu
-                            onWritingPrompts: nil, // No longer needed in menu
-                            onDocumentInfo: { showingDocumentInfo = true }
-                        )
                         
                         // Save button - ghost style when no changes
                         Button(action: saveEntry) {
@@ -383,9 +374,6 @@ struct ProductionComposeView: View {
                 }
             }
         )
-        .sheet(isPresented: $showingDocumentInfo) {
-            DocumentInfoSheet(entry: entry)
-        }
     }
     
     // MARK: - Title Section
