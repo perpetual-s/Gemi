@@ -527,92 +527,108 @@ struct ProductionComposeView: View {
     // MARK: - Metadata Section
     
     private var metadataSection: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            // Mood selector
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text("How are you feeling?")
-                        .font(.system(size: 15, weight: .medium))
-                    
-                    Spacer()
-                    
-                    // Show selected mood prominently
-                    if let mood = selectedMood {
-                        HStack(spacing: 6) {
-                            Text(mood.emoji)
-                                .font(.system(size: 20))
-                            Text(mood.rawValue.capitalized)
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.blue)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(Color.blue.opacity(0.1))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .strokeBorder(Color.blue, lineWidth: 1.5)
-                                )
-                        )
-                        .transition(.asymmetric(
-                            insertion: .scale.combined(with: .opacity),
-                            removal: .scale.combined(with: .opacity)
-                        ))
-                    }
-                }
+        HStack(spacing: 32) {
+            // Mood section - compact inline design
+            HStack(spacing: 12) {
+                Text("Mood")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.secondary)
                 
-                ProductionMoodPicker(selectedMood: Binding(
-                    get: { selectedMood },
-                    set: { newMood in
-                        selectedMood = newMood
-                        entry.mood = newMood
+                if let mood = selectedMood {
+                    // Selected mood tag
+                    Button {
+                        // Show mood picker
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            selectedMood = nil
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(mood.emoji)
+                                .font(.system(size: 16))
+                            Text(mood.rawValue.capitalized)
+                                .font(.system(size: 12))
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.secondary.opacity(0.1))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .strokeBorder(Color.secondary.opacity(0.2), lineWidth: 1)
+                        )
                     }
-                ))
+                    .buttonStyle(.plain)
+                } else {
+                    // Mood picker button
+                    Menu {
+                        ForEach(Mood.allCases, id: \.self) { mood in
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    selectedMood = mood
+                                    entry.mood = mood
+                                }
+                            } label: {
+                                HStack {
+                                    Text(mood.emoji)
+                                    Text(mood.rawValue.capitalized)
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "face.smiling")
+                                .font(.system(size: 12))
+                            Text("Add mood")
+                                .font(.system(size: 12))
+                        }
+                        .foregroundColor(.secondary.opacity(0.8))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .strokeBorder(Color.secondary.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [4]))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             
-            // Additional options
-            HStack(spacing: 20) {
-                // Favorite toggle
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        entry.isFavorite.toggle()
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        ZStack {
-                            // Glow effect
-                            Image(systemName: "star.fill")
-                                .font(.system(size: 14))
-                                .foregroundColor(.yellow)
-                                .blur(radius: 8)
-                                .opacity(entry.isFavorite ? 0.6 : 0)
-                                .scaleEffect(entry.isFavorite ? 1.5 : 0.8)
-                                .animation(.easeOut(duration: 0.25), value: entry.isFavorite)
-                            
-                            // Main star
-                            Image(systemName: entry.isFavorite ? "star.fill" : "star")
-                                .font(.system(size: 14))
-                                .foregroundColor(entry.isFavorite ? .yellow : .secondary)
-                                .scaleEffect(entry.isFavorite ? 1.1 : 1.0)
-                                .animation(.spring(response: 0.25, dampingFraction: 0.6), value: entry.isFavorite)
-                        }
-                        Text(entry.isFavorite ? "Favorited" : "Add to favorites")
-                            .font(.system(size: 13))
-                            .foregroundColor(entry.isFavorite ? .primary : .secondary)
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(entry.isFavorite ? Color.yellow.opacity(0.1) : Color.clear)
-                            .animation(.easeInOut(duration: 0.2), value: entry.isFavorite)
-                    )
+            // Favorite toggle - subtle inline
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    entry.isFavorite.toggle()
                 }
-                .buttonStyle(PlainButtonStyle())
-                
-                Spacer()
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: entry.isFavorite ? "star.fill" : "star")
+                        .font(.system(size: 12))
+                        .foregroundColor(entry.isFavorite ? .yellow : .secondary.opacity(0.8))
+                        .scaleEffect(entry.isFavorite ? 1.1 : 1.0)
+                        .animation(.spring(response: 0.25, dampingFraction: 0.6), value: entry.isFavorite)
+                    
+                    Text(entry.isFavorite ? "Favorited" : "Favorite")
+                        .font(.system(size: 12))
+                        .foregroundColor(entry.isFavorite ? .yellow.opacity(0.8) : .secondary.opacity(0.8))
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(entry.isFavorite ? Color.yellow.opacity(0.15) : Color.clear)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .strokeBorder(
+                                    entry.isFavorite ? Color.yellow.opacity(0.4) : Color.secondary.opacity(0.3), 
+                                    style: StrokeStyle(lineWidth: 1, dash: entry.isFavorite ? [] : [4])
+                                )
+                        )
+                )
             }
+            .buttonStyle(PlainButtonStyle())
+            
+            Spacer()
         }
     }
     
@@ -872,10 +888,26 @@ struct MacTextEditor: NSViewRepresentable {
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticSpellingCorrectionEnabled = true
         
-        // Set line spacing
+        // Configure text container for proper cursor sizing
+        textView.textContainer?.containerSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        textView.textContainer?.widthTracksTextView = true
+        textView.textContainer?.lineFragmentPadding = 0
+        
+        // Set insertion point (cursor) properties
+        textView.insertionPointColor = NSColor.labelColor
+        
+        // Set line spacing with proper paragraph style
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineSpacing = lineSpacing * font.pointSize - font.pointSize
+        paragraphStyle.paragraphSpacing = 0
+        paragraphStyle.minimumLineHeight = font.pointSize * lineSpacing
+        paragraphStyle.maximumLineHeight = font.pointSize * lineSpacing
         textView.defaultParagraphStyle = paragraphStyle
+        textView.typingAttributes = [
+            .font: font,
+            .foregroundColor: textColor,
+            .paragraphStyle: paragraphStyle
+        ]
         
         // Store reference to textView for cursor operations
         context.coordinator.textView = textView
