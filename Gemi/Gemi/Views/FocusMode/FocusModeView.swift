@@ -493,18 +493,42 @@ struct FocusModeView: View {
                 )
             }
             
-            // Favorite toggle
-            Toggle(isOn: Binding(
-                get: { entry.isFavorite },
-                set: { newValue in
-                    entry.isFavorite = newValue
+            // Favorite button - elegant clickable interaction
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    entry.isFavorite.toggle()
                     updateTrigger = UUID()
                 }
-            )) {
-                Label("Mark as Favorite", systemImage: entry.isFavorite ? "star.fill" : "star")
-                    .font(.system(size: 14))
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: entry.isFavorite ? "star.fill" : "star")
+                        .font(.system(size: 16))
+                        .foregroundColor(entry.isFavorite ? .yellow : settings.effectiveTextColor.opacity(0.6))
+                        .scaleEffect(entry.isFavorite ? 1.1 : 1.0)
+                        .rotationEffect(.degrees(entry.isFavorite ? 0 : -15))
+                        .animation(.spring(response: 0.4, dampingFraction: 0.5), value: entry.isFavorite)
+                    
+                    Text("Mark as Favorite")
+                        .font(.system(size: 14))
+                        .foregroundColor(entry.isFavorite ? settings.effectiveTextColor : settings.effectiveTextColor.opacity(0.8))
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(entry.isFavorite ? Color.yellow.opacity(0.1) : Color.clear)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .strokeBorder(
+                                    entry.isFavorite ? Color.yellow.opacity(0.3) : settings.effectiveTextColor.opacity(0.1),
+                                    lineWidth: 1
+                                )
+                        )
+                )
             }
-            .toggleStyle(.switch)
+            .buttonStyle(.plain)
+            .scaleEffect(entry.isFavorite ? 1.02 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: entry.isFavorite)
             
             Spacer()
         }
