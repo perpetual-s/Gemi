@@ -340,7 +340,7 @@ struct GemmaOnboardingView: View {
                     .opacity(contentOpacity)
                     .animation(.easeOut(duration: 0.8).delay(0.3), value: contentOpacity)
                 
-                Text("Your private AI journal companion")
+                Text("Write freely. AI understands. 100% private.")
                     .font(.system(size: 22, weight: .regular))
                     .foregroundColor(.white.opacity(0.8))
                     .opacity(contentOpacity)
@@ -677,11 +677,15 @@ struct GemmaOnboardingView: View {
                         title: "Install via Homebrew",
                         icon: "terminal.fill",
                         content: {
-                            CompactCommandBox(
-                                command: "brew install ollama",
-                                description: "For developers"
-                            ) {
-                                copyToClipboard("brew install ollama")
+                            VStack(spacing: 12) {
+                                CompactCommandBox(
+                                    command: "brew install ollama",
+                                    description: "For developers"
+                                ) {
+                                    copyToClipboard("brew install ollama")
+                                }
+                                Spacer()
+                                    .frame(height: 0)
                             }
                         }
                     )
@@ -700,7 +704,7 @@ struct GemmaOnboardingView: View {
                             )
                         )
                         .frame(width: 1)
-                        .frame(maxHeight: 180)
+                        .frame(maxHeight: 140)
                     
                     // Option 2: Direct download
                     InstallationOption(
@@ -708,19 +712,24 @@ struct GemmaOnboardingView: View {
                         title: "Download Installer",
                         icon: "arrow.down.circle.fill",
                         content: {
-                            OnboardingButton(
-                                "Ollama.dmg",
-                                icon: "arrow.down.circle",
-                                style: .secondary,
-                                action: {
-                                    NSWorkspace.shared.open(URL(string: "https://ollama.com/download")!)
-                                }
-                            )
-                            .frame(maxWidth: .infinity)
+                            VStack(spacing: 12) {
+                                OnboardingButton(
+                                    "Ollama.dmg",
+                                    icon: "arrow.down.circle",
+                                    style: .secondary,
+                                    action: {
+                                        NSWorkspace.shared.open(URL(string: "https://ollama.com/download")!)
+                                    }
+                                )
+                                .frame(maxWidth: .infinity)
+                                Text("Easy installation")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.white.opacity(0.6))
+                            }
                         }
                     )
                 }
-                .frame(maxHeight: 200)
+                .frame(height: 160)
             }
             .frame(maxWidth: 800)
         }
