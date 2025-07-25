@@ -59,6 +59,7 @@ struct ProductionComposeView: View {
     @State private var isSaving = false
     @State private var saveError: Error?
     @State private var showSaveError = false
+    @State private var showSaveSuccess = false
     
     // Computed display title that updates properly
     private var displayTitle: String {
@@ -347,7 +348,7 @@ struct ProductionComposeView: View {
                         .keyboardShortcut(.escape, modifiers: [])
                         
                         
-                        // Save button - ghost style when no changes
+                        // Save button - ultra minimal when no changes
                         Button(action: {
                             Task {
                                 await performManualSave()
@@ -361,31 +362,32 @@ struct ProductionComposeView: View {
                                 } else if hasUnsavedChanges {
                                     Circle()
                                         .fill(Color.orange)
-                                        .frame(width: 6, height: 6)
+                                        .frame(width: 5, height: 5)
+                                        .transition(.scale.combined(with: .opacity))
                                 }
                                 Text("Save")
-                                    .font(.system(size: 15, weight: .medium))
+                                    .font(.system(size: 14, weight: .regular))
                             }
                         }
                         .buttonStyle(.plain)
-                        .foregroundColor(hasUnsavedChanges ? .primary : .secondary)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
+                        .foregroundColor(hasUnsavedChanges ? .primary : .secondary.opacity(0.5))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
                         .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(hasUnsavedChanges ? Color.accentColor.opacity(0.1) : Color.clear)
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(hasUnsavedChanges ? Color.accentColor.opacity(0.08) : Color.clear)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
+                                    RoundedRectangle(cornerRadius: 6)
                                         .strokeBorder(
-                                            hasUnsavedChanges ? Color.accentColor : Color.secondary.opacity(0.3),
-                                            lineWidth: 1
+                                            hasUnsavedChanges ? Color.accentColor.opacity(0.5) : Color.clear,
+                                            lineWidth: 0.5
                                         )
                                 )
                         )
-                        .opacity(entry.content.isEmpty ? 0.5 : 1.0)
+                        .opacity(entry.content.isEmpty ? 0.3 : (hasUnsavedChanges ? 1.0 : 0.6))
                         .disabled(entry.content.isEmpty || isSaving)
                         .keyboardShortcut(.return, modifiers: .command)
-                        .help("Save entry (⌘Return)")
+                        .animation(.easeInOut(duration: 0.2), value: hasUnsavedChanges)
                     }
                 }
                 
@@ -786,28 +788,30 @@ struct ProductionComposeView: View {
                 
                 Spacer()
                 
-                // Auto-save indicator
+                // Auto-save indicator - minimal and unobtrusive
                 if isSaving {
-                    HStack(spacing: 6) {
+                    HStack(spacing: 4) {
                         ProgressView()
-                            .controlSize(.small)
-                            .scaleEffect(0.8)
-                        Text("Saving...")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                    }
-                } else if hasUnsavedChanges {
-                    HStack(spacing: 6) {
-                        Image(systemName: "clock.arrow.circlepath")
+                            .controlSize(.mini)
+                            .scaleEffect(0.7)
+                        Text("Saving")
                             .font(.system(size: 11))
-                        Text("Auto-save in \(timeUntilAutoSave())s")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.secondary.opacity(0.8))
                     }
-                } else {
-                    Text("All changes saved")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
+                    .transition(.opacity)
+                } else if showSaveSuccess {
+                    HStack(spacing: 3) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 11))
+                            .foregroundColor(.green.opacity(0.8))
+                        Text("Saved")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary.opacity(0.8))
+                    }
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.8).combined(with: .opacity),
+                        removal: .opacity
+                    ))
                 }
             }
             .padding(.horizontal, 20)
@@ -863,6 +867,18 @@ struct ProductionComposeView: View {
             // Only update state if save succeeded
             lastSavedContent = entry.content
             hasUnsavedChanges = false
+            
+            // Show success indicator briefly
+            withAnimation(.easeIn(duration: 0.2)) {
+                showSaveSuccess = true
+            }
+            
+            // Hide success indicator after 2 seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    showSaveSuccess = false
+                }
+            }
             
             // Resume auto-save timer after successful save
             startAutoSaveTimer()
@@ -928,11 +944,6 @@ struct ProductionComposeView: View {
         lastAutoSave = Date()
     }
     
-    private func timeUntilAutoSave() -> Int {
-        let elapsed = Date().timeIntervalSince(lastAutoSave)
-        let remaining = max(0, 30 - Int(elapsed))
-        return remaining
-    }
     
     @MainActor
     private func performAutoSave() async {
@@ -947,6 +958,18 @@ struct ProductionComposeView: View {
             // Only update state if save succeeded
             lastSavedContent = entry.content
             hasUnsavedChanges = false
+            
+            // Show success indicator briefly
+            withAnimation(.easeIn(duration: 0.2)) {
+                showSaveSuccess = true
+            }
+            
+            // Hide success indicator after 1.5 seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    showSaveSuccess = false
+                }
+            }
         } catch {
             // Show error to user
             saveError = error
