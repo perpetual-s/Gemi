@@ -1,0 +1,260 @@
+/* 
+  Localizable.strings (Russian)
+  Gemi - Ваш личный ИИ-дневник
+  
+  Copyright © 2025 Gemi. All rights reserved.
+*/
+
+/* ===== GENERAL ===== */
+"app.name" = "Gemi";
+"button.cancel" = "Отмена";
+"button.save" = "Сохранить";
+"button.done" = "Готово";
+"button.continue" = "Продолжить";
+"button.next" = "Далее";
+"button.back" = "Назад";
+"button.close" = "Закрыть";
+"button.delete" = "Удалить";
+"button.edit" = "Изменить";
+"button.ok" = "OK";
+"button.retry" = "Повторить";
+"button.share" = "Поделиться";
+"button.export" = "Экспорт";
+"button.import" = "Импорт";
+"button.settings" = "Настройки";
+
+/* ===== ONBOARDING ===== */
+"onboarding.welcome.title" = "Добро пожаловать в Gemi";
+"onboarding.welcome.subtitle" = "Ваш личный ИИ-дневник";
+"onboarding.welcome.description" = "Всё остаётся на вашем устройстве. Без облака, без отслеживания, только вы и ваши мысли.";
+"onboarding.privacy.title" = "Ваша конфиденциальность важна";
+"onboarding.privacy.description" = "Gemi работает полностью на вашем Mac. Ваш дневник, воспоминания и беседы никогда не покидают ваше устройство.";
+"onboarding.authentication.title" = "Защитите свой дневник";
+"onboarding.authentication.faceid" = "Использовать Face ID";
+"onboarding.authentication.touchid" = "Использовать Touch ID";
+"onboarding.authentication.password" = "Использовать пароль";
+"onboarding.language.title" = "Выберите ваш язык";
+"onboarding.language.subtitle" = "Вы можете изменить это позже в настройках";
+"onboarding.setup.title" = "Настройка Gemi";
+"onboarding.setup.downloading" = "Загрузка ИИ-модели...";
+"onboarding.setup.progress" = "%@ из %@ загружено";
+"onboarding.complete.title" = "Всё готово!";
+"onboarding.complete.subtitle" = "Начните своё путешествие в письме";
+"onboarding.complete.button" = "Открыть Gemi";
+
+/* ===== NAVIGATION ===== */
+"nav.home" = "Главная";
+"nav.timeline" = "Хронология";
+"nav.memories" = "Воспоминания";
+"nav.chat" = "Чат с Gemi";
+"nav.insights" = "Инсайты";
+"nav.favorites" = "Избранное";
+"nav.settings" = "Настройки";
+"nav.new_entry" = "Новая запись";
+
+/* ===== HOME VIEW ===== */
+"home.greeting.morning" = "Доброе утро";
+"home.greeting.afternoon" = "Добрый день";
+"home.greeting.evening" = "Добрый вечер";
+"home.greeting.night" = "Спокойной ночи";
+"home.prompt.whats_on_mind" = "О чём вы думаете?";
+"home.button.new_entry" = "Создать новую запись";
+"home.button.continue_writing" = "Продолжить писать";
+"home.stats.entries" = "%lld записей";
+"home.stats.words" = "%lld слов";
+"home.stats.memories" = "%lld воспоминаний";
+"home.quote.daily" = "Ежедневное вдохновение";
+
+/* ===== TIMELINE VIEW ===== */
+"timeline.title" = "Хронология дневника";
+"timeline.empty.title" = "Пока нет записей";
+"timeline.empty.subtitle" = "Начните документировать своё путешествие.\nВаша хронология появится здесь.";
+"timeline.empty.button" = "Создайте первую запись";
+"timeline.section.today" = "Сегодня";
+"timeline.section.yesterday" = "Вчера";
+"timeline.section.this_week" = "На этой неделе";
+"timeline.section.this_month" = "В этом месяце";
+"timeline.section.earlier" = "Ранее";
+"timeline.entry.words" = "%lld слов";
+"timeline.entry.reading_time" = "%lld мин чтения";
+"timeline.filter.all" = "Все записи";
+"timeline.filter.favorites" = "Избранное";
+"timeline.filter.with_photos" = "С фото";
+"timeline.filter.with_audio" = "С аудио";
+"timeline.sort.newest" = "Сначала новые";
+"timeline.sort.oldest" = "Сначала старые";
+
+/* ===== JOURNAL ENTRY ===== */
+"entry.placeholder.title" = "Дайте название вашей записи...";
+"entry.placeholder.content" = "Начните писать...";
+"entry.placeholder.whats_happening" = "Что происходит сегодня?";
+"entry.placeholder.grateful" = "За что вы благодарны?";
+"entry.placeholder.reflection" = "Уделите минуту для размышлений...";
+"entry.status.saving" = "Сохранение...";
+"entry.status.saved" = "Сохранено";
+"entry.button.focus_mode" = "Режим фокуса";
+"entry.button.add_photo" = "Добавить фото";
+"entry.button.record_audio" = "Записать аудио";
+"entry.button.ai_assist" = "ИИ-помощник";
+"entry.button.prompts" = "Подсказки для письма";
+"entry.mood.happy" = "Счастливый";
+"entry.mood.calm" = "Спокойный";
+"entry.mood.anxious" = "Тревожный";
+"entry.mood.sad" = "Грустный";
+"entry.mood.excited" = "Взволнованный";
+"entry.mood.grateful" = "Благодарный";
+"entry.tag.placeholder" = "Добавить теги...";
+
+/* ===== FOCUS MODE ===== */
+"focus.title" = "Режим фокуса";
+"focus.timer.minutes" = "%lld минут";
+"focus.ambient.rain" = "Дождь";
+"focus.ambient.ocean" = "Океанские волны";
+"focus.ambient.forest" = "Лес";
+"focus.ambient.silence" = "Тишина";
+"focus.goal.words" = "%lld слов";
+"focus.progress.great" = "Отличный прогресс!";
+"focus.progress.keep_going" = "Продолжайте в том же духе!";
+"focus.complete.title" = "Сессия фокуса завершена";
+"focus.complete.words_written" = "Вы написали %lld слов";
+
+/* ===== CHAT VIEW ===== */
+"chat.title" = "Чат с Gemi";
+"chat.placeholder" = "Спросите меня о чём угодно...";
+"chat.context.journal" = "На основе вашего дневника";
+"chat.context.memory" = "Я помню, вы упоминали...";
+"chat.suggestion.reflect" = "Давайте поразмышляем о вашем дне";
+"chat.suggestion.explore" = "Хотите изучить это подробнее?";
+"chat.suggestion.gratitude" = "За что вы благодарны сегодня?";
+"chat.loading" = "Gemi думает...";
+"chat.error.failed" = "Не удалось получить ответ";
+"chat.attachment.image" = "Изображение прикреплено";
+"chat.attachment.audio" = "Аудио прикреплено";
+"chat.processing.image" = "Анализ изображения...";
+"chat.processing.audio" = "Расшифровка аудио...";
+
+/* ===== MEMORIES VIEW ===== */
+"memories.title" = "Ваши воспоминания";
+"memories.empty.title" = "Пока нет воспоминаний";
+"memories.empty.subtitle" = "По мере того как вы пишете, Gemi будет запоминать важные моменты и инсайты.";
+"memories.search.placeholder" = "Поиск воспоминаний...";
+"memories.filter.all" = "Все воспоминания";
+"memories.filter.people" = "Люди";
+"memories.filter.places" = "Места";
+"memories.filter.emotions" = "Эмоции";
+"memories.filter.insights" = "Инсайты";
+"memories.delete.confirm" = "Удалить это воспоминание?";
+"memories.delete.message" = "Это действие нельзя отменить.";
+
+/* ===== INSIGHTS VIEW ===== */
+"insights.title" = "Инсайты дневника";
+"insights.subtitle" = "Откройте паттерны и тренды в вашем писательском путешествии";
+"insights.empty.title" = "Пока нет инсайтов";
+"insights.empty.subtitle" = "Начните писать, чтобы обнаружить паттерны\nи отслеживать свой эмоциональный путь.";
+"insights.mood.title" = "Тренды настроения";
+"insights.mood.dominant" = "Ваше доминирующее настроение";
+"insights.topics.title" = "Популярные темы";
+"insights.writing.title" = "Паттерны письма";
+"insights.writing.most_active" = "Самое активное время";
+"insights.writing.average_length" = "Средняя длина записи";
+"insights.writing.total_words" = "Всего написано слов";
+"insights.streak.title" = "Серия письма";
+"insights.streak.current" = "%lld дней";
+"insights.streak.best" = "Лучший: %lld дней";
+
+/* ===== SETTINGS VIEW ===== */
+"settings.title" = "Настройки";
+"settings.section.general" = "Общие";
+"settings.section.privacy" = "Конфиденциальность и безопасность";
+"settings.section.ai" = "Настройки ИИ";
+"settings.section.data" = "Управление данными";
+"settings.section.about" = "О программе";
+
+"settings.language.title" = "Язык";
+"settings.language.subtitle" = "Выберите предпочитаемый язык";
+"settings.theme.title" = "Внешний вид";
+"settings.theme.light" = "Светлый";
+"settings.theme.dark" = "Тёмный";
+"settings.theme.auto" = "Авто";
+
+"settings.authentication.title" = "Аутентификация";
+"settings.authentication.faceid" = "Требовать Face ID";
+"settings.authentication.touchid" = "Требовать Touch ID";
+"settings.authentication.password" = "Требовать пароль";
+"settings.authentication.timeout" = "Блокировать через %lld минут";
+
+"settings.ai.model" = "ИИ-модель";
+"settings.ai.model.fast" = "Gemma 3n Быстрая (2B)";
+"settings.ai.model.balanced" = "Gemma 3n Сбалансированная (4B)";
+"settings.ai.model.powerful" = "Gemma 3n Мощная (8B)";
+"settings.ai.temperature" = "Уровень креативности";
+"settings.ai.memory" = "Управление памятью";
+"settings.ai.clear_memory" = "Очистить все воспоминания";
+
+"settings.export.title" = "Экспорт дневника";
+"settings.export.format" = "Формат экспорта";
+"settings.export.markdown" = "Markdown";
+"settings.export.pdf" = "PDF";
+"settings.export.json" = "JSON";
+"settings.import.title" = "Импорт данных";
+
+"settings.about.version" = "Версия %@";
+"settings.about.privacy" = "Политика конфиденциальности";
+"settings.about.terms" = "Условия использования";
+"settings.about.acknowledgments" = "Благодарности";
+
+/* ===== ERRORS & ALERTS ===== */
+"error.generic.title" = "Что-то пошло не так";
+"error.generic.message" = "Пожалуйста, попробуйте позже.";
+"error.network.title" = "Ошибка подключения";
+"error.network.message" = "Пожалуйста, проверьте интернет-соединение.";
+"error.authentication.failed" = "Ошибка аутентификации";
+"error.save.failed" = "Не удалось сохранить";
+"error.load.failed" = "Не удалось загрузить";
+"error.delete.failed" = "Не удалось удалить";
+"error.model.loading" = "Загрузка ИИ-модели...";
+"error.model.failed" = "Не удалось загрузить ИИ-модель";
+
+"alert.delete.title" = "Удалить запись?";
+"alert.delete.message" = "Это действие нельзя отменить.";
+"alert.unsaved.title" = "Несохранённые изменения";
+"alert.unsaved.message" = "Хотите сохранить изменения?";
+"alert.restart.title" = "Требуется перезапуск";
+"alert.restart.message" = "Пожалуйста, перезапустите Gemi для применения изменений.";
+
+/* ===== MULTIMODAL ===== */
+"multimodal.image.analyzing" = "Анализ изображения...";
+"multimodal.image.description" = "Я вижу: %@";
+"multimodal.audio.recording" = "Запись...";
+"multimodal.audio.transcribing" = "Расшифровка аудио...";
+"multimodal.audio.duration" = "%@ секунд";
+"multimodal.attachment.remove" = "Удалить вложение";
+
+/* ===== WRITING ASSISTANCE ===== */
+"writing.prompts.daily" = "Ежедневные подсказки";
+"writing.prompts.reflection" = "Размышление";
+"writing.prompts.gratitude" = "Благодарность";
+"writing.prompts.goals" = "Цели и мечты";
+"writing.prompts.memories" = "Воспоминания";
+"writing.assistant.expand" = "Развить это";
+"writing.assistant.rephrase" = "Перефразировать";
+"writing.assistant.summarize" = "Резюмировать";
+"writing.assistant.continue" = "Продолжить писать";
+
+/* ===== DATE & TIME ===== */
+"date.just_now" = "Только что";
+"date.minutes_ago" = "%lld минут назад";
+"date.hours_ago" = "%lld часов назад";
+"date.days_ago" = "%lld дней назад";
+"date.weeks_ago" = "%lld недель назад";
+"date.months_ago" = "%lld месяцев назад";
+"date.years_ago" = "%lld лет назад";
+
+/* ===== ACHIEVEMENTS ===== */
+"achievement.first_entry" = "Первая запись!";
+"achievement.streak_7" = "Серия 7 дней!";
+"achievement.streak_30" = "Серия 30 дней!";
+"achievement.words_1000" = "1 000 слов написано!";
+"achievement.words_10000" = "10 000 слов написано!";
+"achievement.entries_50" = "50 записей!";
+"achievement.entries_100" = "100 записей!";

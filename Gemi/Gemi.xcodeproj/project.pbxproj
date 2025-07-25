@@ -6,6 +6,22 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		8CD47EA72E33306200BBC273 /* zh-Hans.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 8CD47E9A2E33306200BBC273 /* zh-Hans.lproj */; };
+		8CD47EA82E33306200BBC273 /* ja.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 8CD47E9B2E33306200BBC273 /* ja.lproj */; };
+		8CD47EA92E33306200BBC273 /* es.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 8CD47E9C2E33306200BBC273 /* es.lproj */; };
+		8CD47EAA2E33306200BBC273 /* hi.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 8CD47E9D2E33306200BBC273 /* hi.lproj */; };
+		8CD47EAB2E33306200BBC273 /* de.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 8CD47E9E2E33306200BBC273 /* de.lproj */; };
+		8CD47EAC2E33306200BBC273 /* ru.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 8CD47E9F2E33306200BBC273 /* ru.lproj */; };
+		8CD47EAD2E33306200BBC273 /* zh-Hant.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 8CD47EA02E33306200BBC273 /* zh-Hant.lproj */; };
+		8CD47EAE2E33306200BBC273 /* ar.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 8CD47EA12E33306200BBC273 /* ar.lproj */; };
+		8CD47EAF2E33306200BBC273 /* en.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 8CD47EA22E33306200BBC273 /* en.lproj */; };
+		8CD47EB02E33306200BBC273 /* id.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 8CD47EA32E33306200BBC273 /* id.lproj */; };
+		8CD47EB12E33306200BBC273 /* pt.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 8CD47EA42E33306200BBC273 /* pt.lproj */; };
+		8CD47EB22E33306200BBC273 /* fr.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 8CD47EA52E33306200BBC273 /* fr.lproj */; };
+		8CD47EB32E33306200BBC273 /* ko.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 8CD47EA62E33306200BBC273 /* ko.lproj */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		8CE77D892E19B5CB00AF7A09 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -25,6 +41,19 @@
 
 /* Begin PBXFileReference section */
 		8CD47E8F2E33285800BBC273 /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Resources; path = Gemi/Resources; sourceTree = "<group>"; };
+		8CD47E9A2E33306200BBC273 /* zh-Hans.lproj */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "zh-Hans.lproj"; path = "Gemi/Resources/zh-Hans.lproj"; sourceTree = "<group>"; };
+		8CD47E9B2E33306200BBC273 /* ja.lproj */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ja.lproj; path = Gemi/Resources/ja.lproj; sourceTree = "<group>"; };
+		8CD47E9C2E33306200BBC273 /* es.lproj */ = {isa = PBXFileReference; lastKnownFileType = folder; name = es.lproj; path = Gemi/Resources/es.lproj; sourceTree = "<group>"; };
+		8CD47E9D2E33306200BBC273 /* hi.lproj */ = {isa = PBXFileReference; lastKnownFileType = folder; name = hi.lproj; path = Gemi/Resources/hi.lproj; sourceTree = "<group>"; };
+		8CD47E9E2E33306200BBC273 /* de.lproj */ = {isa = PBXFileReference; lastKnownFileType = folder; name = de.lproj; path = Gemi/Resources/de.lproj; sourceTree = "<group>"; };
+		8CD47E9F2E33306200BBC273 /* ru.lproj */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ru.lproj; path = Gemi/Resources/ru.lproj; sourceTree = "<group>"; };
+		8CD47EA02E33306200BBC273 /* zh-Hant.lproj */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "zh-Hant.lproj"; path = "Gemi/Resources/zh-Hant.lproj"; sourceTree = "<group>"; };
+		8CD47EA12E33306200BBC273 /* ar.lproj */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ar.lproj; path = Gemi/Resources/ar.lproj; sourceTree = "<group>"; };
+		8CD47EA22E33306200BBC273 /* en.lproj */ = {isa = PBXFileReference; lastKnownFileType = folder; name = en.lproj; path = Gemi/Resources/en.lproj; sourceTree = "<group>"; };
+		8CD47EA32E33306200BBC273 /* id.lproj */ = {isa = PBXFileReference; lastKnownFileType = folder; name = id.lproj; path = Gemi/Resources/id.lproj; sourceTree = "<group>"; };
+		8CD47EA42E33306200BBC273 /* pt.lproj */ = {isa = PBXFileReference; lastKnownFileType = folder; name = pt.lproj; path = Gemi/Resources/pt.lproj; sourceTree = "<group>"; };
+		8CD47EA52E33306200BBC273 /* fr.lproj */ = {isa = PBXFileReference; lastKnownFileType = folder; name = fr.lproj; path = Gemi/Resources/fr.lproj; sourceTree = "<group>"; };
+		8CD47EA62E33306200BBC273 /* ko.lproj */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ko.lproj; path = Gemi/Resources/ko.lproj; sourceTree = "<group>"; };
 		8CE77D7A2E19B5CA00AF7A09 /* Gemi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Gemi.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8CE77D882E19B5CB00AF7A09 /* GemiTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GemiTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8CE77D922E19B5CB00AF7A09 /* GemiUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GemiUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -76,6 +105,19 @@
 		8CE77D712E19B5CA00AF7A09 = {
 			isa = PBXGroup;
 			children = (
+				8CD47EA12E33306200BBC273 /* ar.lproj */,
+				8CD47E9E2E33306200BBC273 /* de.lproj */,
+				8CD47EA22E33306200BBC273 /* en.lproj */,
+				8CD47E9C2E33306200BBC273 /* es.lproj */,
+				8CD47EA52E33306200BBC273 /* fr.lproj */,
+				8CD47E9D2E33306200BBC273 /* hi.lproj */,
+				8CD47EA32E33306200BBC273 /* id.lproj */,
+				8CD47E9B2E33306200BBC273 /* ja.lproj */,
+				8CD47EA62E33306200BBC273 /* ko.lproj */,
+				8CD47EA42E33306200BBC273 /* pt.lproj */,
+				8CD47E9F2E33306200BBC273 /* ru.lproj */,
+				8CD47E9A2E33306200BBC273 /* zh-Hans.lproj */,
+				8CD47EA02E33306200BBC273 /* zh-Hant.lproj */,
 				8CD47E8F2E33285800BBC273 /* Resources */,
 				8CE77D7C2E19B5CA00AF7A09 /* Gemi */,
 				8CE77D8B2E19B5CB00AF7A09 /* GemiTests */,
@@ -205,6 +247,7 @@
 				"zh-Hant",
 				hi,
 				id,
+				ru,
 			);
 			mainGroup = 8CE77D712E19B5CA00AF7A09;
 			minimizedProjectReferenceProxies = 1;
@@ -227,6 +270,19 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8CD47EA72E33306200BBC273 /* zh-Hans.lproj in Resources */,
+				8CD47EA82E33306200BBC273 /* ja.lproj in Resources */,
+				8CD47EA92E33306200BBC273 /* es.lproj in Resources */,
+				8CD47EAA2E33306200BBC273 /* hi.lproj in Resources */,
+				8CD47EAB2E33306200BBC273 /* de.lproj in Resources */,
+				8CD47EAC2E33306200BBC273 /* ru.lproj in Resources */,
+				8CD47EAD2E33306200BBC273 /* zh-Hant.lproj in Resources */,
+				8CD47EAE2E33306200BBC273 /* ar.lproj in Resources */,
+				8CD47EAF2E33306200BBC273 /* en.lproj in Resources */,
+				8CD47EB02E33306200BBC273 /* id.lproj in Resources */,
+				8CD47EB12E33306200BBC273 /* pt.lproj in Resources */,
+				8CD47EB22E33306200BBC273 /* fr.lproj in Resources */,
+				8CD47EB32E33306200BBC273 /* ko.lproj in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
