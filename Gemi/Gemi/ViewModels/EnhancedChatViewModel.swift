@@ -41,6 +41,21 @@ final class EnhancedChatViewModel: ObservableObject {
     
     init() {
         setupInitialPrompts()
+        
+        // Listen for model loaded notification
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(modelLoadedSuccessfully),
+            name: NSNotification.Name("ModelLoadedSuccessfully"),
+            object: nil
+        )
+    }
+    
+    @objc private func modelLoadedSuccessfully() {
+        Task {
+            // Re-check connection status when model is loaded
+            checkAIConnection()
+        }
     }
     
     deinit {

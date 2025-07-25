@@ -1,0 +1,109 @@
+/* 
+  Localizable.strings (Japanese)
+  Gemi - あなたのプライベートAI日記
+  
+  Copyright © 2025 Gemi. All rights reserved.
+*/
+
+/* ===== GENERAL ===== */
+"app.name" = "Gemi";
+"button.cancel" = "キャンセル";
+"button.save" = "保存";
+"button.done" = "完了";
+"button.continue" = "続ける";
+"button.next" = "次へ";
+"button.back" = "戻る";
+"button.close" = "閉じる";
+"button.delete" = "削除";
+"button.edit" = "編集";
+"button.ok" = "OK";
+"button.retry" = "再試行";
+"button.share" = "共有";
+"button.export" = "エクスポート";
+"button.import" = "インポート";
+"button.settings" = "設定";
+
+/* ===== ONBOARDING ===== */
+"onboarding.welcome.title" = "Gemiへようこそ";
+"onboarding.welcome.subtitle" = "あなたのプライベートAI日記";
+"onboarding.welcome.description" = "すべてがあなたのデバイスに保存されます。クラウドなし、追跡なし、あなたとあなたの思考だけ。";
+"onboarding.privacy.title" = "プライバシーが大切です";
+"onboarding.privacy.description" = "Gemiは完全にあなたのMacで動作します。日記、記憶、会話は決してデバイスを離れません。";
+"onboarding.authentication.title" = "日記を安全に保護";
+"onboarding.authentication.faceid" = "Face IDを使用";
+"onboarding.authentication.touchid" = "Touch IDを使用";
+"onboarding.authentication.password" = "パスワードを使用";
+"onboarding.language.title" = "言語を選択";
+"onboarding.language.subtitle" = "後で設定から変更できます";
+"onboarding.setup.title" = "Gemiをセットアップ中";
+"onboarding.setup.downloading" = "AIモデルをダウンロード中...";
+"onboarding.setup.progress" = "%@ / %@ ダウンロード済み";
+"onboarding.complete.title" = "準備完了！";
+"onboarding.complete.subtitle" = "日記の旅を始めましょう";
+"onboarding.complete.button" = "Gemiを開く";
+
+/* ===== NAVIGATION ===== */
+"nav.home" = "ホーム";
+"nav.timeline" = "タイムライン";
+"nav.memories" = "思い出";
+"nav.chat" = "Gemiとチャット";
+"nav.insights" = "インサイト";
+"nav.favorites" = "お気に入り";
+"nav.settings" = "設定";
+"nav.new_entry" = "新規エントリー";
+
+/* ===== HOME VIEW ===== */
+"home.greeting.morning" = "おはようございます";
+"home.greeting.afternoon" = "こんにちは";
+"home.greeting.evening" = "こんばんは";
+"home.greeting.night" = "おやすみなさい";
+"home.prompt.whats_on_mind" = "今、何を考えていますか？";
+"home.button.new_entry" = "新しい日記を作成";
+"home.button.continue_writing" = "書き続ける";
+"home.stats.entries" = "%lld件の日記";
+"home.stats.words" = "%lld語";
+"home.stats.memories" = "%lld個の思い出";
+"home.quote.daily" = "今日のインスピレーション";
+
+/* ===== TIMELINE VIEW ===== */
+"timeline.title" = "日記タイムライン";
+"timeline.empty.title" = "まだ日記がありません";
+"timeline.empty.subtitle" = "あなたの旅を記録し始めましょう。\nタイムラインがここに表示されます。";
+"timeline.empty.button" = "最初の日記を作成";
+"timeline.section.today" = "今日";
+"timeline.section.yesterday" = "昨日";
+"timeline.section.this_week" = "今週";
+"timeline.section.this_month" = "今月";
+"timeline.section.earlier" = "以前";
+"timeline.entry.words" = "%lld語";
+"timeline.entry.reading_time" = "%lld分で読む";
+
+/* ===== CHAT VIEW ===== */
+"chat.title" = "Gemiとチャット";
+"chat.placeholder" = "何でも聞いてください...";
+"chat.context.journal" = "あなたの日記に基づいて";
+"chat.context.memory" = "あなたが言及したことを覚えています...";
+"chat.suggestion.reflect" = "今日を振り返りましょう";
+"chat.suggestion.explore" = "もっと深く探求しませんか？";
+"chat.suggestion.gratitude" = "今日は何に感謝していますか？";
+"chat.loading" = "Gemiが考えています...";
+"chat.error.failed" = "応答を取得できませんでした";
+
+/* ===== SETTINGS VIEW ===== */
+"settings.title" = "設定";
+"settings.section.general" = "一般";
+"settings.section.privacy" = "プライバシーとセキュリティ";
+"settings.section.ai" = "AI設定";
+"settings.section.data" = "データ管理";
+"settings.section.about" = "情報";
+
+"settings.language.title" = "言語";
+"settings.language.subtitle" = "お好みの言語を選択";
+
+/* ===== MULTIMODAL ===== */
+"multimodal.image.analyzing" = "画像を分析中...";
+"multimodal.image.description" = "見えるもの: %@";
+"multimodal.audio.recording" = "録音中...";
+"multimodal.audio.transcribing" = "音声を変換中...";
+"multimodal.audio.duration" = "%@秒";
+"multimodal.attachment.remove" = "添付を削除";

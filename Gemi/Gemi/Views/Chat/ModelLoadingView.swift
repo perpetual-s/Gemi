@@ -324,6 +324,9 @@ final class ModelLoadingViewModel: ObservableObject {
             
             // Model loaded successfully - the parent view should handle navigation
             loadingProgress = 1.0
+            
+            // Notify the chat view model to check connection again
+            NotificationCenter.default.post(name: NSNotification.Name("ModelLoadedSuccessfully"), object: nil)
         } catch {
             status = .error("Failed to load model")
             subtitle = "Check your internet connection and try again"

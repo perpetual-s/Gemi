@@ -7,6 +7,7 @@ struct MultimodalProcessingView: View {
     @State private var isExpanded = false
     @State private var currentAnalysis: String = ""
     @State private var pulseAnimation = false
+    @State private var hideTimer: Timer?
     
     var body: some View {
         if multimodalService.isProcessing || !currentAnalysis.isEmpty {
@@ -145,6 +146,31 @@ struct MultimodalProcessingView: View {
                 if let analysis = notification.object as? String {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         currentAnalysis = analysis
+                    }
+                    
+                    // Auto-hide after processing is done
+                    hideTimer?.invalidate()
+                    if !multimodalService.isProcessing {
+                        hideTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
+                            Task { @MainActor in
+                                withAnimation(.easeOut(duration: 0.3)) {
+                                    currentAnalysis = ""
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .onChange(of: multimodalService.isProcessing) { oldValue, newValue in
+                if !newValue && !currentAnalysis.isEmpty {
+                    // Processing finished, start hide timer
+                    hideTimer?.invalidate()
+                    hideTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
+                        Task { @MainActor in
+                            withAnimation(.easeOut(duration: 0.3)) {
+                                currentAnalysis = ""
+                            }
+                        }
                     }
                 }
             }

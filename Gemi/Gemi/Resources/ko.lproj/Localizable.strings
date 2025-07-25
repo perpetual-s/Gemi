@@ -1,0 +1,260 @@
+/* 
+  Localizable.strings (Korean)
+  Gemi - 당신의 개인 AI 일기
+  
+  Copyright © 2025 Gemi. All rights reserved.
+*/
+
+/* ===== GENERAL ===== */
+"app.name" = "Gemi";
+"button.cancel" = "취소";
+"button.save" = "저장";
+"button.done" = "완료";
+"button.continue" = "계속";
+"button.next" = "다음";
+"button.back" = "뒤로";
+"button.close" = "닫기";
+"button.delete" = "삭제";
+"button.edit" = "편집";
+"button.ok" = "확인";
+"button.retry" = "재시도";
+"button.share" = "공유";
+"button.export" = "내보내기";
+"button.import" = "가져오기";
+"button.settings" = "설정";
+
+/* ===== ONBOARDING ===== */
+"onboarding.welcome.title" = "Gemi에 오신 것을 환영합니다";
+"onboarding.welcome.subtitle" = "당신의 개인 AI 일기";
+"onboarding.welcome.description" = "모든 것이 당신의 기기에 저장됩니다. 클라우드 없이, 추적 없이, 오직 당신과 당신의 생각만.";
+"onboarding.privacy.title" = "당신의 프라이버시가 중요합니다";
+"onboarding.privacy.description" = "Gemi는 완전히 당신의 Mac에서만 실행됩니다. 일기, 기억, 대화는 절대 기기를 떠나지 않습니다.";
+"onboarding.authentication.title" = "일기를 안전하게 보호하세요";
+"onboarding.authentication.faceid" = "Face ID 사용";
+"onboarding.authentication.touchid" = "Touch ID 사용";
+"onboarding.authentication.password" = "비밀번호 사용";
+"onboarding.language.title" = "언어를 선택하세요";
+"onboarding.language.subtitle" = "나중에 설정에서 변경할 수 있습니다";
+"onboarding.setup.title" = "Gemi 설정 중";
+"onboarding.setup.downloading" = "AI 모델 다운로드 중...";
+"onboarding.setup.progress" = "%@ / %@ 다운로드됨";
+"onboarding.complete.title" = "준비가 완료되었습니다!";
+"onboarding.complete.subtitle" = "일기 쓰기 여정을 시작하세요";
+"onboarding.complete.button" = "Gemi 열기";
+
+/* ===== NAVIGATION ===== */
+"nav.home" = "홈";
+"nav.timeline" = "타임라인";
+"nav.memories" = "기억";
+"nav.chat" = "Gemi와 대화";
+"nav.insights" = "인사이트";
+"nav.favorites" = "즐겨찾기";
+"nav.settings" = "설정";
+"nav.new_entry" = "새 항목";
+
+/* ===== HOME VIEW ===== */
+"home.greeting.morning" = "좋은 아침이에요";
+"home.greeting.afternoon" = "좋은 오후예요";
+"home.greeting.evening" = "좋은 저녁이에요";
+"home.greeting.night" = "좋은 밤이에요";
+"home.prompt.whats_on_mind" = "무슨 생각을 하고 계신가요?";
+"home.button.new_entry" = "새 일기 작성";
+"home.button.continue_writing" = "이어서 쓰기";
+"home.stats.entries" = "%lld개의 일기";
+"home.stats.words" = "%lld개의 단어";
+"home.stats.memories" = "%lld개의 기억";
+"home.quote.daily" = "오늘의 영감";
+
+/* ===== TIMELINE VIEW ===== */
+"timeline.title" = "일기 타임라인";
+"timeline.empty.title" = "아직 일기가 없습니다";
+"timeline.empty.subtitle" = "당신의 여정을 기록하기 시작하세요.\n타임라인이 여기에 나타납니다.";
+"timeline.empty.button" = "첫 일기 작성하기";
+"timeline.section.today" = "오늘";
+"timeline.section.yesterday" = "어제";
+"timeline.section.this_week" = "이번 주";
+"timeline.section.this_month" = "이번 달";
+"timeline.section.earlier" = "이전";
+"timeline.entry.words" = "%lld 단어";
+"timeline.entry.reading_time" = "%lld분 읽기";
+"timeline.filter.all" = "모든 일기";
+"timeline.filter.favorites" = "즐겨찾기";
+"timeline.filter.with_photos" = "사진 포함";
+"timeline.filter.with_audio" = "오디오 포함";
+"timeline.sort.newest" = "최신 순";
+"timeline.sort.oldest" = "오래된 순";
+
+/* ===== JOURNAL ENTRY ===== */
+"entry.placeholder.title" = "제목을 입력하세요...";
+"entry.placeholder.content" = "쓰기 시작하세요...";
+"entry.placeholder.whats_happening" = "오늘은 무슨 일이 있었나요?";
+"entry.placeholder.grateful" = "무엇에 감사하나요?";
+"entry.placeholder.reflection" = "잠시 돌아보는 시간을 가져보세요...";
+"entry.status.saving" = "저장 중...";
+"entry.status.saved" = "저장됨";
+"entry.button.focus_mode" = "집중 모드";
+"entry.button.add_photo" = "사진 추가";
+"entry.button.record_audio" = "오디오 녹음";
+"entry.button.ai_assist" = "AI 도우미";
+"entry.button.prompts" = "글쓰기 프롬프트";
+"entry.mood.happy" = "행복";
+"entry.mood.calm" = "차분";
+"entry.mood.anxious" = "불안";
+"entry.mood.sad" = "슬픔";
+"entry.mood.excited" = "신남";
+"entry.mood.grateful" = "감사";
+"entry.tag.placeholder" = "태그 추가...";
+
+/* ===== FOCUS MODE ===== */
+"focus.title" = "집중 모드";
+"focus.timer.minutes" = "%lld분";
+"focus.ambient.rain" = "빗소리";
+"focus.ambient.ocean" = "파도 소리";
+"focus.ambient.forest" = "숲속";
+"focus.ambient.silence" = "무음";
+"focus.goal.words" = "%lld 단어";
+"focus.progress.great" = "잘하고 있어요!";
+"focus.progress.keep_going" = "계속 써보세요!";
+"focus.complete.title" = "집중 세션 완료";
+"focus.complete.words_written" = "%lld 단어를 작성했습니다";
+
+/* ===== CHAT VIEW ===== */
+"chat.title" = "Gemi와 대화";
+"chat.placeholder" = "무엇이든 물어보세요...";
+"chat.context.journal" = "당신의 일기를 바탕으로";
+"chat.context.memory" = "당신이 언급한 것을 기억해요...";
+"chat.suggestion.reflect" = "오늘 하루를 돌아봅시다";
+"chat.suggestion.explore" = "더 깊이 탐구해볼까요?";
+"chat.suggestion.gratitude" = "오늘 감사한 것은 무엇인가요?";
+"chat.loading" = "Gemi가 생각 중입니다...";
+"chat.error.failed" = "응답을 받지 못했습니다";
+"chat.attachment.image" = "이미지 첨부됨";
+"chat.attachment.audio" = "오디오 첨부됨";
+"chat.processing.image" = "이미지 분석 중...";
+"chat.processing.audio" = "오디오 변환 중...";
+
+/* ===== MEMORIES VIEW ===== */
+"memories.title" = "당신의 기억";
+"memories.empty.title" = "아직 기억이 없습니다";
+"memories.empty.subtitle" = "일기를 쓰면서 Gemi가 중요한 순간과 통찰을 기억합니다.";
+"memories.search.placeholder" = "기억 검색...";
+"memories.filter.all" = "모든 기억";
+"memories.filter.people" = "사람";
+"memories.filter.places" = "장소";
+"memories.filter.emotions" = "감정";
+"memories.filter.insights" = "통찰";
+"memories.delete.confirm" = "이 기억을 삭제하시겠습니까?";
+"memories.delete.message" = "이 작업은 되돌릴 수 없습니다.";
+
+/* ===== INSIGHTS VIEW ===== */
+"insights.title" = "일기 인사이트";
+"insights.subtitle" = "글쓰기 여정의 패턴과 트렌드를 발견하세요";
+"insights.empty.title" = "아직 인사이트가 없습니다";
+"insights.empty.subtitle" = "일기를 작성하여 패턴을 발견하고\n감정 여정을 추적하세요.";
+"insights.mood.title" = "감정 트렌드";
+"insights.mood.dominant" = "주요 감정";
+"insights.topics.title" = "인기 주제";
+"insights.writing.title" = "글쓰기 패턴";
+"insights.writing.most_active" = "가장 활발한 시간";
+"insights.writing.average_length" = "평균 일기 길이";
+"insights.writing.total_words" = "총 작성 단어";
+"insights.streak.title" = "연속 작성";
+"insights.streak.current" = "%lld일";
+"insights.streak.best" = "최고: %lld일";
+
+/* ===== SETTINGS VIEW ===== */
+"settings.title" = "설정";
+"settings.section.general" = "일반";
+"settings.section.privacy" = "개인정보 및 보안";
+"settings.section.ai" = "AI 설정";
+"settings.section.data" = "데이터 관리";
+"settings.section.about" = "정보";
+
+"settings.language.title" = "언어";
+"settings.language.subtitle" = "선호하는 언어를 선택하세요";
+"settings.theme.title" = "테마";
+"settings.theme.light" = "라이트";
+"settings.theme.dark" = "다크";
+"settings.theme.auto" = "자동";
+
+"settings.authentication.title" = "인증";
+"settings.authentication.faceid" = "Face ID 필요";
+"settings.authentication.touchid" = "Touch ID 필요";
+"settings.authentication.password" = "비밀번호 필요";
+"settings.authentication.timeout" = "%lld분 후 잠금";
+
+"settings.ai.model" = "AI 모델";
+"settings.ai.model.fast" = "Gemma 3n 빠름 (2B)";
+"settings.ai.model.balanced" = "Gemma 3n 균형 (4B)";
+"settings.ai.model.powerful" = "Gemma 3n 강력 (8B)";
+"settings.ai.temperature" = "창의성 수준";
+"settings.ai.memory" = "메모리 관리";
+"settings.ai.clear_memory" = "모든 기억 삭제";
+
+"settings.export.title" = "일기 내보내기";
+"settings.export.format" = "내보내기 형식";
+"settings.export.markdown" = "마크다운";
+"settings.export.pdf" = "PDF";
+"settings.export.json" = "JSON";
+"settings.import.title" = "데이터 가져오기";
+
+"settings.about.version" = "버전 %@";
+"settings.about.privacy" = "개인정보 처리방침";
+"settings.about.terms" = "이용약관";
+"settings.about.acknowledgments" = "감사의 말";
+
+/* ===== ERRORS & ALERTS ===== */
+"error.generic.title" = "문제가 발생했습니다";
+"error.generic.message" = "나중에 다시 시도해주세요.";
+"error.network.title" = "연결 오류";
+"error.network.message" = "인터넷 연결을 확인해주세요.";
+"error.authentication.failed" = "인증 실패";
+"error.save.failed" = "저장 실패";
+"error.load.failed" = "불러오기 실패";
+"error.delete.failed" = "삭제 실패";
+"error.model.loading" = "AI 모델 로딩 중...";
+"error.model.failed" = "AI 모델 로드 실패";
+
+"alert.delete.title" = "일기를 삭제하시겠습니까?";
+"alert.delete.message" = "이 작업은 되돌릴 수 없습니다.";
+"alert.unsaved.title" = "저장되지 않은 변경사항";
+"alert.unsaved.message" = "변경사항을 저장하시겠습니까?";
+"alert.restart.title" = "재시작 필요";
+"alert.restart.message" = "변경사항을 적용하려면 Gemi를 재시작해주세요.";
+
+/* ===== MULTIMODAL ===== */
+"multimodal.image.analyzing" = "이미지 분석 중...";
+"multimodal.image.description" = "보이는 것: %@";
+"multimodal.audio.recording" = "녹음 중...";
+"multimodal.audio.transcribing" = "오디오 변환 중...";
+"multimodal.audio.duration" = "%@초";
+"multimodal.attachment.remove" = "첨부 제거";
+
+/* ===== WRITING ASSISTANCE ===== */
+"writing.prompts.daily" = "일일 프롬프트";
+"writing.prompts.reflection" = "성찰";
+"writing.prompts.gratitude" = "감사";
+"writing.prompts.goals" = "목표와 꿈";
+"writing.prompts.memories" = "추억";
+"writing.assistant.expand" = "더 자세히";
+"writing.assistant.rephrase" = "다시 표현";
+"writing.assistant.summarize" = "요약";
+"writing.assistant.continue" = "계속 쓰기";
+
+/* ===== DATE & TIME ===== */
+"date.just_now" = "방금 전";
+"date.minutes_ago" = "%lld분 전";
+"date.hours_ago" = "%lld시간 전";
+"date.days_ago" = "%lld일 전";
+"date.weeks_ago" = "%lld주 전";
+"date.months_ago" = "%lld개월 전";
+"date.years_ago" = "%lld년 전";
+
+/* ===== ACHIEVEMENTS ===== */
+"achievement.first_entry" = "첫 일기!";
+"achievement.streak_7" = "7일 연속!";
+"achievement.streak_30" = "30일 연속!";
+"achievement.words_1000" = "1,000 단어 작성!";
+"achievement.words_10000" = "10,000 단어 작성!";
+"achievement.entries_50" = "50개 일기!";
+"achievement.entries_100" = "100개 일기!";

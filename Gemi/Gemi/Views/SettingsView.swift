@@ -34,6 +34,7 @@ struct SettingsView: View {
     @AppStorage("sessionTimeout") private var sessionTimeout = 30.0
     @AppStorage("requireAuthentication") private var requireAuthentication = true
     @AppStorage("autoLoadModel") private var autoLoadModel = true
+    @StateObject private var localizationManager = LocalizationManager.shared
     
     private let aiService = AIService.shared
     @State private var isCheckingConnection = false
@@ -300,6 +301,57 @@ struct SettingsView: View {
     
     private var generalSettings: some View {
         VStack(spacing: 24) {
+            // Language Settings Card
+            PremiumSettingsCard(
+                title: "Language",
+                icon: "globe",
+                iconColor: .green
+            ) {
+                VStack(spacing: 20) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Interface Language")
+                                .font(.system(size: 14, weight: .medium))
+                            
+                            Text("Choose your preferred language for Gemi")
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        Picker("", selection: $localizationManager.currentLanguage) {
+                            ForEach(LocalizationManager.supportedLanguages, id: \.code) { language in
+                                HStack {
+                                    Text(language.nativeName)
+                                    Text("(\(language.name))")
+                                        .foregroundColor(.secondary)
+                                }
+                                .tag(language.code)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .frame(width: 200)
+                    }
+                    
+                    // Language change info
+                    HStack(spacing: 12) {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 14))
+                            .foregroundColor(.orange)
+                        
+                        Text("Gemi will restart to apply the new language")
+                            .font(.system(size: 13))
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.orange.opacity(0.05))
+                    )
+                }
+            }
+            
             // Application Settings Card
             PremiumSettingsCard(
                 title: "Application",

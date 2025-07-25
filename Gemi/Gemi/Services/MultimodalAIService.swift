@@ -130,6 +130,14 @@ final class MultimodalAIService: ObservableObject {
         
         let totalTime = Date().timeIntervalSince(startTime)
         
+        // Send completion notification if we processed attachments
+        if !processedAttachments.isEmpty {
+            let summary = processedAttachments.count == 1 ? 
+                "Analyzed 1 attachment" : 
+                "Analyzed \(processedAttachments.count) attachments"
+            postAnalysisUpdate(summary)
+        }
+        
         return MultimodalContext(
             originalMessage: message,
             processedAttachments: processedAttachments,
@@ -156,6 +164,8 @@ final class MultimodalAIService: ObservableObject {
             )
             
         case .audio(let url):
+            // Send initial analysis notification
+            postAnalysisUpdate("Transcribing audio...")
             let result = try await processAudio(url, attachment: attachment)
             return ProcessedAttachment(
                 id: attachment.id,
@@ -166,6 +176,8 @@ final class MultimodalAIService: ObservableObject {
             )
             
         case .document(let url):
+            // Send initial analysis notification
+            postAnalysisUpdate("Reading document...")
             let result = try await processDocument(url, attachment: attachment)
             return ProcessedAttachment(
                 id: attachment.id,
