@@ -96,9 +96,18 @@ extension Notification.Name {
 }
 
 // Convenient localization function
-@MainActor
 func localized(_ key: String, comment: String = "") -> String {
-    LocalizationManager.shared.localizedString(for: key, comment: comment)
+    // This function can be called from any context
+    // The actual localization happens through Bundle
+    var bundle = Bundle.main
+    
+    if let languageCode = UserDefaults.standard.string(forKey: "AppLanguage"),
+       let path = Bundle.main.path(forResource: languageCode, ofType: "lproj"),
+       let langBundle = Bundle(path: path) {
+        bundle = langBundle
+    }
+    
+    return bundle.localizedString(forKey: key, value: key, table: nil)
 }
 
 // View modifier for RTL support
@@ -120,9 +129,9 @@ extension View {
 
 // Font extension for language-specific fonts
 extension Font {
-    @MainActor
     static func localizedSystem(size: CGFloat, weight: Weight = .regular, design: Design = .rounded) -> Font {
-        let language = LocalizationManager.shared.currentLanguage
+        // Get language from UserDefaults to avoid MainActor issues
+        let language = UserDefaults.standard.string(forKey: "AppLanguage") ?? "en"
         
         // Use appropriate fonts for different languages
         switch language {
@@ -152,20 +161,20 @@ extension Font {
 
 // Date formatting extension
 extension Date {
-    @MainActor
     func localizedString(dateStyle: DateFormatter.Style = .medium,
                         timeStyle: DateFormatter.Style = .short) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: LocalizationManager.shared.currentLanguage)
+        let language = UserDefaults.standard.string(forKey: "AppLanguage") ?? "en"
+        formatter.locale = Locale(identifier: language)
         formatter.dateStyle = dateStyle
         formatter.timeStyle = timeStyle
         return formatter.string(from: self)
     }
     
-    @MainActor
     func localizedRelativeString() -> String {
         let formatter = RelativeDateTimeFormatter()
-        formatter.locale = Locale(identifier: LocalizationManager.shared.currentLanguage)
+        let language = UserDefaults.standard.string(forKey: "AppLanguage") ?? "en"
+        formatter.locale = Locale(identifier: language)
         formatter.unitsStyle = .full
         return formatter.localizedString(for: self, relativeTo: Date())
     }
@@ -173,21 +182,21 @@ extension Date {
 
 // Number formatting extension
 extension Int {
-    @MainActor
     func localizedString() -> String {
         let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: LocalizationManager.shared.currentLanguage)
+        let language = UserDefaults.standard.string(forKey: "AppLanguage") ?? "en"
+        formatter.locale = Locale(identifier: language)
         formatter.numberStyle = .decimal
         return formatter.string(from: NSNumber(value: self)) ?? "\(self)"
     }
 }
 
 extension Double {
-    @MainActor
     func localizedString(style: NumberFormatter.Style = .decimal, 
                         maximumFractionDigits: Int = 2) -> String {
         let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: LocalizationManager.shared.currentLanguage)
+        let language = UserDefaults.standard.string(forKey: "AppLanguage") ?? "en"
+        formatter.locale = Locale(identifier: language)
         formatter.numberStyle = style
         formatter.maximumFractionDigits = maximumFractionDigits
         return formatter.string(from: NSNumber(value: self)) ?? "\(self)"

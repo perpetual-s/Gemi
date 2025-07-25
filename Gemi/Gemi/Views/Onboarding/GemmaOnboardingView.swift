@@ -445,11 +445,11 @@ struct GemmaOnboardingView: View {
             
         }
         .padding(.horizontal, 40)
-        .onChange(of: password) { 
+        .onChange(of: password) { _, _ in
             passwordError = "" 
             showPasswordError = false
         }
-        .onChange(of: confirmPassword) { 
+        .onChange(of: confirmPassword) { _, _ in
             passwordError = "" 
             showPasswordError = false
         }
