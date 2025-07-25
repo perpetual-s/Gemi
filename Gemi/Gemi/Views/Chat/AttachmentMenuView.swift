@@ -14,13 +14,11 @@ struct AttachmentMenuView: View {
     enum AttachmentOption: CaseIterable {
         case photo
         case audio
-        case document
         
         var icon: String {
             switch self {
             case .photo: return "photo"
             case .audio: return "mic.fill"
-            case .document: return "doc.fill"
             }
         }
         
@@ -28,7 +26,6 @@ struct AttachmentMenuView: View {
             switch self {
             case .photo: return "Photo"
             case .audio: return "Audio"
-            case .document: return "Document"
             }
         }
         
@@ -36,7 +33,6 @@ struct AttachmentMenuView: View {
             switch self {
             case .photo: return "Add images"
             case .audio: return "Record voice"
-            case .document: return "Attach files"
             }
         }
         
@@ -44,7 +40,6 @@ struct AttachmentMenuView: View {
             switch self {
             case .photo: return .blue
             case .audio: return .orange
-            case .document: return .purple
             }
         }
     }
@@ -91,23 +86,12 @@ struct AttachmentMenuView: View {
         case .audio:
             showAudioRecorder = true
             dismiss()
-            
-        case .document:
-            selectedFileType = .pdf
-            isFileImporterPresented = true
-            dismiss()
         }
     }
     
     private func getAllowedTypes() -> [UTType] {
-        switch selectedFileType {
-        case .image:
-            return [.png, .jpeg, .gif, .heif, .webP, .bmp, .tiff]
-        case .pdf:
-            return [.pdf, .text, .plainText, .rtf]
-        default:
-            return [.item]
-        }
+        // Only support image types since we removed document support
+        return [.png, .jpeg, .gif, .heif, .webP, .bmp, .tiff]
     }
     
     private func handleFileSelection(_ result: Result<[URL], Error>) {
