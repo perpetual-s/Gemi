@@ -252,14 +252,14 @@ struct GemmaOnboardingView: View {
             }
         )
         .task {
-            // Check Ollama status when reaching the verification page
-            if isOnVerificationStep {
+            // Check Ollama status when reaching any Ollama-related page
+            if isOnOllamaStep || isOnVerificationStep {
                 await checkOllamaStatus()
             }
         }
         .onChange(of: currentPage) { oldValue, newValue in
-            // Check Ollama status when reaching the verification page
-            if isOnVerificationStep {
+            // Check Ollama status when reaching any Ollama-related page
+            if isOnOllamaStep || isOnVerificationStep {
                 Task {
                     await checkOllamaStatus()
                 }
@@ -273,6 +273,15 @@ struct GemmaOnboardingView: View {
             return currentPage == 6
         } else {
             return currentPage == 5
+        }
+    }
+    
+    // Helper to check if we're on any Ollama setup step
+    private var isOnOllamaStep: Bool {
+        if shouldShowPasswordPage {
+            return currentPage >= 4 && currentPage <= 6
+        } else {
+            return currentPage >= 3 && currentPage <= 5
         }
     }
     
@@ -546,22 +555,27 @@ struct GemmaOnboardingView: View {
     
     @ViewBuilder
     var installOllamaStep: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 40) {
             // Icon and main title
-            VStack(spacing: 16) {
+            VStack(spacing: 20) {
                 // Animated icon container
                 ZStack {
-                    // Glow effect
+                    // Outer glow
                     Circle()
                         .fill(
-                            LinearGradient(
-                                colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.1)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+                            RadialGradient(
+                                colors: [
+                                    Color.blue.opacity(0.3),
+                                    Color.purple.opacity(0.2),
+                                    Color.clear
+                                ],
+                                center: .center,
+                                startRadius: 20,
+                                endRadius: 60
                             )
                         )
-                        .frame(width: 100, height: 100)
-                        .blur(radius: 20)
+                        .frame(width: 120, height: 120)
+                        .blur(radius: 15)
                     
                     // Terminal icon with gradient
                     Image(systemName: "terminal.fill")
@@ -578,207 +592,380 @@ struct GemmaOnboardingView: View {
                 
                 VStack(spacing: 12) {
                     Text("Set Up Ollama")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .font(.system(size: 36, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                     
                     Text("Gemi uses Ollama to run AI locally on your Mac")
-                        .font(.system(size: 16))
+                        .font(.system(size: 18, weight: .regular))
                         .foregroundColor(.white.opacity(0.8))
                         .multilineTextAlignment(.center)
                 }
             }
             
-            VStack(spacing: 16) {
-                Text("Step 1: Install Ollama")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.white)
-                
-                Text("Choose your installation method:")
-                    .font(.system(size: 16))
-                    .foregroundColor(.white.opacity(0.8))
-            }
-            
-            VStack(spacing: 20) {
-                // Option 1: Homebrew
-                VStack(spacing: 12) {
-                    Text("Option 1: Install via Homebrew")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.white.opacity(0.7))
-                    
-                    CommandBox(
-                        command: "brew install ollama",
-                        description: "For developers comfortable with Terminal"
-                    ) {
-                        copyToClipboard("brew install ollama")
+            // Content container with max width
+            VStack(spacing: 32) {
+                // Show status if already running
+                if ollamaStatus == .ready || ollamaStatus == .runningNoModel {
+                    StatusCard(
+                        icon: "checkmark.circle",
+                        iconColor: .green,
+                        title: "Ollama is already running!",
+                        description: "You can skip to the next step",
+                        status: .success
+                    )
+                    .transition(.scale.combined(with: .opacity))
+                } else {
+                    VStack(spacing: 8) {
+                        Text("Step 1: Install Ollama")
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundColor(.white)
+                        
+                        Text("Choose your installation method")
+                            .font(.system(size: 16))
+                            .foregroundColor(.white.opacity(0.7))
                     }
                 }
                 
-                HStack(spacing: 16) {
-                    Rectangle()
-                        .fill(Color.white.opacity(0.2))
-                        .frame(height: 1)
-                    
-                    Text("OR")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.white.opacity(0.6))
-                    
-                    Rectangle()
-                        .fill(Color.white.opacity(0.2))
-                        .frame(height: 1)
-                }
-                
-                // Option 2: Direct download
-                VStack(spacing: 12) {
-                    Text("Option 2: Download Installer")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.white.opacity(0.7))
-                    
-                    OnboardingButton(
-                        "Download Ollama.dmg",
-                        icon: "arrow.down.circle",
-                        style: .secondary,
-                        action: {
-                            NSWorkspace.shared.open(URL(string: "https://ollama.com/download")!)
+                VStack(spacing: 24) {
+                    // Option 1: Homebrew
+                    VStack(spacing: 12) {
+                        HStack {
+                            Image(systemName: "1.circle.fill")
+                                .font(.system(size: 20))
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [.blue, .purple],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                            Text("Install via Homebrew")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.white)
+                            Spacer()
                         }
-                    )
+                        
+                        CommandBox(
+                            command: "brew install ollama",
+                            description: "For developers comfortable with Terminal"
+                        ) {
+                            copyToClipboard("brew install ollama")
+                        }
+                    }
+                    
+                    // Divider
+                    HStack(spacing: 20) {
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(0.1),
+                                        Color.white.opacity(0.2),
+                                        Color.white.opacity(0.1)
+                                    ],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(height: 1)
+                        
+                        Text("OR")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.5))
+                            .padding(.horizontal, 8)
+                            .background(
+                                Capsule()
+                                    .fill(Color.white.opacity(0.1))
+                            )
+                        
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(0.1),
+                                        Color.white.opacity(0.2),
+                                        Color.white.opacity(0.1)
+                                    ],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(height: 1)
+                    }
+                    
+                    // Option 2: Direct download
+                    VStack(spacing: 12) {
+                        HStack {
+                            Image(systemName: "2.circle.fill")
+                                .font(.system(size: 20))
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [.blue, .purple],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                            Text("Download Installer")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.white)
+                            Spacer()
+                        }
+                        
+                        OnboardingButton(
+                            "Download Ollama.dmg",
+                            icon: "arrow.down.circle",
+                            style: .secondary,
+                            action: {
+                                NSWorkspace.shared.open(URL(string: "https://ollama.com/download")!)
+                            }
+                        )
+                    }
                 }
             }
+            .frame(maxWidth: 600)
         }
-        .padding(.horizontal, 30)
+        .padding(.horizontal, 40)
     }
     
     @ViewBuilder
     var downloadModelStep: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 50) {
             VStack(spacing: 16) {
                 Text("Step 2: Download Gemma 3n")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                    .font(.system(size: 36, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
+                    .fixedSize(horizontal: false, vertical: true)
                 
-                Text("Run these commands in Terminal:")
+                Text("Run these commands in Terminal")
                     .font(.system(size: 18))
                     .foregroundColor(.white.opacity(0.8))
+                    .fixedSize(horizontal: false, vertical: true)
             }
             
-            VStack(spacing: 16) {
-                CommandBox(
-                    command: "ollama serve",
-                    description: "Start the Ollama server"
-                ) {
-                    copyToClipboard("ollama serve")
+            // Content container with max width
+            VStack(spacing: 32) {
+                // First command
+                VStack(spacing: 16) {
+                    HStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [.blue.opacity(0.3), .purple.opacity(0.2)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 8, height: 8)
+                        Text("First, start the Ollama server")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(.white.opacity(0.9))
+                        Spacer()
+                    }
+                    
+                    CommandBox(
+                        command: "ollama serve",
+                        description: "Starts the Ollama background service. Keep this Terminal window open."
+                    ) {
+                        copyToClipboard("ollama serve")
+                    }
                 }
                 
-                Text("Then in a new Terminal tab:")
-                    .font(.system(size: 14))
-                    .foregroundColor(.white.opacity(0.6))
-                    .padding(.vertical, 4)
-                
-                CommandBox(
-                    command: "ollama run gemma3n:latest",
-                    description: "Download and run Gemma 3n model (7.5GB)"
-                ) {
-                    copyToClipboard("ollama run gemma3n:latest")
+                // Connector line
+                HStack {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.2))
+                        .frame(width: 2, height: 30)
+                        .offset(x: 4)
+                    Spacer()
                 }
+                
+                // Second command
+                VStack(spacing: 16) {
+                    HStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [.blue.opacity(0.3), .purple.opacity(0.2)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 8, height: 8)
+                        Text("Then in a new Terminal tab")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(.white.opacity(0.9))
+                        Spacer()
+                    }
+                    
+                    CommandBox(
+                        command: "ollama run gemma3n:latest",
+                        description: "Download and run Gemma 3n model (7.5GB)"
+                    ) {
+                        copyToClipboard("ollama run gemma3n:latest")
+                    }
+                }
+                
+                // Info card with enhanced styling
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack {
+                        Image(systemName: "info.circle.fill")
+                            .font(.system(size: 18))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [.blue, .purple],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                        Text("What to expect")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                        Spacer()
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 14) {
+                        Label("Downloads a 7.5GB model file", systemImage: "arrow.down.circle")
+                            .font(.system(size: 14))
+                            .foregroundColor(.white.opacity(0.8))
+                        Label("Download time varies by internet speed", systemImage: "clock")
+                            .font(.system(size: 14))
+                            .foregroundColor(.white.opacity(0.8))
+                        Label("Progress shown in Terminal window", systemImage: "chart.line.uptrend.xyaxis")
+                            .font(.system(size: 14))
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                }
+                .padding(20)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white.opacity(0.05))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.white.opacity(0.1),
+                                            Color.white.opacity(0.05)
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 1
+                                )
+                        )
+                )
             }
-            
-            // Progress indicator using OnboardingFeatureCard
-            OnboardingFeatureCard(
-                items: [
-                    (icon: "arrow.down.circle.fill", text: "This downloads a 7.5GB model"),
-                    (icon: "clock.fill", text: "Download time depends on your internet speed"),
-                    (icon: "checkmark.circle.fill", text: "You'll see progress in Terminal")
-                ]
-            )
+            .frame(maxWidth: 600)
         }
-        .padding(.horizontal, 30)
+        .padding(.horizontal, 40)
     }
     
     @ViewBuilder
     var verificationStep: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 40) {
             Text("Step 3: Verify Setup")
-                .font(.system(size: 32, weight: .bold, design: .rounded))
+                .font(.system(size: 36, weight: .bold, design: .rounded))
                 .foregroundColor(.white)
             
-            // Status display
-            Group {
-                switch ollamaStatus {
-                case .notChecked, .notInstalled:
-                    StatusCard(
-                        icon: "xmark.circle",
-                        iconColor: .red,
-                        title: "Ollama Not Found",
-                        description: "Please complete steps 1 and 2",
-                        status: .error
-                    )
-                    
-                case .installedNotRunning:
-                    StatusCard(
-                        icon: "pause.circle",
-                        iconColor: .orange,
-                        title: "Ollama Not Running",
-                        description: "Run 'ollama serve' in Terminal",
-                        status: .warning
-                    )
-                    
-                case .runningNoModel:
-                    StatusCard(
-                        icon: "arrow.down.circle",
-                        iconColor: .blue,
-                        title: "Model Not Downloaded",
-                        description: "Run 'ollama pull gemma3n:latest'",
-                        status: .info
-                    )
-                    
-                case .ready:
-                    StatusCard(
-                        icon: "checkmark.circle",
-                        iconColor: .green,
-                        title: "Ready to Go!",
-                        description: "Ollama and Gemma 3n are set up correctly",
-                        status: .success
-                    )
-                    
-                case .error(let message):
-                    StatusCard(
-                        icon: "exclamationmark.triangle",
-                        iconColor: .red,
-                        title: "Setup Error",
-                        description: message,
-                        status: .error
-                    )
-                }
-            }
-            .transition(.opacity.combined(with: .scale))
-            
-            if ollamaStatus != .ready {
-                VStack(spacing: 16) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "questionmark.circle")
-                            .font(.system(size: 16))
-                            .foregroundColor(.white.opacity(0.7))
-                        Text("Need help with setup?")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white.opacity(0.7))
+            // Content container with max width
+            VStack(spacing: 32) {
+                // Status display with enhanced animation
+                Group {
+                    switch ollamaStatus {
+                    case .notChecked, .notInstalled:
+                        StatusCard(
+                            icon: "xmark.circle",
+                            iconColor: .red,
+                            title: "Ollama Not Found",
+                            description: "Please complete steps 1 and 2",
+                            status: .error
+                        )
+                        
+                    case .installedNotRunning:
+                        StatusCard(
+                            icon: "pause.circle",
+                            iconColor: .orange,
+                            title: "Ollama Not Running",
+                            description: "Run 'ollama serve' in Terminal",
+                            status: .warning
+                        )
+                        
+                    case .runningNoModel:
+                        StatusCard(
+                            icon: "arrow.down.circle",
+                            iconColor: .blue,
+                            title: "Model Not Downloaded",
+                            description: "Run 'ollama pull gemma3n:latest'",
+                            status: .info
+                        )
+                        
+                    case .ready:
+                        StatusCard(
+                            icon: "checkmark.circle",
+                            iconColor: .green,
+                            title: "Ready to Go!",
+                            description: "Ollama and Gemma 3n are set up correctly",
+                            status: .success
+                        )
+                        
+                    case .error(let message):
+                        StatusCard(
+                            icon: "exclamationmark.triangle",
+                            iconColor: .red,
+                            title: "Setup Error",
+                            description: message,
+                            status: .error
+                        )
                     }
-                    
-                    Button(action: {
-                        NSWorkspace.shared.open(URL(string: "https://github.com/ollama/ollama#macos")!)
-                    }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "book.fill")
-                                .font(.system(size: 14))
-                            Text("Open Setup Guide")
-                                .font(.system(size: 14, weight: .medium))
+                }
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.9).combined(with: .opacity),
+                    removal: .scale(scale: 1.1).combined(with: .opacity)
+                ))
+                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: ollamaStatus)
+                
+                if ollamaStatus != .ready {
+                    VStack(spacing: 20) {
+                        Divider()
+                            .background(Color.white.opacity(0.2))
+                        
+                        VStack(spacing: 16) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "questionmark.circle")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.white.opacity(0.7))
+                                Text("Need help with setup?")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.white.opacity(0.7))
+                            }
+                            
+                            Button(action: {
+                                NSWorkspace.shared.open(URL(string: "https://github.com/ollama/ollama#macos")!)
+                            }) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "book.fill")
+                                        .font(.system(size: 14))
+                                    Text("Open Setup Guide")
+                                        .font(.system(size: 14, weight: .medium))
+                                }
+                                .foregroundColor(.blue)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.blue.opacity(0.1))
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .help("Open Ollama documentation in your browser")
                         }
-                        .foregroundColor(.blue)
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    .help("Open Ollama documentation in your browser")
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
+            .frame(maxWidth: 600)
         }
-        .padding(.horizontal, 30)
+        .padding(.horizontal, 40)
     }
     
     // MARK: - Ollama Helper Methods
@@ -801,11 +988,38 @@ struct GemmaOnboardingView: View {
         let health = await ollamaService.health()
         
         if !health.healthy {
-            withAnimation {
-                ollamaStatus = .installedNotRunning
-                isCheckingOllama = false
+            // Try to start Ollama automatically
+            do {
+                try await OllamaInstaller.shared.startOllamaServer()
+                // Wait a moment for server to stabilize
+                try await Task.sleep(nanoseconds: 2_000_000_000)
+                
+                // Check again
+                let newHealth = await ollamaService.health()
+                if newHealth.healthy {
+                    // Successfully started, continue checking
+                    if !newHealth.modelLoaded {
+                        withAnimation {
+                            ollamaStatus = .runningNoModel
+                            isCheckingOllama = false
+                        }
+                        return
+                    } else {
+                        withAnimation {
+                            ollamaStatus = .ready
+                            isCheckingOllama = false
+                        }
+                        return
+                    }
+                }
+            } catch {
+                // Failed to start automatically
+                withAnimation {
+                    ollamaStatus = .installedNotRunning
+                    isCheckingOllama = false
+                }
+                return
             }
-            return
         }
         
         // Check if model is available
@@ -863,28 +1077,85 @@ struct CommandBox: View {
     let onCopy: () -> Void
     @State private var isHovered = false
     @State private var isPressed = false
+    @State private var showCheckmark = false
     
     var body: some View {
-        HStack {
+        HStack(spacing: 16) {
+            // Icon container with gradient background
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.blue.opacity(0.2),
+                                Color.purple.opacity(0.1)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 44, height: 44)
+                
+                Image(systemName: "terminal.fill")
+                    .font(.system(size: 20))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.blue, .purple],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+            }
+            
             VStack(alignment: .leading, spacing: 6) {
                 Text(command)
-                    .font(.system(.body, design: .monospaced))
+                    .font(.system(size: 15, weight: .semibold, design: .monospaced))
                     .foregroundColor(.white)
-                    .fontWeight(.medium)
+                    .lineLimit(1)
                 
                 Text(description)
-                    .font(.system(size: 12))
-                    .foregroundColor(.white.opacity(0.6))
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(0.7))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             
             Spacer()
             
-            Button(action: onCopy) {
-                Image(systemName: "doc.on.doc.fill")
-                    .font(.system(size: 16))
-                    .foregroundColor(isHovered ? .white : .white.opacity(0.8))
-                    .scaleEffect(isPressed ? 0.9 : 1.0)
-                    .animation(.spring(response: 0.2), value: isPressed)
+            Button(action: {
+                onCopy()
+                withAnimation(.spring(response: 0.3)) {
+                    showCheckmark = true
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    withAnimation(.spring(response: 0.3)) {
+                        showCheckmark = false
+                    }
+                }
+            }) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(isHovered ? 0.15 : 0.1),
+                                    Color.white.opacity(isHovered ? 0.1 : 0.05)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 36, height: 36)
+                    
+                    Image(systemName: showCheckmark ? "checkmark" : "doc.on.doc")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(showCheckmark ? .green : (isHovered ? .white : .white.opacity(0.8)))
+                        .scaleEffect(isPressed ? 0.85 : 1.0)
+                        .animation(.spring(response: 0.2), value: isPressed)
+                        .animation(.spring(response: 0.3), value: showCheckmark)
+                }
             }
             .buttonStyle(PlainButtonStyle())
             .help("Copy command")
@@ -897,27 +1168,37 @@ struct CommandBox: View {
                     .onEnded { _ in isPressed = false }
             )
         }
-        .padding(16)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 20)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.08),
-                            Color.white.opacity(0.04)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+            ZStack {
+                // Base layer with gradient
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.06),
+                                Color.white.opacity(0.03)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                     )
-                )
+                
+                // Glass effect overlay
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(
+                        .ultraThinMaterial.opacity(0.3)
+                    )
+            }
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 14)
                 .stroke(
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(0.15),
-                            Color.white.opacity(0.05)
+                            Color.white.opacity(0.12),
+                            Color.white.opacity(0.06)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -925,9 +1206,10 @@ struct CommandBox: View {
                     lineWidth: 1
                 )
         )
-        .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
-        .scaleEffect(isHovered ? 1.02 : 1.0)
-        .animation(.spring(response: 0.3), value: isHovered)
+        .shadow(color: .black.opacity(0.15), radius: 10, x: 0, y: 5)
+        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+        .scaleEffect(isHovered ? 1.01 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isHovered)
     }
 }
 
@@ -937,6 +1219,8 @@ struct StatusCard: View {
     let title: String
     let description: String
     let status: Status
+    
+    @State private var isAnimating = false
     
     enum Status {
         case success, warning, error, info
@@ -949,47 +1233,98 @@ struct StatusCard: View {
             case .info: return .blue.opacity(0.15)
             }
         }
+        
+        var pulseColor: Color {
+            switch self {
+            case .success: return .green
+            case .warning: return .orange
+            case .error: return .red
+            case .info: return .blue
+            }
+        }
     }
     
     var body: some View {
-        HStack(spacing: 16) {
-            Image(systemName: icon)
-                .font(.largeTitle)
-                .foregroundColor(iconColor)
+        HStack(spacing: 20) {
+            // Icon with animated background
+            ZStack {
+                // Pulsing circle for non-success states
+                if status != .success {
+                    Circle()
+                        .fill(status.pulseColor.opacity(0.2))
+                        .frame(width: 60, height: 60)
+                        .scaleEffect(isAnimating ? 1.2 : 1.0)
+                        .opacity(isAnimating ? 0 : 1)
+                        .animation(
+                            .easeOut(duration: 1.5)
+                            .repeatForever(autoreverses: false),
+                            value: isAnimating
+                        )
+                }
+                
+                // Icon background
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                iconColor.opacity(0.2),
+                                iconColor.opacity(0.1)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 50, height: 50)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 28, weight: .medium))
+                    .foregroundColor(iconColor)
+            }
             
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(title)
-                    .font(.headline)
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.white)
                 
                 Text(description)
-                    .font(.subheadline)
+                    .font(.system(size: 14))
                     .foregroundColor(.white.opacity(0.8))
+                    .lineLimit(2)
             }
             
             Spacer()
         }
-        .padding()
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            status.backgroundColor,
-                            status.backgroundColor.opacity(0.6)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+            ZStack {
+                // Base gradient
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                status.backgroundColor,
+                                status.backgroundColor.opacity(0.5)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                     )
-                )
+                
+                // Glass overlay
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(
+                        .ultraThinMaterial.opacity(0.2)
+                    )
+            }
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 16)
                 .stroke(
                     LinearGradient(
                         colors: [
-                            iconColor.opacity(0.4),
-                            iconColor.opacity(0.2)
+                            iconColor.opacity(0.3),
+                            iconColor.opacity(0.1)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -997,7 +1332,13 @@ struct StatusCard: View {
                     lineWidth: 1
                 )
         )
-        .shadow(color: iconColor.opacity(0.2), radius: 8, x: 0, y: 4)
+        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+        .shadow(color: iconColor.opacity(0.2), radius: 20, x: 0, y: 10)
+        .onAppear {
+            if status != .success {
+                isAnimating = true
+            }
+        }
     }
 }
 
