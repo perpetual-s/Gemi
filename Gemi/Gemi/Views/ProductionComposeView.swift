@@ -60,6 +60,8 @@ struct ProductionComposeView: View {
     @State private var saveError: Error?
     @State private var showSaveError = false
     @State private var showSaveSuccess = false
+    @State private var saveRetryCount = 0
+    @State private var successAnimationTimer: Timer?
     
     // Computed display title that updates properly
     private var displayTitle: String {
@@ -204,12 +206,23 @@ struct ProductionComposeView: View {
         .alert("Save Failed", isPresented: $showSaveError, presenting: saveError) { error in
             Button("Retry") {
                 Task {
-                    await performAutoSave()
+                    if saveRetryCount < 3 {
+                        saveRetryCount += 1
+                        await performAutoSave()
+                    }
                 }
             }
-            Button("Cancel", role: .cancel) {}
+            .disabled(saveRetryCount >= 3)
+            
+            Button("Cancel", role: .cancel) {
+                saveRetryCount = 0
+            }
         } message: { error in
-            Text("Failed to save your entry: \(error.localizedDescription)")
+            if saveRetryCount >= 3 {
+                Text("Failed to save after 3 attempts. Please try again later.\n\nError: \(error.localizedDescription)")
+            } else {
+                Text("Failed to save your entry: \(error.localizedDescription)")
+            }
         }
         .onAppear {
             titleOpacity = 1
@@ -234,6 +247,9 @@ struct ProductionComposeView: View {
             if hasUnsavedChanges {
                 resetAutoSaveTimer()
             }
+            
+            // Reset retry count on successful content change
+            saveRetryCount = 0
         }
         .onChange(of: entry.title) { oldValue, newValue in
             // Force UI update when title changes
@@ -262,8 +278,9 @@ struct ProductionComposeView: View {
                 analytics.endSession()
             }
             
-            // Cancel auto-save timer
+            // Cancel all timers
             autoSaveTimer?.invalidate()
+            successAnimationTimer?.invalidate()
             
             // Perform final save if needed
             if hasUnsavedChanges && !entry.content.isEmpty {
@@ -848,6 +865,9 @@ struct ProductionComposeView: View {
     
     @MainActor
     private func performManualSave() async {
+        // Prevent concurrent saves
+        guard !isSaving else { return }
+        
         // Cancel auto-save timer during manual save
         autoSaveTimer?.invalidate()
         
@@ -873,10 +893,15 @@ struct ProductionComposeView: View {
                 showSaveSuccess = true
             }
             
+            // Cancel any existing timer
+            successAnimationTimer?.invalidate()
+            
             // Hide success indicator after 2 seconds
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                withAnimation(.easeOut(duration: 0.3)) {
-                    showSaveSuccess = false
+            successAnimationTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { _ in
+                Task { @MainActor in
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        showSaveSuccess = false
+                    }
                 }
             }
             
@@ -964,10 +989,15 @@ struct ProductionComposeView: View {
                 showSaveSuccess = true
             }
             
+            // Cancel any existing timer
+            successAnimationTimer?.invalidate()
+            
             // Hide success indicator after 1.5 seconds
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                withAnimation(.easeOut(duration: 0.3)) {
-                    showSaveSuccess = false
+            successAnimationTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { _ in
+                Task { @MainActor in
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        showSaveSuccess = false
+                    }
                 }
             }
         } catch {
