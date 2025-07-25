@@ -311,7 +311,7 @@ struct GemmaOnboardingView: View {
                     .animation(.easeOut(duration: 1.2), value: contentOpacity)
                 
                 // App icon
-                Image("AppIcon")
+                Image("GemiIcon")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 160, height: 160)
