@@ -1,0 +1,260 @@
+/* 
+  Localizable.strings (Chinese Traditional)
+  Gemi - 您的私人AI日記
+  
+  Copyright © 2025 Gemi. All rights reserved.
+*/
+
+/* ===== GENERAL ===== */
+"app.name" = "Gemi";
+"button.cancel" = "取消";
+"button.save" = "儲存";
+"button.done" = "完成";
+"button.continue" = "繼續";
+"button.next" = "下一步";
+"button.back" = "返回";
+"button.close" = "關閉";
+"button.delete" = "刪除";
+"button.edit" = "編輯";
+"button.ok" = "確定";
+"button.retry" = "重試";
+"button.share" = "分享";
+"button.export" = "匯出";
+"button.import" = "匯入";
+"button.settings" = "設定";
+
+/* ===== ONBOARDING ===== */
+"onboarding.welcome.title" = "歡迎使用 Gemi";
+"onboarding.welcome.subtitle" = "您的私人AI日記";
+"onboarding.welcome.description" = "所有內容都保存在您的裝置上。無雲端，無追蹤，只有您和您的想法。";
+"onboarding.privacy.title" = "您的隱私至關重要";
+"onboarding.privacy.description" = "Gemi 完全在您的 Mac 上運行。您的日記、記憶和對話永遠不會離開您的裝置。";
+"onboarding.authentication.title" = "保護您的日記";
+"onboarding.authentication.faceid" = "使用 Face ID";
+"onboarding.authentication.touchid" = "使用 Touch ID";
+"onboarding.authentication.password" = "使用密碼";
+"onboarding.language.title" = "選擇您的語言";
+"onboarding.language.subtitle" = "您可以稍後在設定中更改";
+"onboarding.setup.title" = "正在設定 Gemi";
+"onboarding.setup.downloading" = "正在下載 AI 模型...";
+"onboarding.setup.progress" = "已下載 %@ / %@";
+"onboarding.complete.title" = "一切就緒！";
+"onboarding.complete.subtitle" = "開始您的日記之旅";
+"onboarding.complete.button" = "開啟 Gemi";
+
+/* ===== NAVIGATION ===== */
+"nav.home" = "首頁";
+"nav.timeline" = "時間軸";
+"nav.memories" = "回憶";
+"nav.chat" = "與 Gemi 聊天";
+"nav.insights" = "洞察";
+"nav.favorites" = "收藏";
+"nav.settings" = "設定";
+"nav.new_entry" = "新條目";
+
+/* ===== HOME VIEW ===== */
+"home.greeting.morning" = "早安";
+"home.greeting.afternoon" = "午安";
+"home.greeting.evening" = "晚安";
+"home.greeting.night" = "晚安";
+"home.prompt.whats_on_mind" = "您在想什麼？";
+"home.button.new_entry" = "建立新日記";
+"home.button.continue_writing" = "繼續寫作";
+"home.stats.entries" = "%lld 篇日記";
+"home.stats.words" = "%lld 個字";
+"home.stats.memories" = "%lld 條回憶";
+"home.quote.daily" = "每日靈感";
+
+/* ===== TIMELINE VIEW ===== */
+"timeline.title" = "日記時間軸";
+"timeline.empty.title" = "還沒有日記";
+"timeline.empty.subtitle" = "開始記錄您的旅程。\n您的時間軸將顯示在這裡。";
+"timeline.empty.button" = "建立第一篇日記";
+"timeline.section.today" = "今天";
+"timeline.section.yesterday" = "昨天";
+"timeline.section.this_week" = "本週";
+"timeline.section.this_month" = "本月";
+"timeline.section.earlier" = "更早";
+"timeline.entry.words" = "%lld 字";
+"timeline.entry.reading_time" = "%lld 分鐘閱讀";
+"timeline.filter.all" = "所有日記";
+"timeline.filter.favorites" = "收藏";
+"timeline.filter.with_photos" = "含照片";
+"timeline.filter.with_audio" = "含音訊";
+"timeline.sort.newest" = "最新優先";
+"timeline.sort.oldest" = "最早優先";
+
+/* ===== JOURNAL ENTRY ===== */
+"entry.placeholder.title" = "給日記起個標題...";
+"entry.placeholder.content" = "開始寫作...";
+"entry.placeholder.whats_happening" = "今天發生了什麼？";
+"entry.placeholder.grateful" = "您感恩什麼？";
+"entry.placeholder.reflection" = "花點時間反思一下...";
+"entry.status.saving" = "儲存中...";
+"entry.status.saved" = "已儲存";
+"entry.button.focus_mode" = "專注模式";
+"entry.button.add_photo" = "新增照片";
+"entry.button.record_audio" = "錄製音訊";
+"entry.button.ai_assist" = "AI 助手";
+"entry.button.prompts" = "寫作提示";
+"entry.mood.happy" = "開心";
+"entry.mood.calm" = "平靜";
+"entry.mood.anxious" = "焦慮";
+"entry.mood.sad" = "悲傷";
+"entry.mood.excited" = "興奮";
+"entry.mood.grateful" = "感恩";
+"entry.tag.placeholder" = "新增標籤...";
+
+/* ===== FOCUS MODE ===== */
+"focus.title" = "專注模式";
+"focus.timer.minutes" = "%lld 分鐘";
+"focus.ambient.rain" = "雨聲";
+"focus.ambient.ocean" = "海浪聲";
+"focus.ambient.forest" = "森林";
+"focus.ambient.silence" = "靜音";
+"focus.goal.words" = "%lld 字";
+"focus.progress.great" = "進展很棒！";
+"focus.progress.keep_going" = "繼續加油！";
+"focus.complete.title" = "專注時段完成";
+"focus.complete.words_written" = "您寫了 %lld 字";
+
+/* ===== CHAT VIEW ===== */
+"chat.title" = "與 Gemi 聊天";
+"chat.placeholder" = "問我任何問題...";
+"chat.context.journal" = "基於您的日記";
+"chat.context.memory" = "我記得您提到過...";
+"chat.suggestion.reflect" = "讓我們回顧今天";
+"chat.suggestion.explore" = "您想深入探討嗎？";
+"chat.suggestion.gratitude" = "今天您感激什麼？";
+"chat.loading" = "Gemi 正在思考...";
+"chat.error.failed" = "無法獲取回應";
+"chat.attachment.image" = "圖片已附加";
+"chat.attachment.audio" = "音訊已附加";
+"chat.processing.image" = "正在分析圖片...";
+"chat.processing.audio" = "正在轉錄音訊...";
+
+/* ===== MEMORIES VIEW ===== */
+"memories.title" = "您的回憶";
+"memories.empty.title" = "還沒有回憶";
+"memories.empty.subtitle" = "隨著您寫日記，Gemi 會記住重要的時刻和見解。";
+"memories.search.placeholder" = "搜尋回憶...";
+"memories.filter.all" = "所有回憶";
+"memories.filter.people" = "人物";
+"memories.filter.places" = "地點";
+"memories.filter.emotions" = "情緒";
+"memories.filter.insights" = "見解";
+"memories.delete.confirm" = "刪除這條回憶？";
+"memories.delete.message" = "此操作無法撤銷。";
+
+/* ===== INSIGHTS VIEW ===== */
+"insights.title" = "日記洞察";
+"insights.subtitle" = "發現您寫作旅程中的模式和趨勢";
+"insights.empty.title" = "還沒有洞察";
+"insights.empty.subtitle" = "開始寫日記以發現模式\n並追蹤您的情緒旅程。";
+"insights.mood.title" = "情緒趨勢";
+"insights.mood.dominant" = "主導情緒";
+"insights.topics.title" = "熱門話題";
+"insights.writing.title" = "寫作模式";
+"insights.writing.most_active" = "最活躍時間";
+"insights.writing.average_length" = "平均日記長度";
+"insights.writing.total_words" = "總計寫作字數";
+"insights.streak.title" = "連續記錄";
+"insights.streak.current" = "%lld 天";
+"insights.streak.best" = "最佳：%lld 天";
+
+/* ===== SETTINGS VIEW ===== */
+"settings.title" = "設定";
+"settings.section.general" = "一般";
+"settings.section.privacy" = "隱私與安全";
+"settings.section.ai" = "AI 設定";
+"settings.section.data" = "資料管理";
+"settings.section.about" = "關於";
+
+"settings.language.title" = "語言";
+"settings.language.subtitle" = "選擇您的首選語言";
+"settings.theme.title" = "外觀";
+"settings.theme.light" = "淺色";
+"settings.theme.dark" = "深色";
+"settings.theme.auto" = "自動";
+
+"settings.authentication.title" = "身份驗證";
+"settings.authentication.faceid" = "需要 Face ID";
+"settings.authentication.touchid" = "需要 Touch ID";
+"settings.authentication.password" = "需要密碼";
+"settings.authentication.timeout" = "%lld 分鐘後鎖定";
+
+"settings.ai.model" = "AI 模型";
+"settings.ai.model.fast" = "Gemma 3n 快速版 (2B)";
+"settings.ai.model.balanced" = "Gemma 3n 平衡版 (4B)";
+"settings.ai.model.powerful" = "Gemma 3n 強大版 (8B)";
+"settings.ai.temperature" = "創造力水準";
+"settings.ai.memory" = "記憶管理";
+"settings.ai.clear_memory" = "清除所有記憶";
+
+"settings.export.title" = "匯出日記";
+"settings.export.format" = "匯出格式";
+"settings.export.markdown" = "Markdown";
+"settings.export.pdf" = "PDF";
+"settings.export.json" = "JSON";
+"settings.import.title" = "匯入資料";
+
+"settings.about.version" = "版本 %@";
+"settings.about.privacy" = "隱私政策";
+"settings.about.terms" = "使用條款";
+"settings.about.acknowledgments" = "致謝";
+
+/* ===== ERRORS & ALERTS ===== */
+"error.generic.title" = "出現了問題";
+"error.generic.message" = "請稍後重試。";
+"error.network.title" = "連線錯誤";
+"error.network.message" = "請檢查您的網路連線。";
+"error.authentication.failed" = "身份驗證失敗";
+"error.save.failed" = "儲存失敗";
+"error.load.failed" = "載入失敗";
+"error.delete.failed" = "刪除失敗";
+"error.model.loading" = "正在載入 AI 模型...";
+"error.model.failed" = "載入 AI 模型失敗";
+
+"alert.delete.title" = "刪除日記？";
+"alert.delete.message" = "此操作無法撤銷。";
+"alert.unsaved.title" = "未儲存的更改";
+"alert.unsaved.message" = "是否要儲存您的更改？";
+"alert.restart.title" = "需要重新啟動";
+"alert.restart.message" = "請重新啟動 Gemi 以使更改生效。";
+
+/* ===== MULTIMODAL ===== */
+"multimodal.image.analyzing" = "正在分析圖片...";
+"multimodal.image.description" = "我看到：%@";
+"multimodal.audio.recording" = "錄音中...";
+"multimodal.audio.transcribing" = "正在轉錄音訊...";
+"multimodal.audio.duration" = "%@ 秒";
+"multimodal.attachment.remove" = "移除附件";
+
+/* ===== WRITING ASSISTANCE ===== */
+"writing.prompts.daily" = "每日提示";
+"writing.prompts.reflection" = "反思";
+"writing.prompts.gratitude" = "感恩";
+"writing.prompts.goals" = "目標與夢想";
+"writing.prompts.memories" = "回憶";
+"writing.assistant.expand" = "展開詳述";
+"writing.assistant.rephrase" = "重新表述";
+"writing.assistant.summarize" = "總結";
+"writing.assistant.continue" = "繼續寫作";
+
+/* ===== DATE & TIME ===== */
+"date.just_now" = "剛剛";
+"date.minutes_ago" = "%lld 分鐘前";
+"date.hours_ago" = "%lld 小時前";
+"date.days_ago" = "%lld 天前";
+"date.weeks_ago" = "%lld 週前";
+"date.months_ago" = "%lld 個月前";
+"date.years_ago" = "%lld 年前";
+
+/* ===== ACHIEVEMENTS ===== */
+"achievement.first_entry" = "第一篇日記！";
+"achievement.streak_7" = "7 天連續記錄！";
+"achievement.streak_30" = "30 天連續記錄！";
+"achievement.words_1000" = "寫滿 1,000 字！";
+"achievement.words_10000" = "寫滿 10,000 字！";
+"achievement.entries_50" = "50 篇日記！";
+"achievement.entries_100" = "100 篇日記！";

@@ -1,0 +1,266 @@
+/* 
+  Localizable.strings (Chinese Simplified)
+  Gemi - 您的私人AI日记
+  
+  Copyright © 2025 Gemi. All rights reserved.
+*/
+
+/* ===== GENERAL ===== */
+"app.name" = "Gemi";
+"button.cancel" = "取消";
+"button.save" = "保存";
+"button.done" = "完成";
+"button.continue" = "继续";
+"button.next" = "下一步";
+"button.back" = "返回";
+"button.close" = "关闭";
+"button.delete" = "删除";
+"button.edit" = "编辑";
+"button.ok" = "确定";
+"button.retry" = "重试";
+"button.share" = "分享";
+"button.export" = "导出";
+"button.import" = "导入";
+"button.settings" = "设置";
+
+/* ===== ONBOARDING ===== */
+"onboarding.welcome.title" = "欢迎使用 Gemi";
+"onboarding.welcome.subtitle" = "您的私人AI日记";
+"onboarding.welcome.description" = "所有内容都保存在您的设备上。无云端，无追踪，只有您和您的想法。";
+"onboarding.privacy.title" = "您的隐私至关重要";
+"onboarding.privacy.description" = "Gemi 完全在您的 Mac 上运行。您的日记、记忆和对话永远不会离开您的设备。";
+"onboarding.authentication.title" = "保护您的日记";
+"onboarding.authentication.faceid" = "使用 Face ID";
+"onboarding.authentication.touchid" = "使用 Touch ID";
+"onboarding.authentication.password" = "使用密码";
+"onboarding.language.title" = "选择您的语言";
+"onboarding.language.subtitle" = "您可以稍后在设置中更改";
+"onboarding.setup.title" = "正在设置 Gemi";
+"onboarding.setup.downloading" = "正在下载 AI 模型...";
+"onboarding.setup.progress" = "已下载 %@ / %@";
+"onboarding.complete.title" = "一切就绪！";
+"onboarding.complete.subtitle" = "开始您的日记之旅";
+"onboarding.complete.button" = "打开 Gemi";
+
+/* ===== NAVIGATION ===== */
+"nav.home" = "首页";
+"nav.timeline" = "时间线";
+"nav.memories" = "回忆";
+"nav.chat" = "与 Gemi 聊天";
+"nav.insights" = "洞察";
+"nav.favorites" = "收藏";
+"nav.settings" = "设置";
+"nav.new_entry" = "新条目";
+
+/* ===== HOME VIEW ===== */
+"home.greeting.morning" = "早上好";
+"home.greeting.afternoon" = "下午好";
+"home.greeting.evening" = "晚上好";
+"home.greeting.night" = "晚安";
+"home.prompt.whats_on_mind" = "您在想什么？";
+"home.button.new_entry" = "创建新日记";
+"home.button.continue_writing" = "继续写作";
+"home.stats.entries" = "%lld 篇日记";
+"home.stats.words" = "%lld 个字";
+"home.stats.memories" = "%lld 条回忆";
+"home.quote.daily" = "每日灵感";
+
+/* ===== TIMELINE VIEW ===== */
+"timeline.title" = "日记时间线";
+"timeline.empty.title" = "还没有日记";
+"timeline.empty.subtitle" = "开始记录您的旅程。\n您的时间线将显示在这里。";
+"timeline.empty.button" = "创建第一篇日记";
+"timeline.section.today" = "今天";
+"timeline.section.yesterday" = "昨天";
+"timeline.section.this_week" = "本周";
+"timeline.section.this_month" = "本月";
+"timeline.section.earlier" = "更早";
+"timeline.entry.words" = "%lld 字";
+"timeline.entry.reading_time" = "%lld 分钟阅读";
+
+/* ===== CHAT VIEW ===== */
+"chat.title" = "与 Gemi 聊天";
+"chat.placeholder" = "问我任何问题...";
+"chat.context.journal" = "基于您的日记";
+"chat.context.memory" = "我记得您提到过...";
+"chat.suggestion.reflect" = "让我们回顾今天";
+"chat.suggestion.explore" = "您想深入探讨吗？";
+"chat.suggestion.gratitude" = "今天您感激什么？";
+"chat.loading" = "Gemi 正在思考...";
+"chat.error.failed" = "无法获取响应";
+
+/* ===== SETTINGS VIEW ===== */
+"settings.title" = "设置";
+"settings.section.general" = "通用";
+"settings.section.privacy" = "隐私与安全";
+"settings.section.ai" = "AI 设置";
+"settings.section.data" = "数据管理";
+"settings.section.about" = "关于";
+
+"settings.language.title" = "语言";
+"settings.language.subtitle" = "选择您的首选语言";
+
+/* ===== TIMELINE VIEW (continued) ===== */
+"timeline.filter.all" = "所有日记";
+"timeline.filter.favorites" = "收藏";
+"timeline.filter.with_photos" = "含照片";
+"timeline.filter.with_audio" = "含音频";
+"timeline.sort.newest" = "最新优先";
+"timeline.sort.oldest" = "最早优先";
+
+/* ===== JOURNAL ENTRY ===== */
+"entry.placeholder.title" = "给日记起个标题...";
+"entry.placeholder.content" = "开始写作...";
+"entry.placeholder.whats_happening" = "今天发生了什么？";
+"entry.placeholder.grateful" = "您感恩什么？";
+"entry.placeholder.reflection" = "花点时间反思一下...";
+"entry.status.saving" = "保存中...";
+"entry.status.saved" = "已保存";
+"entry.button.focus_mode" = "专注模式";
+"entry.button.add_photo" = "添加照片";
+"entry.button.record_audio" = "录制音频";
+"entry.button.ai_assist" = "AI 助手";
+"entry.button.prompts" = "写作提示";
+"entry.mood.happy" = "开心";
+"entry.mood.calm" = "平静";
+"entry.mood.anxious" = "焦虑";
+"entry.mood.sad" = "悲伤";
+"entry.mood.excited" = "兴奋";
+"entry.mood.grateful" = "感恩";
+"entry.tag.placeholder" = "添加标签...";
+
+/* ===== FOCUS MODE ===== */
+"focus.title" = "专注模式";
+"focus.timer.minutes" = "%lld 分钟";
+"focus.ambient.rain" = "雨声";
+"focus.ambient.ocean" = "海浪声";
+"focus.ambient.forest" = "森林";
+"focus.ambient.silence" = "静音";
+"focus.goal.words" = "%lld 字";
+"focus.progress.great" = "进展很棒！";
+"focus.progress.keep_going" = "继续加油！";
+"focus.complete.title" = "专注时段完成";
+"focus.complete.words_written" = "您写了 %lld 字";
+
+/* ===== CHAT VIEW (continued) ===== */
+"chat.attachment.image" = "图片已附加";
+"chat.attachment.audio" = "音频已附加";
+"chat.processing.image" = "正在分析图片...";
+"chat.processing.audio" = "正在转录音频...";
+
+/* ===== MEMORIES VIEW ===== */
+"memories.title" = "您的回忆";
+"memories.empty.title" = "还没有回忆";
+"memories.empty.subtitle" = "随着您写日记，Gemi 会记住重要的时刻和见解。";
+"memories.search.placeholder" = "搜索回忆...";
+"memories.filter.all" = "所有回忆";
+"memories.filter.people" = "人物";
+"memories.filter.places" = "地点";
+"memories.filter.emotions" = "情绪";
+"memories.filter.insights" = "见解";
+"memories.delete.confirm" = "删除这条回忆？";
+"memories.delete.message" = "此操作无法撤销。";
+
+/* ===== INSIGHTS VIEW ===== */
+"insights.title" = "日记洞察";
+"insights.subtitle" = "发现您写作旅程中的模式和趋势";
+"insights.empty.title" = "还没有洞察";
+"insights.empty.subtitle" = "开始写日记以发现模式\n并追踪您的情绪旅程。";
+"insights.mood.title" = "情绪趋势";
+"insights.mood.dominant" = "主导情绪";
+"insights.topics.title" = "热门话题";
+"insights.writing.title" = "写作模式";
+"insights.writing.most_active" = "最活跃时间";
+"insights.writing.average_length" = "平均日记长度";
+"insights.writing.total_words" = "总计写作字数";
+"insights.streak.title" = "连续记录";
+"insights.streak.current" = "%lld 天";
+"insights.streak.best" = "最佳：%lld 天";
+
+/* ===== SETTINGS VIEW (continued) ===== */
+"settings.theme.title" = "外观";
+"settings.theme.light" = "浅色";
+"settings.theme.dark" = "深色";
+"settings.theme.auto" = "自动";
+
+"settings.authentication.title" = "身份验证";
+"settings.authentication.faceid" = "需要 Face ID";
+"settings.authentication.touchid" = "需要 Touch ID";
+"settings.authentication.password" = "需要密码";
+"settings.authentication.timeout" = "%lld 分钟后锁定";
+
+"settings.ai.model" = "AI 模型";
+"settings.ai.model.fast" = "Gemma 3n 快速版 (2B)";
+"settings.ai.model.balanced" = "Gemma 3n 平衡版 (4B)";
+"settings.ai.model.powerful" = "Gemma 3n 强大版 (8B)";
+"settings.ai.temperature" = "创造力水平";
+"settings.ai.memory" = "记忆管理";
+"settings.ai.clear_memory" = "清除所有记忆";
+
+"settings.export.title" = "导出日记";
+"settings.export.format" = "导出格式";
+"settings.export.markdown" = "Markdown";
+"settings.export.pdf" = "PDF";
+"settings.export.json" = "JSON";
+"settings.import.title" = "导入数据";
+
+"settings.about.version" = "版本 %@";
+"settings.about.privacy" = "隐私政策";
+"settings.about.terms" = "使用条款";
+"settings.about.acknowledgments" = "致谢";
+
+/* ===== ERRORS & ALERTS ===== */
+"error.generic.title" = "出现了问题";
+"error.generic.message" = "请稍后重试。";
+"error.network.title" = "连接错误";
+"error.network.message" = "请检查您的网络连接。";
+"error.authentication.failed" = "身份验证失败";
+"error.save.failed" = "保存失败";
+"error.load.failed" = "加载失败";
+"error.delete.failed" = "删除失败";
+"error.model.loading" = "正在加载 AI 模型...";
+"error.model.failed" = "加载 AI 模型失败";
+
+"alert.delete.title" = "删除日记？";
+"alert.delete.message" = "此操作无法撤销。";
+"alert.unsaved.title" = "未保存的更改";
+"alert.unsaved.message" = "是否要保存您的更改？";
+"alert.restart.title" = "需要重启";
+"alert.restart.message" = "请重启 Gemi 以使更改生效。";
+
+/* ===== MULTIMODAL ===== */
+"multimodal.image.analyzing" = "正在分析图片...";
+"multimodal.image.description" = "我看到：%@";
+"multimodal.audio.recording" = "录音中...";
+"multimodal.audio.transcribing" = "正在转录音频...";
+"multimodal.audio.duration" = "%@ 秒";
+"multimodal.attachment.remove" = "移除附件";
+
+/* ===== WRITING ASSISTANCE ===== */
+"writing.prompts.daily" = "每日提示";
+"writing.prompts.reflection" = "反思";
+"writing.prompts.gratitude" = "感恩";
+"writing.prompts.goals" = "目标与梦想";
+"writing.prompts.memories" = "回忆";
+"writing.assistant.expand" = "展开详述";
+"writing.assistant.rephrase" = "重新表述";
+"writing.assistant.summarize" = "总结";
+"writing.assistant.continue" = "继续写作";
+
+/* ===== DATE & TIME ===== */
+"date.just_now" = "刚刚";
+"date.minutes_ago" = "%lld 分钟前";
+"date.hours_ago" = "%lld 小时前";
+"date.days_ago" = "%lld 天前";
+"date.weeks_ago" = "%lld 周前";
+"date.months_ago" = "%lld 个月前";
+"date.years_ago" = "%lld 年前";
+
+/* ===== ACHIEVEMENTS ===== */
+"achievement.first_entry" = "第一篇日记！";
+"achievement.streak_7" = "7 天连续记录！";
+"achievement.streak_30" = "30 天连续记录！";
+"achievement.words_1000" = "写满 1,000 字！";
+"achievement.words_10000" = "写满 10,000 字！";
+"achievement.entries_50" = "50 篇日记！";
+"achievement.entries_100" = "100 篇日记！";

@@ -83,7 +83,6 @@ final class MultimodalAIService: ObservableObject {
     
     @objc private func attachmentsDidChange() {
         // Could trigger preprocessing here if needed
-        logger.debug("Attachments changed, ready for processing")
     }
     
     // MARK: - Public Methods
@@ -192,7 +191,6 @@ final class MultimodalAIService: ObservableObject {
     // MARK: - Image Processing
     
     private func processImage(_ image: NSImage, attachment: AttachmentManager.Attachment) async throws -> (description: String, metadata: [String: Any]) {
-        logger.debug("Processing image: \(attachment.fileName)")
         
         // Quick analysis for speed
         let quickDescription = try await lightweightVision.quickAnalyze(image)
@@ -226,7 +224,6 @@ final class MultimodalAIService: ObservableObject {
     // MARK: - Audio Processing
     
     private func processAudio(_ url: URL, attachment: AttachmentManager.Attachment) async throws -> (description: String, metadata: [String: Any]) {
-        logger.debug("Processing audio: \(attachment.fileName)")
         
         // Quick transcription
         let (text, duration) = try await quickAudio.quickTranscribe(url)
@@ -251,7 +248,6 @@ final class MultimodalAIService: ObservableObject {
     // MARK: - Document Processing
     
     private func processDocument(_ url: URL, attachment: AttachmentManager.Attachment) async throws -> (description: String, metadata: [String: Any]) {
-        logger.debug("Processing document: \(attachment.fileName)")
         
         // For now, basic document info
         // In the future, could use PDFKit or other frameworks

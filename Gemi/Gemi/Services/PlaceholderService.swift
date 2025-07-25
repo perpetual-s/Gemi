@@ -112,11 +112,10 @@ final class PlaceholderService: ObservableObject {
         return nil
     }
     
-    // MARK: - Weather-based Placeholders (Future Enhancement)
+    // MARK: - Weather-based Placeholders
     
     private func getWeatherPlaceholder() -> String? {
-        // TODO: Integrate with weather API
-        // For now, return nil
+        // Reserved for future weather integration
         return nil
     }
     

@@ -422,9 +422,6 @@ actor DatabaseManager {
         var entries: [JournalEntry] = []
         let lowercasedQuery = query.lowercased()
         
-        // Debug: Print search query
-        print("Searching for: '\(query)'")
-        
         var totalEntriesFound = 0
         while sqlite3_step(statement) == SQLITE_ROW {
             totalEntriesFound += 1
@@ -462,12 +459,6 @@ actor DatabaseManager {
             let titleMatches = title.lowercased().contains(lowercasedQuery)
             let tagsMatch = tags.contains { $0.lowercased().contains(lowercasedQuery) }
             let moodMatches = mood?.rawValue.lowercased().contains(lowercasedQuery) ?? false
-            
-            // Debug: Print match results
-            if title.lowercased().contains("powerball") || content.lowercased().contains("powerball") {
-                print("Found Powerball entry - Title: \(title), Content preview: \(String(content.prefix(50)))")
-                print("Match results - Title: \(titleMatches), Content: \(contentMatches), Tags: \(tagsMatch), Mood: \(moodMatches)")
-            }
             
             // Only include entry if it matches in title, tags, mood, or content
             if titleMatches || tagsMatch || moodMatches || contentMatches {

@@ -24,6 +24,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		8CD47E8F2E33285800BBC273 /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Resources; path = Gemi/Resources; sourceTree = "<group>"; };
 		8CE77D7A2E19B5CA00AF7A09 /* Gemi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Gemi.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8CE77D882E19B5CB00AF7A09 /* GemiTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GemiTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8CE77D922E19B5CB00AF7A09 /* GemiUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GemiUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -75,6 +76,7 @@
 		8CE77D712E19B5CA00AF7A09 = {
 			isa = PBXGroup;
 			children = (
+				8CD47E8F2E33285800BBC273 /* Resources */,
 				8CE77D7C2E19B5CA00AF7A09 /* Gemi */,
 				8CE77D8B2E19B5CB00AF7A09 /* GemiTests */,
 				8CE77D952E19B5CB00AF7A09 /* GemiUITests */,
@@ -194,6 +196,15 @@
 				Base,
 				ko,
 				ja,
+				"zh-Hans",
+				es,
+				fr,
+				de,
+				ar,
+				pt,
+				"zh-Hant",
+				hi,
+				id,
 			);
 			mainGroup = 8CE77D712E19B5CA00AF7A09;
 			minimizedProjectReferenceProxies = 1;

@@ -1,0 +1,260 @@
+/* 
+  Localizable.strings (Hindi)
+  Gemi - आपकी निजी AI डायरी
+  
+  Copyright © 2025 Gemi. All rights reserved.
+*/
+
+/* ===== GENERAL ===== */
+"app.name" = "Gemi";
+"button.cancel" = "रद्द करें";
+"button.save" = "सहेजें";
+"button.done" = "हो गया";
+"button.continue" = "जारी रखें";
+"button.next" = "अगला";
+"button.back" = "वापस";
+"button.close" = "बंद करें";
+"button.delete" = "हटाएं";
+"button.edit" = "संपादित करें";
+"button.ok" = "ठीक है";
+"button.retry" = "फिर से कोशिश करें";
+"button.share" = "साझा करें";
+"button.export" = "निर्यात करें";
+"button.import" = "आयात करें";
+"button.settings" = "सेटिंग्स";
+
+/* ===== ONBOARDING ===== */
+"onboarding.welcome.title" = "Gemi में आपका स्वागत है";
+"onboarding.welcome.subtitle" = "आपकी निजी AI डायरी";
+"onboarding.welcome.description" = "सब कुछ आपके डिवाइस पर रहता है। कोई क्लाउड नहीं, कोई ट्रैकिंग नहीं, बस आप और आपके विचार।";
+"onboarding.privacy.title" = "आपकी गोपनीयता मायने रखती है";
+"onboarding.privacy.description" = "Gemi पूरी तरह से आपके Mac पर चलता है। आपकी डायरी, यादें और बातचीत कभी आपके डिवाइस से बाहर नहीं जाती।";
+"onboarding.authentication.title" = "अपनी डायरी सुरक्षित करें";
+"onboarding.authentication.faceid" = "Face ID का उपयोग करें";
+"onboarding.authentication.touchid" = "Touch ID का उपयोग करें";
+"onboarding.authentication.password" = "पासवर्ड का उपयोग करें";
+"onboarding.language.title" = "अपनी भाषा चुनें";
+"onboarding.language.subtitle" = "आप इसे बाद में सेटिंग्स में बदल सकते हैं";
+"onboarding.setup.title" = "Gemi सेटअप हो रहा है";
+"onboarding.setup.downloading" = "AI मॉडल डाउनलोड हो रहा है...";
+"onboarding.setup.progress" = "%@ में से %@ डाउनलोड हुआ";
+"onboarding.complete.title" = "सब तैयार है!";
+"onboarding.complete.subtitle" = "अपनी लेखन यात्रा शुरू करें";
+"onboarding.complete.button" = "Gemi खोलें";
+
+/* ===== NAVIGATION ===== */
+"nav.home" = "होम";
+"nav.timeline" = "समयरेखा";
+"nav.memories" = "यादें";
+"nav.chat" = "Gemi से बात करें";
+"nav.insights" = "अंतर्दृष्टि";
+"nav.favorites" = "पसंदीदा";
+"nav.settings" = "सेटिंग्स";
+"nav.new_entry" = "नई प्रविष्टि";
+
+/* ===== HOME VIEW ===== */
+"home.greeting.morning" = "सुप्रभात";
+"home.greeting.afternoon" = "नमस्ते";
+"home.greeting.evening" = "शुभ संध्या";
+"home.greeting.night" = "शुभ रात्रि";
+"home.prompt.whats_on_mind" = "आप क्या सोच रहे हैं?";
+"home.button.new_entry" = "नई प्रविष्टि बनाएं";
+"home.button.continue_writing" = "लिखना जारी रखें";
+"home.stats.entries" = "%lld प्रविष्टियां";
+"home.stats.words" = "%lld शब्द";
+"home.stats.memories" = "%lld यादें";
+"home.quote.daily" = "दैनिक प्रेरणा";
+
+/* ===== TIMELINE VIEW ===== */
+"timeline.title" = "डायरी समयरेखा";
+"timeline.empty.title" = "अभी तक कोई प्रविष्टि नहीं";
+"timeline.empty.subtitle" = "अपनी यात्रा का दस्तावेजीकरण शुरू करें।\nआपकी समयरेखा यहां दिखाई देगी।";
+"timeline.empty.button" = "अपनी पहली प्रविष्टि बनाएं";
+"timeline.section.today" = "आज";
+"timeline.section.yesterday" = "कल";
+"timeline.section.this_week" = "इस सप्ताह";
+"timeline.section.this_month" = "इस महीने";
+"timeline.section.earlier" = "पहले";
+"timeline.entry.words" = "%lld शब्द";
+"timeline.entry.reading_time" = "%lld मिनट पढ़ने का समय";
+"timeline.filter.all" = "सभी प्रविष्टियां";
+"timeline.filter.favorites" = "पसंदीदा";
+"timeline.filter.with_photos" = "फोटो के साथ";
+"timeline.filter.with_audio" = "ऑडियो के साथ";
+"timeline.sort.newest" = "नवीनतम पहले";
+"timeline.sort.oldest" = "सबसे पुराना पहले";
+
+/* ===== JOURNAL ENTRY ===== */
+"entry.placeholder.title" = "अपनी प्रविष्टि को एक शीर्षक दें...";
+"entry.placeholder.content" = "लिखना शुरू करें...";
+"entry.placeholder.whats_happening" = "आज क्या हो रहा है?";
+"entry.placeholder.grateful" = "आप किसके लिए आभारी हैं?";
+"entry.placeholder.reflection" = "चिंतन के लिए एक क्षण लें...";
+"entry.status.saving" = "सहेजा जा रहा है...";
+"entry.status.saved" = "सहेजा गया";
+"entry.button.focus_mode" = "फोकस मोड";
+"entry.button.add_photo" = "फोटो जोड़ें";
+"entry.button.record_audio" = "ऑडियो रिकॉर्ड करें";
+"entry.button.ai_assist" = "AI सहायक";
+"entry.button.prompts" = "लेखन सुझाव";
+"entry.mood.happy" = "खुश";
+"entry.mood.calm" = "शांत";
+"entry.mood.anxious" = "चिंतित";
+"entry.mood.sad" = "उदास";
+"entry.mood.excited" = "उत्साहित";
+"entry.mood.grateful" = "आभारी";
+"entry.tag.placeholder" = "टैग जोड़ें...";
+
+/* ===== FOCUS MODE ===== */
+"focus.title" = "फोकस मोड";
+"focus.timer.minutes" = "%lld मिनट";
+"focus.ambient.rain" = "बारिश";
+"focus.ambient.ocean" = "समुद्री लहरें";
+"focus.ambient.forest" = "जंगल";
+"focus.ambient.silence" = "मौन";
+"focus.goal.words" = "%lld शब्द";
+"focus.progress.great" = "बढ़िया प्रगति!";
+"focus.progress.keep_going" = "जारी रखें!";
+"focus.complete.title" = "फोकस सत्र पूर्ण";
+"focus.complete.words_written" = "आपने %lld शब्द लिखे";
+
+/* ===== CHAT VIEW ===== */
+"chat.title" = "Gemi से बात करें";
+"chat.placeholder" = "मुझसे कुछ भी पूछें...";
+"chat.context.journal" = "आपकी डायरी के आधार पर";
+"chat.context.memory" = "मुझे याद है आपने उल्लेख किया था...";
+"chat.suggestion.reflect" = "आइए आपके दिन पर विचार करें";
+"chat.suggestion.explore" = "क्या आप इसे और गहराई से देखना चाहेंगे?";
+"chat.suggestion.gratitude" = "आज आप किसके लिए आभारी हैं?";
+"chat.loading" = "Gemi सोच रहा है...";
+"chat.error.failed" = "प्रतिक्रिया प्राप्त करने में विफल";
+"chat.attachment.image" = "छवि संलग्न";
+"chat.attachment.audio" = "ऑडियो संलग्न";
+"chat.processing.image" = "छवि का विश्लेषण हो रहा है...";
+"chat.processing.audio" = "ऑडियो को टेक्स्ट में बदला जा रहा है...";
+
+/* ===== MEMORIES VIEW ===== */
+"memories.title" = "आपकी यादें";
+"memories.empty.title" = "अभी तक कोई याद नहीं";
+"memories.empty.subtitle" = "जैसे-जैसे आप लिखते हैं, Gemi महत्वपूर्ण क्षणों और अंतर्दृष्टि को याद रखेगा।";
+"memories.search.placeholder" = "यादें खोजें...";
+"memories.filter.all" = "सभी यादें";
+"memories.filter.people" = "लोग";
+"memories.filter.places" = "स्थान";
+"memories.filter.emotions" = "भावनाएं";
+"memories.filter.insights" = "अंतर्दृष्टि";
+"memories.delete.confirm" = "इस याद को हटाएं?";
+"memories.delete.message" = "यह क्रिया पूर्ववत नहीं की जा सकती।";
+
+/* ===== INSIGHTS VIEW ===== */
+"insights.title" = "डायरी अंतर्दृष्टि";
+"insights.subtitle" = "अपनी लेखन यात्रा में पैटर्न और रुझान खोजें";
+"insights.empty.title" = "अभी तक कोई अंतर्दृष्टि नहीं";
+"insights.empty.subtitle" = "पैटर्न खोजने और समय के साथ अपनी\nभावनात्मक यात्रा को ट्रैक करने के लिए लिखना शुरू करें।";
+"insights.mood.title" = "मूड रुझान";
+"insights.mood.dominant" = "आपका प्रमुख मूड";
+"insights.topics.title" = "लोकप्रिय विषय";
+"insights.writing.title" = "लेखन पैटर्न";
+"insights.writing.most_active" = "सबसे सक्रिय समय";
+"insights.writing.average_length" = "औसत प्रविष्टि लंबाई";
+"insights.writing.total_words" = "कुल लिखे गए शब्द";
+"insights.streak.title" = "लेखन श्रृंखला";
+"insights.streak.current" = "%lld दिन";
+"insights.streak.best" = "सर्वश्रेष्ठ: %lld दिन";
+
+/* ===== SETTINGS VIEW ===== */
+"settings.title" = "सेटिंग्स";
+"settings.section.general" = "सामान्य";
+"settings.section.privacy" = "गोपनीयता और सुरक्षा";
+"settings.section.ai" = "AI सेटिंग्स";
+"settings.section.data" = "डेटा प्रबंधन";
+"settings.section.about" = "के बारे में";
+
+"settings.language.title" = "भाषा";
+"settings.language.subtitle" = "अपनी पसंदीदा भाषा चुनें";
+"settings.theme.title" = "दिखावट";
+"settings.theme.light" = "हल्का";
+"settings.theme.dark" = "गहरा";
+"settings.theme.auto" = "स्वचालित";
+
+"settings.authentication.title" = "प्रमाणीकरण";
+"settings.authentication.faceid" = "Face ID आवश्यक";
+"settings.authentication.touchid" = "Touch ID आवश्यक";
+"settings.authentication.password" = "पासवर्ड आवश्यक";
+"settings.authentication.timeout" = "%lld मिनट बाद लॉक करें";
+
+"settings.ai.model" = "AI मॉडल";
+"settings.ai.model.fast" = "Gemma 3n तेज़ (2B)";
+"settings.ai.model.balanced" = "Gemma 3n संतुलित (4B)";
+"settings.ai.model.powerful" = "Gemma 3n शक्तिशाली (8B)";
+"settings.ai.temperature" = "रचनात्मकता स्तर";
+"settings.ai.memory" = "मेमोरी प्रबंधन";
+"settings.ai.clear_memory" = "सभी यादें साफ़ करें";
+
+"settings.export.title" = "डायरी निर्यात करें";
+"settings.export.format" = "निर्यात प्रारूप";
+"settings.export.markdown" = "मार्कडाउन";
+"settings.export.pdf" = "PDF";
+"settings.export.json" = "JSON";
+"settings.import.title" = "डेटा आयात करें";
+
+"settings.about.version" = "संस्करण %@";
+"settings.about.privacy" = "गोपनीयता नीति";
+"settings.about.terms" = "उपयोग की शर्तें";
+"settings.about.acknowledgments" = "आभार";
+
+/* ===== ERRORS & ALERTS ===== */
+"error.generic.title" = "कुछ गलत हुआ";
+"error.generic.message" = "कृपया बाद में फिर से प्रयास करें।";
+"error.network.title" = "कनेक्शन त्रुटि";
+"error.network.message" = "कृपया अपना इंटरनेट कनेक्शन जांचें।";
+"error.authentication.failed" = "प्रमाणीकरण विफल";
+"error.save.failed" = "सहेजने में विफल";
+"error.load.failed" = "लोड करने में विफल";
+"error.delete.failed" = "हटाने में विफल";
+"error.model.loading" = "AI मॉडल लोड हो रहा है...";
+"error.model.failed" = "AI मॉडल लोड करने में विफल";
+
+"alert.delete.title" = "प्रविष्टि हटाएं?";
+"alert.delete.message" = "यह क्रिया पूर्ववत नहीं की जा सकती।";
+"alert.unsaved.title" = "बिना सहेजे परिवर्तन";
+"alert.unsaved.message" = "क्या आप अपने परिवर्तन सहेजना चाहते हैं?";
+"alert.restart.title" = "पुनः प्रारंभ आवश्यक";
+"alert.restart.message" = "परिवर्तनों को प्रभावी बनाने के लिए कृपया Gemi को पुनः प्रारंभ करें।";
+
+/* ===== MULTIMODAL ===== */
+"multimodal.image.analyzing" = "छवि का विश्लेषण हो रहा है...";
+"multimodal.image.description" = "मैं देख सकता हूं: %@";
+"multimodal.audio.recording" = "रिकॉर्डिंग...";
+"multimodal.audio.transcribing" = "ऑडियो को टेक्स्ट में बदला जा रहा है...";
+"multimodal.audio.duration" = "%@ सेकंड";
+"multimodal.attachment.remove" = "संलग्न हटाएं";
+
+/* ===== WRITING ASSISTANCE ===== */
+"writing.prompts.daily" = "दैनिक सुझाव";
+"writing.prompts.reflection" = "चिंतन";
+"writing.prompts.gratitude" = "कृतज्ञता";
+"writing.prompts.goals" = "लक्ष्य और सपने";
+"writing.prompts.memories" = "यादें";
+"writing.assistant.expand" = "इसे विस्तार दें";
+"writing.assistant.rephrase" = "फिर से लिखें";
+"writing.assistant.summarize" = "सारांश";
+"writing.assistant.continue" = "लिखना जारी रखें";
+
+/* ===== DATE & TIME ===== */
+"date.just_now" = "अभी";
+"date.minutes_ago" = "%lld मिनट पहले";
+"date.hours_ago" = "%lld घंटे पहले";
+"date.days_ago" = "%lld दिन पहले";
+"date.weeks_ago" = "%lld सप्ताह पहले";
+"date.months_ago" = "%lld महीने पहले";
+"date.years_ago" = "%lld साल पहले";
+
+/* ===== ACHIEVEMENTS ===== */
+"achievement.first_entry" = "पहली प्रविष्टि!";
+"achievement.streak_7" = "7 दिन की श्रृंखला!";
+"achievement.streak_30" = "30 दिन की श्रृंखला!";
+"achievement.words_1000" = "1,000 शब्द लिखे!";
+"achievement.words_10000" = "10,000 शब्द लिखे!";
+"achievement.entries_50" = "50 प्रविष्टियां!";
+"achievement.entries_100" = "100 प्रविष्टियां!";

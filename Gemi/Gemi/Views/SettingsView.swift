@@ -310,10 +310,10 @@ struct SettingsView: View {
                 VStack(spacing: 20) {
                     HStack {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Interface Language")
+                            Text(NSLocalizedString("settings.language.title", comment: "Language setting title"))
                                 .font(.system(size: 14, weight: .medium))
                             
-                            Text("Choose your preferred language for Gemi")
+                            Text(NSLocalizedString("settings.language.subtitle", comment: "Language setting subtitle"))
                                 .font(.system(size: 12))
                                 .foregroundColor(.secondary)
                         }
@@ -340,7 +340,7 @@ struct SettingsView: View {
                             .font(.system(size: 14))
                             .foregroundColor(.orange)
                         
-                        Text("Gemi will restart to apply the new language")
+                        Text(NSLocalizedString("alert.restart.message", comment: "Restart required message"))
                             .font(.system(size: 13))
                             .foregroundColor(.secondary)
                     }

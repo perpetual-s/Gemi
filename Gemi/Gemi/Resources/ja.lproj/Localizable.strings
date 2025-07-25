@@ -100,10 +100,167 @@
 "settings.language.title" = "言語";
 "settings.language.subtitle" = "お好みの言語を選択";
 
+/* ===== TIMELINE VIEW (continued) ===== */
+"timeline.filter.all" = "すべての日記";
+"timeline.filter.favorites" = "お気に入り";
+"timeline.filter.with_photos" = "写真付き";
+"timeline.filter.with_audio" = "音声付き";
+"timeline.sort.newest" = "新しい順";
+"timeline.sort.oldest" = "古い順";
+
+/* ===== JOURNAL ENTRY ===== */
+"entry.placeholder.title" = "タイトルを入力...";
+"entry.placeholder.content" = "書き始める...";
+"entry.placeholder.whats_happening" = "今日は何がありましたか？";
+"entry.placeholder.grateful" = "何に感謝していますか？";
+"entry.placeholder.reflection" = "少し振り返ってみましょう...";
+"entry.status.saving" = "保存中...";
+"entry.status.saved" = "保存済み";
+"entry.button.focus_mode" = "集中モード";
+"entry.button.add_photo" = "写真を追加";
+"entry.button.record_audio" = "音声を録音";
+"entry.button.ai_assist" = "AIアシスト";
+"entry.button.prompts" = "書き方のヒント";
+"entry.mood.happy" = "幸せ";
+"entry.mood.calm" = "穏やか";
+"entry.mood.anxious" = "不安";
+"entry.mood.sad" = "悲しい";
+"entry.mood.excited" = "興奮";
+"entry.mood.grateful" = "感謝";
+"entry.tag.placeholder" = "タグを追加...";
+
+/* ===== FOCUS MODE ===== */
+"focus.title" = "集中モード";
+"focus.timer.minutes" = "%lld分";
+"focus.ambient.rain" = "雨音";
+"focus.ambient.ocean" = "波の音";
+"focus.ambient.forest" = "森の音";
+"focus.ambient.silence" = "無音";
+"focus.goal.words" = "%lld語";
+"focus.progress.great" = "素晴らしい進歩！";
+"focus.progress.keep_going" = "その調子！";
+"focus.complete.title" = "集中セッション完了";
+"focus.complete.words_written" = "%lld語を書きました";
+
+/* ===== CHAT VIEW (continued) ===== */
+"chat.attachment.image" = "画像を添付";
+"chat.attachment.audio" = "音声を添付";
+"chat.processing.image" = "画像を分析中...";
+"chat.processing.audio" = "音声を文字起こし中...";
+
+/* ===== MEMORIES VIEW ===== */
+"memories.title" = "あなたの思い出";
+"memories.empty.title" = "まだ思い出がありません";
+"memories.empty.subtitle" = "日記を書くと、Gemiが重要な瞬間や洞察を記憶します。";
+"memories.search.placeholder" = "思い出を検索...";
+"memories.filter.all" = "すべての思い出";
+"memories.filter.people" = "人";
+"memories.filter.places" = "場所";
+"memories.filter.emotions" = "感情";
+"memories.filter.insights" = "洞察";
+"memories.delete.confirm" = "この思い出を削除しますか？";
+"memories.delete.message" = "この操作は取り消せません。";
+
+/* ===== INSIGHTS VIEW ===== */
+"insights.title" = "日記インサイト";
+"insights.subtitle" = "あなたの執筆の旅のパターンとトレンドを発見";
+"insights.empty.title" = "まだインサイトがありません";
+"insights.empty.subtitle" = "日記を書き始めて、パターンを発見し\n時間とともに感情の旅を追跡しましょう。";
+"insights.mood.title" = "気分の傾向";
+"insights.mood.dominant" = "主な気分";
+"insights.topics.title" = "人気のトピック";
+"insights.writing.title" = "執筆パターン";
+"insights.writing.most_active" = "最も活発な時間";
+"insights.writing.average_length" = "平均日記の長さ";
+"insights.writing.total_words" = "総執筆語数";
+"insights.streak.title" = "連続記録";
+"insights.streak.current" = "%lld日";
+"insights.streak.best" = "最高記録: %lld日";
+
+/* ===== SETTINGS VIEW (continued) ===== */
+"settings.theme.title" = "外観";
+"settings.theme.light" = "ライト";
+"settings.theme.dark" = "ダーク";
+"settings.theme.auto" = "自動";
+
+"settings.authentication.title" = "認証";
+"settings.authentication.faceid" = "Face IDを要求";
+"settings.authentication.touchid" = "Touch IDを要求";
+"settings.authentication.password" = "パスワードを要求";
+"settings.authentication.timeout" = "%lld分後にロック";
+
+"settings.ai.model" = "AIモデル";
+"settings.ai.model.fast" = "Gemma 3n 高速 (2B)";
+"settings.ai.model.balanced" = "Gemma 3n バランス (4B)";
+"settings.ai.model.powerful" = "Gemma 3n パワフル (8B)";
+"settings.ai.temperature" = "創造性レベル";
+"settings.ai.memory" = "メモリ管理";
+"settings.ai.clear_memory" = "すべての記憶を削除";
+
+"settings.export.title" = "日記をエクスポート";
+"settings.export.format" = "エクスポート形式";
+"settings.export.markdown" = "マークダウン";
+"settings.export.pdf" = "PDF";
+"settings.export.json" = "JSON";
+"settings.import.title" = "データをインポート";
+
+"settings.about.version" = "バージョン %@";
+"settings.about.privacy" = "プライバシーポリシー";
+"settings.about.terms" = "利用規約";
+"settings.about.acknowledgments" = "謝辞";
+
+/* ===== ERRORS & ALERTS ===== */
+"error.generic.title" = "問題が発生しました";
+"error.generic.message" = "後でもう一度お試しください。";
+"error.network.title" = "接続エラー";
+"error.network.message" = "インターネット接続を確認してください。";
+"error.authentication.failed" = "認証に失敗しました";
+"error.save.failed" = "保存に失敗しました";
+"error.load.failed" = "読み込みに失敗しました";
+"error.delete.failed" = "削除に失敗しました";
+"error.model.loading" = "AIモデルを読み込み中...";
+"error.model.failed" = "AIモデルの読み込みに失敗しました";
+
+"alert.delete.title" = "日記を削除しますか？";
+"alert.delete.message" = "この操作は取り消せません。";
+"alert.unsaved.title" = "保存されていない変更";
+"alert.unsaved.message" = "変更を保存しますか？";
+"alert.restart.title" = "再起動が必要です";
+"alert.restart.message" = "変更を適用するにはGemiを再起動してください。";
+
 /* ===== MULTIMODAL ===== */
 "multimodal.image.analyzing" = "画像を分析中...";
 "multimodal.image.description" = "見えるもの: %@";
 "multimodal.audio.recording" = "録音中...";
-"multimodal.audio.transcribing" = "音声を変換中...";
+"multimodal.audio.transcribing" = "音声を文字起こし中...";
 "multimodal.audio.duration" = "%@秒";
 "multimodal.attachment.remove" = "添付を削除";
+
+/* ===== WRITING ASSISTANCE ===== */
+"writing.prompts.daily" = "今日のプロンプト";
+"writing.prompts.reflection" = "振り返り";
+"writing.prompts.gratitude" = "感謝";
+"writing.prompts.goals" = "目標と夢";
+"writing.prompts.memories" = "思い出";
+"writing.assistant.expand" = "詳しく書く";
+"writing.assistant.rephrase" = "言い換える";
+"writing.assistant.summarize" = "要約する";
+"writing.assistant.continue" = "続きを書く";
+
+/* ===== DATE & TIME ===== */
+"date.just_now" = "たった今";
+"date.minutes_ago" = "%lld分前";
+"date.hours_ago" = "%lld時間前";
+"date.days_ago" = "%lld日前";
+"date.weeks_ago" = "%lld週間前";
+"date.months_ago" = "%lldヶ月前";
+"date.years_ago" = "%lld年前";
+
+/* ===== ACHIEVEMENTS ===== */
+"achievement.first_entry" = "初めての日記！";
+"achievement.streak_7" = "7日連続！";
+"achievement.streak_30" = "30日連続！";
+"achievement.words_1000" = "1,000語達成！";
+"achievement.words_10000" = "10,000語達成！";
+"achievement.entries_50" = "50件の日記！";
+"achievement.entries_100" = "100件の日記！";

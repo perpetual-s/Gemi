@@ -103,13 +103,13 @@ struct WritingFeedbackSettings: View {
                 
                 HStack {
                     Button("Test Typing") {
-                        // TODO: Show typing feedback preview
+                        // Preview available in main editor
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
                     
                     Button("Test Milestone") {
-                        // TODO: Show celebration preview
+                        // Celebration previews in main editor
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)

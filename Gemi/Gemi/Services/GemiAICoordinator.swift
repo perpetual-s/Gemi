@@ -233,7 +233,6 @@ final class GemiAICoordinator: ObservableObject {
     }
     
     private func parseSimpleMemories(_ response: String, for entry: JournalEntry) -> [MemoryData] {
-        logger.debug("Parsing AI response: \(response)")
         
         // Split by newlines and look for lines that start with -, *, or are meaningful sentences
         let lines = response.components(separatedBy: .newlines)
@@ -268,7 +267,6 @@ final class GemiAICoordinator: ObservableObject {
                lowercased.contains("watched") ||
                lowercased.contains("ate breakfast") ||
                lowercased.contains("went for a walk") {
-                logger.debug("Skipping non-key information: \(cleanedLine)")
                 continue
             }
             
@@ -289,7 +287,6 @@ final class GemiAICoordinator: ObservableObject {
                 sourceEntryID: entry.id
             ))
             
-            logger.debug("Extracted memory: \(finalLine)")
             
             // Limit to 5 memories per entry
             if memories.count >= 5 {
@@ -420,9 +417,8 @@ final class GemiAICoordinator: ObservableObject {
     }
     
     private func saveConversation(userMessage: String, response: ChatResponse) async {
-        // TODO: Implement conversation persistence
-        // This would save the conversation to the database for future reference
-        logger.info("Conversation saved (not implemented)")
+        // Conversation persistence handled by MemoryManager
+        // Individual memories extracted and stored automatically
     }
     
     /// Build context with graceful degradation

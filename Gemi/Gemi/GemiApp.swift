@@ -10,6 +10,7 @@ import SwiftUI
 @main
 struct GemiApp: App {
     @StateObject private var authManager = AuthenticationManager.shared
+    @StateObject private var localizationManager = LocalizationManager.shared
     @AppStorage("hasCompletedGemmaOnboarding") private var hasCompletedOnboarding = false
     @State private var showingOnboarding = false
     @State private var hasCheckedOnboarding = false
@@ -59,8 +60,10 @@ struct GemiApp: App {
                     .background(Color.black)
                 } else if authManager.isAuthenticated {
                     MainWindowView()
+                        .rtlAware() // Apply RTL support
                 } else {
                     AuthenticationView()
+                        .rtlAware() // Apply RTL support
                 }
             }
             .animation(.easeInOut(duration: 0.3), value: authManager.isAuthenticated)

@@ -24,7 +24,10 @@ final class LocalizationManager: ObservableObject {
         ("fr", "French", "Français"),
         ("de", "German", "Deutsch"),
         ("ar", "Arabic", "العربية"),
-        ("pt", "Portuguese", "Português")
+        ("pt", "Portuguese", "Português"),
+        ("hi", "Hindi", "हिन्दी"),
+        ("id", "Indonesian", "Bahasa Indonesia"),
+        ("ru", "Russian", "Русский")
     ]
     
     private init() {
@@ -60,10 +63,20 @@ final class LocalizationManager: ObservableObject {
     
     // Helper function to get localized string
     func localizedString(for key: String, comment: String = "") -> String {
-        let bundle = Bundle.main.path(forResource: currentLanguage, ofType: "lproj")
-            .flatMap { Bundle(path: $0) } ?? Bundle.main
+        // First check if we have the lproj folder in Resources
+        var bundle = Bundle.main
         
-        return NSLocalizedString(key, bundle: bundle, comment: comment)
+        if let path = Bundle.main.path(forResource: currentLanguage, ofType: "lproj"),
+           let langBundle = Bundle(path: path) {
+            bundle = langBundle
+        } else if currentLanguage != "en",
+                  let path = Bundle.main.path(forResource: "en", ofType: "lproj"),
+                  let langBundle = Bundle(path: path) {
+            // Fallback to English if current language not found
+            bundle = langBundle
+        }
+        
+        return bundle.localizedString(forKey: key, value: key, table: nil)
     }
     
     // Get display name for a language code
@@ -124,6 +137,12 @@ extension Font {
             return .system(size: size, weight: weight, design: .rounded)
         case "ar":
             // Arabic-optimized font
+            return .system(size: size, weight: weight, design: .rounded)
+        case "hi":
+            // Hindi-optimized font (Devanagari script)
+            return .system(size: size, weight: weight, design: .rounded)
+        case "ru":
+            // Russian-optimized font (Cyrillic script)
             return .system(size: size, weight: weight, design: .rounded)
         default:
             return .system(size: size, weight: weight, design: design)

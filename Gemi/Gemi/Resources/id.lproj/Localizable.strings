@@ -1,0 +1,260 @@
+/* 
+  Localizable.strings (Indonesian)
+  Gemi - Jurnal AI Pribadi Anda
+  
+  Copyright © 2025 Gemi. All rights reserved.
+*/
+
+/* ===== GENERAL ===== */
+"app.name" = "Gemi";
+"button.cancel" = "Batal";
+"button.save" = "Simpan";
+"button.done" = "Selesai";
+"button.continue" = "Lanjutkan";
+"button.next" = "Berikutnya";
+"button.back" = "Kembali";
+"button.close" = "Tutup";
+"button.delete" = "Hapus";
+"button.edit" = "Edit";
+"button.ok" = "OK";
+"button.retry" = "Coba lagi";
+"button.share" = "Bagikan";
+"button.export" = "Ekspor";
+"button.import" = "Impor";
+"button.settings" = "Pengaturan";
+
+/* ===== ONBOARDING ===== */
+"onboarding.welcome.title" = "Selamat datang di Gemi";
+"onboarding.welcome.subtitle" = "Jurnal AI pribadi Anda";
+"onboarding.welcome.description" = "Semua tetap di perangkat Anda. Tanpa cloud, tanpa pelacakan, hanya Anda dan pikiran Anda.";
+"onboarding.privacy.title" = "Privasi Anda penting";
+"onboarding.privacy.description" = "Gemi berjalan sepenuhnya di Mac Anda. Jurnal, kenangan, dan percakapan Anda tidak pernah meninggalkan perangkat Anda.";
+"onboarding.authentication.title" = "Amankan jurnal Anda";
+"onboarding.authentication.faceid" = "Gunakan Face ID";
+"onboarding.authentication.touchid" = "Gunakan Touch ID";
+"onboarding.authentication.password" = "Gunakan kata sandi";
+"onboarding.language.title" = "Pilih bahasa Anda";
+"onboarding.language.subtitle" = "Anda dapat mengubahnya nanti di Pengaturan";
+"onboarding.setup.title" = "Menyiapkan Gemi";
+"onboarding.setup.downloading" = "Mengunduh model AI...";
+"onboarding.setup.progress" = "%@ dari %@ terunduh";
+"onboarding.complete.title" = "Semua siap!";
+"onboarding.complete.subtitle" = "Mulai perjalanan menulis Anda";
+"onboarding.complete.button" = "Buka Gemi";
+
+/* ===== NAVIGATION ===== */
+"nav.home" = "Beranda";
+"nav.timeline" = "Linimasa";
+"nav.memories" = "Kenangan";
+"nav.chat" = "Mengobrol dengan Gemi";
+"nav.insights" = "Wawasan";
+"nav.favorites" = "Favorit";
+"nav.settings" = "Pengaturan";
+"nav.new_entry" = "Entri baru";
+
+/* ===== HOME VIEW ===== */
+"home.greeting.morning" = "Selamat pagi";
+"home.greeting.afternoon" = "Selamat siang";
+"home.greeting.evening" = "Selamat sore";
+"home.greeting.night" = "Selamat malam";
+"home.prompt.whats_on_mind" = "Apa yang Anda pikirkan?";
+"home.button.new_entry" = "Buat entri baru";
+"home.button.continue_writing" = "Lanjutkan menulis";
+"home.stats.entries" = "%lld entri";
+"home.stats.words" = "%lld kata";
+"home.stats.memories" = "%lld kenangan";
+"home.quote.daily" = "Inspirasi harian";
+
+/* ===== TIMELINE VIEW ===== */
+"timeline.title" = "Linimasa jurnal";
+"timeline.empty.title" = "Belum ada entri";
+"timeline.empty.subtitle" = "Mulai mendokumentasikan perjalanan Anda.\nLinimasa Anda akan muncul di sini.";
+"timeline.empty.button" = "Buat entri pertama Anda";
+"timeline.section.today" = "Hari ini";
+"timeline.section.yesterday" = "Kemarin";
+"timeline.section.this_week" = "Minggu ini";
+"timeline.section.this_month" = "Bulan ini";
+"timeline.section.earlier" = "Lebih awal";
+"timeline.entry.words" = "%lld kata";
+"timeline.entry.reading_time" = "%lld menit membaca";
+"timeline.filter.all" = "Semua entri";
+"timeline.filter.favorites" = "Favorit";
+"timeline.filter.with_photos" = "Dengan foto";
+"timeline.filter.with_audio" = "Dengan audio";
+"timeline.sort.newest" = "Terbaru dulu";
+"timeline.sort.oldest" = "Terlama dulu";
+
+/* ===== JOURNAL ENTRY ===== */
+"entry.placeholder.title" = "Berikan judul untuk entri Anda...";
+"entry.placeholder.content" = "Mulai menulis...";
+"entry.placeholder.whats_happening" = "Apa yang terjadi hari ini?";
+"entry.placeholder.grateful" = "Apa yang Anda syukuri?";
+"entry.placeholder.reflection" = "Luangkan waktu untuk merenung...";
+"entry.status.saving" = "Menyimpan...";
+"entry.status.saved" = "Tersimpan";
+"entry.button.focus_mode" = "Mode fokus";
+"entry.button.add_photo" = "Tambah foto";
+"entry.button.record_audio" = "Rekam audio";
+"entry.button.ai_assist" = "Asisten AI";
+"entry.button.prompts" = "Saran menulis";
+"entry.mood.happy" = "Bahagia";
+"entry.mood.calm" = "Tenang";
+"entry.mood.anxious" = "Cemas";
+"entry.mood.sad" = "Sedih";
+"entry.mood.excited" = "Bersemangat";
+"entry.mood.grateful" = "Bersyukur";
+"entry.tag.placeholder" = "Tambah tag...";
+
+/* ===== FOCUS MODE ===== */
+"focus.title" = "Mode fokus";
+"focus.timer.minutes" = "%lld menit";
+"focus.ambient.rain" = "Hujan";
+"focus.ambient.ocean" = "Ombak laut";
+"focus.ambient.forest" = "Hutan";
+"focus.ambient.silence" = "Senyap";
+"focus.goal.words" = "%lld kata";
+"focus.progress.great" = "Kemajuan hebat!";
+"focus.progress.keep_going" = "Terus lanjutkan!";
+"focus.complete.title" = "Sesi fokus selesai";
+"focus.complete.words_written" = "Anda menulis %lld kata";
+
+/* ===== CHAT VIEW ===== */
+"chat.title" = "Mengobrol dengan Gemi";
+"chat.placeholder" = "Tanyakan apa saja...";
+"chat.context.journal" = "Berdasarkan jurnal Anda";
+"chat.context.memory" = "Saya ingat Anda menyebutkan...";
+"chat.suggestion.reflect" = "Mari kita renungkan hari Anda";
+"chat.suggestion.explore" = "Apakah Anda ingin menjelajahi ini lebih lanjut?";
+"chat.suggestion.gratitude" = "Apa yang Anda syukuri hari ini?";
+"chat.loading" = "Gemi sedang berpikir...";
+"chat.error.failed" = "Gagal mendapatkan respons";
+"chat.attachment.image" = "Gambar terlampir";
+"chat.attachment.audio" = "Audio terlampir";
+"chat.processing.image" = "Menganalisis gambar...";
+"chat.processing.audio" = "Mentranskripsikan audio...";
+
+/* ===== MEMORIES VIEW ===== */
+"memories.title" = "Kenangan Anda";
+"memories.empty.title" = "Belum ada kenangan";
+"memories.empty.subtitle" = "Saat Anda menulis jurnal, Gemi akan mengingat momen dan wawasan penting.";
+"memories.search.placeholder" = "Cari kenangan...";
+"memories.filter.all" = "Semua kenangan";
+"memories.filter.people" = "Orang";
+"memories.filter.places" = "Tempat";
+"memories.filter.emotions" = "Emosi";
+"memories.filter.insights" = "Wawasan";
+"memories.delete.confirm" = "Hapus kenangan ini?";
+"memories.delete.message" = "Tindakan ini tidak dapat dibatalkan.";
+
+/* ===== INSIGHTS VIEW ===== */
+"insights.title" = "Wawasan jurnal";
+"insights.subtitle" = "Temukan pola dan tren dalam perjalanan menulis Anda";
+"insights.empty.title" = "Belum ada wawasan";
+"insights.empty.subtitle" = "Mulai menulis untuk menemukan pola dan\nmelacak perjalanan emosional Anda dari waktu ke waktu.";
+"insights.mood.title" = "Tren suasana hati";
+"insights.mood.dominant" = "Suasana hati dominan Anda";
+"insights.topics.title" = "Topik populer";
+"insights.writing.title" = "Pola menulis";
+"insights.writing.most_active" = "Waktu paling aktif";
+"insights.writing.average_length" = "Panjang entri rata-rata";
+"insights.writing.total_words" = "Total kata yang ditulis";
+"insights.streak.title" = "Rentetan menulis";
+"insights.streak.current" = "%lld hari";
+"insights.streak.best" = "Terbaik: %lld hari";
+
+/* ===== SETTINGS VIEW ===== */
+"settings.title" = "Pengaturan";
+"settings.section.general" = "Umum";
+"settings.section.privacy" = "Privasi & keamanan";
+"settings.section.ai" = "Pengaturan AI";
+"settings.section.data" = "Manajemen data";
+"settings.section.about" = "Tentang";
+
+"settings.language.title" = "Bahasa";
+"settings.language.subtitle" = "Pilih bahasa pilihan Anda";
+"settings.theme.title" = "Tampilan";
+"settings.theme.light" = "Terang";
+"settings.theme.dark" = "Gelap";
+"settings.theme.auto" = "Otomatis";
+
+"settings.authentication.title" = "Autentikasi";
+"settings.authentication.faceid" = "Memerlukan Face ID";
+"settings.authentication.touchid" = "Memerlukan Touch ID";
+"settings.authentication.password" = "Memerlukan kata sandi";
+"settings.authentication.timeout" = "Kunci setelah %lld menit";
+
+"settings.ai.model" = "Model AI";
+"settings.ai.model.fast" = "Gemma 3n Cepat (2B)";
+"settings.ai.model.balanced" = "Gemma 3n Seimbang (4B)";
+"settings.ai.model.powerful" = "Gemma 3n Kuat (8B)";
+"settings.ai.temperature" = "Tingkat kreativitas";
+"settings.ai.memory" = "Manajemen memori";
+"settings.ai.clear_memory" = "Hapus semua kenangan";
+
+"settings.export.title" = "Ekspor jurnal";
+"settings.export.format" = "Format ekspor";
+"settings.export.markdown" = "Markdown";
+"settings.export.pdf" = "PDF";
+"settings.export.json" = "JSON";
+"settings.import.title" = "Impor data";
+
+"settings.about.version" = "Versi %@";
+"settings.about.privacy" = "Kebijakan privasi";
+"settings.about.terms" = "Syarat penggunaan";
+"settings.about.acknowledgments" = "Ucapan terima kasih";
+
+/* ===== ERRORS & ALERTS ===== */
+"error.generic.title" = "Ada yang salah";
+"error.generic.message" = "Silakan coba lagi nanti.";
+"error.network.title" = "Kesalahan koneksi";
+"error.network.message" = "Silakan periksa koneksi internet Anda.";
+"error.authentication.failed" = "Autentikasi gagal";
+"error.save.failed" = "Gagal menyimpan";
+"error.load.failed" = "Gagal memuat";
+"error.delete.failed" = "Gagal menghapus";
+"error.model.loading" = "Memuat model AI...";
+"error.model.failed" = "Gagal memuat model AI";
+
+"alert.delete.title" = "Hapus entri?";
+"alert.delete.message" = "Tindakan ini tidak dapat dibatalkan.";
+"alert.unsaved.title" = "Perubahan belum disimpan";
+"alert.unsaved.message" = "Apakah Anda ingin menyimpan perubahan?";
+"alert.restart.title" = "Perlu restart";
+"alert.restart.message" = "Silakan restart Gemi agar perubahan berlaku.";
+
+/* ===== MULTIMODAL ===== */
+"multimodal.image.analyzing" = "Menganalisis gambar...";
+"multimodal.image.description" = "Saya bisa melihat: %@";
+"multimodal.audio.recording" = "Merekam...";
+"multimodal.audio.transcribing" = "Mentranskripsikan audio...";
+"multimodal.audio.duration" = "%@ detik";
+"multimodal.attachment.remove" = "Hapus lampiran";
+
+/* ===== WRITING ASSISTANCE ===== */
+"writing.prompts.daily" = "Saran harian";
+"writing.prompts.reflection" = "Refleksi";
+"writing.prompts.gratitude" = "Rasa syukur";
+"writing.prompts.goals" = "Tujuan & impian";
+"writing.prompts.memories" = "Kenangan";
+"writing.assistant.expand" = "Perluas ini";
+"writing.assistant.rephrase" = "Tulis ulang";
+"writing.assistant.summarize" = "Ringkas";
+"writing.assistant.continue" = "Lanjutkan menulis";
+
+/* ===== DATE & TIME ===== */
+"date.just_now" = "Baru saja";
+"date.minutes_ago" = "%lld menit yang lalu";
+"date.hours_ago" = "%lld jam yang lalu";
+"date.days_ago" = "%lld hari yang lalu";
+"date.weeks_ago" = "%lld minggu yang lalu";
+"date.months_ago" = "%lld bulan yang lalu";
+"date.years_ago" = "%lld tahun yang lalu";
+
+/* ===== ACHIEVEMENTS ===== */
+"achievement.first_entry" = "Entri pertama!";
+"achievement.streak_7" = "Rentetan 7 hari!";
+"achievement.streak_30" = "Rentetan 30 hari!";
+"achievement.words_1000" = "1.000 kata ditulis!";
+"achievement.words_10000" = "10.000 kata ditulis!";
+"achievement.entries_50" = "50 entri!";
+"achievement.entries_100" = "100 entri!";

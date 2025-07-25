@@ -20,10 +20,10 @@ struct HomeView: View {
     
     var greeting: String {
         switch currentHour {
-        case 5..<12: return "Good morning"
-        case 12..<17: return "Good afternoon"
-        case 17..<21: return "Good evening"
-        default: return "Good night"
+        case 5..<12: return NSLocalizedString("home.greeting.morning", comment: "Morning greeting")
+        case 12..<17: return NSLocalizedString("home.greeting.afternoon", comment: "Afternoon greeting")
+        case 17..<21: return NSLocalizedString("home.greeting.evening", comment: "Evening greeting")
+        default: return NSLocalizedString("home.greeting.night", comment: "Night greeting")
         }
     }
     
@@ -196,7 +196,7 @@ struct HomeView: View {
                     )
                     .shadow(color: Color.black.opacity(0.1), radius: 1, x: 0, y: 1)
                 
-                Text("Ready to capture today's moments?")
+                Text(NSLocalizedString("home.prompt.whats_on_mind", comment: "Prompt for user to write"))
                     .font(.system(size: 19, weight: .regular, design: .rounded))
                     .foregroundStyle(
                         LinearGradient(
@@ -227,8 +227,8 @@ struct HomeView: View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 20) {
             // New Entry card
             QuickActionCard(
-                title: "New Entry",
-                subtitle: "Start writing",
+                title: NSLocalizedString("nav.new_entry", comment: "New entry button"),
+                subtitle: NSLocalizedString("home.button.new_entry", comment: "Create new entry"),
                 icon: "pencil.and.outline",
                 color: .blue,
                 isHovered: hoveredCard == "new"

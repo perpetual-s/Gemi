@@ -1,0 +1,260 @@
+/* 
+  Localizable.strings (Arabic)
+  جيمي - مذكرتك الخاصة بالذكاء الاصطناعي
+  
+  Copyright © 2025 Gemi. All rights reserved.
+*/
+
+/* ===== GENERAL ===== */
+"app.name" = "جيمي";
+"button.cancel" = "إلغاء";
+"button.save" = "حفظ";
+"button.done" = "تم";
+"button.continue" = "متابعة";
+"button.next" = "التالي";
+"button.back" = "رجوع";
+"button.close" = "إغلاق";
+"button.delete" = "حذف";
+"button.edit" = "تعديل";
+"button.ok" = "موافق";
+"button.retry" = "إعادة المحاولة";
+"button.share" = "مشاركة";
+"button.export" = "تصدير";
+"button.import" = "استيراد";
+"button.settings" = "الإعدادات";
+
+/* ===== ONBOARDING ===== */
+"onboarding.welcome.title" = "مرحباً بك في جيمي";
+"onboarding.welcome.subtitle" = "مذكرتك الخاصة بالذكاء الاصطناعي";
+"onboarding.welcome.description" = "كل شيء يبقى على جهازك. لا سحابة، لا تتبع، فقط أنت وأفكارك.";
+"onboarding.privacy.title" = "خصوصيتك مهمة";
+"onboarding.privacy.description" = "يعمل جيمي بالكامل على جهاز Mac الخاص بك. مذكراتك وذكرياتك ومحادثاتك لا تغادر جهازك أبداً.";
+"onboarding.authentication.title" = "احمِ مذكرتك";
+"onboarding.authentication.faceid" = "استخدام Face ID";
+"onboarding.authentication.touchid" = "استخدام Touch ID";
+"onboarding.authentication.password" = "استخدام كلمة المرور";
+"onboarding.language.title" = "اختر لغتك";
+"onboarding.language.subtitle" = "يمكنك تغييرها لاحقاً في الإعدادات";
+"onboarding.setup.title" = "جاري إعداد جيمي";
+"onboarding.setup.downloading" = "جاري تنزيل نموذج الذكاء الاصطناعي...";
+"onboarding.setup.progress" = "تم تنزيل %@ من %@";
+"onboarding.complete.title" = "كل شيء جاهز!";
+"onboarding.complete.subtitle" = "ابدأ رحلة الكتابة الخاصة بك";
+"onboarding.complete.button" = "افتح جيمي";
+
+/* ===== NAVIGATION ===== */
+"nav.home" = "الرئيسية";
+"nav.timeline" = "الجدول الزمني";
+"nav.memories" = "الذكريات";
+"nav.chat" = "الدردشة مع جيمي";
+"nav.insights" = "الرؤى";
+"nav.favorites" = "المفضلة";
+"nav.settings" = "الإعدادات";
+"nav.new_entry" = "مدخل جديد";
+
+/* ===== HOME VIEW ===== */
+"home.greeting.morning" = "صباح الخير";
+"home.greeting.afternoon" = "مساء الخير";
+"home.greeting.evening" = "مساء الخير";
+"home.greeting.night" = "تصبح على خير";
+"home.prompt.whats_on_mind" = "بماذا تفكر؟";
+"home.button.new_entry" = "إنشاء مدخل جديد";
+"home.button.continue_writing" = "متابعة الكتابة";
+"home.stats.entries" = "%lld مدخل";
+"home.stats.words" = "%lld كلمة";
+"home.stats.memories" = "%lld ذكرى";
+"home.quote.daily" = "إلهام يومي";
+
+/* ===== TIMELINE VIEW ===== */
+"timeline.title" = "الجدول الزمني للمذكرة";
+"timeline.empty.title" = "لا توجد مدخلات بعد";
+"timeline.empty.subtitle" = "ابدأ بتوثيق رحلتك.\nسيظهر جدولك الزمني هنا.";
+"timeline.empty.button" = "أنشئ أول مدخل لك";
+"timeline.section.today" = "اليوم";
+"timeline.section.yesterday" = "أمس";
+"timeline.section.this_week" = "هذا الأسبوع";
+"timeline.section.this_month" = "هذا الشهر";
+"timeline.section.earlier" = "سابقاً";
+"timeline.entry.words" = "%lld كلمة";
+"timeline.entry.reading_time" = "%lld دقيقة للقراءة";
+"timeline.filter.all" = "جميع المدخلات";
+"timeline.filter.favorites" = "المفضلة";
+"timeline.filter.with_photos" = "مع الصور";
+"timeline.filter.with_audio" = "مع الصوت";
+"timeline.sort.newest" = "الأحدث أولاً";
+"timeline.sort.oldest" = "الأقدم أولاً";
+
+/* ===== JOURNAL ENTRY ===== */
+"entry.placeholder.title" = "أعطِ عنواناً لمدخلك...";
+"entry.placeholder.content" = "ابدأ الكتابة...";
+"entry.placeholder.whats_happening" = "ماذا يحدث اليوم؟";
+"entry.placeholder.grateful" = "بماذا تشعر بالامتنان؟";
+"entry.placeholder.reflection" = "خذ لحظة للتأمل...";
+"entry.status.saving" = "جاري الحفظ...";
+"entry.status.saved" = "تم الحفظ";
+"entry.button.focus_mode" = "وضع التركيز";
+"entry.button.add_photo" = "إضافة صورة";
+"entry.button.record_audio" = "تسجيل صوت";
+"entry.button.ai_assist" = "مساعد الذكاء الاصطناعي";
+"entry.button.prompts" = "اقتراحات الكتابة";
+"entry.mood.happy" = "سعيد";
+"entry.mood.calm" = "هادئ";
+"entry.mood.anxious" = "قلق";
+"entry.mood.sad" = "حزين";
+"entry.mood.excited" = "متحمس";
+"entry.mood.grateful" = "ممتن";
+"entry.tag.placeholder" = "إضافة وسوم...";
+
+/* ===== FOCUS MODE ===== */
+"focus.title" = "وضع التركيز";
+"focus.timer.minutes" = "%lld دقيقة";
+"focus.ambient.rain" = "المطر";
+"focus.ambient.ocean" = "أمواج البحر";
+"focus.ambient.forest" = "الغابة";
+"focus.ambient.silence" = "صمت";
+"focus.goal.words" = "%lld كلمة";
+"focus.progress.great" = "تقدم رائع!";
+"focus.progress.keep_going" = "استمر هكذا!";
+"focus.complete.title" = "اكتملت جلسة التركيز";
+"focus.complete.words_written" = "لقد كتبت %lld كلمة";
+
+/* ===== CHAT VIEW ===== */
+"chat.title" = "الدردشة مع جيمي";
+"chat.placeholder" = "اسألني أي شيء...";
+"chat.context.journal" = "بناءً على مذكرتك";
+"chat.context.memory" = "أتذكر أنك ذكرت...";
+"chat.suggestion.reflect" = "دعنا نتأمل في يومك";
+"chat.suggestion.explore" = "هل تود استكشاف هذا أكثر؟";
+"chat.suggestion.gratitude" = "بماذا تشعر بالامتنان اليوم؟";
+"chat.loading" = "جيمي يفكر...";
+"chat.error.failed" = "فشل الحصول على رد";
+"chat.attachment.image" = "صورة مرفقة";
+"chat.attachment.audio" = "صوت مرفق";
+"chat.processing.image" = "جاري تحليل الصورة...";
+"chat.processing.audio" = "جاري تحويل الصوت إلى نص...";
+
+/* ===== MEMORIES VIEW ===== */
+"memories.title" = "ذكرياتك";
+"memories.empty.title" = "لا توجد ذكريات بعد";
+"memories.empty.subtitle" = "بينما تكتب في مذكرتك، سيتذكر جيمي اللحظات والرؤى المهمة.";
+"memories.search.placeholder" = "البحث في الذكريات...";
+"memories.filter.all" = "جميع الذكريات";
+"memories.filter.people" = "الأشخاص";
+"memories.filter.places" = "الأماكن";
+"memories.filter.emotions" = "المشاعر";
+"memories.filter.insights" = "الرؤى";
+"memories.delete.confirm" = "حذف هذه الذكرى؟";
+"memories.delete.message" = "لا يمكن التراجع عن هذا الإجراء.";
+
+/* ===== INSIGHTS VIEW ===== */
+"insights.title" = "رؤى المذكرة";
+"insights.subtitle" = "اكتشف الأنماط والاتجاهات في رحلة كتابتك";
+"insights.empty.title" = "لا توجد رؤى بعد";
+"insights.empty.subtitle" = "ابدأ الكتابة لاكتشاف الأنماط\nوتتبع رحلتك العاطفية عبر الزمن.";
+"insights.mood.title" = "اتجاهات المزاج";
+"insights.mood.dominant" = "مزاجك السائد";
+"insights.topics.title" = "المواضيع الشائعة";
+"insights.writing.title" = "أنماط الكتابة";
+"insights.writing.most_active" = "الوقت الأكثر نشاطاً";
+"insights.writing.average_length" = "متوسط طول المدخل";
+"insights.writing.total_words" = "إجمالي الكلمات المكتوبة";
+"insights.streak.title" = "سلسلة الكتابة";
+"insights.streak.current" = "%lld يوم";
+"insights.streak.best" = "الأفضل: %lld يوم";
+
+/* ===== SETTINGS VIEW ===== */
+"settings.title" = "الإعدادات";
+"settings.section.general" = "عام";
+"settings.section.privacy" = "الخصوصية والأمان";
+"settings.section.ai" = "إعدادات الذكاء الاصطناعي";
+"settings.section.data" = "إدارة البيانات";
+"settings.section.about" = "حول";
+
+"settings.language.title" = "اللغة";
+"settings.language.subtitle" = "اختر لغتك المفضلة";
+"settings.theme.title" = "المظهر";
+"settings.theme.light" = "فاتح";
+"settings.theme.dark" = "داكن";
+"settings.theme.auto" = "تلقائي";
+
+"settings.authentication.title" = "المصادقة";
+"settings.authentication.faceid" = "مطلوب Face ID";
+"settings.authentication.touchid" = "مطلوب Touch ID";
+"settings.authentication.password" = "مطلوب كلمة المرور";
+"settings.authentication.timeout" = "القفل بعد %lld دقيقة";
+
+"settings.ai.model" = "نموذج الذكاء الاصطناعي";
+"settings.ai.model.fast" = "Gemma 3n سريع (2B)";
+"settings.ai.model.balanced" = "Gemma 3n متوازن (4B)";
+"settings.ai.model.powerful" = "Gemma 3n قوي (8B)";
+"settings.ai.temperature" = "مستوى الإبداع";
+"settings.ai.memory" = "إدارة الذاكرة";
+"settings.ai.clear_memory" = "مسح جميع الذكريات";
+
+"settings.export.title" = "تصدير المذكرة";
+"settings.export.format" = "تنسيق التصدير";
+"settings.export.markdown" = "ماركداون";
+"settings.export.pdf" = "PDF";
+"settings.export.json" = "JSON";
+"settings.import.title" = "استيراد البيانات";
+
+"settings.about.version" = "الإصدار %@";
+"settings.about.privacy" = "سياسة الخصوصية";
+"settings.about.terms" = "شروط الاستخدام";
+"settings.about.acknowledgments" = "شكر وتقدير";
+
+/* ===== ERRORS & ALERTS ===== */
+"error.generic.title" = "حدث خطأ ما";
+"error.generic.message" = "يرجى المحاولة مرة أخرى لاحقاً.";
+"error.network.title" = "خطأ في الاتصال";
+"error.network.message" = "يرجى التحقق من اتصالك بالإنترنت.";
+"error.authentication.failed" = "فشلت المصادقة";
+"error.save.failed" = "فشل الحفظ";
+"error.load.failed" = "فشل التحميل";
+"error.delete.failed" = "فشل الحذف";
+"error.model.loading" = "جاري تحميل نموذج الذكاء الاصطناعي...";
+"error.model.failed" = "فشل تحميل نموذج الذكاء الاصطناعي";
+
+"alert.delete.title" = "حذف المدخل؟";
+"alert.delete.message" = "لا يمكن التراجع عن هذا الإجراء.";
+"alert.unsaved.title" = "تغييرات غير محفوظة";
+"alert.unsaved.message" = "هل تريد حفظ التغييرات؟";
+"alert.restart.title" = "مطلوب إعادة التشغيل";
+"alert.restart.message" = "يرجى إعادة تشغيل جيمي لتطبيق التغييرات.";
+
+/* ===== MULTIMODAL ===== */
+"multimodal.image.analyzing" = "جاري تحليل الصورة...";
+"multimodal.image.description" = "أستطيع أن أرى: %@";
+"multimodal.audio.recording" = "جاري التسجيل...";
+"multimodal.audio.transcribing" = "جاري تحويل الصوت إلى نص...";
+"multimodal.audio.duration" = "%@ ثانية";
+"multimodal.attachment.remove" = "إزالة المرفق";
+
+/* ===== WRITING ASSISTANCE ===== */
+"writing.prompts.daily" = "اقتراحات يومية";
+"writing.prompts.reflection" = "تأمل";
+"writing.prompts.gratitude" = "امتنان";
+"writing.prompts.goals" = "الأهداف والأحلام";
+"writing.prompts.memories" = "الذكريات";
+"writing.assistant.expand" = "توسيع هذا";
+"writing.assistant.rephrase" = "إعادة صياغة";
+"writing.assistant.summarize" = "تلخيص";
+"writing.assistant.continue" = "متابعة الكتابة";
+
+/* ===== DATE & TIME ===== */
+"date.just_now" = "الآن";
+"date.minutes_ago" = "منذ %lld دقيقة";
+"date.hours_ago" = "منذ %lld ساعة";
+"date.days_ago" = "منذ %lld يوم";
+"date.weeks_ago" = "منذ %lld أسبوع";
+"date.months_ago" = "منذ %lld شهر";
+"date.years_ago" = "منذ %lld سنة";
+
+/* ===== ACHIEVEMENTS ===== */
+"achievement.first_entry" = "أول مدخل!";
+"achievement.streak_7" = "سلسلة 7 أيام!";
+"achievement.streak_30" = "سلسلة 30 يوماً!";
+"achievement.words_1000" = "كتبت 1,000 كلمة!";
+"achievement.words_10000" = "كتبت 10,000 كلمة!";
+"achievement.entries_50" = "50 مدخل!";
+"achievement.entries_100" = "100 مدخل!";
