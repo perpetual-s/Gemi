@@ -111,7 +111,7 @@ struct ModelLoadingView: View {
                             .font(Theme.Typography.largeTitle)
                             .foregroundColor(.orange)
                         
-                    case .error(let message):
+                    case .error:
                         Text("Connection issue")
                             .font(Theme.Typography.largeTitle)
                             .foregroundColor(.red)

@@ -257,7 +257,7 @@ struct GemmaOnboardingView: View {
                 await checkOllamaStatus()
             }
         }
-        .onChange(of: currentPage) { newPage in
+        .onChange(of: currentPage) { oldValue, newValue in
             // Check Ollama status when reaching the verification page
             if isOnVerificationStep {
                 Task {
