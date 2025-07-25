@@ -13,7 +13,7 @@ struct GemmaOnboardingView: View {
     @State private var isSettingUpPassword = false
     @State private var passwordError = ""
     @State private var showPasswordError = false
-    @State private var contentOpacity: Double = 1.0
+    @State private var contentOpacity: Double = 0.0
     
     // Ollama setup states
     @State private var isCheckingOllama = false
@@ -288,9 +288,44 @@ struct GemmaOnboardingView: View {
     // MARK: - Welcome Pages
     
     private var welcomePage1: some View {
-        VStack(spacing: 32) {
-            // Animated logo
-            SparkleAnimationView()
+        VStack(spacing: 40) {
+            // App icon with subtle animation
+            ZStack {
+                // Animated background glow
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color.white.opacity(0.15),
+                                Color.white.opacity(0.05),
+                                Color.clear
+                            ],
+                            center: .center,
+                            startRadius: 50,
+                            endRadius: 120
+                        )
+                    )
+                    .frame(width: 240, height: 240)
+                    .blur(radius: 20)
+                    .scaleEffect(contentOpacity)
+                    .animation(.easeOut(duration: 1.2), value: contentOpacity)
+                
+                // App icon
+                Image("AppIcon")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 160, height: 160)
+                    .cornerRadius(36)
+                    .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 10)
+                    .shadow(color: Color.white.opacity(0.2), radius: 10, x: 0, y: -5)
+                    .scaleEffect(contentOpacity * 0.9)
+                    .animation(.spring(response: 0.8, dampingFraction: 0.6).delay(0.1), value: contentOpacity)
+                
+                // Subtle sparkle overlay
+                SparkleOverlay()
+                    .frame(width: 200, height: 200)
+                    .opacity(0.6)
+            }
             
             VStack(spacing: 16) {
                 Text("Welcome to Gemi")
@@ -302,14 +337,23 @@ struct GemmaOnboardingView: View {
                             endPoint: .bottom
                         )
                     )
+                    .opacity(contentOpacity)
+                    .animation(.easeOut(duration: 0.8).delay(0.3), value: contentOpacity)
                 
                 Text("Your private AI journal companion")
                     .font(.system(size: 22, weight: .regular))
                     .foregroundColor(.white.opacity(0.8))
+                    .opacity(contentOpacity)
+                    .animation(.easeOut(duration: 0.8).delay(0.4), value: contentOpacity)
             }
         }
         .multilineTextAlignment(.center)
         .padding(.horizontal, 40)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.6)) {
+                contentOpacity = 1.0
+            }
+        }
     }
     
     private var welcomePage2: some View {
@@ -711,24 +755,6 @@ struct GemmaOnboardingView: View {
                             copyToClipboard("ollama serve")
                         }
                     )
-                    
-                    // Visual connector
-                    HStack {
-                        Rectangle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(0.1),
-                                        Color.white.opacity(0.05)
-                                    ],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
-                            .frame(width: 2, height: 20)
-                            .offset(x: 20)
-                        Spacer()
-                    }
                     
                     // Second command
                     TerminalStepCard(
@@ -1394,9 +1420,6 @@ struct InstallationOption<Content: View>: View {
             
             // Content
             content()
-                .frame(maxHeight: .infinity)
-            
-            Spacer()
         }
         .padding(20)
         .frame(maxWidth: .infinity)
@@ -1593,6 +1616,56 @@ struct TerminalStepCard: View {
         .onHover { hovering in
             isHovered = hovering
         }
+    }
+}
+
+// MARK: - Sparkle Overlay for App Icon
+
+struct SparkleOverlay: View {
+    @State private var sparklePhase = 0.0
+    @State private var particleOpacity = 0.0
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                ForEach(0..<6, id: \.self) { index in
+                    sparkleView(index: index, size: geometry.size)
+                }
+            }
+        }
+        .onAppear {
+            withAnimation(.linear(duration: 20).repeatForever(autoreverses: false)) {
+                sparklePhase = .pi * 2
+            }
+            withAnimation(.easeInOut(duration: 2).delay(0.5)) {
+                particleOpacity = 0.8
+            }
+        }
+    }
+    
+    func sparkleView(index: Int, size: CGSize) -> some View {
+        let angle = CGFloat(index) * .pi / 3
+        let x = size.width / 2 + cos(angle + sparklePhase) * 80
+        let y = size.height / 2 + sin(angle + sparklePhase) * 80
+        
+        return Image(systemName: "sparkle")
+            .font(.system(size: 14))
+            .foregroundStyle(
+                LinearGradient(
+                    colors: [Color.white, Color.white.opacity(0.6)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .opacity(particleOpacity)
+            .scaleEffect(0.5 + (particleOpacity * 0.5))
+            .position(x: x, y: y)
+            .animation(
+                .easeInOut(duration: 0.8)
+                .delay(Double(index) * 0.1)
+                .repeatForever(autoreverses: true),
+                value: particleOpacity
+            )
     }
 }
 
