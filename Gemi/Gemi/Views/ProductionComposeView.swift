@@ -4,7 +4,7 @@ import AppKit
 /// Production-level compose view with Apple-quality design
 struct ProductionComposeView: View {
     @State private var entry: JournalEntry
-    let onSave: (JournalEntry) -> Void
+    let onSave: (JournalEntry) async throws -> Void
     let onCancel: () -> Void
     let onFocusMode: ((JournalEntry) -> Void)?
     
@@ -72,7 +72,7 @@ struct ProductionComposeView: View {
         }
     }
     
-    init(entry: JournalEntry? = nil, onSave: @escaping (JournalEntry) -> Void, onCancel: @escaping () -> Void, onFocusMode: ((JournalEntry) -> Void)? = nil) {
+    init(entry: JournalEntry? = nil, onSave: @escaping (JournalEntry) async throws -> Void, onCancel: @escaping () -> Void, onFocusMode: ((JournalEntry) -> Void)? = nil) {
         let initialEntry = entry ?? JournalEntry(content: "")
         self._entry = State(initialValue: initialEntry)
         self._selectedMood = State(initialValue: initialEntry.mood)
@@ -330,7 +330,9 @@ struct ProductionComposeView: View {
                                 let response = alert.runModal()
                                 switch response {
                                 case .alertFirstButtonReturn: // Save
-                                    saveEntry()
+                                    Task {
+                                        await performManualSave()
+                                    }
                                 case .alertSecondButtonReturn: // Discard
                                     onCancel()
                                 default: // Cancel - do nothing
@@ -346,7 +348,11 @@ struct ProductionComposeView: View {
                         
                         
                         // Save button - ghost style when no changes
-                        Button(action: saveEntry) {
+                        Button(action: {
+                            Task {
+                                await performManualSave()
+                            }
+                        }) {
                             HStack(spacing: 6) {
                                 if isSaving {
                                     ProgressView()
@@ -836,28 +842,37 @@ struct ProductionComposeView: View {
         }
     }
     
-    private func saveEntry() {
+    @MainActor
+    private func performManualSave() async {
         // Cancel auto-save timer during manual save
         autoSaveTimer?.invalidate()
         
         isSaving = true
-        lastSavedContent = entry.content
-        hasUnsavedChanges = false
         
-        // Track session analytics
-        analytics.updateSessionWithWords(entry.wordCount)
-        analytics.endSession()
-        
-        // Record entry for placeholder service
-        placeholderService.recordEntry()
-        
-        onSave(entry)
-        
-        // Resume auto-save timer after manual save
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            isSaving = false
+        do {
+            // Track session analytics
+            analytics.updateSessionWithWords(entry.wordCount)
+            analytics.endSession()
+            
+            // Record entry for placeholder service
+            placeholderService.recordEntry()
+            
+            // Perform the save
+            try await onSave(entry)
+            
+            // Only update state if save succeeded
+            lastSavedContent = entry.content
+            hasUnsavedChanges = false
+            
+            // Resume auto-save timer after successful save
             startAutoSaveTimer()
+        } catch {
+            // Show error alert
+            saveError = error
+            showSaveError = true
         }
+        
+        isSaving = false
     }
     
     private func insertTextAtCursor(_ text: String) {
@@ -899,9 +914,9 @@ struct ProductionComposeView: View {
     private func startAutoSaveTimer() {
         autoSaveTimer?.invalidate()
         autoSaveTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { _ in
-            if hasUnsavedChanges && !entry.content.isEmpty {
-                Task {
-                    await performAutoSave()
+            Task { @MainActor in
+                if self.hasUnsavedChanges && !self.entry.content.isEmpty {
+                    await self.performAutoSave()
                 }
             }
         }
@@ -925,14 +940,19 @@ struct ProductionComposeView: View {
         
         isSaving = true
         
-        // Save through the callback
-        onSave(entry)
+        do {
+            // Save through the callback
+            try await onSave(entry)
+            
+            // Only update state if save succeeded
+            lastSavedContent = entry.content
+            hasUnsavedChanges = false
+        } catch {
+            // Show error to user
+            saveError = error
+            showSaveError = true
+        }
         
-        // Wait a moment for the save to complete
-        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-        
-        lastSavedContent = entry.content
-        hasUnsavedChanges = false
         isSaving = false
         lastAutoSave = Date()
     }

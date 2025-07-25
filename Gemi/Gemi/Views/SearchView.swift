@@ -205,13 +205,11 @@ struct SearchView: View {
                 ProductionComposeView(
                     entry: entry,
                     onSave: { updatedEntry in
-                        Task {
-                            await journalStore.updateEntry(updatedEntry)
-                            showingComposeView = false
-                            editingEntry = nil
-                            // Re-run search to update results
-                            performRealtimeSearch(searchQuery)
-                        }
+                        try await journalStore.updateEntryWithError(updatedEntry)
+                        showingComposeView = false
+                        editingEntry = nil
+                        // Re-run search to update results
+                        performRealtimeSearch(searchQuery)
                     },
                     onCancel: {
                         showingComposeView = false

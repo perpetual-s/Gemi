@@ -116,11 +116,9 @@ struct FavoritesView: View {
                 ProductionComposeView(
                     entry: entry,
                     onSave: { updatedEntry in
-                        Task {
-                            await journalStore.updateEntry(updatedEntry)
-                            showingComposeView = false
-                            editingEntry = nil
-                        }
+                        try await journalStore.updateEntryWithError(updatedEntry)
+                        showingComposeView = false
+                        editingEntry = nil
                     },
                     onCancel: {
                         showingComposeView = false

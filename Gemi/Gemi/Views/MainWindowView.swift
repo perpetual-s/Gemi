@@ -129,13 +129,11 @@ struct MainWindowView: View {
             ProductionComposeView(
                 entry: editingEntry,
                 onSave: { entry in
-                    Task {
-                        await journalStore.saveEntry(entry)
-                        selectedView = .timeline
-                        editingEntry = nil
-                        // Find the saved entry from the refreshed entries array
-                        selectedEntry = journalStore.entries.first { $0.id == entry.id }
-                    }
+                    try await journalStore.saveEntryWithError(entry)
+                    selectedView = .timeline
+                    editingEntry = nil
+                    // Find the saved entry from the refreshed entries array
+                    selectedEntry = journalStore.entries.first { $0.id == entry.id }
                 },
                 onCancel: {
                     selectedView = .timeline
@@ -233,6 +231,17 @@ final class JournalStore: ObservableObject {
         }
     }
     
+    // Throwing version for auto-save
+    func saveEntryWithError(_ entry: JournalEntry) async throws {
+        try await databaseManager.saveEntry(entry)
+        await loadEntries()
+        
+        // Extract memories from the new entry using AI
+        Task {
+            await GemiAICoordinator.shared.processJournalEntry(entry)
+        }
+    }
+    
     func deleteEntry(_ entry: JournalEntry) async {
         do {
             try await databaseManager.deleteEntry(entry.id)
@@ -252,6 +261,12 @@ final class JournalStore: ObservableObject {
             self.error = error
             print("Failed to update entry: \(error)")
         }
+    }
+    
+    // Throwing version for auto-save
+    func updateEntryWithError(_ entry: JournalEntry) async throws {
+        try await databaseManager.saveEntry(entry)
+        await loadEntries()
     }
     
     func searchEntries(query: String) async -> [JournalEntry] {
