@@ -713,18 +713,48 @@ struct GemmaOnboardingView: View {
                         icon: "arrow.down.circle.fill",
                         content: {
                             VStack(spacing: 12) {
-                                OnboardingButton(
-                                    "Ollama.dmg",
-                                    icon: "arrow.down.circle",
-                                    style: .secondary,
-                                    action: {
+                                // Match the CompactCommandBox structure
+                                VStack(spacing: 12) {
+                                    // Button that looks like command box
+                                    Button(action: {
                                         NSWorkspace.shared.open(URL(string: "https://ollama.com/download")!)
+                                    }) {
+                                        HStack {
+                                            HStack(spacing: 8) {
+                                                Image(systemName: "arrow.down.circle")
+                                                    .font(.system(size: 14))
+                                                Text("Ollama.dmg")
+                                                    .font(.system(size: 14, weight: .semibold))
+                                            }
+                                            .foregroundColor(.white)
+                                            
+                                            Spacer()
+                                            
+                                            Image(systemName: "arrow.up.forward.square")
+                                                .font(.system(size: 14))
+                                                .foregroundColor(.white.opacity(0.7))
+                                        }
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 12)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .fill(Color.black.opacity(0.3))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 10)
+                                                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                                                )
+                                        )
                                     }
-                                )
-                                .frame(maxWidth: .infinity)
-                                Text("Easy installation")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.white.opacity(0.6))
+                                    .buttonStyle(PlainButtonStyle())
+                                    
+                                    // Description to match left side
+                                    Text("Easy installation")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.white.opacity(0.6))
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                                Spacer()
+                                    .frame(height: 0)
                             }
                         }
                     )
@@ -738,7 +768,7 @@ struct GemmaOnboardingView: View {
     
     @ViewBuilder
     var downloadModelStep: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 40) {
             // Compact header
             VStack(spacing: 8) {
                 Text("Step 2: Download Gemma 3n")
@@ -751,7 +781,7 @@ struct GemmaOnboardingView: View {
             }
             
             // Content with improved spacing
-            VStack(spacing: 24) {
+            VStack(spacing: 32) {
                 // Commands in compact cards
                 VStack(spacing: 16) {
                     // First command
