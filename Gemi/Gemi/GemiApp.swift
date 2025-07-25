@@ -20,7 +20,6 @@ struct GemiApp: App {
         print("   API: http://localhost:11434")
         print("   Model: gemma3n:latest")
         print("   Features: Full multimodal support")
-        print("   Note: Start Ollama manually with 'ollama serve'")
     }
     
     var body: some Scene {
@@ -70,6 +69,11 @@ struct GemiApp: App {
             .task {
                 // Check onboarding needs immediately
                 await checkOnboardingStatus()
+                
+                // Auto-start Ollama and load model in background
+                Task {
+                    await startOllamaAndLoadModel()
+                }
             }
         }
         .windowStyle(.hiddenTitleBar)
@@ -144,6 +148,55 @@ struct GemiApp: App {
         // Update state
         hasCheckedOnboarding = true
         showingOnboarding = needsOnboarding
+    }
+    
+    func startOllamaAndLoadModel() async {
+        print("🚀 Auto-starting Ollama and loading model...")
+        
+        // Step 1: Check if Ollama is installed
+        let installer = OllamaInstaller.shared
+        let isInstalled = await installer.checkInstallation()
+        
+        guard isInstalled else {
+            print("⚠️ Ollama not installed. User will be prompted to install.")
+            return
+        }
+        
+        // Step 2: Check if Ollama is running
+        let health = await OllamaChatService.shared.health()
+        
+        if !health.healthy {
+            print("🔄 Starting Ollama server...")
+            do {
+                try await installer.startOllamaServer()
+                print("✅ Ollama server started successfully")
+                
+                // Wait a moment for server to stabilize
+                try await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+            } catch {
+                print("❌ Failed to start Ollama: \(error)")
+                return
+            }
+        } else {
+            print("✅ Ollama server already running")
+        }
+        
+        // Step 3: Check if model is loaded
+        let modelHealth = await OllamaChatService.shared.health()
+        
+        if !modelHealth.modelLoaded {
+            print("🤖 Loading Gemma 3n model...")
+            do {
+                try await OllamaChatService.shared.loadModel()
+                print("✅ Gemma 3n model loaded successfully")
+            } catch {
+                print("❌ Failed to load model: \(error)")
+            }
+        } else {
+            print("✅ Gemma 3n model already loaded")
+        }
+        
+        print("🎉 Ollama setup complete!")
     }
     
 }

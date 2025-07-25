@@ -20,40 +20,42 @@ struct GemiChatView: View {
     
     var body: some View {
         ZStack {
-            // Main chat interface
-            VStack(spacing: 0) {
-                // Header bar
-                chatHeader
-                
-                // Multimodal support notification - show when attachments are present
-                if viewModel.isMultimodalSupported && !attachmentManager.attachments.isEmpty {
-                    MultimodalNotificationBanner()
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                }
-                
-                // Messages area
-                messagesScrollView
-                
-                // Attachment preview
-                AttachmentPreviewView(attachmentManager: attachmentManager)
-                
-                // Progress indicator for processing attachments
-                AttachmentProgressView(attachmentManager: attachmentManager)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 8)
-                
-                // Input area at bottom
-                messageInputArea
-            }
-            .background(Theme.Colors.windowBackground)
-            .onDrop(of: [.image, .fileURL], isTargeted: nil) { providers in
-                handleDrop(providers: providers)
-                return true
-            }
-            
-            // Connection status overlay
+            // Show loading view when model is not connected
             if viewModel.connectionStatus != .connected {
-                connectionStatusOverlay
+                ModelLoadingView()
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
+            } else {
+                // Main chat interface
+                VStack(spacing: 0) {
+                    // Header bar
+                    chatHeader
+                    
+                    // Multimodal support notification - show when attachments are present
+                    if viewModel.isMultimodalSupported && !attachmentManager.attachments.isEmpty {
+                        MultimodalNotificationBanner()
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+                    
+                    // Messages area
+                    messagesScrollView
+                    
+                    // Attachment preview
+                    AttachmentPreviewView(attachmentManager: attachmentManager)
+                    
+                    // Progress indicator for processing attachments
+                    AttachmentProgressView(attachmentManager: attachmentManager)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 8)
+                    
+                    // Input area at bottom
+                    messageInputArea
+                }
+                .background(Theme.Colors.windowBackground)
+                .onDrop(of: [.image, .fileURL], isTargeted: nil) { providers in
+                    handleDrop(providers: providers)
+                    return true
+                }
+                .transition(.opacity)
             }
         }
         .onAppear {
@@ -535,69 +537,6 @@ struct GemiChatView: View {
     
     // MARK: - Connection Status Overlay
     
-    private var connectionStatusOverlay: some View {
-        VStack {
-            Spacer()
-            
-            // Ollama not running notice
-            VStack(spacing: 16) {
-                // Status indicator
-                HStack(spacing: 12) {
-                    Circle()
-                        .fill(Color.orange)
-                        .frame(width: 8, height: 8)
-                    
-                    Text("Ollama not running")
-                        .font(Theme.Typography.body)
-                        .foregroundColor(Theme.Colors.secondaryText)
-                }
-                
-                // Action buttons
-                VStack(spacing: 8) {
-                    Button {
-                        // Open Terminal and run ollama serve
-                        if let url = URL(string: "x-terminal://ollama serve") {
-                            NSWorkspace.shared.open(url)
-                        } else {
-                            // Fallback: open Terminal app
-                            NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: "/System/Applications/Utilities/Terminal.app"), configuration: NSWorkspace.OpenConfiguration())
-                        }
-                    } label: {
-                        Label("Start Ollama in Terminal", systemImage: "terminal")
-                            .font(Theme.Typography.caption)
-                            .fontWeight(.medium)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
-                    
-                    Text("Run: ollama serve")
-                        .font(.system(size: 12, design: .monospaced))
-                        .foregroundColor(Theme.Colors.tertiaryText)
-                        .textSelection(.enabled)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Theme.Colors.cardBackground.opacity(0.95))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .strokeBorder(Theme.Colors.divider.opacity(0.3), lineWidth: 1)
-                        )
-                )
-                .shadow(color: Color.black.opacity(0.1), radius: 8, y: 4)
-                
-                // Retry button
-                Button("Check Again") {
-                    viewModel.checkAIConnection()
-                }
-                .font(Theme.Typography.caption)
-                .foregroundColor(Theme.Colors.primaryAccent)
-                .buttonStyle(.plain)
-            }
-            .padding(.bottom, 20)
-        }
-    }
     
     // MARK: - Actions
     
