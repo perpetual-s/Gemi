@@ -53,6 +53,13 @@ struct ProductionComposeView: View {
     @StateObject private var typingMetrics = TypingMetrics()
     @State private var lastTypedPosition: CGPoint?
     
+    // Auto-save states
+    @State private var autoSaveTimer: Timer?
+    @State private var lastAutoSave = Date()
+    @State private var isSaving = false
+    @State private var saveError: Error?
+    @State private var showSaveError = false
+    
     // Computed display title that updates properly
     private var displayTitle: String {
         if !entry.title.isEmpty {
@@ -193,6 +200,16 @@ struct ProductionComposeView: View {
                 }
             )
         }
+        .alert("Save Failed", isPresented: $showSaveError, presenting: saveError) { error in
+            Button("Retry") {
+                Task {
+                    await performAutoSave()
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { error in
+            Text("Failed to save your entry: \(error.localizedDescription)")
+        }
         .onAppear {
             titleOpacity = 1
             contentOpacity = 1
@@ -201,6 +218,9 @@ struct ProductionComposeView: View {
             
             // Start analytics session
             analytics.startSession()
+            
+            // Start auto-save timer
+            startAutoSaveTimer()
         }
         .onChange(of: entry.content) { oldValue, newValue in
             updateWordCount()
@@ -208,10 +228,24 @@ struct ProductionComposeView: View {
             
             // Analyze sentiment
             sentimentAnalyzer.analyzeText(newValue)
+            
+            // Reset auto-save timer on content change
+            if hasUnsavedChanges {
+                resetAutoSaveTimer()
+            }
         }
         .onChange(of: entry.title) { oldValue, newValue in
             // Force UI update when title changes
             hasUnsavedChanges = true
+            resetAutoSaveTimer()
+        }
+        .onChange(of: entry.mood) { oldValue, newValue in
+            hasUnsavedChanges = true
+            resetAutoSaveTimer()
+        }
+        .onChange(of: entry.tags) { oldValue, newValue in
+            hasUnsavedChanges = true
+            resetAutoSaveTimer()
         }
         .onKeyPress(.init("k"), phases: .down) { keyPress in
             if keyPress.modifiers.contains(.command) {
@@ -225,6 +259,16 @@ struct ProductionComposeView: View {
             // Ensure session is ended if view disappears unexpectedly
             if analytics.sessionStartTime != nil {
                 analytics.endSession()
+            }
+            
+            // Cancel auto-save timer
+            autoSaveTimer?.invalidate()
+            
+            // Perform final save if needed
+            if hasUnsavedChanges && !entry.content.isEmpty {
+                Task {
+                    await performAutoSave()
+                }
             }
         }
     }
@@ -274,8 +318,24 @@ struct ProductionComposeView: View {
                         Button("Cancel") {
                             analytics.endSession()
                             if hasUnsavedChanges {
-                                // TODO: Show confirmation dialog
-                                onCancel()
+                                // Show confirmation dialog before canceling
+                                let alert = NSAlert()
+                                alert.messageText = "Unsaved Changes"
+                                alert.informativeText = "You have unsaved changes. Do you want to save before closing?"
+                                alert.addButton(withTitle: "Save")
+                                alert.addButton(withTitle: "Discard")
+                                alert.addButton(withTitle: "Cancel")
+                                alert.alertStyle = .warning
+                                
+                                let response = alert.runModal()
+                                switch response {
+                                case .alertFirstButtonReturn: // Save
+                                    saveEntry()
+                                case .alertSecondButtonReturn: // Discard
+                                    onCancel()
+                                default: // Cancel - do nothing
+                                    break
+                                }
                             } else {
                                 onCancel()
                             }
@@ -288,7 +348,11 @@ struct ProductionComposeView: View {
                         // Save button - ghost style when no changes
                         Button(action: saveEntry) {
                             HStack(spacing: 6) {
-                                if hasUnsavedChanges {
+                                if isSaving {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                        .scaleEffect(0.8)
+                                } else if hasUnsavedChanges {
                                     Circle()
                                         .fill(Color.orange)
                                         .frame(width: 6, height: 6)
@@ -313,7 +377,7 @@ struct ProductionComposeView: View {
                                 )
                         )
                         .opacity(entry.content.isEmpty ? 0.5 : 1.0)
-                        .disabled(entry.content.isEmpty)
+                        .disabled(entry.content.isEmpty || isSaving)
                         .keyboardShortcut(.return, modifiers: .command)
                         .help("Save entry (⌘Return)")
                     }
@@ -717,12 +781,20 @@ struct ProductionComposeView: View {
                 Spacer()
                 
                 // Auto-save indicator
-                if hasUnsavedChanges {
+                if isSaving {
                     HStack(spacing: 6) {
                         ProgressView()
                             .controlSize(.small)
                             .scaleEffect(0.8)
-                        Text("Unsaved changes")
+                        Text("Saving...")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+                } else if hasUnsavedChanges {
+                    HStack(spacing: 6) {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.system(size: 11))
+                        Text("Auto-save in \(timeUntilAutoSave())s")
                             .font(.system(size: 12))
                             .foregroundColor(.secondary)
                     }
@@ -765,6 +837,10 @@ struct ProductionComposeView: View {
     }
     
     private func saveEntry() {
+        // Cancel auto-save timer during manual save
+        autoSaveTimer?.invalidate()
+        
+        isSaving = true
         lastSavedContent = entry.content
         hasUnsavedChanges = false
         
@@ -776,6 +852,12 @@ struct ProductionComposeView: View {
         placeholderService.recordEntry()
         
         onSave(entry)
+        
+        // Resume auto-save timer after manual save
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            isSaving = false
+            startAutoSaveTimer()
+        }
     }
     
     private func insertTextAtCursor(_ text: String) {
@@ -810,6 +892,49 @@ struct ProductionComposeView: View {
             let rect = textView.firstRect(forCharacterRange: selectedRange, actualRange: nil)
             commandBarPosition = rect
         }
+    }
+    
+    // MARK: - Auto-Save Functions
+    
+    private func startAutoSaveTimer() {
+        autoSaveTimer?.invalidate()
+        autoSaveTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { _ in
+            if hasUnsavedChanges && !entry.content.isEmpty {
+                Task {
+                    await performAutoSave()
+                }
+            }
+        }
+    }
+    
+    private func resetAutoSaveTimer() {
+        autoSaveTimer?.invalidate()
+        startAutoSaveTimer()
+        lastAutoSave = Date()
+    }
+    
+    private func timeUntilAutoSave() -> Int {
+        let elapsed = Date().timeIntervalSince(lastAutoSave)
+        let remaining = max(0, 30 - Int(elapsed))
+        return remaining
+    }
+    
+    @MainActor
+    private func performAutoSave() async {
+        guard !isSaving && hasUnsavedChanges && !entry.content.isEmpty else { return }
+        
+        isSaving = true
+        
+        // Save through the callback
+        onSave(entry)
+        
+        // Wait a moment for the save to complete
+        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+        
+        lastSavedContent = entry.content
+        hasUnsavedChanges = false
+        isSaving = false
+        lastAutoSave = Date()
     }
     
 }
@@ -968,5 +1093,4 @@ struct MacTextEditor: NSViewRepresentable {
         }
     }
 }
-
 
