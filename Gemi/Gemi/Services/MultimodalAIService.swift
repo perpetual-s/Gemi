@@ -144,6 +144,8 @@ final class MultimodalAIService: ObservableObject {
         
         switch attachment.type {
         case .image(let nsImage):
+            // Send initial analysis notification
+            postAnalysisUpdate("Starting image analysis...")
             let result = try await processImage(nsImage, attachment: attachment)
             return ProcessedAttachment(
                 id: attachment.id,
@@ -315,6 +317,15 @@ final class MultimodalAIService: ObservableObject {
         enhancedPrompt += "My message: " + originalMessage
         
         return enhancedPrompt
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func postAnalysisUpdate(_ message: String) {
+        NotificationCenter.default.post(
+            name: NSNotification.Name("MultimodalAnalysisUpdate"),
+            object: message
+        )
     }
     
     // MARK: - Audio Tone Analysis

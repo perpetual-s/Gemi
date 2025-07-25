@@ -42,6 +42,9 @@ struct GemiChatView: View {
                     // Attachment preview
                     AttachmentPreviewView(attachmentManager: attachmentManager)
                     
+                    // Multimodal processing indicator
+                    MultimodalProcessingView()
+                    
                     // Progress indicator for processing attachments
                     AttachmentProgressView(attachmentManager: attachmentManager)
                         .padding(.horizontal, 16)

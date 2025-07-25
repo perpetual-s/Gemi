@@ -10,6 +10,14 @@ final class LightweightVisionService: ObservableObject {
     
     private let logger = Logger(subsystem: "com.gemi", category: "LightweightVision")
     
+    // Helper method for posting updates
+    private func postAnalysisUpdate(_ message: String) {
+        NotificationCenter.default.post(
+            name: NSNotification.Name("MultimodalAnalysisUpdate"),
+            object: message
+        )
+    }
+    
     enum QuickAnalysisError: LocalizedError {
         case invalidImage
         case analysisTimeout
@@ -27,6 +35,9 @@ final class LightweightVisionService: ObservableObject {
     /// Quick analysis focused on diary-relevant information
     func quickAnalyze(_ image: NSImage) async throws -> String {
         logger.info("Starting quick image analysis")
+        
+        // Post initial update
+        postAnalysisUpdate("Analyzing image...")
         
         guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
             throw QuickAnalysisError.invalidImage
