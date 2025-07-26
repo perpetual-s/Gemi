@@ -107,7 +107,7 @@ struct MainWindowView: View {
     private var contentView: some View {
         switch selectedView {
         case .home:
-            HomeView(
+            TimeAwareHomeView(
                 journalStore: journalStore,
                 onNewEntry: {
                     selectedView = .compose
