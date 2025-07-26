@@ -1,58 +1,53 @@
 //
-//  AnimatedTimeGreeting.swift
+//  AnimatedTimeGreetingFixed.swift
 //  Gemi
 //
-//  Animated time-aware greeting with smooth transitions
+//  Fixed animated time-aware greeting with proper time reactivity
 //
 
 import SwiftUI
 
-struct AnimatedTimeGreeting: View {
+struct AnimatedTimeGreetingFixed: View {
+    let currentHour: Int
+    
     @State private var currentGreeting: String = ""
     @State private var currentSubtitle: String = ""
     @State private var currentIcon: String = ""
     @State private var iconColor: Color = .orange
     @State private var opacity: Double = 0
     @State private var scale: CGFloat = 0.9
-    @State private var glowIntensity: Double = 0.3
-    
-    // Timer to check for time changes
-    let timer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
-    
-    private var currentHour: Int {
-        Calendar.current.component(.hour, from: Date())
-    }
+    @State private var glowIntensity: Double = 0.15
     
     var body: some View {
         VStack(spacing: 12) {
-            // Animated icon with enhanced effects
+            // Animated icon with reduced glow effects
             ZStack {
-                // Multi-layer glow effect
-                ForEach(0..<4) { index in
+                // Multi-layer glow effect with reduced intensity
+                ForEach(0..<3) { index in
                     Circle()
                         .fill(
                             RadialGradient(
                                 colors: [
-                                    iconColor.opacity(glowIntensity - Double(index) * 0.08),
+                                    iconColor.opacity((glowIntensity - Double(index) * 0.05) * 0.5),
                                     Color.clear
                                 ],
                                 center: .center,
                                 startRadius: 30 + CGFloat(index * 10),
-                                endRadius: 80 + CGFloat(index * 20)
+                                endRadius: 60 + CGFloat(index * 15)
                             )
                         )
-                        .frame(width: 160 + CGFloat(index * 30), height: 160 + CGFloat(index * 30))
-                        .blur(radius: 15 + CGFloat(index * 5))
-                        .scaleEffect(1 + sin(Date().timeIntervalSince1970 * 0.5 + Double(index)) * 0.05)
+                        .frame(width: 120 + CGFloat(index * 25), height: 120 + CGFloat(index * 25))
+                        .blur(radius: 20 + CGFloat(index * 5))
+                        .scaleEffect(1 + sin(Date().timeIntervalSince1970 * 0.5 + Double(index)) * 0.03)
                 }
                 
-                // Background circle with gradient
+                // Background circle with subtle gradient
                 Circle()
                     .fill(
                         LinearGradient(
                             colors: [
-                                iconColor.opacity(0.15),
-                                iconColor.opacity(0.05)
+                                iconColor.opacity(0.08),
+                                iconColor.opacity(0.03)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -60,7 +55,7 @@ struct AnimatedTimeGreeting: View {
                     )
                     .frame(width: 100, height: 100)
                 
-                // Icon with animations
+                // Icon with reduced shadow
                 Image(systemName: currentIcon)
                     .font(.system(size: 56, weight: .medium, design: .rounded))
                     .foregroundStyle(
@@ -73,8 +68,8 @@ struct AnimatedTimeGreeting: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .shadow(color: iconColor.opacity(0.5), radius: 10, x: 0, y: 2)
-                    .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 1)
+                    .shadow(color: iconColor.opacity(0.2), radius: 6, x: 0, y: 2)
+                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                     .scaleEffect(scale)
             }
             
@@ -113,8 +108,8 @@ struct AnimatedTimeGreeting: View {
             updateGreeting(animated: false)
             animateIn()
         }
-        .onReceive(timer) { _ in
-            checkAndUpdateGreeting()
+        .onChange(of: currentHour) { _, _ in
+            updateGreeting(animated: true)
         }
     }
     
@@ -124,13 +119,6 @@ struct AnimatedTimeGreeting: View {
         withAnimation(.easeOut(duration: 0.8)) {
             opacity = 1
             scale = 1
-        }
-    }
-    
-    private func checkAndUpdateGreeting() {
-        let newGreeting = getGreeting(for: currentHour)
-        if newGreeting != currentGreeting {
-            updateGreeting(animated: true)
         }
     }
     
@@ -218,19 +206,19 @@ struct AnimatedTimeGreeting: View {
     
     private func getGlowIntensity(for hour: Int) -> Double {
         switch hour {
-        case 5..<9: return 0.4   // Bright morning glow
-        case 9..<17: return 0.3  // Normal day glow
-        case 17..<21: return 0.35 // Warm evening glow
-        default: return 0.25     // Subtle night glow
+        case 5..<9: return 0.2    // Soft morning glow
+        case 9..<17: return 0.15  // Subtle day glow
+        case 17..<21: return 0.18 // Warm evening glow
+        default: return 0.12      // Minimal night glow
         }
     }
 }
 
 // MARK: - Preview
 
-struct AnimatedTimeGreeting_Previews: PreviewProvider {
+struct AnimatedTimeGreetingFixed_Previews: PreviewProvider {
     static var previews: some View {
-        AnimatedTimeGreeting()
+        AnimatedTimeGreetingFixed(currentHour: 8)
             .padding(40)
             .background(Color.black)
     }

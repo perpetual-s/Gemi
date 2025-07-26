@@ -62,7 +62,7 @@ struct HomeContentView: View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 40) {
                 // Animated time-aware greeting
-                AnimatedTimeGreeting()
+                AnimatedTimeGreetingFixed(currentHour: currentHour)
                     .padding(.top, 60)
                     .scaleEffect(heroScale)
                     .opacity(heroOpacity)
