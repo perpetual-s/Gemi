@@ -28,9 +28,10 @@ struct EnhancedEntryReadingView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    // Done button in upper right
-                    HStack {
-                        Spacer()
+                    // Article-style header with Done button
+                    HStack(alignment: .top) {
+                        articleHeader
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         
                         Button(action: { dismiss() }) {
                             Text("Done")
@@ -49,13 +50,8 @@ struct EnhancedEntryReadingView: View {
                         .keyboardShortcut(.return, modifiers: .command)
                         .help("Close (Esc or ⌘↩)")
                     }
-                    .padding(.trailing, 24)
-                    .padding(.top, 20)
-                    
-                    // Article-style header
-                    articleHeader
-                        .padding(.horizontal, 40)
-                        .padding(.top, 0)
+                    .padding(.horizontal, 40)
+                    .padding(.top, 40)
                     
                     // Metadata bar
                     metadataBar
