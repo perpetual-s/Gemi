@@ -209,10 +209,10 @@ struct AnimatedTimeGreeting: View {
     
     private func getIconColor(for hour: Int) -> Color {
         switch hour {
-        case 5..<12: return Color(red: 0.5, green: 0.8, blue: 1.0)  // Sky blue for morning
-        case 12..<17: return .yellow                                 // Bright yellow for afternoon
-        case 17..<21: return .orange                                 // Orange for sunset/evening
-        default: return .indigo                                      // Deep indigo for night
+        case 5..<12: return Color(red: 1.0, green: 0.8, blue: 0.2)   // Warm golden yellow for morning sun
+        case 12..<17: return Color(red: 1.0, green: 0.9, blue: 0.0)  // Bright yellow for afternoon
+        case 17..<21: return .orange                                  // Orange for sunset/evening
+        default: return .indigo                                       // Deep indigo for night
         }
     }
     

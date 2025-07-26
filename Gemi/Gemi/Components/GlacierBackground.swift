@@ -95,9 +95,9 @@ struct GlacierBackground: View {
                 for i in 0..<3 {
                     let path = createGlacierPath(
                         in: size,
-                        time: time * 0.05 + Double(i),
+                        time: time * 0.2 + Double(i),
                         amplitude: 150,
-                        frequency: 0.002,
+                        frequency: 0.003,
                         phase: phase1
                     )
                     
@@ -127,9 +127,9 @@ struct GlacierBackground: View {
                 for i in 0..<2 {
                     let path = createGlacierPath(
                         in: size,
-                        time: time * 0.03 + Double(i) * 1.5,
+                        time: time * 0.15 + Double(i) * 1.5,
                         amplitude: 200,
-                        frequency: 0.0015,
+                        frequency: 0.002,
                         phase: phase2
                     )
                     
@@ -160,9 +160,9 @@ struct GlacierBackground: View {
                 
                 let path = createGlacierPath(
                     in: size,
-                    time: time * 0.02,
+                    time: time * 0.1,
                     amplitude: 250,
-                    frequency: 0.001,
+                    frequency: 0.0015,
                     phase: phase3
                 )
                 
