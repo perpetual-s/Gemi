@@ -152,11 +152,14 @@ final class GemiAICoordinator: ObservableObject {
         If the entry contains NO significant personal information, respond with "No key information to extract."
         
         Examples of GOOD extractions:
-        - My name is Sarah Chen and I work as a software engineer
-        - My daughter Emma celebrated her 5th birthday today
-        - I was diagnosed with type 2 diabetes last week
-        - Moving to Seattle next month for my new job at Microsoft
-        - My mother passed away three years ago from cancer
+        - My name is Sarah Chen and I work as a software engineer at Apple
+        - My daughter Emma celebrated her 5th birthday today at Disneyland
+        - I was diagnosed with type 2 diabetes and started insulin therapy
+        - Moving to Seattle next month for my new job as Senior Director at Microsoft
+        - My mother Linda passed away three years ago from cancer
+        - Started learning Korean because my partner Jiwoo is from Seoul
+        - Graduated from Stanford with a PhD in Computer Science
+        - My best friend Michael and I have known each other since kindergarten
         
         Examples of BAD extractions (DO NOT extract these):
         - Bought a lottery ticket
@@ -165,6 +168,10 @@ final class GemiAICoordinator: ObservableObject {
         - Feeling tired today
         - It's Monday
         - Thinking about goals
+        - Watched a movie
+        - The weather was nice
+        - Ate lunch at a restaurant
+        - Went for a walk in the park
         """
         
         let messages = [

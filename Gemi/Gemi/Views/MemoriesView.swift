@@ -4,8 +4,6 @@ struct MemoriesView: View {
     @StateObject private var viewModel = MemoryViewModel()
     @ObservedObject var memoryManager = MemoryManager.shared
     @State private var showingProcessingView = false
-    @State private var selectedMemory: Memory?
-    // Removed: showingDeleteAlert and memoryToDelete - no longer needed
     
     var body: some View {
         ZStack {
@@ -15,7 +13,7 @@ struct MemoriesView: View {
                 memoriesListView
             }
             
-            if memoryManager.isProcessing {
+            if memoryManager.isProcessing && !showingProcessingView {
                 processingOverlay
             }
         }
@@ -43,6 +41,7 @@ struct MemoriesView: View {
                     .font(.system(size: 56))
                     .foregroundColor(Theme.Colors.primaryAccent)
                     .symbolRenderingMode(.hierarchical)
+                    .symbolEffect(.pulse, options: .repeating.speed(0.5))
             }
             
             VStack(spacing: Theme.spacing) {
@@ -58,15 +57,32 @@ struct MemoriesView: View {
                 Button {
                     showingProcessingView = true
                 } label: {
-                    Text("Process Journal Entries")
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
-                        .background(Theme.Colors.primaryAccent)
-                        .foregroundColor(.white)
-                        .clipShape(Capsule())
+                    HStack(spacing: 8) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 14))
+                        Text("Extract Memories from Journal")
+                            .font(.system(size: 15, weight: .medium))
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(
+                        LinearGradient(
+                            colors: [Theme.Colors.primaryAccent, Theme.Colors.primaryAccent.opacity(0.8)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .foregroundColor(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .shadow(color: Theme.Colors.primaryAccent.opacity(0.3), radius: 8, y: 4)
                 }
                 .buttonStyle(.plain)
                 .padding(.top)
+                .onHover { hovering in
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        // Visual feedback handled by button style
+                    }
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -85,14 +101,12 @@ struct MemoriesView: View {
                     .padding(.horizontal)
                     .padding(.bottom)
                 
-                // Memory cards
+                // Memory cards with staggered animation
                 LazyVStack(spacing: Theme.spacing) {
-                    ForEach(viewModel.filteredMemories) { memory in
+                    ForEach(Array(viewModel.filteredMemories.enumerated()), id: \.element.id) { index, memory in
                         MemoryCard(
                             memory: memory,
-                            onTap: { selectedMemory = memory },
                             onDelete: {
-                                // Direct deletion without confirmation
                                 viewModel.deleteMemory(memory)
                             }
                         )
@@ -100,6 +114,11 @@ struct MemoriesView: View {
                             insertion: .opacity.combined(with: .move(edge: .top)),
                             removal: .opacity.combined(with: .scale)
                         ))
+                        .animation(
+                            .spring(response: 0.4, dampingFraction: 0.8)
+                            .delay(Double(index) * 0.05),
+                            value: viewModel.filteredMemories.count
+                        )
                     }
                 }
                 .padding(.horizontal)
@@ -144,17 +163,46 @@ struct MemoriesView: View {
                         .controlSize(.regular)
                     }
                     
-                    // Simple count badge
+                    // Memory statistics
                     if !memoryManager.memories.isEmpty {
-                        Text("\(memoryManager.memories.count)")
-                            .font(.system(size: 24, weight: .semibold))
-                            .foregroundColor(Theme.Colors.primaryAccent)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
+                        HStack(spacing: 16) {
+                            // Total count
+                            VStack(spacing: 2) {
+                                Text("\(memoryManager.memories.count)")
+                                    .font(.system(size: 24, weight: .semibold))
+                                    .foregroundColor(Theme.Colors.primaryAccent)
+                                Text("Total")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
                             .background(
-                                Capsule()
+                                RoundedRectangle(cornerRadius: 8)
                                     .fill(Theme.Colors.primaryAccent.opacity(0.1))
                             )
+                            
+                            // Recent badge
+                            let recentCount = memoryManager.memories.filter { 
+                                Calendar.current.dateComponents([.day], from: $0.extractedAt, to: Date()).day ?? 0 < 7 
+                            }.count
+                            if recentCount > 0 {
+                                VStack(spacing: 2) {
+                                    Text("\(recentCount)")
+                                        .font(.system(size: 18, weight: .medium))
+                                        .foregroundColor(.green)
+                                    Text("This Week")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.green.opacity(0.1))
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -168,18 +216,29 @@ struct MemoriesView: View {
     private var filterBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
-                // Search
+                // Search with animation
                 HStack {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(.secondary)
+                        .symbolEffect(.pulse, options: .speed(0.5), isActive: !viewModel.searchText.isEmpty)
                     TextField("Search memories...", text: $viewModel.searchText)
                         .textFieldStyle(.plain)
                         .frame(width: 200)
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(Color.secondary.opacity(0.1))
-                .clipShape(Capsule())
+                .background(
+                    Capsule()
+                        .fill(Color.secondary.opacity(0.1))
+                        .overlay(
+                            Capsule()
+                                .strokeBorder(
+                                    viewModel.searchText.isEmpty ? Color.clear : Theme.Colors.primaryAccent.opacity(0.3),
+                                    lineWidth: 1.5
+                                )
+                        )
+                )
+                .animation(.easeInOut(duration: 0.2), value: viewModel.searchText)
                 
                 Divider()
                     .frame(height: 30)
@@ -223,21 +282,27 @@ struct MemoriesView: View {
     // MARK: - Processing Overlay
     
     private var processingOverlay: some View {
-        VStack(spacing: Theme.spacing) {
-            ProgressView()
-                .scaleEffect(1.5)
-                .padding()
+        ZStack {
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
             
-            Text("Extracting memories from your journal...")
-                .font(Theme.Typography.body)
-                .foregroundColor(Theme.Colors.secondaryText)
+            VStack(spacing: Theme.spacing) {
+                ProgressView()
+                    .scaleEffect(1.5)
+                    .padding()
+                
+                Text("Extracting memories from your journal...")
+                    .font(Theme.Typography.body)
+                    .foregroundColor(Theme.Colors.secondaryText)
+            }
+            .padding(40)
+            .background(
+                RoundedRectangle(cornerRadius: Theme.cornerRadius)
+                    .fill(Theme.Colors.cardBackground)
+                    .shadow(color: Color.black.opacity(0.2), radius: 20)
+            )
         }
-        .padding(40)
-        .background(
-            RoundedRectangle(cornerRadius: Theme.cornerRadius)
-                .fill(Theme.Colors.cardBackground)
-                .shadow(color: Color.black.opacity(0.1), radius: 10)
-        )
+        .transition(.opacity.combined(with: .scale(scale: 0.95)))
     }
 }
 
@@ -245,13 +310,14 @@ struct MemoriesView: View {
 
 struct MemoryCard: View {
     let memory: Memory
-    let onTap: () -> Void
     let onDelete: () -> Void
     
     @State private var isHovered = false
+    @State private var isExpanded = false
+    @State private var showDeleteConfirmation = false
     
     var body: some View {
-        Button(action: onTap) {
+        Button(action: { withAnimation(.spring(response: 0.3)) { isExpanded.toggle() } }) {
             VStack(alignment: .leading, spacing: Theme.spacing) {
                 // Header with delete button
                 HStack {
@@ -264,7 +330,7 @@ struct MemoryCard: View {
                     
                     if isHovered {
                         Button {
-                            onDelete()
+                            showDeleteConfirmation = true
                         } label: {
                             Image(systemName: "trash")
                                 .font(.system(size: 12))
@@ -275,12 +341,24 @@ struct MemoryCard: View {
                     }
                 }
                 
-                // Content
+                // Content with expandable behavior
                 Text(memory.content)
                     .font(Theme.Typography.body)
-                    .lineLimit(3)
+                    .lineLimit(isExpanded ? nil : 3)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
+                    .animation(.easeInOut(duration: 0.2), value: isExpanded)
+                
+                // Show expand/collapse indicator if content is long
+                if memory.content.count > 150 {
+                    HStack {
+                        Spacer()
+                        Image(systemName: isExpanded ? "chevron.up.circle" : "chevron.down.circle")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary.opacity(0.6))
+                    }
+                    .padding(.top, 4)
+                }
             }
             .padding(Theme.spacing)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -299,6 +377,20 @@ struct MemoryCard: View {
             withAnimation(.easeInOut(duration: 0.2)) {
                 isHovered = hovering
             }
+        }
+        .confirmationDialog(
+            "Delete Memory?",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    onDelete()
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This memory will be permanently deleted.")
         }
     }
 }
