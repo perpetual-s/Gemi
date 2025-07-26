@@ -142,13 +142,9 @@ struct GemiApp: App {
             return
         }
         
-        // If not completed, check if model is loaded
-        let isModelReady = await OllamaChatService.shared.health().modelLoaded
-        
-        // Show onboarding if:
-        // 1. Never completed onboarding AND
-        // 2. Model is not loaded
-        let needsOnboarding = !hasCompletedOnboarding && !isModelReady
+        // If not completed, always show onboarding
+        // Don't skip pages even if Ollama is ready
+        let needsOnboarding = !hasCompletedOnboarding
         
         // Update state
         hasCheckedOnboarding = true
