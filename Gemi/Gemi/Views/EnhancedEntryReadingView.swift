@@ -32,12 +32,22 @@ struct EnhancedEntryReadingView: View {
                     HStack {
                         Spacer()
                         
-                        Button("Done") {
-                            dismiss()
+                        Button(action: { dismiss() }) {
+                            Text("Done")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 10)
+                                .background(
+                                    Capsule()
+                                        .fill(Color.accentColor)
+                                        .shadow(color: Color.accentColor.opacity(0.3), radius: 6, x: 0, y: 2)
+                                )
                         }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.large)
-                        .keyboardShortcut(.defaultAction)
+                        .buttonStyle(PlainButtonStyle())
+                        .keyboardShortcut(.escape, modifiers: [])
+                        .keyboardShortcut(.return, modifiers: .command)
+                        .help("Close (Esc or ⌘↩)")
                     }
                     .padding(.trailing, 24)
                     .padding(.top, 20)
