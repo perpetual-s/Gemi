@@ -49,6 +49,9 @@ struct GemmaOnboardingView: View {
         guard !hasCompletedOnboarding else { return }
         hasCompletedOnboarding = true
         
+        // Mark onboarding as completed in UserDefaults
+        UserDefaults.standard.set(true, forKey: "hasCompletedGemmaOnboarding")
+        
         // Ensure we're on the main thread and delay slightly to avoid state update conflicts
         DispatchQueue.main.async {
             onComplete()
@@ -215,8 +218,7 @@ struct GemmaOnboardingView: View {
                         action: handleContinue
                     )
                     .disabled((shouldShowPasswordPage && currentPage == 2 && !isPasswordValid) || 
-                             isSettingUpPassword ||
-                             (isOnVerificationStep && ollamaStatus != .ready))
+                             isSettingUpPassword)
                 }
             }
             .padding(.bottom, 60)
@@ -518,46 +520,47 @@ struct GemmaOnboardingView: View {
     }
     
     private func handleContinue() {
-        if currentPage < totalPages - 1 {
+        // Check if we're on the password page and need to handle password setup
+        let isOnPasswordPage = shouldShowPasswordPage && currentPage == 2
+        
+        if isOnPasswordPage {
+            // Handle password setup
+            if !password.isEmpty && isPasswordValid {
+                isSettingUpPassword = true
+                Task {
+                    do {
+                        try await authManager.setupInitialAuthentication(
+                            password: password,
+                            enableBiometric: enableBiometric
+                        )
+                        await MainActor.run {
+                            isSettingUpPassword = false
+                            // Continue to next page after successful password setup
+                            withAnimation(.spring(response: 0.4)) {
+                                currentPage += 1
+                            }
+                        }
+                    } catch {
+                        await MainActor.run {
+                            isSettingUpPassword = false
+                            passwordError = error.localizedDescription
+                            showPasswordError = true
+                        }
+                    }
+                }
+            } else {
+                // Password is required - show error
+                passwordError = "Password is required to secure your journal"
+                showPasswordError = true
+            }
+        } else if currentPage < totalPages - 1 {
+            // Not on last page yet - continue to next page
             withAnimation(.spring(response: 0.4)) {
                 currentPage += 1
             }
         } else {
-            // Last page - handle setup
-            if shouldShowPasswordPage && currentPage == 2 {
-                // Handle password setup
-                if !password.isEmpty && isPasswordValid {
-                    isSettingUpPassword = true
-                    Task {
-                        do {
-                            try await authManager.setupInitialAuthentication(
-                                password: password,
-                                enableBiometric: enableBiometric
-                            )
-                            await MainActor.run {
-                                isSettingUpPassword = false
-                                // Continue to next page
-                                withAnimation(.spring(response: 0.4)) {
-                                    currentPage += 1
-                                }
-                            }
-                        } catch {
-                            await MainActor.run {
-                                isSettingUpPassword = false
-                                passwordError = error.localizedDescription
-                                showPasswordError = true
-                            }
-                        }
-                    }
-                } else {
-                    // Password is required - show error
-                    passwordError = "Password is required to secure your journal"
-                    showPasswordError = true
-                }
-            } else {
-                // Complete onboarding
-                safeComplete()
-            }
+            // On last page - complete onboarding
+            safeComplete()
         }
     }
     
@@ -922,6 +925,12 @@ struct GemmaOnboardingView: View {
                             .background(Color.white.opacity(0.2))
                         
                         VStack(spacing: 16) {
+                            // Note that users can continue
+                            Text("You can click 'Get Started' and set up Ollama later")
+                                .font(.system(size: 14))
+                                .foregroundColor(.white.opacity(0.6))
+                                .multilineTextAlignment(.center)
+                            
                             HStack(spacing: 8) {
                                 Image(systemName: "questionmark.circle")
                                     .font(.system(size: 16))
