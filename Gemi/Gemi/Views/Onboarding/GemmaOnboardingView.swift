@@ -92,9 +92,24 @@ struct GemmaOnboardingView: View {
             )
             .ignoresSafeArea(.all)
             
+            // Radial gradient centered on bottom buttons
+            RadialGradient(
+                colors: [
+                    Color.white.opacity(0.15),
+                    Color.white.opacity(0.08),
+                    Color.white.opacity(0.03),
+                    Color.clear
+                ],
+                center: UnitPoint(x: 0.5, y: 0.85), // Positioned at button area
+                startRadius: 50,
+                endRadius: 400
+            )
+            .ignoresSafeArea(.all)
+            
             // Animated mesh gradient overlay
             AnimatedGradientMesh()
-                .opacity(0.5)
+                .opacity(0.3) // Reduced opacity to let radial gradient shine through
+                .offset(y: 100) // Shift mesh down to complement button focus
         }
     }
     
