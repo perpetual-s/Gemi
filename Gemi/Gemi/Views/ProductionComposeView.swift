@@ -100,21 +100,14 @@ struct ProductionComposeView: View {
                             ScrollViewReader { scrollProxy in
                                 ScrollView(showsIndicators: false) {
                                     VStack(spacing: 0) {
-                                        // Add spacer to center content vertically when minimal
-                                        Spacer(minLength: 0)
-                                            .frame(maxHeight: .infinity)
-                                        
                                         // Professional content editor
                                         contentEditor(in: geometry)
                                             .opacity(contentOpacity)
                                             .animation(.easeOut(duration: 0.5).delay(0.2), value: contentOpacity)
                                             .id("content")
                                         
-                                        // Removed metadata section - now in Entry Details panel
-                                        
-                                        // Add spacer to center content vertically when minimal
-                                        Spacer(minLength: 0)
-                                            .frame(maxHeight: .infinity)
+                                        // Bottom spacer to ensure scrollability
+                                        Spacer(minLength: 100)
                                     }
                                     .frame(minHeight: geometry.size.height)
                                 }
@@ -509,7 +502,7 @@ struct ProductionComposeView: View {
                 // Dynamic placeholder
                 if entry.content.isEmpty {
                     DynamicPlaceholder()
-                        .padding(.top, 40)
+                        .padding(.top, 8)
                         .allowsHitTesting(false)
                         .onTapGesture {} // Ensure it doesn't interfere
                 }
@@ -535,7 +528,7 @@ struct ProductionComposeView: View {
                     }
                 )
                 .frame(minHeight: 400)
-                .padding(.top, 40)
+                .padding(.top, 8)
             }
             .padding(.horizontal, 40)
             

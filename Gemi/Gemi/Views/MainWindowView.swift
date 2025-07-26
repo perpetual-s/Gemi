@@ -129,10 +129,11 @@ struct MainWindowView: View {
             ProductionComposeView(
                 entry: editingEntry,
                 onSave: { entry in
+                    // Save the entry but stay in compose view
                     try await journalStore.saveEntryWithError(entry)
-                    selectedView = .timeline
-                    editingEntry = nil
-                    // Find the saved entry from the refreshed entries array
+                    // Update the editing entry with the saved version
+                    editingEntry = entry
+                    // Update selected entry for sidebar highlighting
                     selectedEntry = journalStore.entries.first { $0.id == entry.id }
                 },
                 onCancel: {
