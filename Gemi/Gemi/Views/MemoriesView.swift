@@ -150,59 +150,41 @@ struct MemoriesView: View {
                 
                 Spacer()
                 
-                HStack(spacing: 12) {
-                    // Process entries button
-                    if !memoryManager.memories.isEmpty {
-                        Button {
-                            showingProcessingView = true
-                        } label: {
-                            Label("Process Entries", systemImage: "arrow.triangle.2.circlepath")
-                                .font(Theme.Typography.body)
+                // Memory statistics with equal-sized boxes
+                if !memoryManager.memories.isEmpty {
+                    HStack(spacing: 12) {
+                        // Total count
+                        VStack(spacing: 2) {
+                            Text("\(memoryManager.memories.count)")
+                                .font(.system(size: 24, weight: .semibold))
+                                .foregroundColor(Theme.Colors.primaryAccent)
+                            Text("Total")
+                                .font(.system(size: 11))
+                                .foregroundColor(.secondary)
                         }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                    }
-                    
-                    // Memory statistics
-                    if !memoryManager.memories.isEmpty {
-                        HStack(spacing: 16) {
-                            // Total count
-                            VStack(spacing: 2) {
-                                Text("\(memoryManager.memories.count)")
-                                    .font(.system(size: 24, weight: .semibold))
-                                    .foregroundColor(Theme.Colors.primaryAccent)
-                                Text("Total")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(.secondary)
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Theme.Colors.primaryAccent.opacity(0.1))
-                            )
-                            
-                            // Recent badge
-                            let recentCount = memoryManager.memories.filter { 
-                                Calendar.current.dateComponents([.day], from: $0.extractedAt, to: Date()).day ?? 0 < 7 
-                            }.count
-                            if recentCount > 0 {
-                                VStack(spacing: 2) {
-                                    Text("\(recentCount)")
-                                        .font(.system(size: 18, weight: .medium))
-                                        .foregroundColor(.green)
-                                    Text("This Week")
-                                        .font(.system(size: 11))
-                                        .foregroundColor(.secondary)
-                                }
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(Color.green.opacity(0.1))
-                                )
-                            }
+                        .frame(width: 80, height: 50)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Theme.Colors.primaryAccent.opacity(0.1))
+                        )
+                        
+                        // Recent badge
+                        let recentCount = memoryManager.memories.filter { 
+                            Calendar.current.dateComponents([.day], from: $0.extractedAt, to: Date()).day ?? 0 < 7 
+                        }.count
+                        VStack(spacing: 2) {
+                            Text("\(recentCount)")
+                                .font(.system(size: 24, weight: .semibold))
+                                .foregroundColor(recentCount > 0 ? .green : .secondary)
+                            Text("This Week")
+                                .font(.system(size: 11))
+                                .foregroundColor(.secondary)
                         }
+                        .frame(width: 80, height: 50)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(recentCount > 0 ? Color.green.opacity(0.1) : Color.secondary.opacity(0.1))
+                        )
                     }
                 }
             }
@@ -261,19 +243,35 @@ struct MemoriesView: View {
                 Divider()
                     .frame(height: 30)
                 
-                // Sort order
-                Menu {
-                    ForEach(MemoryViewModel.SortOrder.allCases, id: \.self) { order in
-                        Button(order.rawValue) {
-                            viewModel.sortOrder = order
+                // Sort order and Process Entries with equal size
+                HStack(spacing: 12) {
+                    // Sort order
+                    Menu {
+                        ForEach(MemoryViewModel.SortOrder.allCases, id: \.self) { order in
+                            Button(order.rawValue) {
+                                viewModel.sortOrder = order
+                            }
                         }
+                    } label: {
+                        Label(viewModel.sortOrder.rawValue, systemImage: "arrow.up.arrow.down")
+                            .font(.system(size: 14))
+                            .frame(width: 120)
                     }
-                } label: {
-                    Label(viewModel.sortOrder.rawValue, systemImage: "arrow.up.arrow.down")
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color.secondary.opacity(0.1))
-                        .clipShape(Capsule())
+                    .buttonStyle(.bordered)
+                    .controlSize(.regular)
+                    
+                    // Process entries button
+                    if !memoryManager.memories.isEmpty {
+                        Button {
+                            showingProcessingView = true
+                        } label: {
+                            Label("Process", systemImage: "arrow.triangle.2.circlepath")
+                                .font(.system(size: 14))
+                                .frame(width: 120)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.regular)
+                    }
                 }
             }
         }
