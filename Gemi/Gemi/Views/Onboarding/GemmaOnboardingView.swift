@@ -6,8 +6,23 @@ struct GemmaOnboardingView: View {
     @StateObject private var ollamaService = OllamaChatService.shared
     @State private var currentPage = 0
     @State private var hasCompletedOnboarding = false
-    @State private var password = ""
-    @State private var confirmPassword = ""
+    @State private var isCompletingOnboarding = false
+    @State private var password = "" {
+        didSet {
+            // Clear password from memory when view is deallocated
+            if password.isEmpty {
+                password.removeAll(keepingCapacity: false)
+            }
+        }
+    }
+    @State private var confirmPassword = "" {
+        didSet {
+            // Clear password from memory when view is deallocated
+            if confirmPassword.isEmpty {
+                confirmPassword.removeAll(keepingCapacity: false)
+            }
+        }
+    }
     @State private var enableBiometric = true
     @State private var showPassword = false
     @State private var isSettingUpPassword = false
@@ -46,7 +61,8 @@ struct GemmaOnboardingView: View {
     }
     
     private func safeComplete() {
-        guard !hasCompletedOnboarding else { return }
+        guard !hasCompletedOnboarding && !isCompletingOnboarding else { return }
+        isCompletingOnboarding = true
         hasCompletedOnboarding = true
         
         // Mark onboarding as completed in UserDefaults
@@ -234,9 +250,13 @@ struct GemmaOnboardingView: View {
                             Text("Command copied!")
                                 .font(.footnote)
                                 .foregroundColor(.white)
-                            Text(copiedCommand)
-                                .font(.footnote.monospaced())
-                                .foregroundColor(.white.opacity(0.8))
+                            if !copiedCommand.isEmpty {
+                                Text(copiedCommand)
+                                    .font(.footnote.monospaced())
+                                    .foregroundColor(.white.opacity(0.8))
+                                    .lineLimit(1)
+                                    .truncationMode(.tail)
+                            }
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
@@ -254,7 +274,7 @@ struct GemmaOnboardingView: View {
             }
         )
         .task {
-            // Check Ollama status when reaching any Ollama-related page
+            // Initial status check - only if needed
             if isOnOllamaStep || isOnVerificationStep {
                 await checkOllamaStatus()
             }
@@ -352,8 +372,11 @@ struct GemmaOnboardingView: View {
         .multilineTextAlignment(.center)
         .padding(.horizontal, 40)
         .onAppear {
-            withAnimation(.easeOut(duration: 0.6)) {
-                contentOpacity = 1.0
+            // Ensure animation runs on main thread
+            DispatchQueue.main.async {
+                withAnimation(.easeOut(duration: 0.6)) {
+                    contentOpacity = 1.0
+                }
             }
         }
     }
@@ -535,6 +558,9 @@ struct GemmaOnboardingView: View {
                         )
                         await MainActor.run {
                             isSettingUpPassword = false
+                            // Clear passwords from memory after successful setup
+                            password = ""
+                            confirmPassword = ""
                             // Continue to next page after successful password setup
                             withAnimation(.spring(response: 0.4)) {
                                 currentPage += 1
@@ -972,15 +998,20 @@ struct GemmaOnboardingView: View {
     // MARK: - Ollama Helper Methods
     
     private func checkOllamaStatus() async {
+        // Prevent concurrent checks
+        guard !isCheckingOllama else { return }
+        
         isCheckingOllama = true
         
         // Check if Ollama is installed
         let isInstalled = await OllamaInstaller.shared.checkInstallation()
         
         if !isInstalled {
-            withAnimation {
-                ollamaStatus = .notInstalled
-                isCheckingOllama = false
+            await MainActor.run {
+                withAnimation {
+                    ollamaStatus = .notInstalled
+                    isCheckingOllama = false
+                }
             }
             return
         }
@@ -1000,24 +1031,30 @@ struct GemmaOnboardingView: View {
                 if newHealth.healthy {
                     // Successfully started, continue checking
                     if !newHealth.modelLoaded {
-                        withAnimation {
-                            ollamaStatus = .runningNoModel
-                            isCheckingOllama = false
+                        await MainActor.run {
+                            withAnimation {
+                                ollamaStatus = .runningNoModel
+                                isCheckingOllama = false
+                            }
                         }
                         return
                     } else {
-                        withAnimation {
-                            ollamaStatus = .ready
-                            isCheckingOllama = false
+                        await MainActor.run {
+                            withAnimation {
+                                ollamaStatus = .ready
+                                isCheckingOllama = false
+                            }
                         }
                         return
                     }
                 }
             } catch {
                 // Failed to start automatically
-                withAnimation {
-                    ollamaStatus = .installedNotRunning
-                    isCheckingOllama = false
+                await MainActor.run {
+                    withAnimation {
+                        ollamaStatus = .installedNotRunning
+                        isCheckingOllama = false
+                    }
                 }
                 return
             }
@@ -1025,17 +1062,21 @@ struct GemmaOnboardingView: View {
         
         // Check if model is available
         if !health.modelLoaded {
-            withAnimation {
-                ollamaStatus = .runningNoModel
-                isCheckingOllama = false
+            await MainActor.run {
+                withAnimation {
+                    ollamaStatus = .runningNoModel
+                    isCheckingOllama = false
+                }
             }
             return
         }
         
         // All good!
-        withAnimation {
-            ollamaStatus = .ready
-            isCheckingOllama = false
+        await MainActor.run {
+            withAnimation {
+                ollamaStatus = .ready
+                isCheckingOllama = false
+            }
         }
     }
     
