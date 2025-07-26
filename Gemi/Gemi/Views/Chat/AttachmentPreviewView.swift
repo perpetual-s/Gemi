@@ -138,17 +138,6 @@ struct AttachmentThumbnail: View {
                                     .font(Theme.Typography.footnote)
                                     .foregroundColor(Theme.Colors.secondaryText)
                             }
-                            
-                        case .document:
-                            VStack(spacing: 4) {
-                                Image(systemName: "doc.fill")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(Theme.Colors.primaryAccent)
-                                
-                                Text("Document")
-                                    .font(Theme.Typography.footnote)
-                                    .foregroundColor(Theme.Colors.secondaryText)
-                            }
                         }
                     }
                     .overlay(

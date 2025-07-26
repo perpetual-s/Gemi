@@ -13,13 +13,11 @@ final class AttachmentManager: ObservableObject {
     enum AttachmentType: Equatable {
         case image(NSImage)
         case audio(URL)
-        case document(URL)
         
         var icon: String {
             switch self {
             case .image: return "photo"
             case .audio: return "waveform"
-            case .document: return "doc"
             }
         }
         
@@ -27,7 +25,6 @@ final class AttachmentManager: ObservableObject {
             switch self {
             case .image: return "Image"
             case .audio: return "Audio"
-            case .document: return "Document"
             }
         }
     }
@@ -77,13 +74,11 @@ final class AttachmentManager: ObservableObject {
     // Configuration
     private let maxImageSize: Int64 = 20 * 1024 * 1024 // 20MB
     private let maxAudioSize: Int64 = 50 * 1024 * 1024 // 50MB
-    private let maxDocumentSize: Int64 = 10 * 1024 * 1024 // 10MB
     private let thumbnailSize = CGSize(width: 200, height: 200)
     
     // Supported types
     private let supportedImageTypes: Set<UTType> = [.png, .jpeg, .gif, .heif, .webP, .bmp, .tiff]
     private let supportedAudioTypes: Set<UTType> = [.mp3, .mpeg4Audio, .wav, .aiff, .audio]
-    private let supportedDocumentTypes: Set<UTType> = [.pdf, .text, .plainText, .rtf, .sourceCode]
     
     // MARK: - Initialization
     
@@ -112,8 +107,6 @@ final class AttachmentManager: ObservableObject {
             try await addImageAttachment(from: url, fileName: fileName, fileSize: fileSize)
         } else if supportedAudioTypes.contains(typeIdentifier) {
             try await addAudioAttachment(from: url, fileName: fileName, fileSize: fileSize)
-        } else if supportedDocumentTypes.contains(typeIdentifier) {
-            try await addDocumentAttachment(from: url, fileName: fileName, fileSize: fileSize)
         } else {
             throw AttachmentError.unsupportedType
         }
@@ -255,28 +248,6 @@ final class AttachmentManager: ObservableObject {
         attachments.append(attachment)
     }
     
-    private func addDocumentAttachment(from url: URL, fileName: String, fileSize: Int64) async throws {
-        // Check size
-        guard fileSize <= maxDocumentSize else {
-            throw AttachmentError.fileTooLarge(maxSize: maxDocumentSize)
-        }
-        
-        processingProgress = 0.5
-        
-        // For now, just store the reference
-        let attachment = Attachment(
-            type: .document(url),
-            url: url,
-            base64Data: nil,
-            thumbnail: nil,
-            fileName: fileName,
-            fileSize: fileSize
-        )
-        
-        processingProgress = 1.0
-        
-        attachments.append(attachment)
-    }
     
     private func createThumbnail(from image: NSImage) -> NSImage? {
         let targetSize = thumbnailSize

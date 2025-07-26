@@ -173,18 +173,6 @@ final class MultimodalAIService: ObservableObject {
                 metadata: result.metadata,
                 processingTime: Date().timeIntervalSince(startTime)
             )
-            
-        case .document(let url):
-            // Send initial analysis notification
-            postAnalysisUpdate("Reading document...")
-            let result = try await processDocument(url, attachment: attachment)
-            return ProcessedAttachment(
-                id: attachment.id,
-                originalType: attachment.type,
-                textDescription: result.description,
-                metadata: result.metadata,
-                processingTime: Date().timeIntervalSince(startTime)
-            )
         }
     }
     
@@ -245,45 +233,6 @@ final class MultimodalAIService: ObservableObject {
         return (description: description, metadata: metadata)
     }
     
-    // MARK: - Document Processing
-    
-    private func processDocument(_ url: URL, attachment: AttachmentManager.Attachment) async throws -> (description: String, metadata: [String: Any]) {
-        
-        // For now, basic document info
-        // In the future, could use PDFKit or other frameworks
-        var description = "I see a document"
-        
-        if !attachment.fileName.isEmpty {
-            description += " titled '\(attachment.fileName)'"
-        }
-        
-        let fileExtension = url.pathExtension.lowercased()
-        description += " (.\(fileExtension) file, \(attachment.formattedSize)). "
-        
-        // Add type-specific handling
-        switch fileExtension {
-        case "pdf":
-            description += "This is a PDF document. "
-        case "txt", "md":
-            // Try to read text content
-            if let content = try? String(contentsOf: url, encoding: .utf8) {
-                let preview = String(content.prefix(200))
-                description += "The document begins with: \"\(preview)...\" "
-            }
-        case "rtf":
-            description += "This is a rich text document. "
-        default:
-            description += "This is a \(fileExtension.uppercased()) document. "
-        }
-        
-        let metadata: [String: Any] = [
-            "fileType": fileExtension,
-            "fileSize": attachment.fileSize,
-            "fileName": attachment.fileName
-        ]
-        
-        return (description: description.trimmingCharacters(in: .whitespaces), metadata: metadata)
-    }
     
     // MARK: - Prompt Building
     
@@ -301,7 +250,6 @@ final class MultimodalAIService: ObservableObject {
             switch attachment.originalType {
             case .image: return "an image"
             case .audio: return "an audio recording"
-            case .document: return "a document"
             }
         }
         
@@ -336,26 +284,6 @@ final class MultimodalAIService: ObservableObject {
         )
     }
     
-    // MARK: - Audio Tone Analysis
-    
-    private func analyzeAudioTone(from transcription: SpeechTranscriptionService.TranscriptionResult) -> String? {
-        // Simple heuristic based on speaking rate and pauses
-        // In a real implementation, could use more sophisticated audio analysis
-        
-        guard let speakingRate = transcription.metadata["speakingRate"] as? Double else {
-            return nil
-        }
-        
-        if speakingRate > 180 {
-            return "hurried or anxious"
-        } else if speakingRate < 100 {
-            return "calm or thoughtful"
-        } else if transcription.text.contains("!") || transcription.text.contains("?!") {
-            return "excited or emphatic"
-        }
-        
-        return nil
-    }
     
     // MARK: - Chat Integration
     
@@ -420,7 +348,7 @@ final class MultimodalAIService: ObservableObject {
         return [
             "totalProcessed": processedAttachmentsCount,
             "averageProcessingTime": averageProcessingTime,
-            "supportedTypes": ["image", "audio", "document"]
+            "supportedTypes": ["image", "audio"]
         ]
     }
     
