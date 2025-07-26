@@ -177,8 +177,6 @@ final class MemoryManager: ObservableObject {
         logger.info("Cleaned markdown from \(cleanedCount) memories")
     }
     
-    // Removed updateImportance - no longer using importance scores
-    
     /// Clear all memories (with user confirmation)
     func clearAllMemories() async {
         memories.removeAll()
@@ -191,8 +189,6 @@ final class MemoryManager: ObservableObject {
             logger.error("Failed to clear memories from database: \(error)")
         }
     }
-    
-    // Removed memoriesByCategory - no longer using categories
     
     /// Get memory statistics
     func getStatistics() -> MemoryStatistics {

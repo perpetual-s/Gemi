@@ -226,19 +226,6 @@ final class GemiAICoordinator: ObservableObject {
         return memories
     }
     
-    private func extractBasicMemory(from entry: JournalEntry) -> [MemoryData] {
-        // Extract first meaningful sentence as a basic memory
-        let content = entry.content.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !content.isEmpty else { return [] }
-        
-        let memory = MemoryData(
-            content: String(content.prefix(200)),
-            sourceEntryID: entry.id
-        )
-        
-        return [memory]
-    }
-    
     private func parseSimpleMemories(_ response: String, for entry: JournalEntry) -> [MemoryData] {
         
         // Split by newlines and look for lines that start with -, *, or are meaningful sentences

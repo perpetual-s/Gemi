@@ -505,59 +505,6 @@ actor DatabaseManager {
     }
     
     // MARK: - Memory Operations
-    // Note: Old DatabaseMemory-based function removed - use saveMemory(_ memoryData: MemoryData) instead
-    
-    func searchMemories(query: String, limit: Int = 10) async throws -> [DatabaseMemory] {
-        guard let db = database else {
-            throw DatabaseError.notInitialized
-        }
-        
-        let sql = """
-            SELECT id, source_entry_id, content, extracted_at
-            FROM memories
-            WHERE content LIKE ?
-            ORDER BY extracted_at DESC
-            LIMIT ?
-        """
-        
-        var statement: OpaquePointer?
-        defer { sqlite3_finalize(statement) }
-        
-        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
-            throw DatabaseError.failedToPrepareStatement
-        }
-        
-        let searchPattern = "%\(query)%"
-        sqlite3_bind_text(statement, 1, searchPattern, -1, SQLITE_TRANSIENT)
-        sqlite3_bind_int(statement, 2, Int32(limit))
-        
-        var memories: [DatabaseMemory] = []
-        
-        while sqlite3_step(statement) == SQLITE_ROW {
-            guard let idString = sqlite3_column_text(statement, 0),
-                  let id = UUID(uuidString: String(cString: idString)),
-                  let entryIdString = sqlite3_column_text(statement, 1),
-                  let entryId = UUID(uuidString: String(cString: entryIdString)),
-                  let content = sqlite3_column_text(statement, 2) else {
-                continue
-            }
-            
-            let extractedAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 3))
-            
-            // Note: DatabaseMemory still uses old property names for compatibility
-            let memory = DatabaseMemory(
-                id: id,
-                entryId: entryId,
-                content: String(cString: content),
-                keywords: [], // No longer using keywords
-                createdAt: extractedAt
-            )
-            
-            memories.append(memory)
-        }
-        
-        return memories
-    }
     
     // MARK: - Encryption
     
@@ -770,14 +717,4 @@ enum DatabaseError: LocalizedError {
             return "Failed to decrypt data"
         }
     }
-}
-
-// MARK: - Database Memory Model
-
-struct DatabaseMemory: Identifiable {
-    let id: UUID
-    let entryId: UUID
-    let content: String
-    let keywords: [String]
-    let createdAt: Date
 }
