@@ -57,25 +57,25 @@ struct GlacierBackground: View {
     
     private var baseColors: [Color] {
         switch currentHour {
-        case 5..<12:
-            return [
-                Color(red: 1.0, green: 0.9, blue: 0.8),
-                Color(red: 1.0, green: 0.85, blue: 0.7),
-                Color(red: 0.95, green: 0.8, blue: 0.65).opacity(0.8)
-            ]
-        case 12..<17:
+        case 5..<12:  // Morning - Sky blue
             return [
                 Color(red: 0.85, green: 0.95, blue: 1.0),
                 Color(red: 0.75, green: 0.9, blue: 1.0),
-                Color(red: 0.65, green: 0.85, blue: 0.95).opacity(0.8)
+                Color(red: 0.65, green: 0.85, blue: 1.0).opacity(0.8)
             ]
-        case 17..<21:
+        case 12..<17:  // Afternoon - Bright day colors
+            return [
+                Color(red: 1.0, green: 0.98, blue: 0.85),
+                Color(red: 0.98, green: 0.95, blue: 0.75),
+                Color(red: 0.95, green: 0.92, blue: 0.65).opacity(0.8)
+            ]
+        case 17..<21:  // Evening - Sunset orange
             return [
                 Color(red: 1.0, green: 0.8, blue: 0.7),
                 Color(red: 0.95, green: 0.7, blue: 0.6),
                 Color(red: 0.9, green: 0.6, blue: 0.5).opacity(0.8)
             ]
-        default:
+        default:  // Night - Deep blues/indigo
             return [
                 Color(red: 0.2, green: 0.2, blue: 0.4),
                 Color(red: 0.15, green: 0.15, blue: 0.35),
@@ -257,10 +257,10 @@ struct GlacierBackground: View {
     
     private func glacierColor(for hour: Int) -> Color {
         switch hour {
-        case 5..<12: return Color.orange.opacity(0.6)
-        case 12..<17: return Color.blue.opacity(0.6)
-        case 17..<21: return Color.purple.opacity(0.6)
-        default: return Color.indigo.opacity(0.7)
+        case 5..<12: return Color(red: 0.5, green: 0.8, blue: 1.0).opacity(0.6)  // Sky blue
+        case 12..<17: return Color.yellow.opacity(0.6)                           // Yellow
+        case 17..<21: return Color.orange.opacity(0.6)                           // Orange sunset
+        default: return Color.indigo.opacity(0.7)                                // Indigo night
         }
     }
     

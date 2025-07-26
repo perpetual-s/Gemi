@@ -144,10 +144,10 @@ struct PremiumHomeView: View {
     
     private func ambientColor(for hour: Int) -> Color {
         switch hour {
-        case 5..<12: return .orange
-        case 12..<17: return .yellow
-        case 17..<21: return .orange
-        default: return .indigo
+        case 5..<12: return Color(red: 0.5, green: 0.8, blue: 1.0)  // Sky blue for morning
+        case 12..<17: return .yellow                                 // Bright yellow for afternoon
+        case 17..<21: return .orange                                 // Orange for sunset/evening
+        default: return .indigo                                      // Deep indigo for night
         }
     }
     
@@ -352,22 +352,22 @@ struct PremiumHomeView: View {
     
     private var iconColor: Color {
         switch currentHour {
-        case 5..<12: return .orange
-        case 12..<17: return .yellow
-        case 17..<21: return .orange
-        default: return .indigo
+        case 5..<12: return Color(red: 0.5, green: 0.8, blue: 1.0)  // Sky blue for morning
+        case 12..<17: return .yellow                                 // Bright yellow for afternoon
+        case 17..<21: return .orange                                 // Orange for sunset/evening
+        default: return .indigo                                      // Deep indigo for night
         }
     }
     
     private var backgroundColors: [Color] {
         switch currentHour {
-        case 5..<12:
-            return [Color(red: 0.95, green: 0.8, blue: 0.6), Color(red: 0.9, green: 0.7, blue: 0.5)]
-        case 12..<17:
+        case 5..<12:  // Morning - Sky blue
             return [Color(red: 0.6, green: 0.8, blue: 0.95), Color(red: 0.5, green: 0.7, blue: 0.9)]
-        case 17..<21:
+        case 12..<17:  // Afternoon - Bright warm yellow
+            return [Color(red: 0.95, green: 0.9, blue: 0.6), Color(red: 0.9, green: 0.85, blue: 0.5)]
+        case 17..<21:  // Evening - Sunset orange
             return [Color(red: 0.9, green: 0.6, blue: 0.4), Color(red: 0.8, green: 0.5, blue: 0.3)]
-        default:
+        default:  // Night - Deep blues
             return [Color(red: 0.2, green: 0.2, blue: 0.4), Color(red: 0.1, green: 0.1, blue: 0.3)]
         }
     }

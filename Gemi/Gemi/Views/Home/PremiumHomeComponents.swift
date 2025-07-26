@@ -169,10 +169,10 @@ struct TimeBasedIcon: View {
     
     private var iconColor: Color {
         switch hour {
-        case 5..<12: return .orange
-        case 12..<17: return .yellow
-        case 17..<21: return .orange
-        default: return .indigo
+        case 5..<12: return Color(red: 0.5, green: 0.8, blue: 1.0)  // Sky blue for morning
+        case 12..<17: return .yellow                                 // Bright yellow for afternoon
+        case 17..<21: return .orange                                 // Orange for sunset/evening
+        default: return .indigo                                      // Deep indigo for night
         }
     }
     
