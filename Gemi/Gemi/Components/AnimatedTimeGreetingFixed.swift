@@ -188,10 +188,10 @@ struct AnimatedTimeGreetingFixed: View {
     
     private func getIcon(for hour: Int) -> String {
         switch hour {
-        case 5..<12: return "sun.max.fill"
-        case 12..<17: return "sun.and.horizon.fill"
-        case 17..<21: return "sunset.fill"
-        default: return "moon.stars.fill"
+        case 5..<12: return "sun.and.horizon.fill"    // Rising sun for morning
+        case 12..<17: return "sun.max.fill"           // Full sun at peak for afternoon
+        case 17..<21: return "sunset.fill"            // Setting sun for evening
+        default: return "moon.stars.fill"             // Moon and stars for night
         }
     }
     
