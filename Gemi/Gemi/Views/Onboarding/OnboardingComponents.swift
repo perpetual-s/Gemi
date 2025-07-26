@@ -32,6 +32,7 @@ struct OnboardingButton: View {
     
     @Environment(\.isEnabled) private var isEnabled
     @State private var isPressed = false
+    @State private var isHovered = false
     
     var body: some View {
         Button(action: action) {
@@ -61,12 +62,18 @@ struct OnboardingButton: View {
             .padding(.horizontal, horizontalPadding)
             .padding(.vertical, verticalPadding)
             .background(background)
-            .scaleEffect(isPressed ? 0.98 : 1.0)
+            .scaleEffect(isPressed ? 0.97 : (isHovered ? 1.05 : 1.0))
             .opacity(isEnabled ? 1.0 : 0.6)
-            .animation(.spring(response: 0.2), value: isPressed)
+            .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isPressed)
+            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isHovered)
         }
         .buttonStyle(PlainButtonStyle())
         .disabled(isLoading)
+        .onHover { hovering in
+            if isEnabled && !isLoading {
+                isHovered = hovering
+            }
+        }
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in
@@ -147,12 +154,34 @@ struct OnboardingButton: View {
     private var background: some View {
         switch style {
         case .primary:
-            Capsule()
-                .fill(Color.white)
-                .shadow(color: .white.opacity(0.3), radius: 20, y: 10)
+            ZStack {
+                Capsule()
+                    .fill(Color.white)
+                
+                // Add shimmer effect for primary button on hover
+                if style == .primary && isHovered {
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.9),
+                                    Color.white.opacity(1.0),
+                                    Color.white.opacity(0.9)
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                }
+            }
+            .shadow(color: .white.opacity(isHovered ? 0.5 : 0.3), radius: isHovered ? 25 : 20, y: isHovered ? 12 : 10)
         case .secondary:
             Capsule()
-                .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
+                .strokeBorder(Color.white.opacity(isHovered ? 0.5 : 0.3), lineWidth: isHovered ? 2 : 1)
+                .background(
+                    Capsule()
+                        .fill(Color.white.opacity(isHovered ? 0.1 : 0.0))
+                )
         case .text:
             Color.clear
         }
