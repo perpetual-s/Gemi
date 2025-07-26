@@ -95,9 +95,9 @@ struct GlacierBackground: View {
                 for i in 0..<3 {
                     let path = createGlacierPath(
                         in: size,
-                        time: time * 0.2 + Double(i),
-                        amplitude: 150,
-                        frequency: 0.003,
+                        time: time * 0.5 + Double(i),
+                        amplitude: 200,
+                        frequency: 0.005,
                         phase: phase1
                     )
                     
@@ -105,8 +105,8 @@ struct GlacierBackground: View {
                         path,
                         with: .linearGradient(
                             Gradient(colors: [
+                                glacierColor(for: currentHour).opacity(0.6),
                                 glacierColor(for: currentHour).opacity(0.3),
-                                glacierColor(for: currentHour).opacity(0.15),
                                 Color.clear
                             ]),
                             startPoint: CGPoint(x: 0, y: 0),
@@ -116,7 +116,7 @@ struct GlacierBackground: View {
                 }
             }
         }
-        .blur(radius: 40)
+        .blur(radius: 15)
     }
     
     private var glacierLayer2: some View {
@@ -127,9 +127,9 @@ struct GlacierBackground: View {
                 for i in 0..<2 {
                     let path = createGlacierPath(
                         in: size,
-                        time: time * 0.15 + Double(i) * 1.5,
-                        amplitude: 200,
-                        frequency: 0.002,
+                        time: time * 0.4 + Double(i) * 1.5,
+                        amplitude: 250,
+                        frequency: 0.004,
                         phase: phase2
                     )
                     
@@ -137,8 +137,8 @@ struct GlacierBackground: View {
                         path,
                         with: .radialGradient(
                             Gradient(colors: [
+                                glacierColor(for: currentHour).opacity(0.7),
                                 glacierColor(for: currentHour).opacity(0.4),
-                                glacierColor(for: currentHour).opacity(0.2),
                                 Color.clear
                             ]),
                             center: CGPoint(x: size.width * 0.5, y: size.height * 0.5),
@@ -149,8 +149,8 @@ struct GlacierBackground: View {
                 }
             }
         }
-        .blur(radius: 60)
-        .opacity(0.7)
+        .blur(radius: 20)
+        .opacity(0.9)
     }
     
     private var glacierLayer3: some View {
@@ -160,9 +160,9 @@ struct GlacierBackground: View {
                 
                 let path = createGlacierPath(
                     in: size,
-                    time: time * 0.1,
-                    amplitude: 250,
-                    frequency: 0.0015,
+                    time: time * 0.3,
+                    amplitude: 300,
+                    frequency: 0.003,
                     phase: phase3
                 )
                 
@@ -170,7 +170,7 @@ struct GlacierBackground: View {
                     path,
                     with: .linearGradient(
                         Gradient(colors: [
-                            glacierColor(for: currentHour).opacity(0.25),
+                            glacierColor(for: currentHour).opacity(0.5),
                             Color.clear
                         ]),
                         startPoint: CGPoint(x: size.width, y: 0),
@@ -179,8 +179,8 @@ struct GlacierBackground: View {
                 )
             }
         }
-        .blur(radius: 80)
-        .opacity(0.5)
+        .blur(radius: 25)
+        .opacity(0.8)
     }
     
     // MARK: - Ice Particles
@@ -265,15 +265,15 @@ struct GlacierBackground: View {
     }
     
     private func startAnimations() {
-        withAnimation(.linear(duration: 120).repeatForever(autoreverses: false)) {
+        withAnimation(.linear(duration: 20).repeatForever(autoreverses: false)) {
             phase1 = .pi * 2
         }
         
-        withAnimation(.linear(duration: 150).repeatForever(autoreverses: false)) {
+        withAnimation(.linear(duration: 25).repeatForever(autoreverses: false)) {
             phase2 = .pi * 2
         }
         
-        withAnimation(.linear(duration: 180).repeatForever(autoreverses: false)) {
+        withAnimation(.linear(duration: 30).repeatForever(autoreverses: false)) {
             phase3 = .pi * 2
         }
     }
