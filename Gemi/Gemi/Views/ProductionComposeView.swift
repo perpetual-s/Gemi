@@ -49,9 +49,7 @@ struct ProductionComposeView: View {
     // New UI states
     @StateObject private var placeholderService = PlaceholderService.shared
     
-    // Typing feedback states
-    @StateObject private var typingMetrics = TypingMetrics()
-    @State private var lastTypedPosition: CGPoint?
+    // Removed typing feedback for v1.0
     
     // Auto-save states
     @State private var autoSaveTimer: Timer?
@@ -124,17 +122,7 @@ struct ProductionComposeView: View {
                         productionFooter
                     }
                     
-                    // Typing feedback layer (behind content)
-                    TypingFeedbackLayer(
-                        isTyping: $typingMetrics.isTyping,
-                        typingSpeed: $typingMetrics.currentWPM,
-                        lastKeyPosition: $lastTypedPosition
-                    )
-                    .zIndex(-1)
-                    
-                    // Milestone celebrations (on top)
-                    MilestoneCelebrationView(currentWordCount: $wordCount)
-                    .zIndex(100)
+                    // Removed typing feedback and milestone celebrations for v1.0
                     
                     // Command Bar Assistant overlay
                     if showCommandBar {
@@ -436,7 +424,8 @@ struct ProductionComposeView: View {
                                 .opacity(0.9)
                             }
                             .buttonStyle(.plain)
-                            .help("Enter distraction-free writing mode")
+                            .help("Enter distraction-free writing mode (⌘⇧F)")
+                            .keyboardShortcut("f", modifiers: [.command, .shift])
                         }
                         
                         // Writing Prompts
@@ -531,10 +520,7 @@ struct ProductionComposeView: View {
                     insertionPointWidth: 2.0,  // Standard cursor width
                     onTextChange: { newText in
                         updateWordCount()
-                        // Track typing for feedback
-                        if let lastChar = newText.last {
-                            typingMetrics.recordKeystroke(character: lastChar)
-                        }
+                        // Typing tracking removed for v1.0
                     },
                     onCoordinatorReady: { coordinator in
                         textEditorCoordinator = coordinator

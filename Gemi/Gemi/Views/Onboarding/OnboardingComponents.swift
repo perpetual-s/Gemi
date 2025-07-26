@@ -180,13 +180,9 @@ struct OnboardingPasswordField: View {
                 if showPassword {
                     TextField(placeholder, text: $text)
                         .textFieldStyle(.plain)
-                        .textContentType(.password)
-                        .autocorrectionDisabled(true)
                 } else {
                     SecureField(placeholder, text: $text)
                         .textFieldStyle(.plain)
-                        .textContentType(.newPassword)
-                        .autocorrectionDisabled(true)
                 }
             }
             .font(.system(size: 18))

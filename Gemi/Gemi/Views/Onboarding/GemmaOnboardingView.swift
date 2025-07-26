@@ -7,22 +7,8 @@ struct GemmaOnboardingView: View {
     @State private var currentPage = 0
     @State private var hasCompletedOnboarding = false
     @State private var isCompletingOnboarding = false
-    @State private var password = "" {
-        didSet {
-            // Clear password from memory when view is deallocated
-            if password.isEmpty {
-                password.removeAll(keepingCapacity: false)
-            }
-        }
-    }
-    @State private var confirmPassword = "" {
-        didSet {
-            // Clear password from memory when view is deallocated
-            if confirmPassword.isEmpty {
-                confirmPassword.removeAll(keepingCapacity: false)
-            }
-        }
-    }
+    @State private var password = ""
+    @State private var confirmPassword = ""
     @State private var enableBiometric = true
     @State private var showPassword = false
     @State private var isSettingUpPassword = false
@@ -558,9 +544,6 @@ struct GemmaOnboardingView: View {
                         )
                         await MainActor.run {
                             isSettingUpPassword = false
-                            // Clear passwords from memory after successful setup
-                            password = ""
-                            confirmPassword = ""
                             // Continue to next page after successful password setup
                             withAnimation(.spring(response: 0.4)) {
                                 currentPage += 1

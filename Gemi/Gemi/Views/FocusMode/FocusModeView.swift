@@ -183,15 +183,7 @@ struct FocusModeView: View {
                     .ignoresSafeArea()
             }
             
-            // Ambient visual effects
-            // TODO: Implement AmbientVisualEffect
-            /*
-            if settings.showAmbientVisuals && settings.ambientSound != "none" {
-                AmbientVisualEffect(sound: AmbientSound(rawValue: settings.ambientSound.capitalized) ?? .none)
-                    .ignoresSafeArea()
-                    .opacity(0.3)
-            }
-            */
+            // Ambient visual effects removed for v1.0
         }
     }
     
@@ -597,16 +589,12 @@ struct FocusModeView: View {
             startUIHideTimer()
         }
         
-        // Play ambient sound if selected
-        if settings.ambientSound != "none" {
-            AmbientSoundPlayer.shared.play(sound: AmbientSound(rawValue: settings.ambientSound.capitalized) ?? .none)
-        }
+        // Ambient sounds removed for v1.0
     }
     
     private func cleanupFocusMode() {
         settings.endSession()
         settings.saveSettings()
-        AmbientSoundPlayer.shared.stop()
         uiHideTimer?.invalidate()
     }
     

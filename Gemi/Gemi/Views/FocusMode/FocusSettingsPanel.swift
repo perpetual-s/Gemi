@@ -36,14 +36,14 @@ struct FocusSettingsPanel: View {
             
             // Tab selector
             HStack(spacing: 0) {
-                ForEach(["Visual", "Writing", "Sound"], id: \.self) { tab in
+                ForEach(["Visual", "Writing"], id: \.self) { tab in
                     TabButton(
                         title: tab,
-                        isSelected: selectedTab == ["Visual", "Writing", "Sound"].firstIndex(of: tab),
+                        isSelected: selectedTab == ["Visual", "Writing"].firstIndex(of: tab),
                         textColor: settings.effectiveTextColor
                     ) {
                         withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedTab = ["Visual", "Writing", "Sound"].firstIndex(of: tab) ?? 0
+                            selectedTab = ["Visual", "Writing"].firstIndex(of: tab) ?? 0
                         }
                     }
                 }
@@ -62,8 +62,7 @@ struct FocusSettingsPanel: View {
                         visualSettings
                     case 1:
                         writingSettings
-                    case 2:
-                        soundSettings
+                    // Sound settings removed for v1.0
                     default:
                         visualSettings
                     }
@@ -366,9 +365,7 @@ struct FocusSettingsPanel: View {
                         .foregroundColor(settings.effectiveTextColor.opacity(0.5))
                 }
                 
-                Toggle("Show ambient visual effects", isOn: $settings.showAmbientVisuals)
-                    .toggleStyle(.switch)
-                    .tint(Color.blue)
+                // Ambient features removed for v1.0
             }
         }
     }
@@ -382,7 +379,7 @@ struct FocusSettingsPanel: View {
         settings.highlightIntensity = 0.4
         settings.colorScheme = .dark
         settings.wordGoal = 750
-        settings.ambientSound = "none"
+        // Ambient sound removed for v1.0
     }
 }
 
