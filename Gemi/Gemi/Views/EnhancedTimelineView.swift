@@ -188,20 +188,126 @@ struct EnhancedTimelineView: View {
             
             Spacer()
             
-            HStack(spacing: Theme.spacing) {
+            HStack(spacing: 12) {
+                // AI Insights button with modern design
                 Button {
                     showingAIInsights = true
                 } label: {
-                    Label("AI Insights", systemImage: "brain")
+                    HStack(spacing: 6) {
+                        Image(systemName: "brain")
+                            .font(.system(size: 14, weight: .medium))
+                            .symbolRenderingMode(.hierarchical)
+                        Text("AI Insights")
+                            .font(.system(size: 14, weight: .medium))
+                    }
+                    .foregroundColor(.primary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(
+                        ZStack {
+                            // Subtle gradient background
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            Color(NSColor.controlBackgroundColor),
+                                            Color(NSColor.controlBackgroundColor).opacity(0.8)
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                            
+                            // Glass effect overlay
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.white.opacity(0.1),
+                                            Color.clear
+                                        ],
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
+                                )
+                        }
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .strokeBorder(
+                                LinearGradient(
+                                    colors: [
+                                        Color.primary.opacity(0.1),
+                                        Color.primary.opacity(0.05)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1
+                            )
+                    )
+                    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
+                .buttonStyle(ModernButtonStyle())
                 
+                // New Entry button with prominent modern design
                 Button(action: onNewEntry) {
-                    Label("New Entry", systemImage: "plus")
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text("New Entry")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(
+                        ZStack {
+                            // Primary gradient
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            Theme.Colors.primaryAccent,
+                                            Theme.Colors.primaryAccent.opacity(0.9)
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                            
+                            // Glass shimmer
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.white.opacity(0.2),
+                                            Color.white.opacity(0.05),
+                                            Color.clear
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .center
+                                    )
+                                )
+                        }
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .strokeBorder(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(0.2),
+                                        Color.white.opacity(0.1)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                ),
+                                lineWidth: 1
+                            )
+                    )
+                    .shadow(color: Theme.Colors.primaryAccent.opacity(0.3), radius: 4, x: 0, y: 2)
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                .buttonStyle(ModernButtonStyle())
                 .keyboardShortcut("n", modifiers: .command)
             }
         }
@@ -496,5 +602,23 @@ struct EnhancedInsightCard<Content: View>: View {
             RoundedRectangle(cornerRadius: 12)
                 .strokeBorder(color.opacity(0.1), lineWidth: 1)
         )
+    }
+}
+
+// MARK: - Modern Button Style
+
+struct ModernButtonStyle: ButtonStyle {
+    @State private var isHovered = false
+    
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : (isHovered ? 1.02 : 1.0))
+            .animation(Theme.microInteraction, value: configuration.isPressed)
+            .animation(Theme.gentleSpring, value: isHovered)
+            .onHover { hovering in
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    isHovered = hovering
+                }
+            }
     }
 }
