@@ -61,6 +61,11 @@ struct ProductionComposeView: View {
     @State private var saveRetryCount = 0
     @State private var successAnimationTimer: Timer?
     
+    // Settings from AppStorage
+    @AppStorage("showWordCount") private var showWordCount = true
+    @AppStorage("showReadingTime") private var showReadingTime = true
+    @AppStorage("autoSaveInterval") private var autoSaveInterval = 30.0
+    
     // Computed display title that updates properly
     private var displayTitle: String {
         if !entry.title.isEmpty {
@@ -535,7 +540,7 @@ struct ProductionComposeView: View {
             .padding(.horizontal, 40)
             
             // Writing progress indicator
-            if isContentFocused && wordCount > 0 {
+            if isContentFocused && wordCount > 0 && showWordCount {
                 writingProgressView
                     .padding(.horizontal, 40)
                     .padding(.top, 16)
@@ -770,23 +775,27 @@ struct ProductionComposeView: View {
                         label: "characters"
                     )
                     
-                    Divider()
-                        .frame(height: 16)
+                    if showWordCount {
+                        Divider()
+                            .frame(height: 16)
+                        
+                        StatLabel(
+                            icon: "text.alignleft",
+                            value: "\(wordCount)",
+                            label: "words"
+                        )
+                    }
                     
-                    StatLabel(
-                        icon: "text.alignleft",
-                        value: "\(wordCount)",
-                        label: "words"
-                    )
-                    
-                    Divider()
-                        .frame(height: 16)
-                    
-                    StatLabel(
-                        icon: "book",
-                        value: "\(entry.readingTime)",
-                        label: "min read"
-                    )
+                    if showReadingTime {
+                        Divider()
+                            .frame(height: 16)
+                        
+                        StatLabel(
+                            icon: "book",
+                            value: "\(entry.readingTime)",
+                            label: "min read"
+                        )
+                    }
                 }
                 
                 Spacer()
@@ -950,7 +959,7 @@ struct ProductionComposeView: View {
     
     private func startAutoSaveTimer() {
         autoSaveTimer?.invalidate()
-        autoSaveTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { _ in
+        autoSaveTimer = Timer.scheduledTimer(withTimeInterval: autoSaveInterval, repeats: true) { _ in
             Task { @MainActor in
                 if self.hasUnsavedChanges && !self.entry.content.isEmpty {
                     await self.performAutoSave()

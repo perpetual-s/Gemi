@@ -34,6 +34,11 @@ struct SettingsView: View {
     @AppStorage("sessionTimeout") private var sessionTimeout = 30.0
     @AppStorage("requireAuthentication") private var requireAuthentication = true
     @AppStorage("autoLoadModel") private var autoLoadModel = true
+    @AppStorage("launchAtStartup") private var launchAtStartup = false
+    @AppStorage("showInMenuBar") private var showInMenuBar = false
+    @AppStorage("showWordCount") private var showWordCount = true
+    @AppStorage("showReadingTime") private var showReadingTime = true
+    @AppStorage("lockWhenSystemSleeps") private var lockWhenSystemSleeps = true
     @StateObject private var localizationManager = LocalizationManager.shared
     
     private let aiService = AIService.shared
@@ -362,15 +367,13 @@ struct SettingsView: View {
                     PremiumToggle(
                         title: "Launch at startup",
                         subtitle: "Start Gemi when you log in",
-                        isOn: .constant(false),
-                        isDisabled: true
+                        isOn: $launchAtStartup
                     )
                     
                     PremiumToggle(
                         title: "Show in menu bar",
                         subtitle: "Quick access from the menu bar",
-                        isOn: .constant(false),
-                        isDisabled: true
+                        isOn: $showInMenuBar
                     )
                     
                     VStack(alignment: .leading, spacing: 12) {
@@ -403,7 +406,7 @@ struct SettingsView: View {
                 icon: "doc.text",
                 iconColor: .purple
             ) {
-                VStack(spacing: 20) {
+                VStack(alignment: .leading, spacing: 20) {
                     PremiumToggle(
                         title: "Enable Markdown rendering",
                         subtitle: "Format text with Markdown syntax",
@@ -413,13 +416,13 @@ struct SettingsView: View {
                     PremiumToggle(
                         title: "Show word count",
                         subtitle: "Display word count in the editor",
-                        isOn: .constant(true)
+                        isOn: $showWordCount
                     )
                     
                     PremiumToggle(
                         title: "Show reading time",
                         subtitle: "Estimate reading time for entries",
-                        isOn: .constant(true)
+                        isOn: $showReadingTime
                     )
                 }
             }
@@ -722,7 +725,7 @@ struct SettingsView: View {
                     PremiumToggle(
                         title: "Lock when system sleeps",
                         subtitle: "Require authentication after sleep",
-                        isOn: .constant(true)
+                        isOn: $lockWhenSystemSleeps
                     )
                 }
             }
