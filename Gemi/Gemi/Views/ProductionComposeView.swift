@@ -927,12 +927,22 @@ struct ProductionComposeView: View {
     }
     
     private func updateCommandBarPosition() {
-        // Get current cursor rect from text editor
         if let coordinator = textEditorCoordinator,
-           let textView = coordinator.textView {
+           let textView = coordinator.textView,
+           let layoutManager = textView.layoutManager,
+           let textContainer = textView.textContainer {
+            
             let selectedRange = textView.selectedRange()
-            let rect = textView.firstRect(forCharacterRange: selectedRange, actualRange: nil)
-            commandBarPosition = rect
+            guard selectedRange.location != NSNotFound else { return }
+            
+            let glyphRange = layoutManager.glyphRange(forCharacterRange: selectedRange, actualCharacterRange: nil)
+            let rect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
+            
+            let screenRect = textView.convert(rect, to: nil)
+            if let window = textView.window {
+                let windowRect = window.convertToScreen(NSRect(origin: screenRect.origin, size: screenRect.size))
+                commandBarPosition = windowRect
+            }
         }
     }
     

@@ -101,10 +101,17 @@ struct FocusTextEditor: NSViewRepresentable {
             parent.onTextChange(textView.string)
         }
         
-        nonisolated func textViewDidChangeSelection(_ notification: Notification) {
+        func textViewDidChangeSelection(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            
             // Trigger redraw for focus highlighting
-            Task { @MainActor [weak textView] in
-                textView?.needsDisplay = true
+            Task { @MainActor in
+                textView.needsDisplay = true
+                
+                // Handle typewriter mode centering
+                if self.parent.typewriterMode {
+                    self.centerCursorInView()
+                }
             }
         }
         
@@ -120,6 +127,31 @@ struct FocusTextEditor: NSViewRepresentable {
                 
                 let newCursorPosition = selectedRange.location + text.count
                 textView.setSelectedRange(NSRange(location: newCursorPosition, length: 0))
+            }
+        }
+        
+        @MainActor
+        func centerCursorInView() {
+            guard let textView = textView,
+                  let scrollView = textView.enclosingScrollView,
+                  let layoutManager = textView.layoutManager,
+                  let textContainer = textView.textContainer else { return }
+            
+            let selectedRange = textView.selectedRange()
+            guard selectedRange.location != NSNotFound else { return }
+            
+            let glyphRange = layoutManager.glyphRange(forCharacterRange: selectedRange, actualCharacterRange: nil)
+            let rect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
+            
+            let visibleHeight = scrollView.contentView.bounds.height
+            let targetY = rect.midY - (visibleHeight / 2)
+            
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.2
+                context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                scrollView.contentView.animator().setBoundsOrigin(
+                    NSPoint(x: 0, y: max(0, targetY))
+                )
             }
         }
     }

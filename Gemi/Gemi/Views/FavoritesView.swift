@@ -97,6 +97,11 @@ struct FavoritesView: View {
                                 onChat: {
                                     chatEntry = entry
                                     showingChat = true
+                                },
+                                onToggleFavorite: {
+                                    Task {
+                                        await toggleFavorite(for: entry)
+                                    }
                                 }
                             )
                             .transition(.asymmetric(

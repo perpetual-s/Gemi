@@ -276,6 +276,9 @@ struct EnhancedTimelineView: View {
                 },
                 onChat: {
                     selectedEntryForChat = entry
+                },
+                onToggleFavorite: {
+                    toggleFavorite(for: entry)
                 }
             )
         }

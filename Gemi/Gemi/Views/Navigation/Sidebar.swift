@@ -3,7 +3,6 @@ import SwiftUI
 struct Sidebar: View {
     @Binding var selectedView: NavigationItem
     @ObservedObject var journalStore: JournalStore
-    @State private var searchText = ""
     @State private var showingSettings = false
     
     var body: some View {
@@ -56,10 +55,6 @@ struct Sidebar: View {
                         .help("New Entry (⌘N)")
                     }
                     .padding(.horizontal)
-                    
-                    searchBar
-                        .padding(.horizontal)
-                        .padding(.top, Theme.spacing)
                     
                     navigationItems
                         .padding(.horizontal)
@@ -120,11 +115,6 @@ struct Sidebar: View {
         .sheet(isPresented: $showingSettings) {
             SettingsView(journalStore: journalStore)
         }
-    }
-    
-    
-    private var searchBar: some View {
-        GlassTextField("Search entries...", text: $searchText, icon: "magnifyingglass")
     }
     
     private var navigationItems: some View {

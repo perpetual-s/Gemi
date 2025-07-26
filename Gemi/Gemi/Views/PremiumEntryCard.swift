@@ -8,6 +8,7 @@ struct PremiumEntryCard: View {
     let onEdit: () -> Void
     let onDelete: () -> Void
     let onChat: () -> Void
+    let onToggleFavorite: () -> Void
     
     @State private var isHovered = false
     @State private var showingActions = false
@@ -50,14 +51,20 @@ struct PremiumEntryCard: View {
                 // Main card content
                 cardContent
                 
-                // Favorite indicator
-                if entry.isFavorite {
-                    Image(systemName: "star.fill")
+                // Favorite toggle button
+                Button(action: onToggleFavorite) {
+                    Image(systemName: entry.isFavorite ? "star.fill" : "star")
                         .font(.system(size: 14))
-                        .foregroundColor(.yellow)
+                        .foregroundColor(entry.isFavorite ? .yellow : .secondary)
                         .padding(12)
-                        .shadow(color: .yellow.opacity(0.5), radius: 4)
+                        .background(
+                            Circle()
+                                .fill(Color.black.opacity(0.001)) // Invisible but clickable
+                        )
+                        .shadow(color: entry.isFavorite ? .yellow.opacity(0.5) : .clear, radius: 4)
                 }
+                .buttonStyle(.plain)
+                .help(entry.isFavorite ? "Remove from favorites" : "Add to favorites")
             }
         }
         .buttonStyle(EnhancedCardButtonStyle(isSelected: isSelected, isHovered: isHovered))
@@ -176,6 +183,15 @@ struct PremiumEntryCard: View {
             onChat()
         } label: {
             Label("Chat about this", systemImage: "bubble.left")
+        }
+        
+        Button {
+            onToggleFavorite()
+        } label: {
+            Label(
+                entry.isFavorite ? "Remove from Favorites" : "Add to Favorites",
+                systemImage: entry.isFavorite ? "star.slash" : "star"
+            )
         }
         
         Divider()
@@ -396,7 +412,8 @@ struct TagChip: View {
             onSelect: {},
             onEdit: {},
             onDelete: {},
-            onChat: {}
+            onChat: {},
+            onToggleFavorite: {}
         )
         
         PremiumEntryCard(
@@ -410,7 +427,8 @@ struct TagChip: View {
             onSelect: {},
             onEdit: {},
             onDelete: {},
-            onChat: {}
+            onChat: {},
+            onToggleFavorite: {}
         )
     }
     .padding()
