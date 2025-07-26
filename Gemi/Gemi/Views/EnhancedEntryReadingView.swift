@@ -34,12 +34,8 @@ struct EnhancedEntryReadingView: View {
                         Button("Done") {
                             dismiss()
                         }
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 8)
-                        .background(Theme.Colors.primaryAccent)
-                        .clipShape(Capsule())
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.regular)
                         .padding(.trailing, 20)
                         .padding(.top, 20)
                     }
@@ -154,20 +150,11 @@ struct EnhancedEntryReadingView: View {
             
             // Edit button
             Button(action: onEdit) {
-                HStack(spacing: 6) {
-                    Image(systemName: "pencil")
-                    Text("Edit")
-                }
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.primary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .strokeBorder(Color.primary.opacity(0.2), lineWidth: 1)
-                )
+                Label("Edit", systemImage: "pencil")
+                    .font(.system(size: 13, weight: .medium))
             }
             .buttonStyle(.plain)
+            .foregroundColor(.primary)
             
             // AI Insights Toggle
             Button {

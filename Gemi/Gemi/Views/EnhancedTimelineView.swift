@@ -268,18 +268,13 @@ struct EnhancedTimelineView: View {
     }
     
     private func toggleFavorite(for entry: JournalEntry) {
-        if let index = journalStore.entries.firstIndex(where: { $0.id == entry.id }) {
-            // Update the entry
-            let updatedEntry = journalStore.entries[index]
-            updatedEntry.isFavorite.toggle()
-            updatedEntry.modifiedAt = Date()
+        Task {
+            // Toggle the favorite status
+            entry.isFavorite.toggle()
+            entry.modifiedAt = Date()
             
-            // Update local state immediately for responsive UI
-            journalStore.objectWillChange.send()
-            
-            Task {
-                await journalStore.saveEntry(updatedEntry)
-            }
+            // Update in database
+            await journalStore.updateEntry(entry)
         }
     }
     

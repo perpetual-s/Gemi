@@ -11,7 +11,6 @@ struct PremiumEntryCard: View {
     let onToggleFavorite: () -> Void
     
     @State private var isHovered = false
-    @State private var showingActions = false
     @State private var deleteConfirmation = false
     
     private var moodGradient: LinearGradient {
@@ -71,7 +70,6 @@ struct PremiumEntryCard: View {
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.2)) {
                 isHovered = hovering
-                showingActions = hovering
             }
         }
         .contextMenu {
@@ -133,11 +131,7 @@ struct PremiumEntryCard: View {
                     
                     Spacer()
                     
-                    // Quick actions (visible on hover)
-                    if showingActions {
-                        quickActionsMenu
-                            .transition(.scale.combined(with: .opacity))
-                    }
+                    // Removed quick actions menu to prevent hiding star
                 }
                 
                 // Preview text
@@ -163,13 +157,6 @@ struct PremiumEntryCard: View {
         .padding()
     }
     
-    private var quickActionsMenu: some View {
-        HStack(spacing: 4) {
-            ActionButton(icon: "square.and.pencil", action: onEdit, tooltip: "Edit")
-            ActionButton(icon: "bubble.left", action: onChat, tooltip: "Chat")
-            ActionButton(icon: "trash", action: { deleteConfirmation = true }, tooltip: "Delete", isDestructive: true)
-        }
-    }
     
     @ViewBuilder
     private var contextMenuContent: some View {
