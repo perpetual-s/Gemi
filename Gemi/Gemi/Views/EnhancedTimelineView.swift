@@ -68,15 +68,10 @@ struct EnhancedTimelineView: View {
                                             .frame(maxWidth: 400)
                                         
                                         Button(action: onNewEntry) {
-                                            Text("Create Your First Entry")
-                                                .font(Theme.Typography.body.weight(.medium))
-                                                .foregroundColor(.white)
-                                                .padding(.horizontal, 20)
-                                                .padding(.vertical, 10)
-                                                .background(Theme.Colors.primaryAccent)
-                                                .clipShape(Capsule())
+                                            Label("Create Your First Entry", systemImage: "plus.circle.fill")
                                         }
-                                        .buttonStyle(.plain)
+                                        .buttonStyle(.borderedProminent)
+                                        .controlSize(.large)
                                         .padding(.top, Theme.spacing)
                                     }
                                 }
@@ -199,14 +194,15 @@ struct EnhancedTimelineView: View {
                 } label: {
                     Label("AI Insights", systemImage: "brain")
                 }
-                .controlSize(.large)
                 .buttonStyle(.bordered)
+                .controlSize(.large)
                 
                 Button(action: onNewEntry) {
                     Label("New Entry", systemImage: "plus")
                 }
-                .controlSize(.large)
                 .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .keyboardShortcut("n", modifiers: .command)
             }
         }
         .padding(.horizontal, 24)
