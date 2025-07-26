@@ -18,38 +18,19 @@ struct HomeView: View {
     
     let currentHour = Calendar.current.component(.hour, from: Date())
     
-    var greeting: String {
-        switch currentHour {
-        case 5..<12: return NSLocalizedString("home.greeting.morning", comment: "Morning greeting")
-        case 12..<17: return NSLocalizedString("home.greeting.afternoon", comment: "Afternoon greeting")
-        case 17..<21: return NSLocalizedString("home.greeting.evening", comment: "Evening greeting")
-        default: return NSLocalizedString("home.greeting.night", comment: "Night greeting")
-        }
-    }
-    
-    var timeBasedIcon: String {
-        switch currentHour {
-        case 5..<12: return "sun.max.fill"
-        case 12..<17: return "sun.and.horizon.fill"
-        case 17..<21: return "sunset.fill"
-        default: return "moon.stars.fill"
-        }
-    }
-    
     var body: some View {
         ZStack {
-            // Dynamic animated background
-            animatedBackground
-            
-            // Floating orbs
-            FloatingOrbsView()
+            // Glacier-inspired animated background
+            GlacierBackground(currentHour: currentHour)
             
             // Main content
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 40) {
-                    // Hero section
-                    heroSection
+                    // Animated time-aware greeting
+                    AnimatedTimeGreeting()
                         .padding(.top, 60)
+                        .scaleEffect(heroScale)
+                        .opacity(heroOpacity)
                     
                     // Quick actions grid
                     quickActionsGrid
@@ -83,145 +64,6 @@ struct HomeView: View {
     }
     
     // MARK: - Components
-    
-    private var animatedBackground: some View {
-        ZStack {
-            // Base gradient
-            Theme.Gradients.timeBasedGradient()
-                .ignoresSafeArea(.all)
-            
-            // Animated mesh gradient
-            GeometryReader { geometry in
-                ForEach(0..<3) { index in
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [
-                                    Theme.Colors.ambientColor(for: currentHour).opacity(0.3),
-                                    Color.clear
-                                ],
-                                center: .center,
-                                startRadius: 50,
-                                endRadius: 200
-                            )
-                        )
-                        .frame(width: 400, height: 400)
-                        .blur(radius: 40)
-                        .offset(
-                            x: sin(Date().timeIntervalSince1970 * 0.1 + Double(index)) * 100,
-                            y: cos(Date().timeIntervalSince1970 * 0.1 + Double(index)) * 100
-                        )
-                        .animation(
-                            .easeInOut(duration: 10 + Double(index * 2))
-                            .repeatForever(autoreverses: true),
-                            value: Date()
-                        )
-                }
-            }
-            .opacity(0.5)
-        }
-    }
-    
-    private var heroSection: some View {
-        VStack(spacing: 8) {
-            // Enhanced time icon with better visibility
-            ZStack {
-                // Multi-layer glow for depth
-                ForEach(0..<3) { index in
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [
-                                    iconColor.opacity(0.3 - Double(index) * 0.08),
-                                    Color.clear
-                                ],
-                                center: .center,
-                                startRadius: 20 + CGFloat(index * 10),
-                                endRadius: 80 + CGFloat(index * 20)
-                            )
-                        )
-                        .frame(width: 160 + CGFloat(index * 30), height: 160 + CGFloat(index * 30))
-                        .blur(radius: 15 + CGFloat(index * 5))
-                }
-                
-                // Enhanced icon with stronger contrast
-                ZStack {
-                    // Background circle for contrast
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    iconColor.opacity(0.15),
-                                    iconColor.opacity(0.05)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 100, height: 100)
-                    
-                    // Icon with enhanced visibility
-                    Image(systemName: timeBasedIcon)
-                        .font(.system(size: 56, weight: .medium, design: .rounded))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [
-                                    iconColor,
-                                    iconColor.opacity(0.8)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .shadow(color: iconColor.opacity(0.5), radius: 10, x: 0, y: 2)
-                        .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 1)
-                }
-            }
-            .scaleEffect(heroScale)
-            .opacity(heroOpacity)
-            
-            // Greeting with refined typography
-            VStack(spacing: 6) {
-                Text(greeting)
-                    .font(.system(size: 38, weight: .medium, design: .rounded))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [
-                                Color.primary,
-                                Color.primary.opacity(0.9)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .shadow(color: Color.black.opacity(0.1), radius: 1, x: 0, y: 1)
-                
-                Text(NSLocalizedString("home.prompt.whats_on_mind", comment: "Prompt for user to write"))
-                    .font(.system(size: 19, weight: .regular, design: .rounded))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [
-                                Color.secondary,
-                                Color.secondary.opacity(0.8)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-            }
-            .opacity(heroOpacity)
-        }
-    }
-    
-    // Computed property for dynamic icon color
-    private var iconColor: Color {
-        switch currentHour {
-        case 5..<12: return Color.orange
-        case 12..<17: return Color.yellow
-        case 17..<21: return Color.orange
-        default: return Color.indigo
-        }
-    }
     
     private var quickActionsGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 20) {
@@ -746,44 +588,6 @@ struct RecentEntryCard: View {
         .onHover { hovering in
             isHovered = hovering
         }
-    }
-}
-
-// MARK: - Floating Orbs
-
-struct FloatingOrbsView: View {
-    @State private var positions: [CGPoint] = []
-    let orbCount = 5
-    
-    var body: some View {
-        GeometryReader { geometry in
-            ForEach(0..<orbCount, id: \.self) { index in
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [
-                                Color.accentColor.opacity(0.2),
-                                Color.clear
-                            ],
-                            center: .center,
-                            startRadius: 10,
-                            endRadius: 50
-                        )
-                    )
-                    .frame(width: 100, height: 100)
-                    .blur(radius: 20)
-                    .offset(
-                        x: sin(Date().timeIntervalSince1970 * 0.2 + Double(index)) * 150,
-                        y: cos(Date().timeIntervalSince1970 * 0.15 + Double(index)) * 150
-                    )
-                    .animation(
-                        .easeInOut(duration: 20 + Double(index * 3))
-                        .repeatForever(autoreverses: true),
-                        value: Date()
-                    )
-            }
-        }
-        .allowsHitTesting(false)
     }
 }
 
