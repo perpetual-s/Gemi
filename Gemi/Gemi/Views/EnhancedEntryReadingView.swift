@@ -28,17 +28,30 @@ struct EnhancedEntryReadingView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    // Done button in upper right
+                    // Header with Done button
                     HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Reading Entry")
+                                .font(.system(size: 18, weight: .semibold))
+                            Text(entry.createdAt.formatted(date: .abbreviated, time: .shortened))
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                        }
+                        
                         Spacer()
+                        
                         Button("Done") {
                             dismiss()
                         }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.regular)
-                        .padding(.trailing, 20)
-                        .padding(.top, 20)
+                        .keyboardShortcut(.escape, modifiers: [])
                     }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 16)
+                    .background(VisualEffectView.sidebar)
+                    
+                    Divider()
                     
                     // Article-style header
                     articleHeader

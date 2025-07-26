@@ -349,7 +349,7 @@ struct GemiChatView: View {
             // Suggestions
             if !viewModel.suggestedPrompts.isEmpty {
                 VStack(spacing: 12) {
-                    Text("Try asking:")
+                    Text("Start journaling:")
                         .font(Theme.Typography.body)
                         .fontWeight(.medium)
                         .foregroundColor(Theme.Colors.secondaryText)

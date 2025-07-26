@@ -367,9 +367,9 @@ final class EnhancedChatViewModel: ObservableObject {
     
     private func setupInitialPrompts() {
         suggestedPrompts = [
-            "How are you feeling today?",
-            "What's on your mind?",
-            "Help me reflect on my day"
+            "Help me write about what happened today",
+            "I want to journal but don't know where to start",
+            "Give me a writing prompt for today's entry"
         ]
     }
     
@@ -384,33 +384,33 @@ final class EnhancedChatViewModel: ObservableObject {
         
         if lowercased.contains("feeling") || lowercased.contains("emotion") || lowercased.contains("mood") {
             suggestedPrompts = [
-                "What triggered these feelings?",
-                "How can I process this emotion?",
-                "What would help me feel better?"
+                "Help me write more about these feelings",
+                "What questions should I explore in my journal?",
+                "Give me prompts to understand this emotion better"
             ]
         } else if lowercased.contains("goal") || lowercased.contains("plan") || lowercased.contains("future") {
             suggestedPrompts = [
-                "What's the first step I should take?",
-                "What obstacles might I face?",
-                "How will I measure success?"
+                "Help me write about my goals in detail",
+                "What should I journal about this plan?",
+                "Give me prompts to clarify my vision"
             ]
         } else if lowercased.contains("problem") || lowercased.contains("issue") || lowercased.contains("challenge") {
             suggestedPrompts = [
-                "What solutions have I tried?",
-                "Who could help me with this?",
-                "What's the worst that could happen?"
+                "Help me write through this problem",
+                "What aspects should I explore in my journal?",
+                "Give me prompts to gain new perspective"
             ]
         } else if lowercased.contains("grateful") || lowercased.contains("thankful") || lowercased.contains("appreciate") {
             suggestedPrompts = [
-                "What else am I grateful for?",
-                "How can I express this gratitude?",
-                "What made this possible?"
+                "Help me write a gratitude entry",
+                "What else should I include in today's journal?",
+                "Give me prompts for deeper reflection"
             ]
         } else {
             suggestedPrompts = [
-                "Tell me more about that",
-                "How does that make you feel?",
-                "What else is on your mind?"
+                "Help me expand on this for my journal",
+                "What else should I write about today?",
+                "Give me follow-up questions to explore"
             ]
         }
     }
