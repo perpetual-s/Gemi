@@ -11,7 +11,6 @@ struct EnhancedTimelineView: View {
     @State private var showingAIInsights = false
     @State private var moodTrend: MoodTrend?
     @State private var selectedEntryForChat: JournalEntry?
-    @State private var showGeneralChat = false
     @State private var readingEntry: JournalEntry?
     
     var body: some View {
@@ -105,17 +104,6 @@ struct EnhancedTimelineView: View {
                 }
             }
             .background(Theme.Colors.windowBackground)
-            
-            // Floating Chat Button
-            VStack {
-                Spacer()
-                HStack {
-                    Spacer()
-                    ChatFloatingButton(showingChat: $showGeneralChat)
-                        .padding(Theme.largeSpacing)
-                        .transition(.scale.combined(with: .opacity))
-                }
-            }
         }
         .onAppear {
             groupEntriesByDate()
@@ -129,21 +117,16 @@ struct EnhancedTimelineView: View {
             TimelineInsightsCard(entries: journalStore.entries)
         }
         .sheet(isPresented: Binding(
-            get: { selectedEntryForChat != nil || showGeneralChat },
+            get: { selectedEntryForChat != nil },
             set: { newValue in
                 if !newValue {
                     selectedEntryForChat = nil
-                    showGeneralChat = false
                 }
             }
         )) {
             if let entry = selectedEntryForChat {
                 // Entry-specific chat
                 ChatSheet(journalEntry: entry)
-            } else if showGeneralChat {
-                // General chat without entry context
-                GemiChatView()
-                    .frame(width: 900, height: 600)
             }
         }
         .sheet(item: $readingEntry) { entry in

@@ -28,10 +28,26 @@ struct EnhancedEntryReadingView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
+                    // Done button in upper right
+                    HStack {
+                        Spacer()
+                        Button("Done") {
+                            dismiss()
+                        }
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+                        .background(Theme.Colors.primaryAccent)
+                        .clipShape(Capsule())
+                        .padding(.trailing, 20)
+                        .padding(.top, 20)
+                    }
+                    
                     // Article-style header
                     articleHeader
                         .padding(.horizontal, 40)
-                        .padding(.top, 20)
+                        .padding(.top, 0)
                     
                     // Metadata bar
                     metadataBar
@@ -63,11 +79,6 @@ struct EnhancedEntryReadingView: View {
                             .padding(.horizontal, 40)
                             .padding(.bottom, 32)
                     }
-                    
-                    // Related actions
-                    relatedActionsSection
-                        .padding(.horizontal, 40)
-                        .padding(.bottom, 32)
                 }
             }
             .background(Theme.Colors.windowBackground)
@@ -141,7 +152,24 @@ struct EnhancedEntryReadingView: View {
             
             Spacer()
             
-            // AI Insights Toggle (New)
+            // Edit button
+            Button(action: onEdit) {
+                HStack(spacing: 6) {
+                    Image(systemName: "pencil")
+                    Text("Edit")
+                }
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.primary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .strokeBorder(Color.primary.opacity(0.2), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+            
+            // AI Insights Toggle
             Button {
                 if !showingAIInsights && aiSummary == nil {
                     generateAIInsights()
@@ -312,55 +340,13 @@ struct EnhancedEntryReadingView: View {
     // MARK: - Related Actions
     
     private var relatedActionsSection: some View {
-        VStack(spacing: 16) {
-            Divider()
-            
-            HStack(spacing: 16) {
-                // Chat about this entry with enhanced context
-                Button(action: onChat) {
-                    HStack {
-                        Image(systemName: "bubble.left.and.bubble.right")
-                        Text("Discuss with Gemi")
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Theme.Colors.primaryAccent)
-                    )
-                    .foregroundColor(.white)
-                }
-                .buttonStyle(.plain)
-                
-                // Edit entry
-                Button(action: onEdit) {
-                    HStack {
-                        Image(systemName: "pencil")
-                        Text("Edit")
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(Color.secondary.opacity(0.3), lineWidth: 1)
-                    )
-                }
-                .buttonStyle(.plain)
-                
-                Spacer()
-            }
-        }
+        EmptyView() // Removed related actions section
     }
     
     // MARK: - Toolbar
     
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .navigation) {
-            Button("Done") {
-                dismiss()
-            }
-        }
         
         ToolbarItemGroup(placement: .primaryAction) {
             // Text size controls
