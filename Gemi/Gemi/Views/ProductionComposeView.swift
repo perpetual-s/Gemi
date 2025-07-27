@@ -250,8 +250,8 @@ struct ProductionComposeView: View {
             hasUnsavedChanges = true
             resetAutoSaveTimer()
         }
-        .onKeyPress(.init("k"), phases: .down) { keyPress in
-            if keyPress.modifiers.contains(.command) {
+        .onKeyPress(.init("w"), phases: .down) { keyPress in
+            if keyPress.modifiers.contains(.command) && keyPress.modifiers.contains(.shift) {
                 toggleCommandBar()
                 return .handled
             }
@@ -449,7 +449,7 @@ struct ProductionComposeView: View {
                                     .font(.system(size: 13))
                                 Text("Writing Tools")
                                     .font(.system(size: 13))
-                                Text("⌘K")
+                                Text("⌘⇧W")
                                     .font(.system(size: 11, weight: .medium, design: .monospaced))
                                     .foregroundColor(.secondary.opacity(0.8))
                                     .padding(.horizontal, 6)
@@ -463,7 +463,7 @@ struct ProductionComposeView: View {
                             .opacity(showCommandBar ? 1 : 0.9)
                         }
                         .buttonStyle(.plain)
-                        .help("Open Writing Tools (⌘K)")
+                        .help("Open Writing Tools (⌘⇧W)")
                     }
                 }
             }
