@@ -328,37 +328,7 @@ When building Gemi, we faced significant technical barriers:
 
 Instead of waiting or giving up, we engineered an innovative solution:
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        User Input                            │
-│                   (Text + Images + Audio)                    │
-└───────────────────────┬─────────────────────────────────────┘
-                      │
-┌───────────────────────┴─────────────────────────────────────┐
-│                 MultimodalAIService                          │
-│         (Orchestrates parallel processing)                   │
-└─────┬───────────────────────────────────┬─────────────────────┘
-      │                                   │
-┌─────┴──────────────────┐          ┌────────┴─────────────────────┐
-│ LightweightVision  │          │    QuickAudioService       │
-│     Service        │          │   (Speech Framework)        │
-│ (Vision Framework) │          │                             │
-└─────┬──────────────────┘          └────────┬─────────────────────┘
-      │                                   │
-      │    ┌──────────────────────────────────┴─┐
-      └────►  Enhanced Text Description     │
-           │  (Multimodal context)          │
-           └────────────────────┬───────────────┘
-                           │
-           ┌───────────────┴────────────────────┐
-           │         Gemma 3n (Ollama)          │
-           │    (Processes enriched context)    │
-           └───────────────┬────────────────────┘
-                           │
-                    ┌──────┴──────┐
-                    │ AI Response │
-                    └─────────────┘
-```
+![Gemi Multimodal Architecture](assets/diagram-1.svg)
 
 **Key Innovation Points**:
 
