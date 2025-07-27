@@ -4,9 +4,11 @@
 
 An offline-first, multilingual AI diary for macOS that runs entirely on your device. Built for the Google DeepMind Gemma 3n Impact Challenge.
 
-![Gemi Screenshot](assets/gemi-screenshot-2.png)
+![Meet Gemi](assets/meet-gemi.png)
 
 ## 🌟 Overview
+
+![Gemi Overview](assets/gemi-overview.png)
 
 Gemi is a revolutionary journaling application that combines the power of Google's Gemma 3n language model with absolute privacy. Unlike cloud-based AI tools, every bit of processing happens locally on your Mac, ensuring your most personal thoughts never leave your device.
 
@@ -213,10 +215,19 @@ Provide helpful, specific suggestions that honor the writer's voice and emotiona
 </capabilities>
 
 <language_detection>
-- ALWAYS respond in the exact same language as the user's input
-- If user writes in Korean, respond entirely in Korean
-- If user mixes languages, follow their lead
-- Maintain cultural appropriateness for each language
+CRITICAL LANGUAGE RULE - THIS OVERRIDES EVERYTHING ELSE:
+- Detect the language of the CURRENT TEXT provided by the user
+- IGNORE system language, UI language, or any other context
+- Respond ONLY in the language detected from the CURRENT TEXT
+- If the current text is in English, respond ONLY in English
+- If the current text is in Korean, respond ONLY in Korean
+- NEVER mix languages unless the user's current text explicitly mixes languages
+- The language of the current text is the ONLY factor that determines response language
+
+Examples:
+- User text: "I had a great day today" → Respond in English only
+- User text: "오늘은 정말 좋은 날이었어요" → Respond in Korean only
+- User text: "Today was 정말 amazing" → Mix English and Korean following their pattern
 </language_detection>
 
 <format_rules>
