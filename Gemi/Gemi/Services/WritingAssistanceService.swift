@@ -56,6 +56,12 @@ final class WritingAssistanceService: ObservableObject {
             let messages = [
                 ChatMessage(role: .system, content: """
                 You are a helpful writing assistant for a personal journal app.
+                
+                CRITICAL RULE: You MUST respond in the SAME LANGUAGE as the user's input text.
+                - If the user writes in English, respond ONLY in English
+                - If the user writes in Korean, respond ONLY in Korean
+                - Detect the language from the CURRENT TEXT, not system settings
+                
                 IMPORTANT: Never use markdown formatting like **bold** or *italic*.
                 Always respond in plain, natural language without any formatting symbols.
                 """),
@@ -108,6 +114,10 @@ final class WritingAssistanceService: ObservableObject {
         let messages = [
             ChatMessage(role: .system, content: """
             You are an analytical writing assistant.
+            
+            CRITICAL RULE: Respond in the SAME LANGUAGE as the text being analyzed.
+            - Detect language from the PROVIDED TEXT, not system settings
+            
             Never use markdown formatting symbols like asterisks.
             Respond in clear, plain text only.
             """),
@@ -149,6 +159,11 @@ final class WritingAssistanceService: ObservableObject {
         let messages = [
             ChatMessage(role: .system, content: """
             You are a creative writing assistant that continues journal entries naturally.
+            
+            CRITICAL RULE: Continue in the SAME LANGUAGE as the existing text.
+            - If the text is in English, continue in English
+            - If the text is in Korean, continue in Korean
+            
             Always use plain text without any markdown formatting or symbols.
             """),
             ChatMessage(role: .user, content: prompt)
@@ -183,6 +198,10 @@ final class WritingAssistanceService: ObservableObject {
         let messages = [
             ChatMessage(role: .system, content: """
             You are a thoughtful writing assistant that asks deep, reflective questions.
+            
+            CRITICAL RULE: Ask questions in the SAME LANGUAGE as the journal entry.
+            - Match the language of the user's text exactly
+            
             Format your responses in plain text without any markdown symbols.
             """),
             ChatMessage(role: .user, content: prompt)
@@ -227,6 +246,11 @@ final class WritingAssistanceService: ObservableObject {
         let messages = [
             ChatMessage(role: .system, content: """
             You are a creative writing prompt generator.
+            
+            CRITICAL RULE: Generate prompts in the user's language.
+            - If recent topics are in English, create English prompts
+            - If recent topics are in Korean, create Korean prompts
+            
             Never use asterisks or markdown formatting in your responses.
             Write all prompts in clear, plain language.
             """),
@@ -267,10 +291,19 @@ final class WritingAssistanceService: ObservableObject {
         </capabilities>
         
         <language_detection>
-        - ALWAYS respond in the exact same language as the user's input
-        - If user writes in Korean, respond entirely in Korean
-        - If user mixes languages, follow their lead
-        - Maintain cultural appropriateness for each language
+        CRITICAL LANGUAGE RULE - THIS OVERRIDES EVERYTHING ELSE:
+        - Detect the language of the CURRENT TEXT provided by the user
+        - IGNORE system language, UI language, or any other context
+        - Respond ONLY in the language detected from the CURRENT TEXT
+        - If the current text is in English, respond ONLY in English
+        - If the current text is in Korean, respond ONLY in Korean
+        - NEVER mix languages unless the user's current text explicitly mixes languages
+        - The language of the current text is the ONLY factor that determines response language
+        
+        Examples:
+        - User text: "I had a great day today" → Respond in English only
+        - User text: "오늘은 정말 좋은 날이었어요" → Respond in Korean only
+        - User text: "Today was 정말 amazing" → Mix English and Korean following their pattern
         </language_detection>
         
         <format_rules>
@@ -295,6 +328,8 @@ final class WritingAssistanceService: ObservableObject {
             <context>
             Current text: "\(currentText)"
             \(previousContext.map { "Previous paragraph: \"\($0)\"" } ?? "")
+            
+            LANGUAGE INSTRUCTION: Analyze the language of the current text above and respond ONLY in that language.
             </context>
             
             <requirements>
@@ -316,6 +351,8 @@ final class WritingAssistanceService: ObservableObject {
             
             <context>
             Current text: "\(currentText)"
+            
+            LANGUAGE INSTRUCTION: Analyze the language of the current text above and respond ONLY in that language.
             </context>
             
             <requirements>
@@ -337,6 +374,8 @@ final class WritingAssistanceService: ObservableObject {
             
             <context>
             Text: "\(currentText)"
+            
+            LANGUAGE INSTRUCTION: Analyze the language of the text above and respond ONLY in that language.
             </context>
             
             <requirements>
@@ -359,6 +398,8 @@ final class WritingAssistanceService: ObservableObject {
             
             <context>
             Text: "\(currentText)"
+            
+            LANGUAGE INSTRUCTION: Analyze the language of the text above and respond ONLY in that language.
             </context>
             
             <requirements>
@@ -380,6 +421,8 @@ final class WritingAssistanceService: ObservableObject {
             
             <context>
             Recent text (if any): "\(currentText)"
+            
+            LANGUAGE INSTRUCTION: If text is provided above, analyze its language and respond ONLY in that language. If no text, respond in the user's preferred language.
             </context>
             
             <requirements>
