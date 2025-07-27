@@ -250,13 +250,6 @@ struct ProductionComposeView: View {
             hasUnsavedChanges = true
             resetAutoSaveTimer()
         }
-        .onKeyPress(.init("w"), phases: .down) { keyPress in
-            if keyPress.modifiers.contains(.command) && keyPress.modifiers.contains(.shift) {
-                toggleCommandBar()
-                return .handled
-            }
-            return .ignored
-        }
         // Focus mode shortcut handled via button
         .onDisappear {
             // Ensure session is ended if view disappears unexpectedly
@@ -485,6 +478,7 @@ struct ProductionComposeView: View {
                         }
                         .buttonStyle(.plain)
                         .help("Open Writing Tools (⌘⇧W)")
+                        .keyboardShortcut("w", modifiers: [.command, .shift])
                     }
                 }
             }
