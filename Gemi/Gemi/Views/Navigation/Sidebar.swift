@@ -163,12 +163,12 @@ struct Sidebar: View {
                 Spacer()
                 
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text("3 entries")
+                    Text(localized("home.stats.entries", comment: "Entry count").replacingOccurrences(of: "%lld", with: "3"))
                         .font(Theme.Typography.caption)
                         .fontWeight(.medium)
                         .foregroundColor(Theme.Colors.primaryAccent)
                     
-                    Text("today")
+                    Text(localized("timeline.section.today", comment: "Today"))
                         .font(Theme.Typography.footnote)
                         .foregroundColor(Theme.Colors.tertiaryText)
                 }
@@ -278,14 +278,14 @@ enum NavigationItem: String, CaseIterable, Identifiable {
     
     var title: String {
         switch self {
-        case .home: return "Home"
-        case .timeline: return "Timeline"
-        case .compose: return "New Entry"
-        case .chat: return "Chat with Gemi"
-        case .favorites: return "Favorites"
-        case .search: return "Search"
-        case .memories: return "Memories"
-        case .insights: return "Insights"
+        case .home: return localized("nav.home")
+        case .timeline: return localized("nav.timeline")
+        case .compose: return localized("nav.new_entry")
+        case .chat: return localized("nav.chat")
+        case .favorites: return localized("nav.favorites")
+        case .search: return localized("nav.search")
+        case .memories: return localized("nav.memories")
+        case .insights: return localized("nav.insights")
         }
     }
     
