@@ -29,7 +29,7 @@ Gemi is a revolutionary journaling application that combines the power of Google
 - **App Sandbox Compliance**: Full macOS sandboxing with minimal entitlements
 
 ### 🤖 AI-Powered Writing Assistant (CommandBarAssistant.swift)
-- **Smart Command Bar** (⌘W): Floating assistant with three contextual tools:
+- **Smart Command Bar** (⌘⇧W): Floating assistant with three contextual tools:
   - 🔵 **Continue Writing**: Natural flow extension with 0.7 temperature for coherent narrative
   - 🟠 **Get Ideas**: Creative exploration with 0.8 temperature and context-aware suggestions
   - 🟣 **Improve Style**: Precision editing with 0.3 temperature for clarity and polish
@@ -478,7 +478,7 @@ Gemi/
 
 4. **Start Journaling!**
    - Create your first entry
-   - Try the AI assistant with ⌘W
+   - Try the AI assistant with ⌘⇧W
    - Your journey to better self-reflection begins
 
 ### 👩‍💻 For Developers

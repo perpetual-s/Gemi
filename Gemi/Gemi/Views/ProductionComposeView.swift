@@ -417,6 +417,21 @@ struct ProductionComposeView: View {
                                         .font(.system(size: 13))
                                     Text("Focus Mode")
                                         .font(.system(size: 13))
+                                    HStack(spacing: 1) {
+                                        Text("⌘")
+                                            .font(.system(size: 11, weight: .medium))
+                                        Text("⇧")
+                                            .font(.system(size: 12, weight: .semibold))
+                                        Text("F")
+                                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                    }
+                                    .foregroundColor(.secondary.opacity(0.7))
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .fill(Color.secondary.opacity(0.08))
+                                    )
                                 }
                                 .foregroundColor(.secondary)
                                 .opacity(0.9)
@@ -449,15 +464,21 @@ struct ProductionComposeView: View {
                                     .font(.system(size: 13))
                                 Text("Writing Tools")
                                     .font(.system(size: 13))
-                                Text("⌘⇧W")
-                                    .font(.system(size: 11, weight: .medium, design: .monospaced))
-                                    .foregroundColor(.secondary.opacity(0.8))
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 4)
-                                            .fill(Color.secondary.opacity(0.1))
-                                    )
+                                HStack(spacing: 1) {
+                                    Text("⌘")
+                                        .font(.system(size: 11, weight: .medium))
+                                    Text("⇧")
+                                        .font(.system(size: 12, weight: .semibold))
+                                    Text("W")
+                                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                }
+                                .foregroundColor(.secondary.opacity(0.7))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(Color.secondary.opacity(0.08))
+                                )
                             }
                             .foregroundColor(showCommandBar ? Theme.Colors.primaryAccent : .secondary)
                             .opacity(showCommandBar ? 1 : 0.9)
