@@ -442,10 +442,12 @@ Gemi/
 
 #### Minimum Requirements
 - **macOS**: 13.0 Ventura or later
-- **Processor**: Apple Silicon (M1) or Intel Core i5
-- **Memory**: 8GB RAM
+- **Processor**: Apple Silicon (M1) or Intel Core i5*
+- **Memory**: 8GB RAM (16GB recommended for Intel)
 - **Storage**: 10GB free space (25.7 MB for Gemi & 7.5 GB for Gemma 3n)
 - **Display**: 1280×720 resolution
+
+*Intel Macs supported with GPU acceleration but reduced performance compared to Apple Silicon
 
 #### Recommended Specifications
 - **macOS**: 14.0 Sonoma or later
