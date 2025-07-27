@@ -916,6 +916,27 @@ struct SettingsView: View {
                     
                     Divider()
                     
+                    // Demo Data Row
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Demo Data")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text("Populate with sample entries for demonstration")
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        Button(action: createDemoData) {
+                            Label("Create Demo Entries", systemImage: "wand.and.stars")
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                        .buttonStyle(PremiumButtonStyle(style: .secondary))
+                    }
+                    
+                    Divider()
+                    
                     // Backup Reminder
                     HStack(spacing: 12) {
                         Image(systemName: "info.circle")
@@ -1008,6 +1029,32 @@ struct SettingsView: View {
             // Fallback: just open Application Support folder
             if let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
                 NSWorkspace.shared.open(appSupportURL)
+            }
+        }
+    }
+    
+    private func createDemoData() {
+        Task { @MainActor in
+            do {
+                try await DemoDataService.shared.createDemoEntries()
+                // Reload entries after creating demo data
+                await journalStore.loadEntries()
+                
+                // Show success alert
+                let alert = NSAlert()
+                alert.messageText = "Demo Data Created"
+                alert.informativeText = "17 sample journal entries have been added to your timeline, spanning from July 1-25, 2025."
+                alert.alertStyle = .informational
+                alert.addButton(withTitle: "OK")
+                alert.runModal()
+            } catch {
+                // Show error alert
+                let alert = NSAlert()
+                alert.messageText = "Failed to Create Demo Data"
+                alert.informativeText = error.localizedDescription
+                alert.alertStyle = .warning
+                alert.addButton(withTitle: "OK")
+                alert.runModal()
             }
         }
     }
