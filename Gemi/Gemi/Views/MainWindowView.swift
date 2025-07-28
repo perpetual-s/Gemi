@@ -80,10 +80,10 @@ struct MainWindowView: View {
             }
             
             // Focus Mode Overlay
-            if showingFocusMode, focusModeEntry != nil {
+            if showingFocusMode, let focusEntry = focusModeEntry {
                 FocusModeView(
                     entry: Binding(
-                        get: { focusModeEntry! },
+                        get: { focusEntry },
                         set: { updatedEntry in
                             focusModeEntry = updatedEntry
                             if editingEntry != nil {

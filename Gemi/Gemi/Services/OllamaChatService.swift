@@ -1,4 +1,5 @@
 import Foundation
+import os.log
 
 /// Production-grade Ollama chat service for Gemi
 /// Provides stable, multimodal-capable AI inference
@@ -14,7 +15,7 @@ final class OllamaChatService: ObservableObject {
     
     // MARK: - Types
     
-    enum ConnectionStatus {
+    enum ConnectionStatus: Equatable {
         case connected
         case disconnected
         case connecting
@@ -69,6 +70,8 @@ final class OllamaChatService: ObservableObject {
         let healthy: Bool
         let modelLoaded: Bool
         let device: String
+        
+        var isHealthy: Bool { healthy }
     }
     
     // MARK: - Private Properties
@@ -83,6 +86,12 @@ final class OllamaChatService: ObservableObject {
     private var cachedHealthStatus: HealthStatus?
     private let healthCheckCacheDuration: TimeInterval = 5.0
     
+    // Crash recovery
+    private var healthCheckTimer: Timer?
+    private var retryCount = 0
+    private let maxRetries = 3
+    private var isRecovering = false
+    
     // MARK: - Initialization
     
     private init() {
@@ -96,6 +105,9 @@ final class OllamaChatService: ObservableObject {
         // Check Ollama status on launch (don't try to start due to sandbox)
         Task {
             await checkInitialStatus()
+            await MainActor.run {
+                startHealthMonitoring()
+            }
         }
     }
     
@@ -103,8 +115,14 @@ final class OllamaChatService: ObservableObject {
     
     /// Send a chat request with streaming response
     func chat(_ request: ChatRequest) async throws -> AsyncThrowingStream<ChatResponse, Error> {
-        // Ensure Ollama is running
-        guard await isOllamaRunning() else {
+        // Ensure Ollama is running, attempt recovery if needed
+        var ollamaRunning = await isOllamaRunning()
+        if !ollamaRunning {
+            await attemptRecovery()
+            ollamaRunning = await isOllamaRunning()
+        }
+        
+        guard ollamaRunning else {
             throw OllamaError.notRunning
         }
         
@@ -537,6 +555,64 @@ protocol ChatServiceProtocol {
     func chat(_ request: OllamaChatService.ChatRequest) async throws -> AsyncThrowingStream<OllamaChatService.ChatResponse, Error>
     func health() async -> OllamaChatService.HealthStatus
     func cancelGeneration()
+}
+
+// MARK: - Health Monitoring & Recovery
+
+extension OllamaChatService {
+    private func startHealthMonitoring() {
+        healthCheckTimer?.invalidate()
+        healthCheckTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                await self?.performHealthCheck()
+            }
+        }
+    }
+    
+    private func performHealthCheck() async {
+        guard !isRecovering else { return }
+        
+        let health = await health()
+        if !health.isHealthy && connectionStatus != .disconnected {
+            connectionStatus = .error("Ollama server not responding")
+            await attemptRecovery()
+        }
+    }
+    
+    private func attemptRecovery() async {
+        guard !isRecovering, retryCount < maxRetries else { return }
+        
+        isRecovering = true
+        retryCount += 1
+        
+        connectionStatus = .connecting
+        
+        // Try to restart Ollama
+        do {
+            try await OllamaInstaller.shared.startOllamaServer()
+            
+            // Wait a bit for server to stabilize
+            try await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
+            
+            // Check if it's running now
+            if await isOllamaRunning() {
+                connectionStatus = .connected
+                retryCount = 0
+                
+                // Check if model is still loaded
+                if await isModelAvailable(defaultModel) {
+                    modelStatus = .loaded
+                }
+            } else {
+                connectionStatus = .error("Failed to restart Ollama")
+            }
+        } catch {
+            connectionStatus = .error("Recovery failed: \(error.localizedDescription)")
+        }
+        
+        isRecovering = false
+    }
+    
 }
 
 extension OllamaChatService: ChatServiceProtocol {}

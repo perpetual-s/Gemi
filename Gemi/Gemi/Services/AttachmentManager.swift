@@ -331,15 +331,15 @@ extension AttachmentManager {
             recordingTime = 0
             
             // Start timers
-            timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
                 Task { @MainActor in
-                    self.recordingTime += 0.1
+                    self?.recordingTime += 0.1
                 }
             }
             
-            levelTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
+            levelTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
                 Task { @MainActor in
-                    self.updateAudioLevels()
+                    self?.updateAudioLevels()
                 }
             }
         }

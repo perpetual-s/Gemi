@@ -53,6 +53,8 @@ struct Sidebar: View {
                         }
                         .buttonStyle(AnimatedButtonStyle())
                         .help("New Entry (⌘N)")
+                        .accessibilityLabel("New Entry")
+                        .accessibilityHint("Create a new journal entry")
                     }
                     .padding(.horizontal)
                     
@@ -156,6 +158,8 @@ struct Sidebar: View {
                                 .fill(Color.clear)
                         )
                 }
+                .accessibilityLabel("Settings")
+                .accessibilityHint("Open application settings")
                 .buttonStyle(.plain)
                 .help("Settings (⌘,)")
                 .keyboardShortcut(",", modifiers: .command)

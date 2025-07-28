@@ -361,7 +361,10 @@ actor DatabaseManager {
             
             let encryptedContentPointer = sqlite3_column_blob(statement, 2)
             let encryptedContentSize = Int(sqlite3_column_bytes(statement, 2))
-            let encryptedContent = Data(bytes: encryptedContentPointer!, count: encryptedContentSize)
+            guard let pointer = encryptedContentPointer, encryptedContentSize > 0 else {
+                continue
+            }
+            let encryptedContent = Data(bytes: pointer, count: encryptedContentSize)
             
             let content = try await decryptContent(encryptedContent)
             
@@ -434,7 +437,10 @@ actor DatabaseManager {
             
             let encryptedContentPointer = sqlite3_column_blob(statement, 2)
             let encryptedContentSize = Int(sqlite3_column_bytes(statement, 2))
-            let encryptedContent = Data(bytes: encryptedContentPointer!, count: encryptedContentSize)
+            guard let pointer = encryptedContentPointer, encryptedContentSize > 0 else {
+                continue
+            }
+            let encryptedContent = Data(bytes: pointer, count: encryptedContentSize)
             
             let content = try await decryptContent(encryptedContent)
             

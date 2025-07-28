@@ -208,9 +208,29 @@ final class GemiAICoordinator: ObservableObject {
         // Check if AI is asking for the entry content (indicates it didn't receive it)
         if fullResponse.lowercased().contains("please provide") || 
            fullResponse.lowercased().contains("paste the text") ||
-           fullResponse.lowercased().contains("i'm ready") {
-            logger.warning("AI didn't receive journal content properly, skipping extraction")
-            return []
+           fullResponse.lowercased().contains("i'm ready") ||
+           fullResponse.lowercased().contains("journal entry") && fullResponse.count < 100 {
+            logger.warning("AI didn't receive journal content properly, retrying with explicit content")
+            // Retry with the content explicitly in the user message
+            let retryMessages = [
+                ChatMessage(role: .system, content: """
+                    Extract ONLY key personal information from the following journal entry.
+                    Return each piece of information as a simple sentence on its own line.
+                    No formatting, no bullets, no numbers - just plain text sentences.
+                    """),
+                ChatMessage(role: .user, content: """
+                    Journal Entry:
+                    \(entry.content)
+                    
+                    Please extract only key personal information as described.
+                    """)
+            ]
+            
+            fullResponse = ""
+            for try await response in await aiService.chat(messages: retryMessages) {
+                fullResponse += response.message?.content ?? ""
+                if response.done { break }
+            }
         }
         
         // Check if no key information was found

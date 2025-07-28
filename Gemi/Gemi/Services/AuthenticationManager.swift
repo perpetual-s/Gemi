@@ -270,9 +270,9 @@ final class AuthenticationManager: ObservableObject {
         
         guard securityTimeout > 0 else { return }
         
-        authenticationTimer = Timer.scheduledTimer(withTimeInterval: securityTimeout, repeats: false) { _ in
+        authenticationTimer = Timer.scheduledTimer(withTimeInterval: securityTimeout, repeats: false) { [weak self] _ in
             Task { @MainActor in
-                self.logout()
+                self?.logout()
             }
         }
     }

@@ -22,10 +22,10 @@ final class AnalyticsService: ObservableObject {
         
         // Update duration every second
         sessionTimer?.invalidate()
-        sessionTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+        sessionTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
-                if let start = self.sessionStartTime {
-                    self.currentSessionDuration = Date().timeIntervalSince(start)
+                if let start = self?.sessionStartTime {
+                    self?.currentSessionDuration = Date().timeIntervalSince(start)
                 }
             }
         }

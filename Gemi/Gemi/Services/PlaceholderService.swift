@@ -157,9 +157,9 @@ final class PlaceholderService: ObservableObject {
     
     private func startRotation() {
         placeholderTimer?.invalidate()
-        placeholderTimer = Timer.scheduledTimer(withTimeInterval: 8.0, repeats: true) { _ in
+        placeholderTimer = Timer.scheduledTimer(withTimeInterval: 8.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
-                self.updatePlaceholder()
+                self?.updatePlaceholder()
             }
         }
     }
