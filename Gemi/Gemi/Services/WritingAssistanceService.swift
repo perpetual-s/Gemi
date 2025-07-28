@@ -349,7 +349,11 @@ final class WritingAssistanceService: ObservableObject {
             3. Help develop the thought further
             
             Format each continuation on a new line.
-            Remember: Use plain text only, no markdown formatting.
+            
+            FORMATTING REMINDER:
+            - Use plain text only, no markdown formatting
+            - NO asterisks (*) or underscores (_) for emphasis
+            - Just natural, plain language
             </requirements>
             """
             
@@ -372,7 +376,12 @@ final class WritingAssistanceService: ObservableObject {
             3. Open new avenues of thought
             
             Format each idea on a new line starting with a simple dash.
-            Use plain language without any formatting symbols.
+            
+            FORMATTING REMINDER:
+            - Use plain language without any formatting symbols
+            - NO markdown like *emphasis* or **bold**
+            - NO underscores or other formatting marks
+            - Just clear, natural text
             </requirements>
             """
             
@@ -411,9 +420,21 @@ final class WritingAssistanceService: ObservableObject {
             
             Be specific about what to change and why.
             Format each suggestion on a new line.
-            Write in clear, plain language without formatting marks.
             
-            FINAL REMINDER: The text "\(currentText)" is in a specific language. You MUST respond in that exact same language.
+            CRITICAL FORMATTING RULES:
+            - Write in clear, plain language WITHOUT any formatting marks
+            - DO NOT use asterisks for emphasis like *this* or **this**
+            - DO NOT use underscores for emphasis like _this_ or __this__
+            - DO NOT use any markdown formatting whatsoever
+            - Just use plain, natural language
+            
+            Examples of what NOT to do:
+            - WRONG: "Add *more descriptive* language"
+            - WRONG: "Make this **bolder** in tone"
+            - RIGHT: "Add more descriptive language"
+            - RIGHT: "Make this bolder in tone"
+            
+            FINAL REMINDER: The text "\(currentText)" is in a specific language. You MUST respond in that exact same language using PLAIN TEXT ONLY.
             </requirements>
             """
             
