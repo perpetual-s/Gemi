@@ -21,6 +21,8 @@ struct GemmaOnboardingView: View {
     @State private var ollamaStatus: OllamaStatus = .notChecked
     @State private var showCopyConfirmation = false
     @State private var copiedCommand = ""
+    @State private var showOllamaNotification = false
+    @State private var ollamaNotificationMessage = ""
     
     @Environment(\.dismiss) var dismiss
     
@@ -212,22 +214,25 @@ struct GemmaOnboardingView: View {
                 // Custom page indicators
                 StepProgressIndicator(totalSteps: totalPages, currentStep: currentPage)
                 
-                // Continue button
-                if isOnVerificationStep && ollamaStatus != .ready {
-                    // Check status button when on verification step
-                    OnboardingButton(
-                        isCheckingOllama ? "Checking..." : "Check Status",
-                        icon: isCheckingOllama ? nil : "arrow.clockwise",
-                        style: .secondary,
-                        isLoading: isCheckingOllama,
-                        action: {
-                            Task {
-                                await checkOllamaStatus()
+                // Navigation buttons
+                HStack(spacing: 16) {
+                    // Check status button on verification step
+                    if isOnVerificationStep {
+                        OnboardingButton(
+                            isCheckingOllama ? "Checking..." : "Check Status",
+                            icon: isCheckingOllama ? nil : "arrow.clockwise",
+                            style: .secondary,
+                            isLoading: isCheckingOllama,
+                            action: {
+                                Task {
+                                    await checkOllamaStatus()
+                                }
                             }
-                        }
-                    )
-                    .disabled(isCheckingOllama)
-                } else {
+                        )
+                        .disabled(isCheckingOllama)
+                    }
+                    
+                    // Continue/Get Started button - always visible
                     OnboardingButton(
                         currentPage < totalPages - 1 ? "Continue" : "Get Started",
                         icon: isSettingUpPassword ? nil : "arrow.right",
@@ -241,10 +246,11 @@ struct GemmaOnboardingView: View {
             .padding(.bottom, 60)
         }
         .overlay(
-            // Copy confirmation toast overlay
+            // Notifications overlay
             Group {
-                if showCopyConfirmation {
-                    VStack {
+                VStack(spacing: 12) {
+                    // Copy confirmation toast
+                    if showCopyConfirmation {
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundColor(.green)
@@ -268,25 +274,59 @@ struct GemmaOnboardingView: View {
                         )
                         .transition(.move(edge: .top).combined(with: .opacity))
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                    .padding(.top, 20)
-                    .allowsHitTesting(false)
+                    
+                    // Ollama status notification
+                    if showOllamaNotification {
+                        HStack(spacing: 12) {
+                            Image(systemName: "info.circle.fill")
+                                .foregroundColor(.blue)
+                            Text(ollamaNotificationMessage)
+                                .font(.system(size: 14))
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.leading)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: 400)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.blue.opacity(0.2))
+                                .background(.ultraThinMaterial.opacity(0.8))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                                )
+                        )
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .top).combined(with: .opacity),
+                            removal: .opacity
+                        ))
+                    }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .padding(.top, 20)
+                .allowsHitTesting(false)
             }
         )
         .task {
-            // Initial status check - only if needed
-            if isOnOllamaStep || isOnVerificationStep {
-                await checkOllamaStatus()
+            // Monitor Ollama status in background without interrupting flow
+            Task {
+                // Check periodically if Ollama becomes ready
+                for _ in 0..<30 { // Check for up to 30 seconds
+                    let health = await ollamaService.health()
+                    if health.healthy && health.modelLoaded {
+                        await MainActor.run {
+                            showOllamaNotification(message: "Great news! Ollama is ready in the background.")
+                        }
+                        break
+                    }
+                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                }
             }
         }
         .onChange(of: currentPage) { oldValue, newValue in
-            // Check Ollama status when reaching any Ollama-related page
-            if isOnOllamaStep || isOnVerificationStep {
-                Task {
-                    await checkOllamaStatus()
-                }
-            }
+            // Reset notification when changing pages
+            showOllamaNotification = false
         }
     }
     
@@ -1010,6 +1050,7 @@ struct GemmaOnboardingView: View {
                     ollamaStatus = .notInstalled
                     isCheckingOllama = false
                 }
+                showOllamaNotification(message: "Ollama is not installed. Please install it using one of the methods above.")
             }
             return
         }
@@ -1018,44 +1059,15 @@ struct GemmaOnboardingView: View {
         let health = await ollamaService.health()
         
         if !health.healthy {
-            // Try to start Ollama automatically
-            do {
-                try await OllamaInstaller.shared.startOllamaServer()
-                // Wait a moment for server to stabilize
-                try await Task.sleep(nanoseconds: 2_000_000_000)
-                
-                // Check again
-                let newHealth = await ollamaService.health()
-                if newHealth.healthy {
-                    // Successfully started, continue checking
-                    if !newHealth.modelLoaded {
-                        await MainActor.run {
-                            withAnimation {
-                                ollamaStatus = .runningNoModel
-                                isCheckingOllama = false
-                            }
-                        }
-                        return
-                    } else {
-                        await MainActor.run {
-                            withAnimation {
-                                ollamaStatus = .ready
-                                isCheckingOllama = false
-                            }
-                        }
-                        return
-                    }
+            // Don't automatically start - just notify the user
+            await MainActor.run {
+                withAnimation {
+                    ollamaStatus = .installedNotRunning
+                    isCheckingOllama = false
                 }
-            } catch {
-                // Failed to start automatically
-                await MainActor.run {
-                    withAnimation {
-                        ollamaStatus = .installedNotRunning
-                        isCheckingOllama = false
-                    }
-                }
-                return
+                showOllamaNotification(message: "Ollama is installed but not running. Please run 'ollama serve' in Terminal.")
             }
+            return
         }
         
         // Check if model is available
@@ -1065,6 +1077,7 @@ struct GemmaOnboardingView: View {
                     ollamaStatus = .runningNoModel
                     isCheckingOllama = false
                 }
+                showOllamaNotification(message: "Ollama is running! Now download the model with 'ollama run gemma3n:latest'.")
             }
             return
         }
@@ -1074,6 +1087,21 @@ struct GemmaOnboardingView: View {
             withAnimation {
                 ollamaStatus = .ready
                 isCheckingOllama = false
+            }
+            showOllamaNotification(message: "Excellent! Ollama and Gemma 3n are ready. You can continue to the next step.")
+        }
+    }
+    
+    private func showOllamaNotification(message: String) {
+        ollamaNotificationMessage = message
+        withAnimation(.spring()) {
+            showOllamaNotification = true
+        }
+        
+        // Auto-hide after 5 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+            withAnimation(.spring()) {
+                showOllamaNotification = false
             }
         }
     }

@@ -73,11 +73,9 @@ struct GemiApp: App {
                 // Check onboarding needs immediately
                 await checkOnboardingStatus()
                 
-                // Only auto-start if we're not showing onboarding
-                if !showingOnboarding && hasCompletedOnboarding {
-                    Task {
-                        await startOllamaAndLoadModel()
-                    }
+                // Start Ollama in background but DON'T skip onboarding pages
+                Task.detached {
+                    await startOllamaAndLoadModel()
                 }
             }
         }
