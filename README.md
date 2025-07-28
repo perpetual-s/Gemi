@@ -147,7 +147,7 @@ Gemi is a revolutionary journaling application that combines the power of Google
   - **Daily Streaks**: Track consecutive days of journaling
 
 ### 🌍 Multilingual Support (LocalizationManager.swift)
-**13 fully localized languages** with 300+ translated strings per language:
+**20 fully localized languages** with 300+ translated strings per language:
 
 | Language | Native Name | Special Features | Font Optimization |
 |----------|-------------|------------------|-------------------|
@@ -164,6 +164,13 @@ Gemi is a revolutionary journaling application that combines the power of Google
 | Hindi | हिन्दी | Devanagari script | Devanagari MT |
 | Indonesian | Bahasa Indonesia | Formal/informal | System default |
 | Russian | Русский | Cyrillic support | SF Pro with Cyrillic |
+| Italian | Italiano | Accent support | System default |
+| Turkish | Türkçe | Special characters | System default |
+| Dutch | Nederlands | Compound words | System default |
+| Polish | Polski | Diacritics support | System default |
+| Thai | ไทย | Tone marks | System default |
+| Vietnamese | Tiếng Việt | Tonal diacritics | System default |
+| Swedish | Svenska | Nordic characters | System default |
 
 - **Implementation Details**:
   - **Singleton Manager**: Thread-safe language switching with @MainActor
@@ -678,7 +685,7 @@ Your privacy is our core principle. Gemi will **never**:
 - ✅ Core journaling with AI assistance
 - ✅ Memory system
 - ✅ Multimodal support
-- ✅ 13 languages
+- ✅ 20 languages
 
 ### Version 2.0 (Planned)
 - 📱 iOS companion app with iCloud sync

@@ -1,0 +1,266 @@
+/* 
+  Localizable.strings (Polish)
+  Gemi - Twój Prywatny Dziennik AI
+  
+  Copyright © 2025 Gemi. All rights reserved.
+*/
+
+/* ===== GENERAL ===== */
+"app.name" = "Gemi";
+"button.cancel" = "Anuluj";
+"button.save" = "Zapisz";
+"button.done" = "Gotowe";
+"button.continue" = "Kontynuuj";
+"button.next" = "Dalej";
+"button.back" = "Wstecz";
+"button.close" = "Zamknij";
+"button.delete" = "Usuń";
+"button.edit" = "Edytuj";
+"button.ok" = "OK";
+"button.retry" = "Ponów";
+"button.share" = "Udostępnij";
+"button.export" = "Eksportuj";
+"button.import" = "Importuj";
+"button.settings" = "Ustawienia";
+
+/* ===== ONBOARDING ===== */
+"onboarding.welcome.title" = "Witaj w Gemi";
+"onboarding.welcome.subtitle" = "Twój prywatny dziennik AI";
+"onboarding.welcome.description" = "Wszystko pozostaje na Twoim urządzeniu. Bez chmury, bez śledzenia, tylko Ty i Twoje myśli.";
+"onboarding.privacy.title" = "Twoja Prywatność Jest Ważna";
+"onboarding.privacy.description" = "Gemi działa całkowicie na Twoim Macu. Twoje wpisy do dziennika, wspomnienia i rozmowy nigdy nie opuszczają Twojego urządzenia.";
+"onboarding.authentication.title" = "Zabezpiecz Swój Dziennik";
+"onboarding.authentication.faceid" = "Użyj Face ID";
+"onboarding.authentication.touchid" = "Użyj Touch ID";
+"onboarding.authentication.password" = "Użyj Hasła";
+"onboarding.language.title" = "Wybierz Swój Język";
+"onboarding.language.subtitle" = "Możesz to zmienić później w Ustawieniach";
+"onboarding.setup.title" = "Konfigurowanie Gemi";
+"onboarding.setup.downloading" = "Pobieranie modelu AI...";
+"onboarding.setup.progress" = "Pobrano %@ z %@";
+"onboarding.complete.title" = "Wszystko Gotowe!";
+"onboarding.complete.subtitle" = "Rozpocznij swoją podróż z dziennikiem";
+"onboarding.complete.button" = "Otwórz Gemi";
+
+/* ===== NAVIGATION ===== */
+"nav.home" = "Strona główna";
+"nav.timeline" = "Oś czasu";
+"nav.memories" = "Wspomnienia";
+"nav.chat" = "Czat z Gemi";
+"nav.insights" = "Spostrzeżenia";
+"nav.favorites" = "Ulubione";
+"nav.search" = "Szukaj";
+"writing.tools" = "Narzędzia pisania";
+"nav.settings" = "Ustawienia";
+"nav.new_entry" = "Nowy wpis";
+
+/* ===== HOME VIEW ===== */
+"home.greeting.morning" = "Dzień dobry";
+"home.greeting.afternoon" = "Dzień dobry";
+"home.greeting.evening" = "Dobry wieczór";
+"home.greeting.night" = "Dobranoc";
+"home.prompt.whats_on_mind" = "O czym myślisz?";
+"home.button.new_entry" = "Utwórz nowy wpis";
+"home.button.continue_writing" = "Kontynuuj pisanie";
+"home.stats.entries" = "%lld wpisów";
+"home.stats.words" = "%lld słów";
+"home.stats.memories" = "%lld wspomnień";
+"home.quote.daily" = "Codzienna inspiracja";
+
+/* ===== TIMELINE VIEW ===== */
+"timeline.title" = "Oś czasu dziennika";
+"timeline.empty.title" = "Brak wpisów w dzienniku";
+"timeline.empty.subtitle" = "Zacznij dokumentować swoją podróż.\nTwoja oś czasu pojawi się tutaj.";
+"timeline.empty.button" = "Utwórz swój pierwszy wpis";
+"timeline.section.today" = "Dzisiaj";
+"timeline.section.yesterday" = "Wczoraj";
+"timeline.section.this_week" = "W tym tygodniu";
+"timeline.section.this_month" = "W tym miesiącu";
+"timeline.section.earlier" = "Wcześniej";
+"timeline.entry.words" = "%lld słów";
+"timeline.entry.reading_time" = "%lld min czytania";
+"timeline.filter.all" = "Wszystkie wpisy";
+"timeline.filter.favorites" = "Ulubione";
+"timeline.filter.with_photos" = "Ze zdjęciami";
+"timeline.filter.with_audio" = "Z dźwiękiem";
+"timeline.sort.newest" = "Najnowsze";
+"timeline.sort.oldest" = "Najstarsze";
+
+/* ===== JOURNAL ENTRY ===== */
+"entry.placeholder.title" = "Nadaj tytuł swojemu wpisowi...";
+"entry.placeholder.content" = "Zacznij pisać...";
+"entry.placeholder.whats_happening" = "Co się dzieje dzisiaj?";
+"entry.placeholder.grateful" = "Za co jesteś wdzięczny?";
+"entry.placeholder.reflection" = "Poświęć chwilę na refleksję...";
+"entry.status.saving" = "Zapisywanie...";
+"entry.status.saved" = "Zapisano";
+"entry.button.focus_mode" = "Tryb skupienia";
+"entry.button.add_photo" = "Dodaj zdjęcie";
+"entry.button.record_audio" = "Nagraj dźwięk";
+"entry.button.ai_assist" = "Pomoc AI";
+"entry.button.mood" = "Nastrój";
+"entry.button.tag" = "Tag";
+"entry.button.location" = "Lokalizacja";
+"entry.delete.confirm.title" = "Usuń wpis";
+"entry.delete.confirm.message" = "Czy na pewno chcesz usunąć ten wpis w dzienniku? Tej akcji nie można cofnąć.";
+"entry.attachments.photos" = "%lld zdjęć";
+"entry.attachments.audio" = "%lld nagrań audio";
+"entry.attachment.delete" = "Usuń załącznik";
+"entry.attachment.view" = "Zobacz";
+"entry.attachment.play" = "Odtwórz";
+
+/* ===== WRITING TOOLS ===== */
+"writing.tools.title" = "Narzędzia pisania";
+"writing.tools.continue" = "Kontynuuj pisanie";
+"writing.tools.ideas" = "Daj mi pomysły";
+"writing.tools.improve" = "Ulepsz pisanie";
+"writing.tools.focus" = "Pomóż mi się skupić";
+"writing.tools.expand" = "Rozwiń";
+"writing.tools.simplify" = "Uprość";
+"writing.tools.fix_grammar" = "Popraw gramatykę";
+"writing.tools.change_tone" = "Zmień ton";
+"writing.tools.processing" = "Przetwarzanie...";
+"writing.tools.error" = "Wystąpił błąd. Spróbuj ponownie.";
+
+/* ===== CHAT VIEW ===== */
+"chat.title" = "Czat z Gemi";
+"chat.placeholder" = "Zapytaj mnie o cokolwiek...";
+"chat.welcome.title" = "Cześć! Jestem Gemi, Twój prywatny towarzysz dziennika.";
+"chat.welcome.subtitle" = "Mogę pomóc Ci zastanowić się nad Twoimi myślami, przypomnieć minione chwile lub po prostu wysłuchać.";
+"chat.welcome.privacy" = "Nasze rozmowy pozostają prywatne na Twoim urządzeniu.";
+"chat.suggestions.reflect" = "Pomóż mi zastanowić się nad moim dniem";
+"chat.suggestions.memory" = "Co pamiętasz o mnie?";
+"chat.suggestions.gratitude" = "Poprowadź praktykę wdzięczności";
+"chat.suggestions.creative" = "Pomóż mi pisać kreatywnie";
+"chat.error.title" = "Ups!";
+"chat.error.message" = "Nie udało się przetworzyć. Spróbuj ponownie.";
+"chat.typing" = "Gemi pisze...";
+"chat.stop" = "Zatrzymaj";
+"chat.regenerate" = "Wygeneruj ponownie";
+"chat.copy" = "Kopiuj";
+
+/* ===== MEMORIES VIEW ===== */
+"memories.title" = "Twoje wspomnienia";
+"memories.empty.title" = "Brak wspomnień";
+"memories.empty.subtitle" = "Podczas pisania w dzienniku, Gemi będzie pamiętać ważne chwile i spostrzeżenia tutaj.";
+"memories.search.placeholder" = "Szukaj wspomnień...";
+"memories.filter.all" = "Wszystkie wspomnienia";
+"memories.filter.people" = "Ludzie";
+"memories.filter.places" = "Miejsca";
+"memories.filter.feelings" = "Uczucia";
+"memories.filter.events" = "Wydarzenia";
+"memories.sort.newest" = "Najnowsze";
+"memories.sort.oldest" = "Najstarsze";
+"memories.sort.relevance" = "Najbardziej trafne";
+"memories.detail.created" = "Utworzono";
+"memories.detail.related" = "Powiązane wpisy";
+"memories.delete.confirm.title" = "Usuń wspomnienie";
+"memories.delete.confirm.message" = "Czy na pewno chcesz usunąć to wspomnienie?";
+
+/* ===== INSIGHTS VIEW ===== */
+"insights.title" = "Twoje spostrzeżenia";
+"insights.mood.title" = "Śledzenie nastroju";
+"insights.mood.week" = "W tym tygodniu";
+"insights.mood.month" = "W tym miesiącu";
+"insights.mood.year" = "W tym roku";
+"insights.writing.title" = "Nawyki pisania";
+"insights.writing.streak" = "Obecna seria";
+"insights.writing.longest_streak" = "Najdłuższa seria";
+"insights.writing.total_words" = "Łącznie słów";
+"insights.writing.average_words" = "Średnia słów na wpis";
+"insights.topics.title" = "Najważniejsze tematy";
+"insights.topics.subtitle" = "O czym piszesz najczęściej";
+"insights.patterns.title" = "Twoje wzorce";
+"insights.patterns.morning_writer" = "Ranny pisarz";
+"insights.patterns.night_owl" = "Nocna sowa";
+"insights.patterns.weekend_warrior" = "Weekendowy wojownik";
+"insights.patterns.daily_journalist" = "Codzienny dziennikarz";
+
+/* ===== SETTINGS VIEW ===== */
+"settings.title" = "Ustawienia";
+"settings.section.general" = "Ogólne";
+"settings.section.privacy" = "Prywatność i bezpieczeństwo";
+"settings.section.ai" = "Ustawienia AI";
+"settings.section.about" = "O aplikacji";
+"settings.language" = "Język";
+"settings.theme" = "Motyw";
+"settings.theme.light" = "Jasny";
+"settings.theme.dark" = "Ciemny";
+"settings.theme.system" = "Systemowy";
+"settings.notifications" = "Powiadomienia";
+"settings.notifications.daily_reminder" = "Codzienny przypomnienie";
+"settings.notifications.time" = "Czas przypomnienia";
+"settings.export_data" = "Eksportuj dane";
+"settings.delete_all_data" = "Usuń wszystkie dane";
+"settings.delete_all_data.confirm.title" = "Usuń wszystkie dane";
+"settings.delete_all_data.confirm.message" = "Czy na pewno chcesz usunąć wszystkie wpisy dziennika i wspomnienia? Tej akcji nie można cofnąć.";
+"settings.authentication" = "Uwierzytelnianie";
+"settings.authentication.biometric" = "Użyj biometrii";
+"settings.authentication.change_password" = "Zmień hasło";
+"settings.ai.model" = "Model AI";
+"settings.ai.temperature" = "Kreatywność (Temperatura)";
+"settings.ai.memory" = "Pamięć AI";
+"settings.ai.memory.enabled" = "Włącz pamięć";
+"settings.ai.memory.clear" = "Wyczyść pamięć";
+"settings.about.version" = "Wersja";
+"settings.about.website" = "Strona internetowa";
+"settings.about.privacy_policy" = "Polityka prywatności";
+"settings.about.acknowledgments" = "Podziękowania";
+
+/* ===== MOODS ===== */
+"mood.happy" = "Szczęśliwy";
+"mood.sad" = "Smutny";
+"mood.anxious" = "Niespokojny";
+"mood.calm" = "Spokojny";
+"mood.excited" = "Podekscytowany";
+"mood.grateful" = "Wdzięczny";
+"mood.angry" = "Zły";
+"mood.confused" = "Zdezorientowany";
+"mood.hopeful" = "Pełen nadziei";
+"mood.tired" = "Zmęczony";
+
+/* ===== ERRORS ===== */
+"error.generic" = "Coś poszło nie tak";
+"error.network" = "Błąd połączenia";
+"error.save_failed" = "Zapisywanie nie powiodło się";
+"error.load_failed" = "Ładowanie nie powiodło się";
+"error.ai_unavailable" = "AI tymczasowo niedostępne";
+"error.authentication_failed" = "Uwierzytelnianie nie powiodło się";
+"error.biometric_not_available" = "Biometria niedostępna";
+"error.storage_full" = "Niewystarczająca ilość miejsca";
+
+/* ===== EMPTY STATES ===== */
+"empty.search" = "Nie znaleziono wyników";
+"empty.favorites" = "Brak ulubionych";
+"empty.insights" = "Napisz więcej wpisów, aby zobaczyć spostrzeżenia";
+
+/* ===== DATES ===== */
+"date.today" = "Dzisiaj";
+"date.yesterday" = "Wczoraj";
+"date.days_ago" = "%lld dni temu";
+"date.weeks_ago" = "%lld tygodni temu";
+"date.months_ago" = "%lld miesięcy temu";
+"date.years_ago" = "%lld lat temu";
+
+/* ===== MULTIMODAL ===== */
+"multimodal.processing" = "Przetwarzanie...";
+"multimodal.drop_image" = "Przeciągnij tutaj obraz";
+"multimodal.select_image" = "Wybierz obraz";
+"multimodal.record_audio" = "Nagraj dźwięk";
+"multimodal.recording" = "Nagrywanie...";
+"multimodal.stop_recording" = "Zatrzymaj nagrywanie";
+"multimodal.play_audio" = "Odtwórz dźwięk";
+"multimodal.pause_audio" = "Wstrzymaj dźwięk";
+"multimodal.delete_recording" = "Usuń nagranie";
+
+/* ===== ACHIEVEMENTS ===== */
+"achievement.first_entry" = "Pierwszy wpis";
+"achievement.week_streak" = "7-dniowa seria";
+"achievement.month_streak" = "30-dniowa seria";
+"achievement.hundred_entries" = "100 wpisów";
+"achievement.thousand_words" = "1000 słów";
+"achievement.night_writer" = "Nocny pisarz";
+"achievement.morning_writer" = "Ranny pisarz";
+"achievement.photo_journalist" = "Fotodziennikarz";
+"achievement.audio_journalist" = "Audiodziennikarz";
+"achievement.memory_keeper" = "Strażnik wspomnień";

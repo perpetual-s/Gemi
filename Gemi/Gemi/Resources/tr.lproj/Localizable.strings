@@ -1,0 +1,266 @@
+/* 
+  Localizable.strings (Turkish)
+  Gemi - Özel Yapay Zeka Günlüğünüz
+  
+  Copyright © 2025 Gemi. All rights reserved.
+*/
+
+/* ===== GENERAL ===== */
+"app.name" = "Gemi";
+"button.cancel" = "İptal";
+"button.save" = "Kaydet";
+"button.done" = "Tamam";
+"button.continue" = "Devam";
+"button.next" = "İleri";
+"button.back" = "Geri";
+"button.close" = "Kapat";
+"button.delete" = "Sil";
+"button.edit" = "Düzenle";
+"button.ok" = "Tamam";
+"button.retry" = "Tekrar Dene";
+"button.share" = "Paylaş";
+"button.export" = "Dışa Aktar";
+"button.import" = "İçe Aktar";
+"button.settings" = "Ayarlar";
+
+/* ===== ONBOARDING ===== */
+"onboarding.welcome.title" = "Gemi'ye Hoş Geldiniz";
+"onboarding.welcome.subtitle" = "Özel yapay zeka günlüğünüz";
+"onboarding.welcome.description" = "Her şey cihazınızda kalır. Bulut yok, takip yok, sadece siz ve düşünceleriniz.";
+"onboarding.privacy.title" = "Gizliliğiniz Önemli";
+"onboarding.privacy.description" = "Gemi tamamen Mac'inizde çalışır. Günlük girişleriniz, anılarınız ve konuşmalarınız asla cihazınızdan ayrılmaz.";
+"onboarding.authentication.title" = "Günlüğünüzü Güvence Altına Alın";
+"onboarding.authentication.faceid" = "Face ID Kullan";
+"onboarding.authentication.touchid" = "Touch ID Kullan";
+"onboarding.authentication.password" = "Şifre Kullan";
+"onboarding.language.title" = "Dilinizi Seçin";
+"onboarding.language.subtitle" = "Bunu daha sonra Ayarlar'dan değiştirebilirsiniz";
+"onboarding.setup.title" = "Gemi Kuruluyor";
+"onboarding.setup.downloading" = "Yapay zeka modeli indiriliyor...";
+"onboarding.setup.progress" = "%@ / %@ indirildi";
+"onboarding.complete.title" = "Her Şey Hazır!";
+"onboarding.complete.subtitle" = "Günlük yolculuğunuza başlayın";
+"onboarding.complete.button" = "Gemi'yi Aç";
+
+/* ===== NAVIGATION ===== */
+"nav.home" = "Ana Sayfa";
+"nav.timeline" = "Zaman Çizelgesi";
+"nav.memories" = "Anılar";
+"nav.chat" = "Gemi ile Sohbet";
+"nav.insights" = "İçgörüler";
+"nav.favorites" = "Favoriler";
+"nav.search" = "Ara";
+"writing.tools" = "Yazma Araçları";
+"nav.settings" = "Ayarlar";
+"nav.new_entry" = "Yeni Giriş";
+
+/* ===== HOME VIEW ===== */
+"home.greeting.morning" = "Günaydın";
+"home.greeting.afternoon" = "İyi öğlenler";
+"home.greeting.evening" = "İyi akşamlar";
+"home.greeting.night" = "İyi geceler";
+"home.prompt.whats_on_mind" = "Aklınızda ne var?";
+"home.button.new_entry" = "Yeni Giriş Oluştur";
+"home.button.continue_writing" = "Yazmaya Devam Et";
+"home.stats.entries" = "%lld giriş";
+"home.stats.words" = "%lld kelime";
+"home.stats.memories" = "%lld anı";
+"home.quote.daily" = "Günün İlhamı";
+
+/* ===== TIMELINE VIEW ===== */
+"timeline.title" = "Günlük Zaman Çizelgesi";
+"timeline.empty.title" = "Henüz günlük girişi yok";
+"timeline.empty.subtitle" = "Yolculuğunuzu belgelemeye başlayın.\nZaman çizelgeniz burada görünecek.";
+"timeline.empty.button" = "İlk Girişinizi Oluşturun";
+"timeline.section.today" = "Bugün";
+"timeline.section.yesterday" = "Dün";
+"timeline.section.this_week" = "Bu Hafta";
+"timeline.section.this_month" = "Bu Ay";
+"timeline.section.earlier" = "Daha Önce";
+"timeline.entry.words" = "%lld kelime";
+"timeline.entry.reading_time" = "%lld dk okuma";
+"timeline.filter.all" = "Tüm Girişler";
+"timeline.filter.favorites" = "Favoriler";
+"timeline.filter.with_photos" = "Fotoğraflı";
+"timeline.filter.with_audio" = "Sesli";
+"timeline.sort.newest" = "En Yeni";
+"timeline.sort.oldest" = "En Eski";
+
+/* ===== JOURNAL ENTRY ===== */
+"entry.placeholder.title" = "Girişinize bir başlık verin...";
+"entry.placeholder.content" = "Yazmaya başlayın...";
+"entry.placeholder.whats_happening" = "Bugün neler oluyor?";
+"entry.placeholder.grateful" = "Neye minnettarsınız?";
+"entry.placeholder.reflection" = "Düşünmek için bir an ayırın...";
+"entry.status.saving" = "Kaydediliyor...";
+"entry.status.saved" = "Kaydedildi";
+"entry.button.focus_mode" = "Odak Modu";
+"entry.button.add_photo" = "Fotoğraf Ekle";
+"entry.button.record_audio" = "Ses Kaydet";
+"entry.button.ai_assist" = "Yapay Zeka Yardımı";
+"entry.button.mood" = "Ruh Hali";
+"entry.button.tag" = "Etiket";
+"entry.button.location" = "Konum";
+"entry.delete.confirm.title" = "Girişi Sil";
+"entry.delete.confirm.message" = "Bu günlük girişini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.";
+"entry.attachments.photos" = "%lld fotoğraf";
+"entry.attachments.audio" = "%lld ses kaydı";
+"entry.attachment.delete" = "Eki Sil";
+"entry.attachment.view" = "Görüntüle";
+"entry.attachment.play" = "Oynat";
+
+/* ===== WRITING TOOLS ===== */
+"writing.tools.title" = "Yazma Araçları";
+"writing.tools.continue" = "Yazmaya devam et";
+"writing.tools.ideas" = "Bana fikir ver";
+"writing.tools.improve" = "Yazmayı geliştir";
+"writing.tools.focus" = "Odaklanmama yardım et";
+"writing.tools.expand" = "Genişlet";
+"writing.tools.simplify" = "Basitleştir";
+"writing.tools.fix_grammar" = "Dilbilgisini düzelt";
+"writing.tools.change_tone" = "Tonu değiştir";
+"writing.tools.processing" = "İşleniyor...";
+"writing.tools.error" = "Bir hata oluştu. Tekrar deneyin.";
+
+/* ===== CHAT VIEW ===== */
+"chat.title" = "Gemi ile Sohbet";
+"chat.placeholder" = "Bana bir şey sorun...";
+"chat.welcome.title" = "Merhaba! Ben Gemi, özel günlük arkadaşınızım.";
+"chat.welcome.subtitle" = "Düşünceleriniz üzerinde düşünmenize, geçmiş anları hatırlamanıza yardımcı olabilirim veya sadece dinleyebilirim.";
+"chat.welcome.privacy" = "Konuşmalarımız cihazınızda gizli kalır.";
+"chat.suggestions.reflect" = "Günüm hakkında düşünmeme yardım et";
+"chat.suggestions.memory" = "Benim hakkımda ne hatırlıyorsun?";
+"chat.suggestions.gratitude" = "Şükran pratiğine rehberlik et";
+"chat.suggestions.creative" = "Yaratıcı yazmama yardım et";
+"chat.error.title" = "Hay aksi!";
+"chat.error.message" = "İşleyemedim. Tekrar deneyin.";
+"chat.typing" = "Gemi yazıyor...";
+"chat.stop" = "Durdur";
+"chat.regenerate" = "Yeniden oluştur";
+"chat.copy" = "Kopyala";
+
+/* ===== MEMORIES VIEW ===== */
+"memories.title" = "Anılarınız";
+"memories.empty.title" = "Henüz anı yok";
+"memories.empty.subtitle" = "Günlüğünüze yazdıkça, Gemi önemli anları ve içgörüleri burada hatırlayacak.";
+"memories.search.placeholder" = "Anılarda ara...";
+"memories.filter.all" = "Tüm Anılar";
+"memories.filter.people" = "İnsanlar";
+"memories.filter.places" = "Yerler";
+"memories.filter.feelings" = "Duygular";
+"memories.filter.events" = "Olaylar";
+"memories.sort.newest" = "En Yeni";
+"memories.sort.oldest" = "En Eski";
+"memories.sort.relevance" = "En İlgili";
+"memories.detail.created" = "Oluşturuldu";
+"memories.detail.related" = "İlgili Girişler";
+"memories.delete.confirm.title" = "Anıyı Sil";
+"memories.delete.confirm.message" = "Bu anıyı silmek istediğinizden emin misiniz?";
+
+/* ===== INSIGHTS VIEW ===== */
+"insights.title" = "İçgörüleriniz";
+"insights.mood.title" = "Ruh Hali Takibi";
+"insights.mood.week" = "Bu Hafta";
+"insights.mood.month" = "Bu Ay";
+"insights.mood.year" = "Bu Yıl";
+"insights.writing.title" = "Yazma Alışkanlıkları";
+"insights.writing.streak" = "Mevcut Seri";
+"insights.writing.longest_streak" = "En Uzun Seri";
+"insights.writing.total_words" = "Toplam Kelime";
+"insights.writing.average_words" = "Giriş Başına Ortalama Kelime";
+"insights.topics.title" = "Popüler Konular";
+"insights.topics.subtitle" = "En çok ne hakkında yazıyorsunuz";
+"insights.patterns.title" = "Desenleriniz";
+"insights.patterns.morning_writer" = "Sabah Yazarı";
+"insights.patterns.night_owl" = "Gece Kuşu";
+"insights.patterns.weekend_warrior" = "Hafta Sonu Savaşçısı";
+"insights.patterns.daily_journalist" = "Günlük Gazeteci";
+
+/* ===== SETTINGS VIEW ===== */
+"settings.title" = "Ayarlar";
+"settings.section.general" = "Genel";
+"settings.section.privacy" = "Gizlilik ve Güvenlik";
+"settings.section.ai" = "Yapay Zeka Ayarları";
+"settings.section.about" = "Hakkında";
+"settings.language" = "Dil";
+"settings.theme" = "Tema";
+"settings.theme.light" = "Açık";
+"settings.theme.dark" = "Koyu";
+"settings.theme.system" = "Sistem";
+"settings.notifications" = "Bildirimler";
+"settings.notifications.daily_reminder" = "Günlük Hatırlatıcı";
+"settings.notifications.time" = "Hatırlatma Zamanı";
+"settings.export_data" = "Veriyi Dışa Aktar";
+"settings.delete_all_data" = "Tüm Veriyi Sil";
+"settings.delete_all_data.confirm.title" = "Tüm Veriyi Sil";
+"settings.delete_all_data.confirm.message" = "Tüm günlük girişlerini ve anıları silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.";
+"settings.authentication" = "Kimlik Doğrulama";
+"settings.authentication.biometric" = "Biyometri Kullan";
+"settings.authentication.change_password" = "Şifreyi Değiştir";
+"settings.ai.model" = "Yapay Zeka Modeli";
+"settings.ai.temperature" = "Yaratıcılık (Sıcaklık)";
+"settings.ai.memory" = "Yapay Zeka Hafızası";
+"settings.ai.memory.enabled" = "Hafızayı Etkinleştir";
+"settings.ai.memory.clear" = "Hafızayı Temizle";
+"settings.about.version" = "Sürüm";
+"settings.about.website" = "Web Sitesi";
+"settings.about.privacy_policy" = "Gizlilik Politikası";
+"settings.about.acknowledgments" = "Teşekkürler";
+
+/* ===== MOODS ===== */
+"mood.happy" = "Mutlu";
+"mood.sad" = "Üzgün";
+"mood.anxious" = "Endişeli";
+"mood.calm" = "Sakin";
+"mood.excited" = "Heyecanlı";
+"mood.grateful" = "Minnettar";
+"mood.angry" = "Kızgın";
+"mood.confused" = "Kafası Karışık";
+"mood.hopeful" = "Umutlu";
+"mood.tired" = "Yorgun";
+
+/* ===== ERRORS ===== */
+"error.generic" = "Bir şeyler ters gitti";
+"error.network" = "Bağlantı hatası";
+"error.save_failed" = "Kaydetme başarısız";
+"error.load_failed" = "Yükleme başarısız";
+"error.ai_unavailable" = "Yapay zeka geçici olarak kullanılamıyor";
+"error.authentication_failed" = "Kimlik doğrulama başarısız";
+"error.biometric_not_available" = "Biyometri mevcut değil";
+"error.storage_full" = "Depolama alanı yetersiz";
+
+/* ===== EMPTY STATES ===== */
+"empty.search" = "Sonuç bulunamadı";
+"empty.favorites" = "Henüz favori yok";
+"empty.insights" = "İçgörüler için daha fazla giriş yazın";
+
+/* ===== DATES ===== */
+"date.today" = "Bugün";
+"date.yesterday" = "Dün";
+"date.days_ago" = "%lld gün önce";
+"date.weeks_ago" = "%lld hafta önce";
+"date.months_ago" = "%lld ay önce";
+"date.years_ago" = "%lld yıl önce";
+
+/* ===== MULTIMODAL ===== */
+"multimodal.processing" = "İşleniyor...";
+"multimodal.drop_image" = "Buraya bir resim sürükleyin";
+"multimodal.select_image" = "Resim seç";
+"multimodal.record_audio" = "Ses kaydet";
+"multimodal.recording" = "Kaydediliyor...";
+"multimodal.stop_recording" = "Kaydı durdur";
+"multimodal.play_audio" = "Ses oynat";
+"multimodal.pause_audio" = "Sesi duraklat";
+"multimodal.delete_recording" = "Kaydı sil";
+
+/* ===== ACHIEVEMENTS ===== */
+"achievement.first_entry" = "İlk Giriş";
+"achievement.week_streak" = "7 Günlük Seri";
+"achievement.month_streak" = "30 Günlük Seri";
+"achievement.hundred_entries" = "100 Giriş";
+"achievement.thousand_words" = "1000 Kelime";
+"achievement.night_writer" = "Gece Yazarı";
+"achievement.morning_writer" = "Sabah Yazarı";
+"achievement.photo_journalist" = "Foto Gazeteci";
+"achievement.audio_journalist" = "Ses Gazetecisi";
+"achievement.memory_keeper" = "Anı Koruyucu";

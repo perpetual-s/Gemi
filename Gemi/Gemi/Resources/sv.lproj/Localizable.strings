@@ -1,0 +1,266 @@
+/* 
+  Localizable.strings (Swedish)
+  Gemi - Din Privata AI-dagbok
+  
+  Copyright © 2025 Gemi. All rights reserved.
+*/
+
+/* ===== GENERAL ===== */
+"app.name" = "Gemi";
+"button.cancel" = "Avbryt";
+"button.save" = "Spara";
+"button.done" = "Klar";
+"button.continue" = "Fortsätt";
+"button.next" = "Nästa";
+"button.back" = "Tillbaka";
+"button.close" = "Stäng";
+"button.delete" = "Ta bort";
+"button.edit" = "Redigera";
+"button.ok" = "OK";
+"button.retry" = "Försök igen";
+"button.share" = "Dela";
+"button.export" = "Exportera";
+"button.import" = "Importera";
+"button.settings" = "Inställningar";
+
+/* ===== ONBOARDING ===== */
+"onboarding.welcome.title" = "Välkommen till Gemi";
+"onboarding.welcome.subtitle" = "Din privata AI-dagbok";
+"onboarding.welcome.description" = "Allt stannar på din enhet. Inget moln, ingen spårning, bara du och dina tankar.";
+"onboarding.privacy.title" = "Din Integritet Är Viktig";
+"onboarding.privacy.description" = "Gemi körs helt på din Mac. Dina dagboksinlägg, minnen och konversationer lämnar aldrig din enhet.";
+"onboarding.authentication.title" = "Säkra Din Dagbok";
+"onboarding.authentication.faceid" = "Använd Face ID";
+"onboarding.authentication.touchid" = "Använd Touch ID";
+"onboarding.authentication.password" = "Använd Lösenord";
+"onboarding.language.title" = "Välj Ditt Språk";
+"onboarding.language.subtitle" = "Du kan ändra detta senare i Inställningar";
+"onboarding.setup.title" = "Konfigurerar Gemi";
+"onboarding.setup.downloading" = "Laddar ner AI-modell...";
+"onboarding.setup.progress" = "%@ av %@ nedladdat";
+"onboarding.complete.title" = "Allt Är Klart!";
+"onboarding.complete.subtitle" = "Börja din dagboksresa";
+"onboarding.complete.button" = "Öppna Gemi";
+
+/* ===== NAVIGATION ===== */
+"nav.home" = "Hem";
+"nav.timeline" = "Tidslinje";
+"nav.memories" = "Minnen";
+"nav.chat" = "Chatta med Gemi";
+"nav.insights" = "Insikter";
+"nav.favorites" = "Favoriter";
+"nav.search" = "Sök";
+"writing.tools" = "Skrivverktyg";
+"nav.settings" = "Inställningar";
+"nav.new_entry" = "Nytt inlägg";
+
+/* ===== HOME VIEW ===== */
+"home.greeting.morning" = "God morgon";
+"home.greeting.afternoon" = "God eftermiddag";
+"home.greeting.evening" = "God kväll";
+"home.greeting.night" = "God natt";
+"home.prompt.whats_on_mind" = "Vad tänker du på?";
+"home.button.new_entry" = "Skapa nytt inlägg";
+"home.button.continue_writing" = "Fortsätt skriva";
+"home.stats.entries" = "%lld inlägg";
+"home.stats.words" = "%lld ord";
+"home.stats.memories" = "%lld minnen";
+"home.quote.daily" = "Dagens inspiration";
+
+/* ===== TIMELINE VIEW ===== */
+"timeline.title" = "Dagbokstidslinje";
+"timeline.empty.title" = "Inga dagboksinlägg ännu";
+"timeline.empty.subtitle" = "Börja dokumentera din resa.\nDin tidslinje kommer att visas här.";
+"timeline.empty.button" = "Skapa ditt första inlägg";
+"timeline.section.today" = "Idag";
+"timeline.section.yesterday" = "Igår";
+"timeline.section.this_week" = "Den här veckan";
+"timeline.section.this_month" = "Den här månaden";
+"timeline.section.earlier" = "Tidigare";
+"timeline.entry.words" = "%lld ord";
+"timeline.entry.reading_time" = "%lld min läsning";
+"timeline.filter.all" = "Alla inlägg";
+"timeline.filter.favorites" = "Favoriter";
+"timeline.filter.with_photos" = "Med foton";
+"timeline.filter.with_audio" = "Med ljud";
+"timeline.sort.newest" = "Nyast först";
+"timeline.sort.oldest" = "Äldst först";
+
+/* ===== JOURNAL ENTRY ===== */
+"entry.placeholder.title" = "Ge ditt inlägg en titel...";
+"entry.placeholder.content" = "Börja skriva...";
+"entry.placeholder.whats_happening" = "Vad händer idag?";
+"entry.placeholder.grateful" = "Vad är du tacksam för?";
+"entry.placeholder.reflection" = "Ta en stund att reflektera...";
+"entry.status.saving" = "Sparar...";
+"entry.status.saved" = "Sparat";
+"entry.button.focus_mode" = "Fokusläge";
+"entry.button.add_photo" = "Lägg till foto";
+"entry.button.record_audio" = "Spela in ljud";
+"entry.button.ai_assist" = "AI-hjälp";
+"entry.button.mood" = "Humör";
+"entry.button.tag" = "Tagg";
+"entry.button.location" = "Plats";
+"entry.delete.confirm.title" = "Ta bort inlägg";
+"entry.delete.confirm.message" = "Är du säker på att du vill ta bort detta dagboksinlägg? Denna åtgärd kan inte ångras.";
+"entry.attachments.photos" = "%lld foton";
+"entry.attachments.audio" = "%lld ljudinspelningar";
+"entry.attachment.delete" = "Ta bort bilaga";
+"entry.attachment.view" = "Visa";
+"entry.attachment.play" = "Spela";
+
+/* ===== WRITING TOOLS ===== */
+"writing.tools.title" = "Skrivverktyg";
+"writing.tools.continue" = "Fortsätt skriva";
+"writing.tools.ideas" = "Ge mig idéer";
+"writing.tools.improve" = "Förbättra skrivningen";
+"writing.tools.focus" = "Hjälp mig fokusera";
+"writing.tools.expand" = "Utöka";
+"writing.tools.simplify" = "Förenkla";
+"writing.tools.fix_grammar" = "Rätta grammatik";
+"writing.tools.change_tone" = "Ändra ton";
+"writing.tools.processing" = "Bearbetar...";
+"writing.tools.error" = "Ett fel uppstod. Försök igen.";
+
+/* ===== CHAT VIEW ===== */
+"chat.title" = "Chatta med Gemi";
+"chat.placeholder" = "Fråga mig vad som helst...";
+"chat.welcome.title" = "Hej! Jag är Gemi, din privata dagbokskompanjon.";
+"chat.welcome.subtitle" = "Jag kan hjälpa dig reflektera över dina tankar, minnas tidigare stunder eller bara lyssna.";
+"chat.welcome.privacy" = "Våra konversationer förblir privata på din enhet.";
+"chat.suggestions.reflect" = "Hjälp mig reflektera över min dag";
+"chat.suggestions.memory" = "Vad minns du om mig?";
+"chat.suggestions.gratitude" = "Vägleda en tacksamhetsövning";
+"chat.suggestions.creative" = "Hjälp mig skriva kreativt";
+"chat.error.title" = "Hoppsan!";
+"chat.error.message" = "Kunde inte bearbeta. Försök igen.";
+"chat.typing" = "Gemi skriver...";
+"chat.stop" = "Stoppa";
+"chat.regenerate" = "Återskapa";
+"chat.copy" = "Kopiera";
+
+/* ===== MEMORIES VIEW ===== */
+"memories.title" = "Dina minnen";
+"memories.empty.title" = "Inga minnen ännu";
+"memories.empty.subtitle" = "När du skriver i din dagbok kommer Gemi att minnas viktiga stunder och insikter här.";
+"memories.search.placeholder" = "Sök minnen...";
+"memories.filter.all" = "Alla minnen";
+"memories.filter.people" = "Personer";
+"memories.filter.places" = "Platser";
+"memories.filter.feelings" = "Känslor";
+"memories.filter.events" = "Händelser";
+"memories.sort.newest" = "Nyast";
+"memories.sort.oldest" = "Äldst";
+"memories.sort.relevance" = "Mest relevant";
+"memories.detail.created" = "Skapad";
+"memories.detail.related" = "Relaterade inlägg";
+"memories.delete.confirm.title" = "Ta bort minne";
+"memories.delete.confirm.message" = "Är du säker på att du vill ta bort detta minne?";
+
+/* ===== INSIGHTS VIEW ===== */
+"insights.title" = "Dina insikter";
+"insights.mood.title" = "Humörspårning";
+"insights.mood.week" = "Den här veckan";
+"insights.mood.month" = "Den här månaden";
+"insights.mood.year" = "I år";
+"insights.writing.title" = "Skrivvanor";
+"insights.writing.streak" = "Nuvarande svit";
+"insights.writing.longest_streak" = "Längsta svit";
+"insights.writing.total_words" = "Totalt antal ord";
+"insights.writing.average_words" = "Genomsnitt ord per inlägg";
+"insights.topics.title" = "Toppämnen";
+"insights.topics.subtitle" = "Vad du skriver mest om";
+"insights.patterns.title" = "Dina mönster";
+"insights.patterns.morning_writer" = "Morgonförfattare";
+"insights.patterns.night_owl" = "Nattuggla";
+"insights.patterns.weekend_warrior" = "Helgkrigare";
+"insights.patterns.daily_journalist" = "Daglig journalist";
+
+/* ===== SETTINGS VIEW ===== */
+"settings.title" = "Inställningar";
+"settings.section.general" = "Allmänt";
+"settings.section.privacy" = "Integritet & Säkerhet";
+"settings.section.ai" = "AI-inställningar";
+"settings.section.about" = "Om";
+"settings.language" = "Språk";
+"settings.theme" = "Tema";
+"settings.theme.light" = "Ljust";
+"settings.theme.dark" = "Mörkt";
+"settings.theme.system" = "System";
+"settings.notifications" = "Aviseringar";
+"settings.notifications.daily_reminder" = "Daglig påminnelse";
+"settings.notifications.time" = "Påminnelsetid";
+"settings.export_data" = "Exportera data";
+"settings.delete_all_data" = "Ta bort all data";
+"settings.delete_all_data.confirm.title" = "Ta bort all data";
+"settings.delete_all_data.confirm.message" = "Är du säker på att du vill ta bort alla dagboksinlägg och minnen? Denna åtgärd kan inte ångras.";
+"settings.authentication" = "Autentisering";
+"settings.authentication.biometric" = "Använd biometri";
+"settings.authentication.change_password" = "Ändra lösenord";
+"settings.ai.model" = "AI-modell";
+"settings.ai.temperature" = "Kreativitet (Temperatur)";
+"settings.ai.memory" = "AI-minne";
+"settings.ai.memory.enabled" = "Aktivera minne";
+"settings.ai.memory.clear" = "Rensa minne";
+"settings.about.version" = "Version";
+"settings.about.website" = "Webbplats";
+"settings.about.privacy_policy" = "Integritetspolicy";
+"settings.about.acknowledgments" = "Erkännanden";
+
+/* ===== MOODS ===== */
+"mood.happy" = "Glad";
+"mood.sad" = "Ledsen";
+"mood.anxious" = "Orolig";
+"mood.calm" = "Lugn";
+"mood.excited" = "Upprymd";
+"mood.grateful" = "Tacksam";
+"mood.angry" = "Arg";
+"mood.confused" = "Förvirrad";
+"mood.hopeful" = "Hoppfull";
+"mood.tired" = "Trött";
+
+/* ===== ERRORS ===== */
+"error.generic" = "Något gick fel";
+"error.network" = "Anslutningsfel";
+"error.save_failed" = "Sparande misslyckades";
+"error.load_failed" = "Laddning misslyckades";
+"error.ai_unavailable" = "AI tillfälligt otillgänglig";
+"error.authentication_failed" = "Autentisering misslyckades";
+"error.biometric_not_available" = "Biometri inte tillgänglig";
+"error.storage_full" = "Otillräckligt lagringsutrymme";
+
+/* ===== EMPTY STATES ===== */
+"empty.search" = "Inga resultat hittades";
+"empty.favorites" = "Inga favoriter ännu";
+"empty.insights" = "Skriv fler inlägg för att se insikter";
+
+/* ===== DATES ===== */
+"date.today" = "Idag";
+"date.yesterday" = "Igår";
+"date.days_ago" = "%lld dagar sedan";
+"date.weeks_ago" = "%lld veckor sedan";
+"date.months_ago" = "%lld månader sedan";
+"date.years_ago" = "%lld år sedan";
+
+/* ===== MULTIMODAL ===== */
+"multimodal.processing" = "Bearbetar...";
+"multimodal.drop_image" = "Dra en bild hit";
+"multimodal.select_image" = "Välj bild";
+"multimodal.record_audio" = "Spela in ljud";
+"multimodal.recording" = "Spelar in...";
+"multimodal.stop_recording" = "Stoppa inspelning";
+"multimodal.play_audio" = "Spela ljud";
+"multimodal.pause_audio" = "Pausa ljud";
+"multimodal.delete_recording" = "Ta bort inspelning";
+
+/* ===== ACHIEVEMENTS ===== */
+"achievement.first_entry" = "Första inlägget";
+"achievement.week_streak" = "7-dagars svit";
+"achievement.month_streak" = "30-dagars svit";
+"achievement.hundred_entries" = "100 inlägg";
+"achievement.thousand_words" = "1000 ord";
+"achievement.night_writer" = "Nattförfattare";
+"achievement.morning_writer" = "Morgonförfattare";
+"achievement.photo_journalist" = "Fotojournalist";
+"achievement.audio_journalist" = "Ljudjournalist";
+"achievement.memory_keeper" = "Minnesbevarare";

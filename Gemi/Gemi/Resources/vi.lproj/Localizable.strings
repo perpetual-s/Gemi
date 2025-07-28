@@ -1,0 +1,266 @@
+/* 
+  Localizable.strings (Vietnamese)
+  Gemi - Nhật Ký AI Riêng Tư Của Bạn
+  
+  Copyright © 2025 Gemi. All rights reserved.
+*/
+
+/* ===== GENERAL ===== */
+"app.name" = "Gemi";
+"button.cancel" = "Hủy";
+"button.save" = "Lưu";
+"button.done" = "Xong";
+"button.continue" = "Tiếp tục";
+"button.next" = "Tiếp theo";
+"button.back" = "Quay lại";
+"button.close" = "Đóng";
+"button.delete" = "Xóa";
+"button.edit" = "Sửa";
+"button.ok" = "OK";
+"button.retry" = "Thử lại";
+"button.share" = "Chia sẻ";
+"button.export" = "Xuất";
+"button.import" = "Nhập";
+"button.settings" = "Cài đặt";
+
+/* ===== ONBOARDING ===== */
+"onboarding.welcome.title" = "Chào mừng đến với Gemi";
+"onboarding.welcome.subtitle" = "Nhật ký AI riêng tư của bạn";
+"onboarding.welcome.description" = "Mọi thứ đều ở trên thiết bị của bạn. Không có đám mây, không theo dõi, chỉ có bạn và suy nghĩ của bạn.";
+"onboarding.privacy.title" = "Quyền Riêng Tư Của Bạn Quan Trọng";
+"onboarding.privacy.description" = "Gemi chạy hoàn toàn trên Mac của bạn. Các mục nhật ký, ký ức và cuộc trò chuyện không bao giờ rời khỏi thiết bị của bạn.";
+"onboarding.authentication.title" = "Bảo Vệ Nhật Ký Của Bạn";
+"onboarding.authentication.faceid" = "Sử dụng Face ID";
+"onboarding.authentication.touchid" = "Sử dụng Touch ID";
+"onboarding.authentication.password" = "Sử dụng Mật khẩu";
+"onboarding.language.title" = "Chọn Ngôn Ngữ Của Bạn";
+"onboarding.language.subtitle" = "Bạn có thể thay đổi sau trong Cài đặt";
+"onboarding.setup.title" = "Đang Thiết Lập Gemi";
+"onboarding.setup.downloading" = "Đang tải mô hình AI...";
+"onboarding.setup.progress" = "Đã tải %@ trong %@";
+"onboarding.complete.title" = "Bạn Đã Sẵn Sàng!";
+"onboarding.complete.subtitle" = "Bắt đầu hành trình viết nhật ký của bạn";
+"onboarding.complete.button" = "Mở Gemi";
+
+/* ===== NAVIGATION ===== */
+"nav.home" = "Trang chủ";
+"nav.timeline" = "Dòng thời gian";
+"nav.memories" = "Ký ức";
+"nav.chat" = "Trò chuyện với Gemi";
+"nav.insights" = "Thông tin chi tiết";
+"nav.favorites" = "Yêu thích";
+"nav.search" = "Tìm kiếm";
+"writing.tools" = "Công cụ viết";
+"nav.settings" = "Cài đặt";
+"nav.new_entry" = "Mục mới";
+
+/* ===== HOME VIEW ===== */
+"home.greeting.morning" = "Chào buổi sáng";
+"home.greeting.afternoon" = "Chào buổi chiều";
+"home.greeting.evening" = "Chào buổi tối";
+"home.greeting.night" = "Chúc ngủ ngon";
+"home.prompt.whats_on_mind" = "Bạn đang nghĩ gì?";
+"home.button.new_entry" = "Tạo Mục Mới";
+"home.button.continue_writing" = "Tiếp Tục Viết";
+"home.stats.entries" = "%lld mục";
+"home.stats.words" = "%lld từ";
+"home.stats.memories" = "%lld ký ức";
+"home.quote.daily" = "Cảm hứng hàng ngày";
+
+/* ===== TIMELINE VIEW ===== */
+"timeline.title" = "Dòng Thời Gian Nhật Ký";
+"timeline.empty.title" = "Chưa có mục nhật ký nào";
+"timeline.empty.subtitle" = "Bắt đầu ghi lại hành trình của bạn.\nDòng thời gian của bạn sẽ xuất hiện ở đây.";
+"timeline.empty.button" = "Tạo Mục Đầu Tiên";
+"timeline.section.today" = "Hôm nay";
+"timeline.section.yesterday" = "Hôm qua";
+"timeline.section.this_week" = "Tuần này";
+"timeline.section.this_month" = "Tháng này";
+"timeline.section.earlier" = "Trước đó";
+"timeline.entry.words" = "%lld từ";
+"timeline.entry.reading_time" = "Đọc %lld phút";
+"timeline.filter.all" = "Tất cả mục";
+"timeline.filter.favorites" = "Yêu thích";
+"timeline.filter.with_photos" = "Có ảnh";
+"timeline.filter.with_audio" = "Có âm thanh";
+"timeline.sort.newest" = "Mới nhất";
+"timeline.sort.oldest" = "Cũ nhất";
+
+/* ===== JOURNAL ENTRY ===== */
+"entry.placeholder.title" = "Đặt tiêu đề cho mục của bạn...";
+"entry.placeholder.content" = "Bắt đầu viết...";
+"entry.placeholder.whats_happening" = "Hôm nay có gì xảy ra?";
+"entry.placeholder.grateful" = "Bạn biết ơn điều gì?";
+"entry.placeholder.reflection" = "Dành chút thời gian để suy ngẫm...";
+"entry.status.saving" = "Đang lưu...";
+"entry.status.saved" = "Đã lưu";
+"entry.button.focus_mode" = "Chế độ tập trung";
+"entry.button.add_photo" = "Thêm ảnh";
+"entry.button.record_audio" = "Ghi âm";
+"entry.button.ai_assist" = "Hỗ trợ AI";
+"entry.button.mood" = "Tâm trạng";
+"entry.button.tag" = "Thẻ";
+"entry.button.location" = "Vị trí";
+"entry.delete.confirm.title" = "Xóa mục";
+"entry.delete.confirm.message" = "Bạn có chắc muốn xóa mục nhật ký này? Hành động này không thể hoàn tác.";
+"entry.attachments.photos" = "%lld ảnh";
+"entry.attachments.audio" = "%lld bản ghi âm";
+"entry.attachment.delete" = "Xóa tệp đính kèm";
+"entry.attachment.view" = "Xem";
+"entry.attachment.play" = "Phát";
+
+/* ===== WRITING TOOLS ===== */
+"writing.tools.title" = "Công cụ viết";
+"writing.tools.continue" = "Tiếp tục viết";
+"writing.tools.ideas" = "Cho tôi ý tưởng";
+"writing.tools.improve" = "Cải thiện bài viết";
+"writing.tools.focus" = "Giúp tôi tập trung";
+"writing.tools.expand" = "Mở rộng";
+"writing.tools.simplify" = "Đơn giản hóa";
+"writing.tools.fix_grammar" = "Sửa ngữ pháp";
+"writing.tools.change_tone" = "Thay đổi giọng điệu";
+"writing.tools.processing" = "Đang xử lý...";
+"writing.tools.error" = "Đã xảy ra lỗi. Vui lòng thử lại.";
+
+/* ===== CHAT VIEW ===== */
+"chat.title" = "Trò chuyện với Gemi";
+"chat.placeholder" = "Hỏi tôi bất cứ điều gì...";
+"chat.welcome.title" = "Xin chào! Tôi là Gemi, người bạn đồng hành nhật ký riêng tư của bạn.";
+"chat.welcome.subtitle" = "Tôi có thể giúp bạn suy ngẫm về suy nghĩ, nhớ lại những khoảnh khắc đã qua, hoặc chỉ đơn giản là lắng nghe.";
+"chat.welcome.privacy" = "Cuộc trò chuyện của chúng ta vẫn riêng tư trên thiết bị của bạn.";
+"chat.suggestions.reflect" = "Giúp tôi suy ngẫm về ngày hôm nay";
+"chat.suggestions.memory" = "Bạn nhớ gì về tôi?";
+"chat.suggestions.gratitude" = "Hướng dẫn thực hành lòng biết ơn";
+"chat.suggestions.creative" = "Giúp tôi viết sáng tạo";
+"chat.error.title" = "Ôi!";
+"chat.error.message" = "Không thể xử lý. Vui lòng thử lại.";
+"chat.typing" = "Gemi đang gõ...";
+"chat.stop" = "Dừng";
+"chat.regenerate" = "Tạo lại";
+"chat.copy" = "Sao chép";
+
+/* ===== MEMORIES VIEW ===== */
+"memories.title" = "Ký ức của bạn";
+"memories.empty.title" = "Chưa có ký ức";
+"memories.empty.subtitle" = "Khi bạn viết trong nhật ký, Gemi sẽ ghi nhớ những khoảnh khắc và thông tin chi tiết quan trọng ở đây.";
+"memories.search.placeholder" = "Tìm kiếm ký ức...";
+"memories.filter.all" = "Tất cả ký ức";
+"memories.filter.people" = "Con người";
+"memories.filter.places" = "Địa điểm";
+"memories.filter.feelings" = "Cảm xúc";
+"memories.filter.events" = "Sự kiện";
+"memories.sort.newest" = "Mới nhất";
+"memories.sort.oldest" = "Cũ nhất";
+"memories.sort.relevance" = "Liên quan nhất";
+"memories.detail.created" = "Đã tạo";
+"memories.detail.related" = "Mục liên quan";
+"memories.delete.confirm.title" = "Xóa ký ức";
+"memories.delete.confirm.message" = "Bạn có chắc muốn xóa ký ức này?";
+
+/* ===== INSIGHTS VIEW ===== */
+"insights.title" = "Thông tin chi tiết của bạn";
+"insights.mood.title" = "Theo dõi tâm trạng";
+"insights.mood.week" = "Tuần này";
+"insights.mood.month" = "Tháng này";
+"insights.mood.year" = "Năm nay";
+"insights.writing.title" = "Thói quen viết";
+"insights.writing.streak" = "Chuỗi hiện tại";
+"insights.writing.longest_streak" = "Chuỗi dài nhất";
+"insights.writing.total_words" = "Tổng số từ";
+"insights.writing.average_words" = "Trung bình từ mỗi mục";
+"insights.topics.title" = "Chủ đề hàng đầu";
+"insights.topics.subtitle" = "Những gì bạn viết nhiều nhất";
+"insights.patterns.title" = "Mô hình của bạn";
+"insights.patterns.morning_writer" = "Người viết buổi sáng";
+"insights.patterns.night_owl" = "Cú đêm";
+"insights.patterns.weekend_warrior" = "Chiến binh cuối tuần";
+"insights.patterns.daily_journalist" = "Nhà báo hàng ngày";
+
+/* ===== SETTINGS VIEW ===== */
+"settings.title" = "Cài đặt";
+"settings.section.general" = "Chung";
+"settings.section.privacy" = "Quyền riêng tư & Bảo mật";
+"settings.section.ai" = "Cài đặt AI";
+"settings.section.about" = "Giới thiệu";
+"settings.language" = "Ngôn ngữ";
+"settings.theme" = "Giao diện";
+"settings.theme.light" = "Sáng";
+"settings.theme.dark" = "Tối";
+"settings.theme.system" = "Hệ thống";
+"settings.notifications" = "Thông báo";
+"settings.notifications.daily_reminder" = "Nhắc nhở hàng ngày";
+"settings.notifications.time" = "Thời gian nhắc nhở";
+"settings.export_data" = "Xuất dữ liệu";
+"settings.delete_all_data" = "Xóa tất cả dữ liệu";
+"settings.delete_all_data.confirm.title" = "Xóa tất cả dữ liệu";
+"settings.delete_all_data.confirm.message" = "Bạn có chắc muốn xóa tất cả mục nhật ký và ký ức? Hành động này không thể hoàn tác.";
+"settings.authentication" = "Xác thực";
+"settings.authentication.biometric" = "Sử dụng sinh trắc học";
+"settings.authentication.change_password" = "Đổi mật khẩu";
+"settings.ai.model" = "Mô hình AI";
+"settings.ai.temperature" = "Sáng tạo (Nhiệt độ)";
+"settings.ai.memory" = "Bộ nhớ AI";
+"settings.ai.memory.enabled" = "Bật bộ nhớ";
+"settings.ai.memory.clear" = "Xóa bộ nhớ";
+"settings.about.version" = "Phiên bản";
+"settings.about.website" = "Trang web";
+"settings.about.privacy_policy" = "Chính sách quyền riêng tư";
+"settings.about.acknowledgments" = "Lời cảm ơn";
+
+/* ===== MOODS ===== */
+"mood.happy" = "Vui vẻ";
+"mood.sad" = "Buồn";
+"mood.anxious" = "Lo lắng";
+"mood.calm" = "Bình tĩnh";
+"mood.excited" = "Phấn khích";
+"mood.grateful" = "Biết ơn";
+"mood.angry" = "Tức giận";
+"mood.confused" = "Bối rối";
+"mood.hopeful" = "Hy vọng";
+"mood.tired" = "Mệt mỏi";
+
+/* ===== ERRORS ===== */
+"error.generic" = "Đã xảy ra lỗi";
+"error.network" = "Lỗi kết nối";
+"error.save_failed" = "Lưu thất bại";
+"error.load_failed" = "Tải thất bại";
+"error.ai_unavailable" = "AI tạm thời không khả dụng";
+"error.authentication_failed" = "Xác thực thất bại";
+"error.biometric_not_available" = "Sinh trắc học không khả dụng";
+"error.storage_full" = "Không đủ dung lượng lưu trữ";
+
+/* ===== EMPTY STATES ===== */
+"empty.search" = "Không tìm thấy kết quả";
+"empty.favorites" = "Chưa có mục yêu thích";
+"empty.insights" = "Viết thêm mục để xem thông tin chi tiết";
+
+/* ===== DATES ===== */
+"date.today" = "Hôm nay";
+"date.yesterday" = "Hôm qua";
+"date.days_ago" = "%lld ngày trước";
+"date.weeks_ago" = "%lld tuần trước";
+"date.months_ago" = "%lld tháng trước";
+"date.years_ago" = "%lld năm trước";
+
+/* ===== MULTIMODAL ===== */
+"multimodal.processing" = "Đang xử lý...";
+"multimodal.drop_image" = "Kéo thả hình ảnh vào đây";
+"multimodal.select_image" = "Chọn hình ảnh";
+"multimodal.record_audio" = "Ghi âm";
+"multimodal.recording" = "Đang ghi âm...";
+"multimodal.stop_recording" = "Dừng ghi âm";
+"multimodal.play_audio" = "Phát âm thanh";
+"multimodal.pause_audio" = "Tạm dừng âm thanh";
+"multimodal.delete_recording" = "Xóa bản ghi âm";
+
+/* ===== ACHIEVEMENTS ===== */
+"achievement.first_entry" = "Mục đầu tiên";
+"achievement.week_streak" = "Chuỗi 7 ngày";
+"achievement.month_streak" = "Chuỗi 30 ngày";
+"achievement.hundred_entries" = "100 mục";
+"achievement.thousand_words" = "1000 từ";
+"achievement.night_writer" = "Người viết đêm";
+"achievement.morning_writer" = "Người viết sáng";
+"achievement.photo_journalist" = "Nhà báo ảnh";
+"achievement.audio_journalist" = "Nhà báo âm thanh";
+"achievement.memory_keeper" = "Người giữ ký ức";

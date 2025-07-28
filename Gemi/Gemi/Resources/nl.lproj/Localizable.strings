@@ -1,0 +1,266 @@
+/* 
+  Localizable.strings (Dutch)
+  Gemi - Uw Privé AI-dagboek
+  
+  Copyright © 2025 Gemi. All rights reserved.
+*/
+
+/* ===== GENERAL ===== */
+"app.name" = "Gemi";
+"button.cancel" = "Annuleren";
+"button.save" = "Opslaan";
+"button.done" = "Klaar";
+"button.continue" = "Doorgaan";
+"button.next" = "Volgende";
+"button.back" = "Terug";
+"button.close" = "Sluiten";
+"button.delete" = "Verwijderen";
+"button.edit" = "Bewerken";
+"button.ok" = "OK";
+"button.retry" = "Opnieuw";
+"button.share" = "Delen";
+"button.export" = "Exporteren";
+"button.import" = "Importeren";
+"button.settings" = "Instellingen";
+
+/* ===== ONBOARDING ===== */
+"onboarding.welcome.title" = "Welkom bij Gemi";
+"onboarding.welcome.subtitle" = "Uw privé AI-dagboek";
+"onboarding.welcome.description" = "Alles blijft op uw apparaat. Geen cloud, geen tracking, alleen u en uw gedachten.";
+"onboarding.privacy.title" = "Uw Privacy Telt";
+"onboarding.privacy.description" = "Gemi draait volledig op uw Mac. Uw dagboeknotities, herinneringen en gesprekken verlaten nooit uw apparaat.";
+"onboarding.authentication.title" = "Beveilig Uw Dagboek";
+"onboarding.authentication.faceid" = "Gebruik Face ID";
+"onboarding.authentication.touchid" = "Gebruik Touch ID";
+"onboarding.authentication.password" = "Gebruik Wachtwoord";
+"onboarding.language.title" = "Kies Uw Taal";
+"onboarding.language.subtitle" = "U kunt dit later wijzigen in Instellingen";
+"onboarding.setup.title" = "Gemi Instellen";
+"onboarding.setup.downloading" = "AI-model downloaden...";
+"onboarding.setup.progress" = "%@ van %@ gedownload";
+"onboarding.complete.title" = "Alles is Klaar!";
+"onboarding.complete.subtitle" = "Begin uw dagboek reis";
+"onboarding.complete.button" = "Open Gemi";
+
+/* ===== NAVIGATION ===== */
+"nav.home" = "Home";
+"nav.timeline" = "Tijdlijn";
+"nav.memories" = "Herinneringen";
+"nav.chat" = "Chat met Gemi";
+"nav.insights" = "Inzichten";
+"nav.favorites" = "Favorieten";
+"nav.search" = "Zoeken";
+"writing.tools" = "Schrijfhulpmiddelen";
+"nav.settings" = "Instellingen";
+"nav.new_entry" = "Nieuwe Notitie";
+
+/* ===== HOME VIEW ===== */
+"home.greeting.morning" = "Goedemorgen";
+"home.greeting.afternoon" = "Goedemiddag";
+"home.greeting.evening" = "Goedenavond";
+"home.greeting.night" = "Goedenacht";
+"home.prompt.whats_on_mind" = "Waar denkt u aan?";
+"home.button.new_entry" = "Nieuwe Notitie Maken";
+"home.button.continue_writing" = "Verder Schrijven";
+"home.stats.entries" = "%lld notities";
+"home.stats.words" = "%lld woorden";
+"home.stats.memories" = "%lld herinneringen";
+"home.quote.daily" = "Dagelijkse Inspiratie";
+
+/* ===== TIMELINE VIEW ===== */
+"timeline.title" = "Dagboek Tijdlijn";
+"timeline.empty.title" = "Nog geen dagboeknotities";
+"timeline.empty.subtitle" = "Begin met het documenteren van uw reis.\nUw tijdlijn verschijnt hier.";
+"timeline.empty.button" = "Maak Uw Eerste Notitie";
+"timeline.section.today" = "Vandaag";
+"timeline.section.yesterday" = "Gisteren";
+"timeline.section.this_week" = "Deze Week";
+"timeline.section.this_month" = "Deze Maand";
+"timeline.section.earlier" = "Eerder";
+"timeline.entry.words" = "%lld woorden";
+"timeline.entry.reading_time" = "%lld min lezen";
+"timeline.filter.all" = "Alle Notities";
+"timeline.filter.favorites" = "Favorieten";
+"timeline.filter.with_photos" = "Met Foto's";
+"timeline.filter.with_audio" = "Met Audio";
+"timeline.sort.newest" = "Nieuwste Eerst";
+"timeline.sort.oldest" = "Oudste Eerst";
+
+/* ===== JOURNAL ENTRY ===== */
+"entry.placeholder.title" = "Geef uw notitie een titel...";
+"entry.placeholder.content" = "Begin met schrijven...";
+"entry.placeholder.whats_happening" = "Wat gebeurt er vandaag?";
+"entry.placeholder.grateful" = "Waar bent u dankbaar voor?";
+"entry.placeholder.reflection" = "Neem even tijd om te reflecteren...";
+"entry.status.saving" = "Opslaan...";
+"entry.status.saved" = "Opgeslagen";
+"entry.button.focus_mode" = "Focus Modus";
+"entry.button.add_photo" = "Foto Toevoegen";
+"entry.button.record_audio" = "Audio Opnemen";
+"entry.button.ai_assist" = "AI Hulp";
+"entry.button.mood" = "Stemming";
+"entry.button.tag" = "Tag";
+"entry.button.location" = "Locatie";
+"entry.delete.confirm.title" = "Notitie Verwijderen";
+"entry.delete.confirm.message" = "Weet u zeker dat u deze dagboeknotitie wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.";
+"entry.attachments.photos" = "%lld foto's";
+"entry.attachments.audio" = "%lld audio-opnames";
+"entry.attachment.delete" = "Bijlage Verwijderen";
+"entry.attachment.view" = "Bekijken";
+"entry.attachment.play" = "Afspelen";
+
+/* ===== WRITING TOOLS ===== */
+"writing.tools.title" = "Schrijfhulpmiddelen";
+"writing.tools.continue" = "Verder schrijven";
+"writing.tools.ideas" = "Geef me ideeën";
+"writing.tools.improve" = "Verbeter schrijven";
+"writing.tools.focus" = "Help me focus";
+"writing.tools.expand" = "Uitbreiden";
+"writing.tools.simplify" = "Vereenvoudigen";
+"writing.tools.fix_grammar" = "Grammatica corrigeren";
+"writing.tools.change_tone" = "Toon wijzigen";
+"writing.tools.processing" = "Verwerken...";
+"writing.tools.error" = "Er is een fout opgetreden. Probeer opnieuw.";
+
+/* ===== CHAT VIEW ===== */
+"chat.title" = "Chat met Gemi";
+"chat.placeholder" = "Vraag me iets...";
+"chat.welcome.title" = "Hallo! Ik ben Gemi, uw privé dagboek metgezel.";
+"chat.welcome.subtitle" = "Ik kan u helpen reflecteren op uw gedachten, herinneringen ophalen of gewoon luisteren.";
+"chat.welcome.privacy" = "Onze gesprekken blijven privé op uw apparaat.";
+"chat.suggestions.reflect" = "Help me reflecteren op mijn dag";
+"chat.suggestions.memory" = "Wat herinner je je van mij?";
+"chat.suggestions.gratitude" = "Begeleid een dankbaarheidsoefening";
+"chat.suggestions.creative" = "Help me creatief schrijven";
+"chat.error.title" = "Oeps!";
+"chat.error.message" = "Kon niet verwerken. Probeer opnieuw.";
+"chat.typing" = "Gemi is aan het typen...";
+"chat.stop" = "Stop";
+"chat.regenerate" = "Opnieuw genereren";
+"chat.copy" = "Kopiëren";
+
+/* ===== MEMORIES VIEW ===== */
+"memories.title" = "Uw Herinneringen";
+"memories.empty.title" = "Nog geen herinneringen";
+"memories.empty.subtitle" = "Terwijl u in uw dagboek schrijft, zal Gemi belangrijke momenten en inzichten hier onthouden.";
+"memories.search.placeholder" = "Zoek herinneringen...";
+"memories.filter.all" = "Alle Herinneringen";
+"memories.filter.people" = "Mensen";
+"memories.filter.places" = "Plaatsen";
+"memories.filter.feelings" = "Gevoelens";
+"memories.filter.events" = "Gebeurtenissen";
+"memories.sort.newest" = "Nieuwste";
+"memories.sort.oldest" = "Oudste";
+"memories.sort.relevance" = "Meest Relevant";
+"memories.detail.created" = "Gemaakt";
+"memories.detail.related" = "Gerelateerde Notities";
+"memories.delete.confirm.title" = "Herinnering Verwijderen";
+"memories.delete.confirm.message" = "Weet u zeker dat u deze herinnering wilt verwijderen?";
+
+/* ===== INSIGHTS VIEW ===== */
+"insights.title" = "Uw Inzichten";
+"insights.mood.title" = "Stemmings Tracking";
+"insights.mood.week" = "Deze Week";
+"insights.mood.month" = "Deze Maand";
+"insights.mood.year" = "Dit Jaar";
+"insights.writing.title" = "Schrijfgewoontes";
+"insights.writing.streak" = "Huidige Reeks";
+"insights.writing.longest_streak" = "Langste Reeks";
+"insights.writing.total_words" = "Totaal Woorden";
+"insights.writing.average_words" = "Gemiddeld Woorden per Notitie";
+"insights.topics.title" = "Top Onderwerpen";
+"insights.topics.subtitle" = "Waar schrijft u het meest over";
+"insights.patterns.title" = "Uw Patronen";
+"insights.patterns.morning_writer" = "Ochtend Schrijver";
+"insights.patterns.night_owl" = "Nachtuil";
+"insights.patterns.weekend_warrior" = "Weekend Krijger";
+"insights.patterns.daily_journalist" = "Dagelijkse Journalist";
+
+/* ===== SETTINGS VIEW ===== */
+"settings.title" = "Instellingen";
+"settings.section.general" = "Algemeen";
+"settings.section.privacy" = "Privacy & Beveiliging";
+"settings.section.ai" = "AI Instellingen";
+"settings.section.about" = "Over";
+"settings.language" = "Taal";
+"settings.theme" = "Thema";
+"settings.theme.light" = "Licht";
+"settings.theme.dark" = "Donker";
+"settings.theme.system" = "Systeem";
+"settings.notifications" = "Meldingen";
+"settings.notifications.daily_reminder" = "Dagelijkse Herinnering";
+"settings.notifications.time" = "Herinneringstijd";
+"settings.export_data" = "Gegevens Exporteren";
+"settings.delete_all_data" = "Alle Gegevens Verwijderen";
+"settings.delete_all_data.confirm.title" = "Alle Gegevens Verwijderen";
+"settings.delete_all_data.confirm.message" = "Weet u zeker dat u alle dagboeknotities en herinneringen wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.";
+"settings.authentication" = "Authenticatie";
+"settings.authentication.biometric" = "Gebruik Biometrie";
+"settings.authentication.change_password" = "Wachtwoord Wijzigen";
+"settings.ai.model" = "AI Model";
+"settings.ai.temperature" = "Creativiteit (Temperatuur)";
+"settings.ai.memory" = "AI Geheugen";
+"settings.ai.memory.enabled" = "Geheugen Inschakelen";
+"settings.ai.memory.clear" = "Geheugen Wissen";
+"settings.about.version" = "Versie";
+"settings.about.website" = "Website";
+"settings.about.privacy_policy" = "Privacybeleid";
+"settings.about.acknowledgments" = "Erkenningen";
+
+/* ===== MOODS ===== */
+"mood.happy" = "Blij";
+"mood.sad" = "Verdrietig";
+"mood.anxious" = "Angstig";
+"mood.calm" = "Kalm";
+"mood.excited" = "Opgewonden";
+"mood.grateful" = "Dankbaar";
+"mood.angry" = "Boos";
+"mood.confused" = "Verward";
+"mood.hopeful" = "Hoopvol";
+"mood.tired" = "Moe";
+
+/* ===== ERRORS ===== */
+"error.generic" = "Er ging iets fout";
+"error.network" = "Verbindingsfout";
+"error.save_failed" = "Opslaan mislukt";
+"error.load_failed" = "Laden mislukt";
+"error.ai_unavailable" = "AI tijdelijk niet beschikbaar";
+"error.authentication_failed" = "Authenticatie mislukt";
+"error.biometric_not_available" = "Biometrie niet beschikbaar";
+"error.storage_full" = "Onvoldoende opslagruimte";
+
+/* ===== EMPTY STATES ===== */
+"empty.search" = "Geen resultaten gevonden";
+"empty.favorites" = "Nog geen favorieten";
+"empty.insights" = "Schrijf meer notities om inzichten te zien";
+
+/* ===== DATES ===== */
+"date.today" = "Vandaag";
+"date.yesterday" = "Gisteren";
+"date.days_ago" = "%lld dagen geleden";
+"date.weeks_ago" = "%lld weken geleden";
+"date.months_ago" = "%lld maanden geleden";
+"date.years_ago" = "%lld jaar geleden";
+
+/* ===== MULTIMODAL ===== */
+"multimodal.processing" = "Verwerken...";
+"multimodal.drop_image" = "Sleep hier een afbeelding";
+"multimodal.select_image" = "Selecteer afbeelding";
+"multimodal.record_audio" = "Audio opnemen";
+"multimodal.recording" = "Opnemen...";
+"multimodal.stop_recording" = "Stop opname";
+"multimodal.play_audio" = "Audio afspelen";
+"multimodal.pause_audio" = "Audio pauzeren";
+"multimodal.delete_recording" = "Opname verwijderen";
+
+/* ===== ACHIEVEMENTS ===== */
+"achievement.first_entry" = "Eerste Notitie";
+"achievement.week_streak" = "7-Dagen Reeks";
+"achievement.month_streak" = "30-Dagen Reeks";
+"achievement.hundred_entries" = "100 Notities";
+"achievement.thousand_words" = "1000 Woorden";
+"achievement.night_writer" = "Nacht Schrijver";
+"achievement.morning_writer" = "Ochtend Schrijver";
+"achievement.photo_journalist" = "Foto Journalist";
+"achievement.audio_journalist" = "Audio Journalist";
+"achievement.memory_keeper" = "Herinneringen Bewaarder";

@@ -27,7 +27,14 @@ final class LocalizationManager: ObservableObject {
         ("pt", "Portuguese", "Português"),
         ("hi", "Hindi", "हिन्दी"),
         ("id", "Indonesian", "Bahasa Indonesia"),
-        ("ru", "Russian", "Русский")
+        ("ru", "Russian", "Русский"),
+        ("it", "Italian", "Italiano"),
+        ("tr", "Turkish", "Türkçe"),
+        ("nl", "Dutch", "Nederlands"),
+        ("pl", "Polish", "Polski"),
+        ("th", "Thai", "ไทย"),
+        ("vi", "Vietnamese", "Tiếng Việt"),
+        ("sv", "Swedish", "Svenska")
     ]
     
     private init() {
@@ -152,6 +159,15 @@ extension Font {
             return .system(size: size, weight: weight, design: .rounded)
         case "ru":
             // Russian-optimized font (Cyrillic script)
+            return .system(size: size, weight: weight, design: .rounded)
+        case "th":
+            // Thai-optimized font
+            return .system(size: size, weight: weight, design: .rounded)
+        case "vi":
+            // Vietnamese-optimized font (with tone marks)
+            return .system(size: size, weight: weight, design: .rounded)
+        case "pl":
+            // Polish-optimized font (Latin with diacritics)
             return .system(size: size, weight: weight, design: .rounded)
         default:
             return .system(size: size, weight: weight, design: design)

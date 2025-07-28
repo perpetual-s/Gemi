@@ -1,0 +1,266 @@
+/* 
+  Localizable.strings (Thai)
+  Gemi - ไดอารี AI ส่วนตัวของคุณ
+  
+  Copyright © 2025 Gemi. All rights reserved.
+*/
+
+/* ===== GENERAL ===== */
+"app.name" = "Gemi";
+"button.cancel" = "ยกเลิก";
+"button.save" = "บันทึก";
+"button.done" = "เสร็จสิ้น";
+"button.continue" = "ดำเนินการต่อ";
+"button.next" = "ถัดไป";
+"button.back" = "กลับ";
+"button.close" = "ปิด";
+"button.delete" = "ลบ";
+"button.edit" = "แก้ไข";
+"button.ok" = "ตกลง";
+"button.retry" = "ลองใหม่";
+"button.share" = "แชร์";
+"button.export" = "ส่งออก";
+"button.import" = "นำเข้า";
+"button.settings" = "การตั้งค่า";
+
+/* ===== ONBOARDING ===== */
+"onboarding.welcome.title" = "ยินดีต้อนรับสู่ Gemi";
+"onboarding.welcome.subtitle" = "ไดอารี AI ส่วนตัวของคุณ";
+"onboarding.welcome.description" = "ทุกอย่างอยู่บนอุปกรณ์ของคุณ ไม่มีคลาวด์ ไม่มีการติดตาม มีแค่คุณและความคิดของคุณ";
+"onboarding.privacy.title" = "ความเป็นส่วนตัวของคุณสำคัญ";
+"onboarding.privacy.description" = "Gemi ทำงานทั้งหมดบน Mac ของคุณ บันทึกไดอารี ความทรงจำ และบทสนทนาไม่เคยออกจากอุปกรณ์ของคุณ";
+"onboarding.authentication.title" = "รักษาความปลอดภัยไดอารีของคุณ";
+"onboarding.authentication.faceid" = "ใช้ Face ID";
+"onboarding.authentication.touchid" = "ใช้ Touch ID";
+"onboarding.authentication.password" = "ใช้รหัสผ่าน";
+"onboarding.language.title" = "เลือกภาษาของคุณ";
+"onboarding.language.subtitle" = "คุณสามารถเปลี่ยนได้ภายหลังในการตั้งค่า";
+"onboarding.setup.title" = "กำลังตั้งค่า Gemi";
+"onboarding.setup.downloading" = "กำลังดาวน์โหลดโมเดล AI...";
+"onboarding.setup.progress" = "ดาวน์โหลด %@ จาก %@";
+"onboarding.complete.title" = "พร้อมแล้ว!";
+"onboarding.complete.subtitle" = "เริ่มการเดินทางในไดอารีของคุณ";
+"onboarding.complete.button" = "เปิด Gemi";
+
+/* ===== NAVIGATION ===== */
+"nav.home" = "หน้าแรก";
+"nav.timeline" = "ไทม์ไลน์";
+"nav.memories" = "ความทรงจำ";
+"nav.chat" = "แชทกับ Gemi";
+"nav.insights" = "ข้อมูลเชิงลึก";
+"nav.favorites" = "รายการโปรด";
+"nav.search" = "ค้นหา";
+"writing.tools" = "เครื่องมือการเขียน";
+"nav.settings" = "การตั้งค่า";
+"nav.new_entry" = "รายการใหม่";
+
+/* ===== HOME VIEW ===== */
+"home.greeting.morning" = "สวัสดีตอนเช้า";
+"home.greeting.afternoon" = "สวัสดีตอนบ่าย";
+"home.greeting.evening" = "สวัสดีตอนเย็น";
+"home.greeting.night" = "ราตรีสวัสดิ์";
+"home.prompt.whats_on_mind" = "คุณกำลังคิดอะไรอยู่?";
+"home.button.new_entry" = "สร้างรายการใหม่";
+"home.button.continue_writing" = "เขียนต่อ";
+"home.stats.entries" = "%lld รายการ";
+"home.stats.words" = "%lld คำ";
+"home.stats.memories" = "%lld ความทรงจำ";
+"home.quote.daily" = "แรงบันดาลใจประจำวัน";
+
+/* ===== TIMELINE VIEW ===== */
+"timeline.title" = "ไทม์ไลน์ไดอารี";
+"timeline.empty.title" = "ยังไม่มีบันทึกไดอารี";
+"timeline.empty.subtitle" = "เริ่มบันทึกการเดินทางของคุณ\nไทม์ไลน์ของคุณจะปรากฏที่นี่";
+"timeline.empty.button" = "สร้างรายการแรกของคุณ";
+"timeline.section.today" = "วันนี้";
+"timeline.section.yesterday" = "เมื่อวาน";
+"timeline.section.this_week" = "สัปดาห์นี้";
+"timeline.section.this_month" = "เดือนนี้";
+"timeline.section.earlier" = "ก่อนหน้านี้";
+"timeline.entry.words" = "%lld คำ";
+"timeline.entry.reading_time" = "อ่าน %lld นาที";
+"timeline.filter.all" = "ทุกรายการ";
+"timeline.filter.favorites" = "รายการโปรด";
+"timeline.filter.with_photos" = "มีรูปภาพ";
+"timeline.filter.with_audio" = "มีเสียง";
+"timeline.sort.newest" = "ใหม่สุด";
+"timeline.sort.oldest" = "เก่าสุด";
+
+/* ===== JOURNAL ENTRY ===== */
+"entry.placeholder.title" = "ตั้งชื่อรายการของคุณ...";
+"entry.placeholder.content" = "เริ่มเขียน...";
+"entry.placeholder.whats_happening" = "วันนี้เกิดอะไรขึ้น?";
+"entry.placeholder.grateful" = "คุณรู้สึกขอบคุณอะไร?";
+"entry.placeholder.reflection" = "ใช้เวลาสักครู่เพื่อไตร่ตรอง...";
+"entry.status.saving" = "กำลังบันทึก...";
+"entry.status.saved" = "บันทึกแล้ว";
+"entry.button.focus_mode" = "โหมดโฟกัส";
+"entry.button.add_photo" = "เพิ่มรูปภาพ";
+"entry.button.record_audio" = "บันทึกเสียง";
+"entry.button.ai_assist" = "ความช่วยเหลือ AI";
+"entry.button.mood" = "อารมณ์";
+"entry.button.tag" = "แท็ก";
+"entry.button.location" = "สถานที่";
+"entry.delete.confirm.title" = "ลบรายการ";
+"entry.delete.confirm.message" = "คุณแน่ใจหรือไม่ว่าต้องการลบบันทึกไดอารีนี้? ไม่สามารถยกเลิกการกระทำนี้ได้";
+"entry.attachments.photos" = "%lld รูปภาพ";
+"entry.attachments.audio" = "%lld บันทึกเสียง";
+"entry.attachment.delete" = "ลบไฟล์แนบ";
+"entry.attachment.view" = "ดู";
+"entry.attachment.play" = "เล่น";
+
+/* ===== WRITING TOOLS ===== */
+"writing.tools.title" = "เครื่องมือการเขียน";
+"writing.tools.continue" = "เขียนต่อ";
+"writing.tools.ideas" = "ให้ไอเดีย";
+"writing.tools.improve" = "ปรับปรุงการเขียน";
+"writing.tools.focus" = "ช่วยฉันโฟกัส";
+"writing.tools.expand" = "ขยายความ";
+"writing.tools.simplify" = "ทำให้ง่ายขึ้น";
+"writing.tools.fix_grammar" = "แก้ไขไวยากรณ์";
+"writing.tools.change_tone" = "เปลี่ยนน้ำเสียง";
+"writing.tools.processing" = "กำลังประมวลผล...";
+"writing.tools.error" = "เกิดข้อผิดพลาด กรุณาลองใหม่";
+
+/* ===== CHAT VIEW ===== */
+"chat.title" = "แชทกับ Gemi";
+"chat.placeholder" = "ถามฉันอะไรก็ได้...";
+"chat.welcome.title" = "สวัสดี! ฉันคือ Gemi เพื่อนคู่ใจไดอารีส่วนตัวของคุณ";
+"chat.welcome.subtitle" = "ฉันสามารถช่วยคุณไตร่ตรองถึงความคิด ระลึกถึงช่วงเวลาที่ผ่านมา หรือเพียงแค่รับฟัง";
+"chat.welcome.privacy" = "บทสนทนาของเราจะเป็นความลับบนอุปกรณ์ของคุณ";
+"chat.suggestions.reflect" = "ช่วยฉันไตร่ตรองถึงวันนี้";
+"chat.suggestions.memory" = "คุณจำอะไรเกี่ยวกับฉันได้บ้าง?";
+"chat.suggestions.gratitude" = "นำทางการฝึกความกตัญญู";
+"chat.suggestions.creative" = "ช่วยฉันเขียนอย่างสร้างสรรค์";
+"chat.error.title" = "อุ๊ปส์!";
+"chat.error.message" = "ไม่สามารถประมวลผลได้ กรุณาลองใหม่";
+"chat.typing" = "Gemi กำลังพิมพ์...";
+"chat.stop" = "หยุด";
+"chat.regenerate" = "สร้างใหม่";
+"chat.copy" = "คัดลอก";
+
+/* ===== MEMORIES VIEW ===== */
+"memories.title" = "ความทรงจำของคุณ";
+"memories.empty.title" = "ยังไม่มีความทรงจำ";
+"memories.empty.subtitle" = "เมื่อคุณเขียนในไดอารี Gemi จะจดจำช่วงเวลาและข้อมูลเชิงลึกที่สำคัญไว้ที่นี่";
+"memories.search.placeholder" = "ค้นหาความทรงจำ...";
+"memories.filter.all" = "ความทรงจำทั้งหมด";
+"memories.filter.people" = "ผู้คน";
+"memories.filter.places" = "สถานที่";
+"memories.filter.feelings" = "ความรู้สึก";
+"memories.filter.events" = "เหตุการณ์";
+"memories.sort.newest" = "ใหม่สุด";
+"memories.sort.oldest" = "เก่าสุด";
+"memories.sort.relevance" = "เกี่ยวข้องมากสุด";
+"memories.detail.created" = "สร้างเมื่อ";
+"memories.detail.related" = "รายการที่เกี่ยวข้อง";
+"memories.delete.confirm.title" = "ลบความทรงจำ";
+"memories.delete.confirm.message" = "คุณแน่ใจหรือไม่ว่าต้องการลบความทรงจำนี้?";
+
+/* ===== INSIGHTS VIEW ===== */
+"insights.title" = "ข้อมูลเชิงลึกของคุณ";
+"insights.mood.title" = "การติดตามอารมณ์";
+"insights.mood.week" = "สัปดาห์นี้";
+"insights.mood.month" = "เดือนนี้";
+"insights.mood.year" = "ปีนี้";
+"insights.writing.title" = "นิสัยการเขียน";
+"insights.writing.streak" = "สตรีคปัจจุบัน";
+"insights.writing.longest_streak" = "สตรีคยาวนานสุด";
+"insights.writing.total_words" = "คำทั้งหมด";
+"insights.writing.average_words" = "คำเฉลี่ยต่อรายการ";
+"insights.topics.title" = "หัวข้อยอดนิยม";
+"insights.topics.subtitle" = "สิ่งที่คุณเขียนถึงมากที่สุด";
+"insights.patterns.title" = "รูปแบบของคุณ";
+"insights.patterns.morning_writer" = "นักเขียนยามเช้า";
+"insights.patterns.night_owl" = "นกฮูกกลางคืน";
+"insights.patterns.weekend_warrior" = "นักรบสุดสัปดาห์";
+"insights.patterns.daily_journalist" = "นักเขียนประจำวัน";
+
+/* ===== SETTINGS VIEW ===== */
+"settings.title" = "การตั้งค่า";
+"settings.section.general" = "ทั่วไป";
+"settings.section.privacy" = "ความเป็นส่วนตัวและความปลอดภัย";
+"settings.section.ai" = "การตั้งค่า AI";
+"settings.section.about" = "เกี่ยวกับ";
+"settings.language" = "ภาษา";
+"settings.theme" = "ธีม";
+"settings.theme.light" = "สว่าง";
+"settings.theme.dark" = "มืด";
+"settings.theme.system" = "ระบบ";
+"settings.notifications" = "การแจ้งเตือน";
+"settings.notifications.daily_reminder" = "การเตือนประจำวัน";
+"settings.notifications.time" = "เวลาเตือน";
+"settings.export_data" = "ส่งออกข้อมูล";
+"settings.delete_all_data" = "ลบข้อมูลทั้งหมด";
+"settings.delete_all_data.confirm.title" = "ลบข้อมูลทั้งหมด";
+"settings.delete_all_data.confirm.message" = "คุณแน่ใจหรือไม่ว่าต้องการลบบันทึกไดอารีและความทรงจำทั้งหมด? ไม่สามารถยกเลิกการกระทำนี้ได้";
+"settings.authentication" = "การยืนยันตัวตน";
+"settings.authentication.biometric" = "ใช้ไบโอเมตริก";
+"settings.authentication.change_password" = "เปลี่ยนรหัสผ่าน";
+"settings.ai.model" = "โมเดล AI";
+"settings.ai.temperature" = "ความคิดสร้างสรรค์ (อุณหภูมิ)";
+"settings.ai.memory" = "หน่วยความจำ AI";
+"settings.ai.memory.enabled" = "เปิดใช้หน่วยความจำ";
+"settings.ai.memory.clear" = "ล้างหน่วยความจำ";
+"settings.about.version" = "เวอร์ชัน";
+"settings.about.website" = "เว็บไซต์";
+"settings.about.privacy_policy" = "นโยบายความเป็นส่วนตัว";
+"settings.about.acknowledgments" = "กิตติกรรมประกาศ";
+
+/* ===== MOODS ===== */
+"mood.happy" = "มีความสุข";
+"mood.sad" = "เศร้า";
+"mood.anxious" = "กังวล";
+"mood.calm" = "สงบ";
+"mood.excited" = "ตื่นเต้น";
+"mood.grateful" = "รู้สึกขอบคุณ";
+"mood.angry" = "โกรธ";
+"mood.confused" = "สับสน";
+"mood.hopeful" = "มีความหวัง";
+"mood.tired" = "เหนื่อย";
+
+/* ===== ERRORS ===== */
+"error.generic" = "มีบางอย่างผิดพลาด";
+"error.network" = "ข้อผิดพลาดการเชื่อมต่อ";
+"error.save_failed" = "บันทึกไม่สำเร็จ";
+"error.load_failed" = "โหลดไม่สำเร็จ";
+"error.ai_unavailable" = "AI ไม่พร้อมใช้งานชั่วคราว";
+"error.authentication_failed" = "การยืนยันตัวตนล้มเหลว";
+"error.biometric_not_available" = "ไบโอเมตริกไม่พร้อมใช้งาน";
+"error.storage_full" = "พื้นที่เก็บข้อมูลไม่เพียงพอ";
+
+/* ===== EMPTY STATES ===== */
+"empty.search" = "ไม่พบผลลัพธ์";
+"empty.favorites" = "ยังไม่มีรายการโปรด";
+"empty.insights" = "เขียนรายการเพิ่มเติมเพื่อดูข้อมูลเชิงลึก";
+
+/* ===== DATES ===== */
+"date.today" = "วันนี้";
+"date.yesterday" = "เมื่อวาน";
+"date.days_ago" = "%lld วันที่แล้ว";
+"date.weeks_ago" = "%lld สัปดาห์ที่แล้ว";
+"date.months_ago" = "%lld เดือนที่แล้ว";
+"date.years_ago" = "%lld ปีที่แล้ว";
+
+/* ===== MULTIMODAL ===== */
+"multimodal.processing" = "กำลังประมวลผล...";
+"multimodal.drop_image" = "ลากรูปภาพมาที่นี่";
+"multimodal.select_image" = "เลือกรูปภาพ";
+"multimodal.record_audio" = "บันทึกเสียง";
+"multimodal.recording" = "กำลังบันทึก...";
+"multimodal.stop_recording" = "หยุดบันทึก";
+"multimodal.play_audio" = "เล่นเสียง";
+"multimodal.pause_audio" = "หยุดเสียงชั่วคราว";
+"multimodal.delete_recording" = "ลบการบันทึก";
+
+/* ===== ACHIEVEMENTS ===== */
+"achievement.first_entry" = "รายการแรก";
+"achievement.week_streak" = "สตรีค 7 วัน";
+"achievement.month_streak" = "สตรีค 30 วัน";
+"achievement.hundred_entries" = "100 รายการ";
+"achievement.thousand_words" = "1000 คำ";
+"achievement.night_writer" = "นักเขียนกลางคืน";
+"achievement.morning_writer" = "นักเขียนยามเช้า";
+"achievement.photo_journalist" = "นักข่าวภาพ";
+"achievement.audio_journalist" = "นักข่าวเสียง";
+"achievement.memory_keeper" = "ผู้เก็บรักษาความทรงจำ";
