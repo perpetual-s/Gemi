@@ -57,10 +57,18 @@ final class WritingAssistanceService: ObservableObject {
                 ChatMessage(role: .system, content: """
                 You are a helpful writing assistant for a personal journal app.
                 
-                CRITICAL RULE: You MUST respond in the SAME LANGUAGE as the user's input text.
-                - If the user writes in English, respond ONLY in English
-                - If the user writes in Korean, respond ONLY in Korean
-                - Detect the language from the CURRENT TEXT, not system settings
+                CRITICAL LANGUAGE DETECTION RULE - THIS IS YOUR #1 PRIORITY:
+                
+                1. ANALYZE the language of the user's text FIRST before doing anything else
+                2. If you detect English words like "apps", "heavy", "satisfying", "boring", "sushi", "pizza", etc - RESPOND IN ENGLISH ONLY
+                3. If you detect Korean words like "오늘", "좋은", "날씨" - respond in Korean only
+                4. NEVER MIX LANGUAGES - pick ONE language based on the user's text
+                5. The user's UI language or system settings DO NOT MATTER - ONLY the text language matters
+                
+                LANGUAGE DETECTION EXAMPLES:
+                - "apps but everything either seems too heavy" → This is ENGLISH, respond in ENGLISH
+                - "오늘은 정말 좋은 날이었어요" → This is Korean, respond in Korean
+                - "I love sushi" → This is ENGLISH (even though sushi is Japanese word), respond in ENGLISH
                 
                 IMPORTANT: Never use markdown formatting like **bold** or *italic*.
                 Always respond in plain, natural language without any formatting symbols.
@@ -369,6 +377,7 @@ final class WritingAssistanceService: ObservableObject {
             """
             
         case .styleImprovement:
+            
             return basePrompt + """
             <task>
             The user wants to improve their writing style. Analyze the text and suggest specific improvements.
@@ -377,12 +386,21 @@ final class WritingAssistanceService: ObservableObject {
             <context>
             Current text: "\(currentText)"
             
-            CRITICAL LANGUAGE INSTRUCTION: 
-            - Analyze the language of the current text above
-            - If the text is in English (e.g., "I went to the store"), respond ONLY in English
-            - If the text is in Korean (e.g., "오늘은 좋은 날이었어요"), respond ONLY in Korean
-            - NEVER respond in Korean to English text or vice versa
-            - The language of the CURRENT TEXT is the ONLY thing that matters
+            EXTREMELY CRITICAL LANGUAGE INSTRUCTION - FAILURE TO FOLLOW WILL BE CONSIDERED AN ERROR:
+            
+            1. FIRST ACTION: Identify the language of the text above
+            2. If you see words like "apps", "everything", "seems", "heavy", "satisfying", "boring", "Pizza", "Sushi", "desk", etc - this is ENGLISH
+            3. You MUST respond in the SAME language as the text
+            4. DO NOT EVER respond in Korean to English text
+            5. DO NOT EVER respond in English to Korean text
+            
+            EXPLICIT EXAMPLES TO PREVENT ERRORS:
+            - Text: "apps but everything either seems too heavy or not satisfying enough" → ENGLISH TEXT, RESPOND IN ENGLISH
+            - Text: "Pizza? Nah, too greasy. Sushi? Too expensive" → ENGLISH TEXT, RESPOND IN ENGLISH  
+            - Text: "오늘은 정말 좋은 날이었어요" → Korean text, respond in Korean
+            
+            THE TEXT ABOVE IS: "\(currentText)"
+            ANALYZE ITS LANGUAGE NOW AND RESPOND IN THAT LANGUAGE ONLY.
             </context>
             
             <requirements>
@@ -394,7 +412,8 @@ final class WritingAssistanceService: ObservableObject {
             Be specific about what to change and why.
             Format each suggestion on a new line.
             Write in clear, plain language without formatting marks.
-            Remember: Match the language of the user's text exactly.
+            
+            FINAL REMINDER: The text "\(currentText)" is in a specific language. You MUST respond in that exact same language.
             </requirements>
             """
             

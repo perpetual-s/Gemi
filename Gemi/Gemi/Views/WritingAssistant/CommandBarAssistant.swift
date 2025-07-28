@@ -727,39 +727,27 @@ struct CommandBarAssistant: View {
             return ("", nil)
         }
         
-        // First try to get the current paragraph
-        let paragraphRange = findParagraphRange(in: currentText, at: selectedRange.location)
-        var currentParagraph = String(currentText[paragraphRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+        // For the Improve tool, we should use the ENTIRE text content
+        // to ensure proper language detection and context understanding
         
-        // If current paragraph is empty, try to get surrounding text
-        if currentParagraph.isEmpty {
-            // Get up to 500 characters before and after cursor
-            let location = min(selectedRange.location, currentText.count)
-            let startIndex = max(0, location - 250)
-            let endIndex = min(currentText.count, location + 250)
-            
-            if startIndex < endIndex {
-                let start = currentText.index(currentText.startIndex, offsetBy: startIndex)
-                let end = currentText.index(currentText.startIndex, offsetBy: endIndex)
-                currentParagraph = String(currentText[start..<end]).trimmingCharacters(in: .whitespacesAndNewlines)
+        // Use the full text for better context, especially for language detection
+        // Limit to 2000 characters to avoid token limits
+        let maxLength = min(currentText.count, 2000)
+        let endIndex = currentText.index(currentText.startIndex, offsetBy: maxLength)
+        let fullContext = String(currentText[currentText.startIndex..<endIndex])
+        
+        // For previous context, try to get the paragraph before cursor
+        var previousParagraph: String? = nil
+        if selectedRange.location > 0 {
+            let paragraphRange = findParagraphRange(in: currentText, at: max(0, selectedRange.location - 1))
+            if paragraphRange.lowerBound > currentText.startIndex {
+                let beforeIndex = currentText.index(before: paragraphRange.lowerBound)
+                let prevRange = findParagraphRange(in: currentText, at: beforeIndex.utf16Offset(in: currentText))
+                previousParagraph = String(currentText[prevRange]).trimmingCharacters(in: .whitespacesAndNewlines)
             }
         }
         
-        // If still empty, use the entire text (up to 1000 chars)
-        if currentParagraph.isEmpty && !currentText.isEmpty {
-            let maxLength = min(currentText.count, 1000)
-            let endIndex = currentText.index(currentText.startIndex, offsetBy: maxLength)
-            currentParagraph = String(currentText[currentText.startIndex..<endIndex])
-        }
-        
-        var previousParagraph: String? = nil
-        if paragraphRange.lowerBound > currentText.startIndex {
-            let beforeIndex = currentText.index(before: paragraphRange.lowerBound)
-            let prevRange = findParagraphRange(in: currentText, at: beforeIndex.utf16Offset(in: currentText))
-            previousParagraph = String(currentText[prevRange]).trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        
-        return (currentParagraph, previousParagraph)
+        return (fullContext, previousParagraph)
     }
     
     private func findParagraphRange(in text: String, at location: Int) -> Range<String.Index> {
