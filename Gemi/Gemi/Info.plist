@@ -24,8 +24,6 @@
 	<string>public.app-category.productivity</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>Gemi processes all AI operations locally on your device for maximum privacy.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Gemi uses Face ID to securely protect your private journal entries.</string>
 </dict>
