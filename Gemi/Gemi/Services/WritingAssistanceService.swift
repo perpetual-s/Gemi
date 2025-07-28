@@ -57,18 +57,10 @@ final class WritingAssistanceService: ObservableObject {
                 ChatMessage(role: .system, content: """
                 You are a helpful writing assistant for a personal journal app.
                 
-                CRITICAL LANGUAGE DETECTION RULE - THIS IS YOUR #1 PRIORITY:
-                
-                1. ANALYZE the language of the user's text FIRST before doing anything else
-                2. If you detect English words like "apps", "heavy", "satisfying", "boring", "sushi", "pizza", etc - RESPOND IN ENGLISH ONLY
-                3. If you detect Korean words like "오늘", "좋은", "날씨" - respond in Korean only
-                4. NEVER MIX LANGUAGES - pick ONE language based on the user's text
-                5. The user's UI language or system settings DO NOT MATTER - ONLY the text language matters
-                
-                LANGUAGE DETECTION EXAMPLES:
-                - "apps but everything either seems too heavy" → This is ENGLISH, respond in ENGLISH
-                - "오늘은 정말 좋은 날이었어요" → This is Korean, respond in Korean
-                - "I love sushi" → This is ENGLISH (even though sushi is Japanese word), respond in ENGLISH
+                CRITICAL RULE: Always respond in the SAME LANGUAGE as the user's text.
+                - Detect the language from the text content, not system settings
+                - Maintain consistency - if the text is in English, respond only in English
+                - Never mix languages unless the user's text explicitly mixes them
                 
                 IMPORTANT: Never use markdown formatting like **bold** or *italic*.
                 Always respond in plain, natural language without any formatting symbols.
@@ -124,7 +116,9 @@ final class WritingAssistanceService: ObservableObject {
             You are an analytical writing assistant.
             
             CRITICAL RULE: Respond in the SAME LANGUAGE as the text being analyzed.
-            - Detect language from the PROVIDED TEXT, not system settings
+            - Detect language from the PROVIDED TEXT only
+            - If the text is in English, respond in English
+            - Never switch languages
             
             Never use markdown formatting symbols like asterisks.
             Respond in clear, plain text only.
@@ -169,8 +163,8 @@ final class WritingAssistanceService: ObservableObject {
             You are a creative writing assistant that continues journal entries naturally.
             
             CRITICAL RULE: Continue in the SAME LANGUAGE as the existing text.
-            - If the text is in English, continue in English
-            - If the text is in Korean, continue in Korean
+            - Detect the language from the text provided
+            - Continue writing in that exact language
             
             Always use plain text without any markdown formatting or symbols.
             """),
@@ -208,7 +202,7 @@ final class WritingAssistanceService: ObservableObject {
             You are a thoughtful writing assistant that asks deep, reflective questions.
             
             CRITICAL RULE: Ask questions in the SAME LANGUAGE as the journal entry.
-            - Match the language of the user's text exactly
+            - Detect and match the language of the user's text exactly
             
             Format your responses in plain text without any markdown symbols.
             """),
@@ -255,9 +249,9 @@ final class WritingAssistanceService: ObservableObject {
             ChatMessage(role: .system, content: """
             You are a creative writing prompt generator.
             
-            CRITICAL RULE: Generate prompts in the user's language.
-            - If recent topics are in English, create English prompts
-            - If recent topics are in Korean, create Korean prompts
+            CRITICAL RULE: Generate prompts in the detected language.
+            - Analyze the language of any provided text or topics
+            - Create prompts in that same language
             
             Never use asterisks or markdown formatting in your responses.
             Write all prompts in clear, plain language.
@@ -295,25 +289,15 @@ final class WritingAssistanceService: ObservableObject {
         - Emotional intelligence: Recognize and respond to emotional cues
         - Creative expression: Generate vivid, engaging continuations
         - Cultural awareness: Respect diverse perspectives and expressions
-        - Language support: Full support for 140+ languages including Korean (한국어), Spanish (Español), French (Français), German (Deutsch), Japanese (日本語), and more
+        - Language support: Full support for 140+ languages
         </capabilities>
         
         <language_detection>
-        CRITICAL LANGUAGE RULE - THIS OVERRIDES EVERYTHING ELSE:
-        - Detect the language of the CURRENT TEXT provided by the user
-        - IGNORE system language, UI language, or any other context
-        - Respond ONLY in the language detected from the CURRENT TEXT
-        - If the current text is in English, respond ONLY in English
-        - If the current text is in Korean, respond ONLY in Korean
-        - NEVER mix languages unless the user's current text explicitly mixes languages
-        - The language of the current text is the ONLY factor that determines response language
-        
-        IMPORTANT: If you see English text like "I went to the store" or "Today was a good day", you MUST respond in English only. Do NOT respond in Korean to English text.
-        
-        Examples:
-        - User text: "I had a great day today" → Respond in English only
-        - User text: "오늘은 정말 좋은 날이었어요" → Respond in Korean only
-        - User text: "Today was 정말 amazing" → Mix English and Korean following their pattern
+        CRITICAL LANGUAGE RULE:
+        - Detect the language from the CURRENT TEXT only
+        - Respond in the SAME language as detected
+        - If the text is in English, respond ONLY in English
+        - Never switch languages unless the user's text switches
         </language_detection>
         
         <format_rules>
@@ -339,7 +323,7 @@ final class WritingAssistanceService: ObservableObject {
             Current text: "\(currentText)"
             \(previousContext.map { "Previous paragraph: \"\($0)\"" } ?? "")
             
-            LANGUAGE INSTRUCTION: Analyze the language of the current text above and respond ONLY in that language.
+            LANGUAGE INSTRUCTION: Respond in the same language as the current text above.
             </context>
             
             <requirements>
@@ -366,7 +350,7 @@ final class WritingAssistanceService: ObservableObject {
             <context>
             Current text: "\(currentText)"
             
-            LANGUAGE INSTRUCTION: Analyze the language of the current text above and respond ONLY in that language.
+            LANGUAGE INSTRUCTION: Respond in the same language as the current text above.
             </context>
             
             <requirements>
@@ -395,21 +379,11 @@ final class WritingAssistanceService: ObservableObject {
             <context>
             Current text: "\(currentText)"
             
-            EXTREMELY CRITICAL LANGUAGE INSTRUCTION - FAILURE TO FOLLOW WILL BE CONSIDERED AN ERROR:
-            
-            1. FIRST ACTION: Identify the language of the text above
-            2. If you see words like "apps", "everything", "seems", "heavy", "satisfying", "boring", "Pizza", "Sushi", "desk", etc - this is ENGLISH
-            3. You MUST respond in the SAME language as the text
-            4. DO NOT EVER respond in Korean to English text
-            5. DO NOT EVER respond in English to Korean text
-            
-            EXPLICIT EXAMPLES TO PREVENT ERRORS:
-            - Text: "apps but everything either seems too heavy or not satisfying enough" → ENGLISH TEXT, RESPOND IN ENGLISH
-            - Text: "Pizza? Nah, too greasy. Sushi? Too expensive" → ENGLISH TEXT, RESPOND IN ENGLISH  
-            - Text: "오늘은 정말 좋은 날이었어요" → Korean text, respond in Korean
-            
-            THE TEXT ABOVE IS: "\(currentText)"
-            ANALYZE ITS LANGUAGE NOW AND RESPOND IN THAT LANGUAGE ONLY.
+            LANGUAGE INSTRUCTION:
+            - Analyze the language of the text above
+            - Respond ONLY in the same language as the text
+            - If the text is in English, respond in English
+            - Do not switch languages for any reason
             </context>
             
             <requirements>
@@ -447,7 +421,7 @@ final class WritingAssistanceService: ObservableObject {
             <context>
             Text: "\(currentText)"
             
-            LANGUAGE INSTRUCTION: Analyze the language of the text above and respond ONLY in that language.
+            LANGUAGE INSTRUCTION: Respond in the same language as the text above.
             </context>
             
             <requirements>
@@ -470,7 +444,7 @@ final class WritingAssistanceService: ObservableObject {
             <context>
             Recent text (if any): "\(currentText)"
             
-            LANGUAGE INSTRUCTION: If text is provided above, analyze its language and respond ONLY in that language. If no text, respond in the user's preferred language.
+            LANGUAGE INSTRUCTION: If text is provided above, respond in that same language. If no text, use the default language.
             </context>
             
             <requirements>
