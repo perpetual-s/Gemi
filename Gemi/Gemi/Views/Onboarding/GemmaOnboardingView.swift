@@ -275,32 +275,113 @@ struct GemmaOnboardingView: View {
                         .transition(.move(edge: .top).combined(with: .opacity))
                     }
                     
-                    // Ollama status notification
-                    if showOllamaNotification {
-                        HStack(spacing: 12) {
-                            Image(systemName: "info.circle.fill")
-                                .foregroundColor(.blue)
-                            Text(ollamaNotificationMessage)
-                                .font(.system(size: 14))
-                                .foregroundColor(.white)
-                                .multilineTextAlignment(.leading)
+                    // Elegant Ollama status notification
+                    if showOllamaNotification && isOnOllamaStep {
+                        VStack(spacing: 0) {
+                            // Success indicator bar
+                            LinearGradient(
+                                colors: [
+                                    Color.green.opacity(0.8),
+                                    Color.green.opacity(0.6),
+                                    Color.blue.opacity(0.6)
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                            .frame(height: 2)
+                            .frame(maxWidth: 320)
+                            
+                            HStack(spacing: 14) {
+                                // Animated success icon
+                                ZStack {
+                                    Circle()
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [
+                                                    Color.green.opacity(0.2),
+                                                    Color.green.opacity(0.1)
+                                                ],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
+                                        )
+                                        .frame(width: 32, height: 32)
+                                    
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 18, weight: .medium))
+                                        .foregroundStyle(
+                                            LinearGradient(
+                                                colors: [.green, .green.opacity(0.8)],
+                                                startPoint: .top,
+                                                endPoint: .bottom
+                                            )
+                                        )
+                                        .scaleEffect(showOllamaNotification ? 1.0 : 0.5)
+                                        .animation(.spring(response: 0.4, dampingFraction: 0.6), value: showOllamaNotification)
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Ready to Go")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(.white)
+                                    
+                                    Text(ollamaNotificationMessage)
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.white.opacity(0.8))
+                                        .lineLimit(2)
+                                        .multilineTextAlignment(.leading)
+                                }
+                                
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
+                            .background(
+                                ZStack {
+                                    // Base gradient
+                                    RoundedRectangle(cornerRadius: 0)
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [
+                                                    Color.white.opacity(0.12),
+                                                    Color.white.opacity(0.08)
+                                                ],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
+                                        )
+                                    
+                                    // Glass effect
+                                    RoundedRectangle(cornerRadius: 0)
+                                        .fill(.ultraThinMaterial.opacity(0.6))
+                                    
+                                    // Subtle inner shadow
+                                    RoundedRectangle(cornerRadius: 0)
+                                        .strokeBorder(
+                                            LinearGradient(
+                                                colors: [
+                                                    Color.white.opacity(0.15),
+                                                    Color.white.opacity(0.05)
+                                                ],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            ),
+                                            lineWidth: 0.5
+                                        )
+                                }
+                            )
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .frame(maxWidth: 400)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.blue.opacity(0.2))
-                                .background(.ultraThinMaterial.opacity(0.8))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                                )
-                        )
+                        .frame(maxWidth: 320)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
+                        .shadow(color: .green.opacity(0.2), radius: 10, x: 0, y: 5)
+                        .scaleEffect(showOllamaNotification ? 1.0 : 0.95)
+                        .opacity(showOllamaNotification ? 1.0 : 0.0)
                         .transition(.asymmetric(
-                            insertion: .move(edge: .top).combined(with: .opacity),
-                            removal: .opacity
+                            insertion: .move(edge: .top).combined(with: .opacity).combined(with: .scale),
+                            removal: .move(edge: .top).combined(with: .opacity).combined(with: .scale)
                         ))
+                        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: showOllamaNotification)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -309,14 +390,18 @@ struct GemmaOnboardingView: View {
             }
         )
         .task {
-            // Monitor Ollama status in background without interrupting flow
+            // Monitor Ollama status only when on setup pages
             Task {
                 // Check periodically if Ollama becomes ready
                 for _ in 0..<30 { // Check for up to 30 seconds
                     let health = await ollamaService.health()
-                    if health.healthy && health.modelLoaded {
+                    if health.healthy && health.modelLoaded && isOnOllamaStep {
                         await MainActor.run {
-                            showOllamaNotification(message: "Great news! Ollama is ready in the background.")
+                            ollamaStatus = .ready
+                            // Only show notification if we're on an Ollama setup page
+                            if isOnOllamaStep {
+                                showOllamaNotification(message: "Ollama is ready! You can continue to the next step.")
+                            }
                         }
                         break
                     }
