@@ -49,6 +49,8 @@
 "nav.chat" = "Chat with Gemi";
 "nav.insights" = "Insights";
 "nav.favorites" = "Favorites";
+"nav.search" = "Search";
+"writing.tools" = "Writing Tools";
 "nav.settings" = "Settings";
 "nav.new_entry" = "New Entry";
 

@@ -573,16 +573,42 @@ struct AIAssistantBubble: View {
     }
     
     private func extractContext() -> (current: String, previous: String?) {
+        // If text is empty, return empty context
+        guard !currentText.isEmpty else {
+            return ("", nil)
+        }
+        
         // Extract current paragraph
         let paragraphRange = findParagraphRange(in: currentText, at: selectedRange.location)
-        let currentParagraph = String(currentText[paragraphRange])
+        var currentParagraph = String(currentText[paragraphRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // If current paragraph is empty, try to get surrounding text
+        if currentParagraph.isEmpty {
+            // Get up to 500 characters before and after cursor
+            let location = min(selectedRange.location, currentText.count)
+            let startIndex = max(0, location - 250)
+            let endIndex = min(currentText.count, location + 250)
+            
+            if startIndex < endIndex {
+                let start = currentText.index(currentText.startIndex, offsetBy: startIndex)
+                let end = currentText.index(currentText.startIndex, offsetBy: endIndex)
+                currentParagraph = String(currentText[start..<end]).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+        
+        // If still empty, use the entire text (up to 1000 chars)
+        if currentParagraph.isEmpty && !currentText.isEmpty {
+            let maxLength = min(currentText.count, 1000)
+            let endIndex = currentText.index(currentText.startIndex, offsetBy: maxLength)
+            currentParagraph = String(currentText[currentText.startIndex..<endIndex])
+        }
         
         // Extract previous paragraph if available
         var previousParagraph: String? = nil
         if paragraphRange.lowerBound > currentText.startIndex {
             let beforeIndex = currentText.index(before: paragraphRange.lowerBound)
             let prevRange = findParagraphRange(in: currentText, at: beforeIndex.utf16Offset(in: currentText))
-            previousParagraph = String(currentText[prevRange])
+            previousParagraph = String(currentText[prevRange]).trimmingCharacters(in: .whitespacesAndNewlines)
         }
         
         return (currentParagraph, previousParagraph)

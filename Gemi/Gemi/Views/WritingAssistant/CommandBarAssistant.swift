@@ -16,6 +16,8 @@ struct CommandBarAssistant: View {
     @State private var searchText = ""
     @State private var responseLength: ResponseLength = .medium
     @State private var expandedSuggestions: Set<UUID> = []
+    @State private var errorMessage: String?
+    @State private var showError = false
     
     let onSuggestionAccepted: (String) -> Void
     
@@ -26,7 +28,7 @@ struct CommandBarAssistant: View {
         
         var title: String {
             switch self {
-            case .main: return "Writing Tools"
+            case .main: return localized("writing.tools")
             case .tool(let type): return type.title
             case .suggestions: return "Suggestions"
             }
@@ -182,7 +184,11 @@ struct CommandBarAssistant: View {
                     lineWidth: 1
                 )
         )
-        .focusable()
+        .focusable(false)
+        .allowsHitTesting(true)
+        .onTapGesture {
+            // Prevent focus on tap
+        }
         .onAppear {
             // Reset selection to first item
             selectedIndex = 0
@@ -234,7 +240,7 @@ struct CommandBarAssistant: View {
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(NoFocusButtonStyle())
                 .help("Go back (Esc)")
             }
             
@@ -268,7 +274,7 @@ struct CommandBarAssistant: View {
                     .foregroundColor(.secondary)
                     .symbolRenderingMode(.hierarchical)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(NoFocusButtonStyle())
             .help("Close (Esc)")
         }
         .padding(.horizontal, 16)
@@ -324,7 +330,9 @@ struct CommandBarAssistant: View {
     
     private func toolView(for tool: ToolType) -> some View {
         VStack(spacing: 0) {
-            if isLoading {
+            if showError, let error = errorMessage {
+                errorView(message: error)
+            } else if isLoading {
                 loadingView
             } else if !suggestions.isEmpty {
                 suggestionsListView
@@ -400,7 +408,7 @@ struct CommandBarAssistant: View {
                         .fill(tool.color)
                 )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(NoFocusButtonStyle())
             .padding(.bottom, 20)
         }
         .frame(maxWidth: .infinity)
@@ -411,7 +419,7 @@ struct CommandBarAssistant: View {
             ProgressView()
                 .scaleEffect(0.8)
             
-            Text("Analyzing your writing...")
+            Text(loadingMessage(for: currentLevel))
                 .font(.system(size: 14))
                 .foregroundColor(.secondary)
             
@@ -420,11 +428,45 @@ struct CommandBarAssistant: View {
                 // Cancel operation
                 isLoading = false
             }
-            .buttonStyle(.plain)
+            .buttonStyle(NoFocusButtonStyle())
             .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 40)
+        .padding(.horizontal, 20)
+    }
+    
+    private func errorView(message: String) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 24))
+                .foregroundColor(.orange)
+            
+            Text(message)
+                .font(.system(size: 14))
+                .foregroundColor(.primary)
+                .multilineTextAlignment(.center)
+            
+            Button("Try Again") {
+                showError = false
+                errorMessage = nil
+                if case .tool(let toolType) = currentLevel {
+                    Task {
+                        await generateSuggestions(for: toolType)
+                    }
+                }
+            }
+            .buttonStyle(NoFocusButtonStyle())
+            .padding(.horizontal, 16)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.blue)
+            )
+            .foregroundColor(.white)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 30)
         .padding(.horizontal, 20)
     }
     
@@ -457,7 +499,7 @@ struct CommandBarAssistant: View {
                             .font(.system(size: 12))
                     }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(NoFocusButtonStyle())
                 .foregroundColor(.secondary)
             }
         }
@@ -565,9 +607,22 @@ struct CommandBarAssistant: View {
         isLoading = true
         suggestions = []
         expandedSuggestions = []
+        showError = false
+        errorMessage = nil
         
         do {
             let context = extractContext()
+            
+            // Check if we have any text to work with
+            if context.current.isEmpty && tool == .improve {
+                await MainActor.run {
+                    isLoading = false
+                    errorMessage = "Please write some text first before using the Improve tool."
+                    showError = true
+                }
+                return
+            }
+            
             let writingContext: WritingAssistanceService.WritingContext
             
             switch tool {
@@ -609,7 +664,15 @@ struct CommandBarAssistant: View {
         } catch {
             await MainActor.run {
                 isLoading = false
-                // Handle error - could show error state
+                errorMessage = "Failed to generate suggestions. Please try again."
+                showError = true
+                
+                // Auto-hide error after 3 seconds
+                Task {
+                    try? await Task.sleep(nanoseconds: 3_000_000_000)
+                    showError = false
+                    errorMessage = nil
+                }
             }
         }
     }
@@ -642,16 +705,58 @@ struct CommandBarAssistant: View {
         }
     }
     
+    private func loadingMessage(for level: NavigationLevel) -> String {
+        switch level {
+        case .tool(let toolType):
+            switch toolType {
+            case .continueWriting:
+                return "Analyzing context and generating continuations..."
+            case .ideas:
+                return "Brainstorming creative ideas for your writing..."
+            case .improve:
+                return "Evaluating style and suggesting improvements..."
+            }
+        default:
+            return "Processing your request..."
+        }
+    }
+    
     private func extractContext() -> (current: String, previous: String?) {
-        // Similar to bubble implementation
+        // If text is empty, return empty context
+        guard !currentText.isEmpty else {
+            return ("", nil)
+        }
+        
+        // First try to get the current paragraph
         let paragraphRange = findParagraphRange(in: currentText, at: selectedRange.location)
-        let currentParagraph = String(currentText[paragraphRange])
+        var currentParagraph = String(currentText[paragraphRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // If current paragraph is empty, try to get surrounding text
+        if currentParagraph.isEmpty {
+            // Get up to 500 characters before and after cursor
+            let location = min(selectedRange.location, currentText.count)
+            let startIndex = max(0, location - 250)
+            let endIndex = min(currentText.count, location + 250)
+            
+            if startIndex < endIndex {
+                let start = currentText.index(currentText.startIndex, offsetBy: startIndex)
+                let end = currentText.index(currentText.startIndex, offsetBy: endIndex)
+                currentParagraph = String(currentText[start..<end]).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+        
+        // If still empty, use the entire text (up to 1000 chars)
+        if currentParagraph.isEmpty && !currentText.isEmpty {
+            let maxLength = min(currentText.count, 1000)
+            let endIndex = currentText.index(currentText.startIndex, offsetBy: maxLength)
+            currentParagraph = String(currentText[currentText.startIndex..<endIndex])
+        }
         
         var previousParagraph: String? = nil
         if paragraphRange.lowerBound > currentText.startIndex {
             let beforeIndex = currentText.index(before: paragraphRange.lowerBound)
             let prevRange = findParagraphRange(in: currentText, at: beforeIndex.utf16Offset(in: currentText))
-            previousParagraph = String(currentText[prevRange])
+            previousParagraph = String(currentText[prevRange]).trimmingCharacters(in: .whitespacesAndNewlines)
         }
         
         return (currentParagraph, previousParagraph)
@@ -765,7 +870,7 @@ struct ToolMenuItem: View {
                 }
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(NoFocusButtonStyle())
         .onHover { hovering in
             withAnimation(.easeOut(duration: 0.15)) {
                 isHovered = hovering
@@ -814,7 +919,7 @@ struct CommandBarSuggestionRow: View {
                                 .font(.system(size: 11))
                                 .foregroundColor(.blue)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(NoFocusButtonStyle())
                         }
                     }
                     
@@ -829,7 +934,7 @@ struct CommandBarSuggestionRow: View {
                                 .font(.system(size: 12))
                                 .foregroundColor(.secondary)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(NoFocusButtonStyle())
                         .help("Copy to clipboard")
                         .opacity(isSelected ? 1 : 0)
                         
@@ -842,7 +947,7 @@ struct CommandBarSuggestionRow: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(NoFocusButtonStyle())
             
             // Collapse button if expanded
             if isExpanded && suggestion.needsExpansion {
@@ -857,7 +962,7 @@ struct CommandBarSuggestionRow: View {
                     .foregroundColor(.blue)
                     .padding(.leading, 48)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(NoFocusButtonStyle())
             }
         }
         .background(
@@ -884,7 +989,7 @@ struct ResponseLengthButton: View {
                         .fill(isSelected ? Color.blue : Color.secondary.opacity(0.1))
                 )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(NoFocusButtonStyle())
     }
 }
 
@@ -893,5 +998,16 @@ struct ResponseLengthButton: View {
 extension Collection {
     subscript(safe index: Index) -> Element? {
         indices.contains(index) ? self[index] : nil
+    }
+}
+
+// MARK: - Button Style
+
+struct NoFocusButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
+            .focusable(false)
     }
 }

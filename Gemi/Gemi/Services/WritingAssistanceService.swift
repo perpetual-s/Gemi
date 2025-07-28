@@ -300,6 +300,8 @@ final class WritingAssistanceService: ObservableObject {
         - NEVER mix languages unless the user's current text explicitly mixes languages
         - The language of the current text is the ONLY factor that determines response language
         
+        IMPORTANT: If you see English text like "I went to the store" or "Today was a good day", you MUST respond in English only. Do NOT respond in Korean to English text.
+        
         Examples:
         - User text: "I had a great day today" → Respond in English only
         - User text: "오늘은 정말 좋은 날이었어요" → Respond in Korean only
@@ -369,13 +371,18 @@ final class WritingAssistanceService: ObservableObject {
         case .styleImprovement:
             return basePrompt + """
             <task>
-            Analyze the writing style and suggest specific improvements.
+            The user wants to improve their writing style. Analyze the text and suggest specific improvements.
             </task>
             
             <context>
-            Text: "\(currentText)"
+            Current text: "\(currentText)"
             
-            LANGUAGE INSTRUCTION: Analyze the language of the text above and respond ONLY in that language.
+            CRITICAL LANGUAGE INSTRUCTION: 
+            - Analyze the language of the current text above
+            - If the text is in English (e.g., "I went to the store"), respond ONLY in English
+            - If the text is in Korean (e.g., "오늘은 좋은 날이었어요"), respond ONLY in Korean
+            - NEVER respond in Korean to English text or vice versa
+            - The language of the CURRENT TEXT is the ONLY thing that matters
             </context>
             
             <requirements>
@@ -387,6 +394,7 @@ final class WritingAssistanceService: ObservableObject {
             Be specific about what to change and why.
             Format each suggestion on a new line.
             Write in clear, plain language without formatting marks.
+            Remember: Match the language of the user's text exactly.
             </requirements>
             """
             

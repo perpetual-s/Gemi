@@ -164,7 +164,7 @@ struct WritersBlockBreaker: View {
     
     private var categorySelector: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
+            HStack(spacing: 16) {
                 ForEach(PromptCategory.allCases, id: \.self) { category in
                     CategoryButton(
                         category: category,
@@ -415,8 +415,9 @@ struct CategoryButton: View {
                     .foregroundColor(isSelected ? category.color : .secondary)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
-                    .frame(width: 80)
+                    .frame(width: 72, height: 32)
             }
+            .frame(width: 72)
             .scaleEffect(isSelected ? 1.02 : 1)
         }
         .buttonStyle(.plain)
