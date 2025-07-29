@@ -54,7 +54,7 @@ struct GemiChatView: View {
                     messageInputArea
                 }
                 .background(Theme.Colors.windowBackground)
-                .onDrop(of: [.image, .fileURL], isTargeted: nil) { providers in
+                .onDrop(of: [.image, .fileURL, .audio, .mp3, .mpeg4Audio, .wav, .aiff], isTargeted: nil) { providers in
                     handleDrop(providers: providers)
                     return true
                 }
