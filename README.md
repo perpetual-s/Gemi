@@ -628,7 +628,6 @@ Gemi is released under the Creative Commons Attribution 4.0 International Licens
 - **Ollama Team** for making local LLMs accessible
 - **Apple** for powerful ML frameworks and developer tools
 - **GRDB.swift** by Gwendal Roué for excellent SQLite integration
-- **The Swift Community** for amazing open-source libraries
 
 ### Inspiration
 - Anthropic's research on AI companionship

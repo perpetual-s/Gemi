@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Writer's block breaker that provides intelligent prompts and exercises
+/// Elegant floating prompt library with intelligent categorization
 struct WritersBlockBreaker: View {
     @Binding var isPresented: Bool
     let onPromptSelected: (WritingPrompt) -> Void
@@ -8,7 +8,10 @@ struct WritersBlockBreaker: View {
     @State private var selectedCategory: PromptCategory = .inspiration
     @State private var currentPrompt: WritingPrompt?
     @State private var isGenerating = false
-    @Namespace private var scrollViewSpace
+    @State private var showExpandedView = false
+    @State private var hoveredCategory: PromptCategory?
+    @State private var selectedIndex = 0
+    @Namespace private var animation
     
     struct WritingPrompt: Identifiable {
         let id = UUID()
@@ -82,262 +85,350 @@ struct WritersBlockBreaker: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            header
-            
-            // Category selector
-            categorySelector
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
-            
-            Divider()
-            
-            // Main content
-            ScrollViewReader { scrollProxy in
-                ScrollView {
-                    VStack(spacing: 20) {
-                        // Invisible anchor for scroll to top
-                        Color.clear
-                            .frame(height: 1)
-                            .id("top")
-                        
-                        // Current prompt
-                        if let prompt = currentPrompt {
-                            currentPromptCard(prompt)
-                                .padding(.horizontal, 20)
-                                .padding(.top, 20)
-                        }
-                        
-                        // Quick exercises
-                        quickExercises
-                            .padding(.horizontal, 20)
-                            .padding(.top, currentPrompt == nil ? 20 : 0)
-                        
+        ZStack {
+            // Beautiful backdrop blur
+            Color.black.opacity(0.3)
+                .background(
+                    VisualEffectView.frostedGlass
+                        .ignoresSafeArea()
+                )
+                .onTapGesture {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        isPresented = false
                     }
                 }
-                .onChange(of: selectedCategory) { _, _ in
-                    withAnimation(.easeOut(duration: 0.3)) {
-                        scrollProxy.scrollTo("top", anchor: .top)
-                    }
-                }
+            
+            // Main floating card
+            if showExpandedView {
+                expandedPromptView
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.8, anchor: .center).combined(with: .opacity),
+                        removal: .scale(scale: 0.8, anchor: .center).combined(with: .opacity)
+                    ))
+            } else {
+                compactCategoryGrid
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.9, anchor: .center).combined(with: .opacity),
+                        removal: .scale(scale: 0.9, anchor: .center).combined(with: .opacity)
+                    ))
             }
-            
-            // Footer actions
-            footerActions
         }
-        .frame(width: 500, height: 600)
-        .background(Color(NSColor.windowBackgroundColor))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
             generatePrompt()
+        }
+        .onKeyPress(.escape) {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                if showExpandedView {
+                    showExpandedView = false
+                } else {
+                    isPresented = false
+                }
+            }
+            return .handled
         }
     }
     
     // MARK: - Components
     
-    private var header: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Writing Prompt Library")
-                    .font(.system(size: 20, weight: .semibold))
-                
-                Text("Explore prompts and exercises to inspire your writing")
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
-            }
-            
-            Spacer()
-            
-            Button {
-                isPresented = false
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(.secondary)
-                    .symbolRenderingMode(.hierarchical)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(20)
-        .background(VisualEffectView.windowBackground)
-    }
-    
-    private var categorySelector: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 16) {
-                ForEach(PromptCategory.allCases, id: \.self) { category in
-                    CategoryButton(
-                        category: category,
-                        isSelected: selectedCategory == category
-                    ) {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedCategory = category
-                        }
-                        generatePrompt()
-                    }
-                }
-            }
-        }
-    }
-    
-    private func currentPromptCard(_ prompt: WritingPrompt) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Header
+    private var compactCategoryGrid: some View {
+        VStack(spacing: 0) {
+            // Elegant header
             HStack {
-                Label(prompt.category.rawValue, systemImage: prompt.category.icon)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(prompt.category.color)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("What would you like to write about?")
+                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                        .foregroundColor(.primary)
+                    
+                    Text("Choose a category to get inspired")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
                 
                 Spacer()
                 
-                // Difficulty badge
-                Text(prompt.difficulty.rawValue)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(prompt.difficulty.color)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        isPresented = false
+                    }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.secondary)
+                        .symbolRenderingMode(.hierarchical)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(24)
+            
+            // Beautiful grid of categories
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 16),
+                GridItem(.flexible(), spacing: 16),
+                GridItem(.flexible(), spacing: 16)
+            ], spacing: 16) {
+                ForEach(PromptCategory.allCases, id: \.self) { category in
+                    CategoryCard(
+                        category: category,
+                        isSelected: selectedCategory == category,
+                        isHovered: hoveredCategory == category
+                    ) {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            selectedCategory = category
+                            generatePrompt()
+                            showExpandedView = true
+                        }
+                    }
+                    .onHover { hovering in
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            hoveredCategory = hovering ? category : nil
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 24)
+        }
+        .frame(width: 480)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.regularMaterial)
+                .shadow(color: Color.black.opacity(0.1), radius: 20, y: 10)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(Color.white.opacity(0.1), lineWidth: 1)
+        )
+    }
+    
+    private var expandedPromptView: some View {
+        VStack(spacing: 0) {
+            // Header with back button
+            HStack {
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        showExpandedView = false
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 14, weight: .medium))
+                        Text("Categories")
+                            .font(.system(size: 14))
+                    }
+                    .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+                
+                Spacer()
+                
+                // Category indicator
+                Label(selectedCategory.rawValue, systemImage: selectedCategory.icon)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(selectedCategory.color)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
                     .background(
                         Capsule()
-                            .fill(prompt.difficulty.color.opacity(0.15))
+                            .fill(selectedCategory.color.opacity(0.1))
                     )
+                
+                Spacer()
+                
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        isPresented = false
+                    }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.secondary)
+                        .symbolRenderingMode(.hierarchical)
+                }
+                .buttonStyle(.plain)
             }
+            .padding(20)
             
-            // Prompt text
-            Text(prompt.prompt)
-                .font(.system(size: 16, weight: .regular))
-                .multilineTextAlignment(.leading)
-                .fixedSize(horizontal: false, vertical: true)
+            Divider()
             
-            // Technique tip
-            VStack(alignment: .leading, spacing: 8) {
-                Label("Technique", systemImage: "lightbulb")
-                    .font(.system(size: 13, weight: .medium))
+            // Prompt content
+            ScrollView {
+                VStack(spacing: 20) {
+                    if let prompt = currentPrompt {
+                        elegantPromptCard(prompt)
+                            .padding(.horizontal, 20)
+                            .padding(.top, 20)
+                    }
+                    
+                    // Quick tips
+                    quickTips
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 20)
+                }
+            }
+            .frame(maxHeight: 400)
+        }
+        .frame(width: 520)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.regularMaterial)
+                .shadow(color: Color.black.opacity(0.1), radius: 20, y: 10)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(Color.white.opacity(0.1), lineWidth: 1)
+        )
+    }
+    
+    private func elegantPromptCard(_ prompt: WritingPrompt) -> some View {
+        VStack(alignment: .leading, spacing: 20) {
+            // Beautiful prompt display
+            VStack(alignment: .leading, spacing: 12) {
+                Text(prompt.prompt)
+                    .font(.system(size: 18, weight: .regular, design: .serif))
+                    .foregroundColor(.primary)
+                    .lineSpacing(6)
+                    .fixedSize(horizontal: false, vertical: true)
+                
+                HStack(spacing: 16) {
+                    // Time estimate
+                    HStack(spacing: 6) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 13))
+                        Text("\(prompt.estimatedTime) min")
+                            .font(.system(size: 14))
+                    }
                     .foregroundColor(.secondary)
+                    
+                    // Difficulty
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(prompt.difficulty.color)
+                            .frame(width: 6, height: 6)
+                        Text(prompt.difficulty.rawValue)
+                            .font(.system(size: 14))
+                    }
+                    .foregroundColor(.secondary)
+                }
+            }
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(selectedCategory.color.opacity(0.05))
+            )
+            
+            // Elegant technique card
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 8) {
+                    Image(systemName: "lightbulb.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.orange)
+                    Text("Writing Technique")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.primary)
+                }
                 
                 Text(prompt.technique)
                     .font(.system(size: 14))
                     .foregroundColor(.secondary)
+                    .lineSpacing(4)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(12)
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.secondary.opacity(0.05))
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(.ultraThinMaterial)
             )
             
-            // Actions
+            // Beautiful action buttons
             HStack(spacing: 12) {
                 Button {
                     onPromptSelected(prompt)
-                    isPresented = false
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "arrow.right.circle.fill")
-                        Text("Start Writing")
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        isPresented = false
                     }
-                    .font(.system(size: 14, weight: .medium))
+                } label: {
+                    HStack(spacing: 8) {
+                        Text("Start Writing")
+                            .font(.system(size: 15, weight: .medium))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 13, weight: .medium))
+                    }
                     .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
                     .background(
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(prompt.category.color)
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(selectedCategory.color)
                     )
                 }
                 .buttonStyle(.plain)
                 
                 Button {
-                    generatePrompt()
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                        generatePrompt()
+                    }
                 } label: {
                     HStack(spacing: 6) {
-                        Image(systemName: "arrow.clockwise")
+                        Image(systemName: "sparkles")
                         Text("New Prompt")
                     }
-                    .font(.system(size: 14))
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(.ultraThinMaterial)
+                    )
                 }
                 .buttonStyle(.plain)
-                
-                Spacer()
-                
-                // Time estimate
-                HStack(spacing: 4) {
-                    Image(systemName: "clock")
-                        .font(.system(size: 12))
-                    Text("\(prompt.estimatedTime) min")
-                        .font(.system(size: 13))
-                }
-                .foregroundColor(.secondary)
             }
         }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(NSColor.controlBackgroundColor))
-                .shadow(color: Color.black.opacity(0.05), radius: 5, y: 2)
-        )
     }
     
-    private var quickExercises: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Writing Tips")
-                .font(.system(size: 16, weight: .semibold))
+    private var quickTips: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Quick Writing Tips")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(.primary)
             
-            VStack(spacing: 10) {
-                WritingTipCard(
-                    icon: "lightbulb",
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 12),
+                GridItem(.flexible(), spacing: 12)
+            ], spacing: 12) {
+                QuickTipCard(
+                    icon: "bolt.fill",
                     color: .orange,
-                    title: "Start Small",
-                    tip: "Begin with just one sentence. Sometimes the hardest part is starting."
+                    title: "Start Fast",
+                    tip: "Write the first thing that comes to mind"
                 )
                 
-                WritingTipCard(
+                QuickTipCard(
                     icon: "timer",
                     color: .blue,
-                    title: "Set a Timer",
-                    tip: "Write for just 5 minutes without stopping. Let your thoughts flow freely."
+                    title: "Time Box",
+                    tip: "Set a 5-minute timer and don't stop"
                 )
                 
-                WritingTipCard(
-                    icon: "questionmark.circle",
+                QuickTipCard(
+                    icon: "sparkles",
                     color: .purple,
-                    title: "Ask Yourself",
-                    tip: "What's one thing that made you smile today? Start there."
+                    title: "Be Curious",
+                    tip: "Ask yourself 'What if?' and explore"
                 )
                 
-                WritingTipCard(
-                    icon: "heart",
+                QuickTipCard(
+                    icon: "heart.fill",
                     color: .pink,
-                    title: "Be Kind",
-                    tip: "Write to yourself like you would to a good friend."
+                    title: "Be Gentle",
+                    tip: "Write without judging yourself"
                 )
             }
         }
     }
     
-    
-    private var footerActions: some View {
-        HStack {
-            // Regenerate button
-            if currentPrompt != nil {
-                Button {
-                    generatePrompt()
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "arrow.clockwise")
-                        Text("New Prompt")
-                    }
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
-                }
-                .buttonStyle(.plain)
-            }
-            
-            Spacer()
-        }
-        .padding(20)
-        .background(VisualEffectView.windowBackground)
-    }
     
     // MARK: - Helper Methods
     
@@ -392,68 +483,92 @@ struct WritersBlockBreaker: View {
 
 // MARK: - Supporting Views
 
-struct CategoryButton: View {
+struct CategoryCard: View {
     let category: WritersBlockBreaker.PromptCategory
     let isSelected: Bool
+    let isHovered: Bool
     let action: () -> Void
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {
                 ZStack {
-                    Circle()
-                        .fill(isSelected ? category.color : Color.secondary.opacity(0.1))
-                        .frame(width: 44, height: 44)
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(category.color.opacity(isHovered ? 0.15 : 0.08))
+                        .frame(width: 64, height: 64)
                     
                     Image(systemName: category.icon)
-                        .font(.system(size: 20))
-                        .foregroundColor(isSelected ? .white : .secondary)
+                        .font(.system(size: 28, weight: .medium))
+                        .foregroundColor(category.color)
+                        .symbolRenderingMode(.hierarchical)
                 }
                 
-                Text(category.rawValue)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(isSelected ? category.color : .secondary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
-                    .frame(width: 72, height: 32)
+                VStack(spacing: 4) {
+                    Text(category.rawValue)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.primary)
+                    
+                    Text(getTipCount(for: category))
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
             }
-            .frame(width: 72)
-            .scaleEffect(isSelected ? 1.02 : 1)
+            .frame(width: 140, height: 140)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .strokeBorder(category.color.opacity(isHovered ? 0.3 : 0), lineWidth: 2)
+                    )
+            )
+            .scaleEffect(isHovered ? 1.05 : 1)
+            .shadow(color: category.color.opacity(isHovered ? 0.2 : 0), radius: 8)
         }
         .buttonStyle(.plain)
     }
+    
+    private func getTipCount(for category: WritersBlockBreaker.PromptCategory) -> String {
+        switch category {
+        case .inspiration: return "15+ prompts"
+        case .freeWrite: return "10+ exercises"
+        case .memory: return "20+ prompts"
+        case .whatIf: return "25+ scenarios"
+        case .sensory: return "12+ exercises"
+        case .dialogue: return "18+ prompts"
+        }
+    }
 }
 
-struct WritingTipCard: View {
+struct QuickTipCard: View {
     let icon: String
     let color: Color
     let title: String
     let tip: String
     
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 18))
-                .foregroundColor(color)
-                .frame(width: 24, height: 24)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.primary)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(color)
                 
-                Text(tip)
-                    .font(.system(size: 13))
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.primary)
             }
             
-            Spacer()
+            Text(tip)
+                .font(.system(size: 12))
+                .foregroundColor(.secondary)
+                .lineSpacing(2)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.secondary.opacity(0.05))
+            RoundedRectangle(cornerRadius: 10)
+                .fill(.ultraThinMaterial)
         )
     }
 }
