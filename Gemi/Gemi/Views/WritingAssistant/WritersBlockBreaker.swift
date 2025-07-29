@@ -86,12 +86,9 @@ struct WritersBlockBreaker: View {
     
     var body: some View {
         ZStack {
-            // Beautiful backdrop blur
-            Color.black.opacity(0.3)
-                .background(
-                    VisualEffectView.frostedGlass
-                        .ignoresSafeArea()
-                )
+            // Invisible backdrop for click-to-dismiss
+            Color.clear
+                .contentShape(Rectangle())
                 .onTapGesture {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                         isPresented = false
