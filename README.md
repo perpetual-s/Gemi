@@ -123,6 +123,9 @@ Gemi is a revolutionary journaling application that combines the power of Google
   - User never knows preprocessing occurred
 
 ### 5. Beautiful Native Experience
+
+![More Features - Focus Mode, Prompt Library, and More](assets/more-features.png)
+
 - **macOS Native**: Built with SwiftUI and Swift 6 strict concurrency (@MainActor compliance)
 - **Glass Morphism Design** (Theme.swift & GlassComponents.swift):
   - **Visual Effects**: VisualEffectView with .ultraThinMaterial and custom tinting
@@ -152,11 +155,10 @@ Gemi is a revolutionary journaling application that combines the power of Google
   - **Milestone Celebrations** (MilestoneCelebration.swift): Particle effects at 750 words
   - **Daily Streaks**: Track consecutive days of journaling
 
+
 ### 6. Multilingual Support (LocalizationManager.swift)
 
-![More Features - Focus Mode, Prompt Library, and More](assets/more-features.png)
-
-**20 fully localized languages** with 300+ translated strings per language:
+**20 fully localized languages** making Gemi accessible to 5.5 billion people worldwide, with 300+ translated strings per language:
 
 | Language | Native Name | Special Features | Font Optimization |
 |----------|-------------|------------------|-------------------|
