@@ -92,6 +92,11 @@ final class OllamaChatService: ObservableObject {
     private let maxRetries = 3
     private var isRecovering = false
     
+    // Enhanced monitoring
+    private var quickHealthCheckTimer: Timer?
+    private var lastKnownGoodConnection = Date()
+    private var connectionLostHandler: (() -> Void)?
+    
     // MARK: - Initialization
     
     private init() {
@@ -107,6 +112,7 @@ final class OllamaChatService: ObservableObject {
             await checkInitialStatus()
             await MainActor.run {
                 startHealthMonitoring()
+                startQuickHealthChecking()
             }
         }
     }
@@ -125,6 +131,9 @@ final class OllamaChatService: ObservableObject {
         guard ollamaRunning else {
             throw OllamaError.notRunning
         }
+        
+        // Update last known good connection
+        lastKnownGoodConnection = Date()
         
         // Ensure model is available
         let modelName = request.model.isEmpty ? defaultModel : request.model
@@ -228,7 +237,30 @@ final class OllamaChatService: ObservableObject {
                     }
                     
                 } catch {
-                    continuation.finish(throwing: error)
+                    // Handle connection errors specifically
+                    if let urlError = error as? URLError, 
+                       urlError.code == .cannotConnectToHost || 
+                       urlError.code == .networkConnectionLost ||
+                       urlError.code == .notConnectedToInternet {
+                        
+                        await MainActor.run {
+                            self.connectionStatus = .error("Ollama connection lost")
+                            self.isGenerating = false
+                        }
+                        
+                        // Attempt recovery
+                        await self.attemptRecovery()
+                        
+                        // If recovery succeeded, ask user to retry
+                        if await self.isOllamaRunning() {
+                            continuation.finish(throwing: OllamaError.connectionLostButRecovered)
+                        } else {
+                            continuation.finish(throwing: error)
+                        }
+                    } else {
+                        continuation.finish(throwing: error)
+                    }
+                    
                     await MainActor.run {
                         self.isGenerating = false
                     }
@@ -512,6 +544,7 @@ enum OllamaError: LocalizedError {
     case httpError(Int)
     case apiError(String)
     case startupTimeout
+    case connectionLostButRecovered
     
     var errorDescription: String? {
         switch self {
@@ -527,6 +560,8 @@ enum OllamaError: LocalizedError {
             return "Ollama API error: \(message)"
         case .startupTimeout:
             return "Ollama server failed to start"
+        case .connectionLostButRecovered:
+            return "Connection to Ollama was lost but has been restored"
         }
     }
     
@@ -544,6 +579,8 @@ enum OllamaError: LocalizedError {
             return "Please try your request again."
         case .startupTimeout:
             return "Try restarting the app or run 'ollama serve' manually."
+        case .connectionLostButRecovered:
+            return "Please try your request again."
         }
     }
 }
@@ -611,6 +648,54 @@ extension OllamaChatService {
         }
         
         isRecovering = false
+    }
+    
+    // MARK: - Enhanced Quick Health Monitoring
+    
+    private func startQuickHealthChecking() {
+        quickHealthCheckTimer?.invalidate()
+        quickHealthCheckTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                await self?.performQuickHealthCheck()
+            }
+        }
+    }
+    
+    private func performQuickHealthCheck() async {
+        // Skip if we're already recovering or generating
+        guard !isRecovering, !isGenerating else { return }
+        
+        // Quick check - just see if server responds
+        let isRunning = await isOllamaRunning()
+        
+        if !isRunning && connectionStatus == .connected {
+            // Connection just dropped
+            connectionStatus = .error("Ollama connection lost")
+            
+            // Notify any listeners
+            connectionLostHandler?()
+            
+            // Attempt immediate recovery
+            await attemptRecovery()
+        } else if isRunning && connectionStatus != .connected {
+            // Connection restored
+            connectionStatus = .connected
+            
+            // Check model status
+            if await isModelAvailable(defaultModel) {
+                modelStatus = .loaded
+            }
+        }
+    }
+    
+    /// Set a handler to be called when connection is lost
+    func setConnectionLostHandler(_ handler: @escaping () -> Void) {
+        connectionLostHandler = handler
+    }
+    
+    /// Force a connection check (useful after errors)
+    func forceConnectionCheck() async {
+        await performQuickHealthCheck()
     }
     
 }

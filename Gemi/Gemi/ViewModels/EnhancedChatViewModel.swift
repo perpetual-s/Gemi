@@ -26,7 +26,7 @@ final class EnhancedChatViewModel: ObservableObject {
     private let messagesPersistenceKey = "com.gemi.chat.messages"
     private let maxStoredMessages = 100 // Limit stored messages to prevent excessive storage
     private var lastConnectionCheck = Date()
-    private let connectionCheckInterval: TimeInterval = 60 // Check every 60 seconds
+    private let connectionCheckInterval: TimeInterval = 30 // Check every 30 seconds
     private var lastKnownConnectionStatus: ConnectionStatus = .disconnected
     
     // MARK: - Types
@@ -49,6 +49,13 @@ final class EnhancedChatViewModel: ObservableObject {
             name: NSNotification.Name("ModelLoadedSuccessfully"),
             object: nil
         )
+        
+        // Set up connection lost handler
+        OllamaChatService.shared.setConnectionLostHandler { [weak self] in
+            Task { @MainActor in
+                self?.handleConnectionLost()
+            }
+        }
     }
     
     @objc private func modelLoadedSuccessfully() {
@@ -81,8 +88,8 @@ final class EnhancedChatViewModel: ObservableObject {
                     self.checkAIConnectionSilently()
                 }
                 
-                // Wait 30 seconds between checks to reduce frequency
-                try? await Task.sleep(nanoseconds: 30_000_000_000)
+                // Wait 10 seconds between checks for better responsiveness
+                try? await Task.sleep(nanoseconds: 10_000_000_000)
             }
         }
         
@@ -305,11 +312,34 @@ final class EnhancedChatViewModel: ObservableObject {
                         self.messages.remove(at: assistantIndex)
                     }
                     
-                    // Set appropriate error
-                    if error is AIServiceError {
+                    // Handle specific Ollama errors
+                    if let ollamaError = error as? OllamaError {
+                        switch ollamaError {
+                        case .connectionLostButRecovered:
+                            // Connection was restored, prompt user to retry
+                            let recoveryMessage = ChatHistoryMessage(
+                                role: .assistant,
+                                content: "🔄 Connection to Ollama was temporarily lost but has been restored. Please try your message again."
+                            )
+                            self.messages.append(recoveryMessage)
+                            self.error = nil
+                            return
+                        case .notRunning:
+                            // Ollama stopped, update connection status
+                            self.connectionStatus = .disconnected
+                            self.error = AIServiceError.serviceUnavailable("Ollama is not running. Please restart it.")
+                        default:
+                            self.error = error
+                        }
+                    } else if error is AIServiceError {
                         self.error = error
                     } else {
                         self.error = AIServiceError.connectionFailed(error.localizedDescription)
+                    }
+                    
+                    // Force connection check after error
+                    Task {
+                        await OllamaChatService.shared.forceConnectionCheck()
                     }
                 }
             }
@@ -364,6 +394,24 @@ final class EnhancedChatViewModel: ObservableObject {
     }
     
     // MARK: - Private Methods
+    
+    private func handleConnectionLost() {
+        // Update connection status immediately
+        connectionStatus = .disconnected
+        
+        // Cancel any ongoing streaming
+        currentStreamingTask?.cancel()
+        
+        // If we were streaming, add a message to inform user
+        if isStreaming {
+            isStreaming = false
+            let errorMessage = ChatHistoryMessage(
+                role: .assistant,
+                content: "⚠️ Connection to Ollama was lost. Please wait while I try to reconnect..."
+            )
+            messages.append(errorMessage)
+        }
+    }
     
     private func setupInitialPrompts() {
         suggestedPrompts = [

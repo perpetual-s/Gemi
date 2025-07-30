@@ -36,6 +36,14 @@ struct GemiChatView: View {
                             .transition(.move(edge: .top).combined(with: .opacity))
                     }
                     
+                    // Error notification
+                    if viewModel.error != nil {
+                        ErrorNotificationBanner(error: viewModel.error!) {
+                            viewModel.error = nil
+                        }
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+                    
                     // Messages area
                     messagesScrollView
                     

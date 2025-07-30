@@ -97,12 +97,19 @@ final class OllamaInstaller: NSObject, ObservableObject {
     
     /// Start Ollama server
     func startOllamaServer() async throws {
-        // First, try to launch Ollama.app if it exists
+        // Check if already running
+        if await OllamaChatService.shared.health().healthy {
+            return
+        }
+        
+        // Try multiple approaches to start Ollama
+        
+        // Approach 1: Try to launch Ollama.app if it exists
         if FileManager.default.fileExists(atPath: ollamaAppPath) {
             NSWorkspace.shared.open(URL(fileURLWithPath: ollamaAppPath))
             
-            // Wait for server to start
-            for _ in 0..<30 {
+            // Wait for server to start (shorter wait)
+            for _ in 0..<10 {
                 if await OllamaChatService.shared.health().healthy {
                     return
                 }
@@ -110,23 +117,69 @@ final class OllamaInstaller: NSObject, ObservableObject {
             }
         }
         
-        // If app launch didn't work, try CLI
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: ollamaCliPath)
-        process.arguments = ["serve"]
+        // Approach 2: Try using 'which ollama' to find the binary
+        let whichProcess = Process()
+        whichProcess.executableURL = URL(fileURLWithPath: "/usr/bin/which")
+        whichProcess.arguments = ["ollama"]
         
-        // Run in background
-        process.standardOutput = FileHandle.nullDevice
-        process.standardError = FileHandle.nullDevice
+        let pipe = Pipe()
+        whichProcess.standardOutput = pipe
+        whichProcess.standardError = FileHandle.nullDevice
         
-        try process.run()
+        try whichProcess.run()
+        whichProcess.waitUntilExit()
         
-        // Wait for server to start
-        for _ in 0..<30 {
-            if await OllamaChatService.shared.health().healthy {
-                return
+        if whichProcess.terminationStatus == 0 {
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            if let ollamaPath = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !ollamaPath.isEmpty {
+                
+                // Try to start using the found path
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: ollamaPath)
+                process.arguments = ["serve"]
+                
+                // Run in background
+                process.standardOutput = FileHandle.nullDevice
+                process.standardError = FileHandle.nullDevice
+                process.qualityOfService = .background
+                
+                try process.run()
+                
+                // Wait for server to start
+                for _ in 0..<15 {
+                    if await OllamaChatService.shared.health().healthy {
+                        return
+                    }
+                    try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                }
             }
-            try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+        }
+        
+        // Approach 3: Try the hardcoded CLI path as last resort
+        if FileManager.default.fileExists(atPath: ollamaCliPath) {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: ollamaCliPath)
+            process.arguments = ["serve"]
+            
+            // Run in background
+            process.standardOutput = FileHandle.nullDevice
+            process.standardError = FileHandle.nullDevice
+            
+            try process.run()
+            
+            // Wait for server to start
+            for _ in 0..<15 {
+                if await OllamaChatService.shared.health().healthy {
+                    return
+                }
+                try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+            }
+        }
+        
+        // Final check
+        if await OllamaChatService.shared.health().healthy {
+            return
         }
         
         throw OllamaInstallerError.serverStartFailed
