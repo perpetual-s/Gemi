@@ -1,12 +1,12 @@
 ![Gemi Banner](assets/gemi-banner.png)
 
-# Gemi - Your Private AI Diary 📔
+# Gemi - Your Private AI Diary
 
 An offline-first, multilingual AI diary for macOS that runs entirely on your device. Built for the Google DeepMind Gemma 3n Impact Challenge.
 
 ![Meet Gemi](assets/meet-gemi.png)
 
-## 🌟 Overview
+## Overview
 
 ![Gemi Overview](assets/gemi-overview.png)
 
@@ -18,9 +18,9 @@ Gemi is a revolutionary journaling application that combines the power of Google
 
 **The Solution**: Gemi brings the power of advanced AI to your personal journaling while keeping everything on your device. Named after the Korean word "재미" (fun), Gemi makes AI-powered journaling both enjoyable and private.
 
-## ✨ Key Features
+## Key Features
 
-### 🔐 Privacy-First Architecture
+### 1. Privacy-First Architecture
 - **100% Offline Operation**: All AI processing via Ollama running locally on localhost:11434
 - **End-to-End Encryption**: Military-grade AES-256-GCM encryption via CryptoKit for all journal entries and memories
 - **No Cloud Dependencies**: Works perfectly in airplane mode - your data never leaves your Mac
@@ -30,7 +30,10 @@ Gemi is a revolutionary journaling application that combines the power of Google
 - **Keychain Integration**: Encryption keys stored securely in macOS Keychain with biometric protection
 - **App Sandbox Compliance**: Full macOS sandboxing with minimal entitlements
 
-### 🤖 AI-Powered Writing Assistant (CommandBarAssistant.swift)
+### 2. AI-Powered Writing Assistant (CommandBarAssistant.swift)
+
+![AI Writing Assistant - Magic Command Bar](assets/magic-command.png)
+
 - **Smart Command Bar** (⌘⇧W): Floating assistant with three contextual tools:
   - 🔵 **Continue Writing**: Natural flow extension with 0.7 temperature for coherent narrative
   - 🟠 **Get Ideas**: Creative exploration with 0.8 temperature and context-aware suggestions
@@ -54,7 +57,10 @@ Gemi is a revolutionary journaling application that combines the power of Google
   - Maintains user's language throughout conversation
   - Cultural context preservation
 
-### 🧠 Intelligent Memory System (MemoryManager.swift & GemiAICoordinator.swift)
+### 3. Intelligent Memory System (MemoryManager.swift & GemiAICoordinator.swift)
+
+![Intelligent Memory System](assets/memories.png)
+
 - **Selective Information Extraction**: Sophisticated prompt engineering ensures quality:
   - **Extracts**: Personal identity, significant relationships, major life events, health conditions, long-term goals
   - **Ignores**: Daily routines, weather, meals, temporary states, entertainment consumption
@@ -80,7 +86,7 @@ Gemi is a revolutionary journaling application that combines the power of Google
   - Encrypted storage with per-entry keys
   - Background extraction to prevent UI blocking
 
-### 🎨 Multimodal Capabilities (MultimodalAIService.swift)
+### 4. Multimodal Capabilities (MultimodalAIService.swift)
 - **Image Understanding** (LightweightVisionService.swift):
   - **Vision Framework Integration**: Hardware-accelerated on Apple Silicon Neural Engine
   - **Analysis Types**: 
@@ -116,7 +122,7 @@ Gemi is a revolutionary journaling application that combines the power of Google
   - Seamless integration with Gemma 3n via enhanced text descriptions
   - User never knows preprocessing occurred
 
-### 🎯 Beautiful Native Experience
+### 5. Beautiful Native Experience
 - **macOS Native**: Built with SwiftUI and Swift 6 strict concurrency (@MainActor compliance)
 - **Glass Morphism Design** (Theme.swift & GlassComponents.swift):
   - **Visual Effects**: VisualEffectView with .ultraThinMaterial and custom tinting
@@ -146,7 +152,10 @@ Gemi is a revolutionary journaling application that combines the power of Google
   - **Milestone Celebrations** (MilestoneCelebration.swift): Particle effects at 750 words
   - **Daily Streaks**: Track consecutive days of journaling
 
-### 🌍 Multilingual Support (LocalizationManager.swift)
+### 6. Multilingual Support (LocalizationManager.swift)
+
+![More Features - Focus Mode, Prompt Library, and More](assets/more-features.png)
+
 **20 fully localized languages** with 300+ translated strings per language:
 
 | Language | Native Name | Special Features | Font Optimization |
@@ -187,9 +196,9 @@ Gemi is a revolutionary journaling application that combines the power of Google
   - Error messages and alerts
   - AI prompts and responses
 
-## 🔧 Core Technologies
+## Core Technologies
 
-### 🤖 Gemma 3n Integration
+### Gemma 3n Integration
 
 #### Model Architecture
 - **MatFormer Technology**: Nested models for efficiency
@@ -259,7 +268,7 @@ Gemi dynamically adjusts temperature based on writing context (AIConfiguration.s
 - **top_p**: 0.95 (natural language flow)
 - **max_tokens**: 4096 (long-form support)
 
-### 🧠 Intelligent Memory Extraction
+### Intelligent Memory Extraction
 
 Gemi's memory system uses sophisticated prompt engineering to extract only meaningful information (GemiAICoordinator.swift):
 
@@ -306,9 +315,11 @@ Examples of GOOD extractions:
 - **Structured Rules**: Clear examples of what to extract vs ignore
 - **Privacy-First**: All extraction happens locally, memories never leave device
 
-### 🌐 Innovative Multimodal Architecture
+### Innovative Multimodal Architecture
 
 #### The Challenge: Making Gemma 3n Truly Multimodal
+
+![The Multimodal Challenge - Building The Impossible](assets/multimodal-challenges.png)
 
 When building Gemi, we faced significant technical barriers:
 
@@ -338,7 +349,7 @@ When building Gemi, we faced significant technical barriers:
 
 Instead of waiting or giving up, we engineered an innovative solution:
 
-![Gemi Multimodal Architecture](assets/diagram-1.svg)
+![Gemi Multimodal Architecture](assets/multimodal-architecture.png)
 
 **Key Innovation Points**:
 
@@ -378,7 +389,7 @@ Gemi: "What a monumental achievement! Graduating from Stanford is no small feat.
 
 The user experiences native multimodal AI while everything runs locally!
 
-## 📁 Project Structure
+## Project Structure
 ```
 Gemi/
 ├── Gemi/                      # Main application
@@ -413,9 +424,9 @@ Gemi/
 └── LICENSE                # CC BY 4.0 License
 ```
 
-## 🏗️ Technical Architecture
+## Technical Architecture
 
-### 🛠️ Technology Stack
+### Technology Stack
 
 #### Frontend
 - **SwiftUI**: Modern declarative UI with iOS 17+ features
@@ -448,7 +459,7 @@ Gemi/
 - **LocalAuthentication**: Touch ID integration
 - **App Sandbox**: Full macOS sandboxing compliance
 
-### 💻 System Requirements
+### System Requirements
 
 #### Minimum Requirements
 - **macOS**: 13.0 Ventura or later
@@ -466,18 +477,38 @@ Gemi/
 - **Storage**: 20GB free space for multiple models
 - **Display**: Retina display for best visual experience
 
-## 📦 Installation
+## Installation
 
-### 🚀 For Users
+### For Users 🚀
+
+#### Important: macOS Security Notice
+When downloading Gemi from GitHub, macOS may show a security warning because it's not distributed through the App Store. This is normal for open-source apps.
+
+**Why this happens**: Gemi is an open-source app that prioritizes your privacy. We chose not to enroll in Apple's Developer Program ($99/year) because:
+- It would require sharing user analytics with Apple
+- Privacy software should be free and open
+- The money is better spent on development
+
+#### Installation Steps
 
 1. **Download Gemi**
-   - Get `Gemi.dmg` from [Releases](https://github.com/yourusername/gemi/releases)
+   - Get `Gemi-Installer.dmg` from [Releases](https://github.com/yourusername/gemi/releases)
    - Verify SHA-256 checksum for security
 
-2. **Install the App**
-   - Open `Gemi.dmg`
-   - Drag Gemi icon to Applications folder
-   - Eject the disk image
+2. **Install the App (Two Methods)**
+   
+   **Method 1: Right-Click to Open (Recommended)**
+   - **Don't double-click!** Instead, right-click (or Control-click) the DMG
+   - Select "Open" from the context menu
+   - Click "Open" in the security dialog
+   - Drag Gemi to Applications folder
+   
+   **Method 2: Security & Privacy Settings**
+   - Download and try to open `Gemi-Installer.dmg`
+   - When blocked, go to System Settings → Privacy & Security
+   - Look for "Gemi-Installer.dmg was blocked..."
+   - Click "Open Anyway"
+   - Enter your password and proceed
 
 3. **First Launch Setup**
    - Grant necessary permissions (disk access for journals)
@@ -491,7 +522,7 @@ Gemi/
    - Try the AI assistant with ⌘⇧W
    - Your journey to better self-reflection begins
 
-### 👩‍💻 For Developers
+### For Developers 👩‍💻
 
 ```bash
 # Clone the repository
@@ -519,12 +550,7 @@ open Gemi/Gemi.xcodeproj
 # Product > Run (⌘R)
 ```
 
-#### Build Configurations
-- **Debug**: Full logging, assertions enabled
-- **Release**: Optimized, minimal logging
-- **Profile**: Performance profiling enabled
-
-## 🔒 Privacy & Security Implementation
+## Privacy & Security Implementation
 
 ### Complete Network Isolation
 ```swift
@@ -549,7 +575,7 @@ let visionRequest = VNRequest()  // Vision - no cloud options
 - **Data Export**: Your data in standard formats (JSON, Markdown)
 - **Complete Deletion**: Secure wipe with no recovery
 
-## ⚡ Performance Metrics
+## Performance Metrics
 
 ### Speed Benchmarks (M4 Max MacBook Pro)
 - **App Launch**: <1 second cold start
@@ -560,14 +586,7 @@ let visionRequest = VNRequest()  // Vision - no cloud options
 - **Image Analysis**: <2 seconds for classification + OCR
 - **Audio Transcription**: Real-time factor of 0.1x
 
-### Resource Usage
-- **Memory (App)**: 1.5GB baseline
-- **Memory (Ollama + Model)**: 4.5GB
-- **CPU Usage**: 5% idle, 40% during generation
-- **Disk I/O**: Minimal, batch writes every 30 seconds
-- **Battery Impact**: Low energy impact rating
-
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
@@ -603,14 +622,7 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
    - Performance tests for AI operations
    - Memory leak detection
 
-### Areas We Need Help
-- 🌐 Additional language translations
-- 🎨 UI/UX improvements
-- 🧪 Test coverage expansion
-- 📚 Documentation improvements
-- 🐛 Bug fixes and performance optimization
-
-## 📄 License
+## License
 
 Gemi is released under the Creative Commons Attribution 4.0 International License (CC BY 4.0). See [LICENSE](LICENSE) for full details.
 
@@ -621,7 +633,7 @@ Gemi is released under the Creative Commons Attribution 4.0 International Licens
 **Under the following terms**:
 - **Attribution** — You must give appropriate credit, provide a link to the license, and indicate if changes were made.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 ### Special Thanks
 - **Google DeepMind** for Gemma 3n and the Impact Challenge
@@ -637,7 +649,7 @@ Gemi is released under the Creative Commons Attribution 4.0 International Licens
 ### Beta Testers
 Thank you to our early users who provided invaluable feedback!
 
-## 🛡️ Privacy Commitment
+## Privacy Commitment
 
 Your privacy is our core principle. Gemi will **never**:
 - 🚫 Upload your data to any server
@@ -657,28 +669,28 @@ Your privacy is our core principle. Gemi will **never**:
 
 **Your stories stay yours, forever.**
 
-## 🏆 Goals & Recognition
+## Goals & Recognition
 
 - 🎯 Built for Google DeepMind Gemma 3n Impact Challenge
 - 🎯 Aiming for the Grand Prize
 - 🎯 Ollama Prize Contender
 
-## 📞 Contact & Support
+## Contact & Support
 
 - **Developer**: Chaeho Shin (cogh0972@gmail.com)
 - **Bug Reports**: [GitHub Issues](https://github.com/yourusername/gemi/issues)
 - **Feature Requests**: [Discussions](https://github.com/yourusername/gemi/discussions)
 - **Security Issues**: cogh0972@gmail.com
 
-## 🚀 Roadmap
+## Roadmap 🚀
 
-### Version 1.0 (Current)
+### Version 1.x (Current)
 - ✅ Core journaling with AI assistance
 - ✅ Memory system
 - ✅ Multimodal support
 - ✅ 20 languages
 
-### Version 2.0 (Planned)
+### Version 2.x (Planned)
 - 📱 iOS companion app with iCloud sync
 - 🎙️ Advanced voice journaling
 - 📊 Mood analytics and insights
