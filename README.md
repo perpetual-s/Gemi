@@ -14,9 +14,21 @@ Gemi is a revolutionary journaling application that combines the power of Google
 
 ### Why Gemi?
 
-**The Problem**: Only 2.9% of AI conversations are about personal or emotional support ([according to Anthropic's research](https://www.anthropic.com/news/how-people-use-claude-for-support-advice-and-companionship)). Why? Because people don't trust the cloud with their secrets.
+**The Mental Health Crisis**: 1 in 5 Americans suffers from mental illness, yet almost 6 in 10 receive no treatment (NAMI, 2024). This represents millions suffering in silence.
 
-**The Solution**: Gemi brings the power of advanced AI to your personal journaling while keeping everything on your device. Named after the Korean word "재미" (fun), Gemi makes AI-powered journaling both enjoyable and private.
+**AI Can Help**: A 2025 meta-analysis found that AI conversational agents are valid tools for early intervention, showing significant positive effects on depressive symptoms in youth (Feng et al., 2025).
+
+**The Trust Paradox**: Despite AI's proven effectiveness, only 2.9% of AI conversations are about personal or emotional support ([Anthropic Research, 2025](https://www.anthropic.com/news/how-people-use-claude-for-support-advice-and-companionship)). Yet when people do use AI for support:
+- 86% of emotionally significant conversations fall into support categories
+- Conversations consistently end more positively than they begin
+- Negative emotional spirals are proven to be uncommon
+
+**The Real Barrier**: It's not that people don't need help—it's that they don't trust the cloud. Major AI platforms:
+- May incidentally include your personal information in training data
+- Are court-mandated to retain all chat data indefinitely, even "deleted" conversations
+- Break the fundamental promise of privacy
+
+**The Solution**: Gemi brings the power of advanced AI to your personal journaling while keeping everything on your device. Your deepest thoughts deserve better than cloud storage—they deserve a true sanctuary. Named after the Korean word "재미" (fun), Gemi makes AI-powered journaling both powerful and private.
 
 ## Key Features
 
@@ -158,7 +170,9 @@ Gemi is a revolutionary journaling application that combines the power of Google
 
 ### 6. Multilingual Support (LocalizationManager.swift)
 
-**20 fully localized languages** making Gemi accessible to 5.5 billion people worldwide, with 300+ translated strings per language:
+**Mental health has no borders. Neither does Gemi.**
+
+**20 fully localized languages** making private mental wellness accessible to 5.5 billion people worldwide, with 300+ translated strings per language:
 
 | Language | Native Name | Special Features | Font Optimization |
 |----------|-------------|------------------|-------------------|
@@ -326,26 +340,27 @@ Examples of GOOD extractions:
 When building Gemi, I faced significant technical barriers:
 
 1. **MLX-Swift Limitations** ❌
-   - Apple's native ML framework doesn't support Gemma 3n's multimodal features
-   - Text-only inference available
-   - No image encoder or audio processing pipeline
-   - Missing interleaved attention mechanisms
+   - MLX-Swift has limitations with weight loading for Gemma 3n
+   - Does not support key Gemma 3n innovations: MatFormer, PLE, LAuReL, AltUp
+   - Architecture gaps prevent full model functionality
+   - Missing multimodal support infrastructure
 
 2. **Python Server Approach Failed** ❌
    ```python
    # What I tried:
-   from transformers import AutoModelForCausalLM
-   model = AutoModelForCausalLM.from_pretrained("google/gemma-3n-it")
-   # Result: macOS App Sandbox blocked 8GB model downloads
+   from transformers import Gemma3nForConditionalGeneration
+   model = Gemma3nForConditionalGeneration.from_pretrained("google/gemma-3n-E4B-it")
+   # Result: macOS App Sandbox blocked 8GB+ model downloads
    ```
-   - Security policies prevented model downloads
-   - Python subprocess isolation issues
-   - No reliable way to bundle pre-downloaded models
+   - macOS App Sandbox prevents downloading large models at runtime
+   - Breaks the zero-friction installation promise
+   - Security restrictions create installation complexity
+   - Users would need manual Python setup and model downloads
 
 3. **Ollama's Current Limitation** ⚠️
-   - REST API accepts images but ignores them
-   - No audio support in current protocol
-   - Multimodal features "coming soon"
+   - Text-only support for Gemma 3n
+   - No multimodal functionality for Gemma 3n (GitHub Issue #10792)
+   - REST API structure exists but multimodal not implemented
 
 #### Our Solution: Apple Frameworks + Gemma 3n = Magic ✨
 
@@ -704,6 +719,14 @@ Your privacy is our core principle. Gemi will **never**:
 - 📚 Book generation from your journals
 - 🧠 Advanced psychological insights
 - 🌍 50+ language support
+
+## References
+
+Anthropic. (2025, June 26). How people use Claude for support, advice, and companionship. https://www.anthropic.com/news/how-people-use-claude-for-support-advice-and-companionship
+
+Feng, Y., Hang, Y., Wu, W., Song, X., Xiao, X., Dong, F., & Qiao, Z. (2025). Effectiveness of AI-Driven Conversational Agents in Improving Mental Health Among Young People: Systematic Review and Meta-Analysis. Journal of medical Internet research, 27, e69639. https://doi.org/10.2196/69639
+
+National Alliance on Mental Illness. (2024). Mental Health by the Numbers. https://www.nami.org/mhstats
 
 ---
 
