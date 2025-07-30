@@ -321,7 +321,7 @@ Examples of GOOD extractions:
 
 ![The Multimodal Challenge - Building The Impossible](assets/multimodal-challenges.png)
 
-When building Gemi, we faced significant technical barriers:
+When building Gemi, I faced significant technical barriers:
 
 1. **MLX-Swift Limitations** ❌
    - Apple's native ML framework doesn't support Gemma 3n's multimodal features
@@ -331,7 +331,7 @@ When building Gemi, we faced significant technical barriers:
 
 2. **Python Server Approach Failed** ❌
    ```python
-   # What we tried:
+   # What I tried:
    from transformers import AutoModelForCausalLM
    model = AutoModelForCausalLM.from_pretrained("google/gemma-3n-it")
    # Result: macOS App Sandbox blocked 8GB model downloads
@@ -347,7 +347,7 @@ When building Gemi, we faced significant technical barriers:
 
 #### Our Solution: Apple Frameworks + Gemma 3n = Magic ✨
 
-Instead of waiting or giving up, we engineered an innovative solution:
+Instead of waiting or giving up, I engineered an innovative solution:
 
 ![Gemi Multimodal Architecture](assets/multimodal-architecture.png)
 
@@ -484,7 +484,7 @@ Gemi/
 #### Important: macOS Security Notice
 When downloading Gemi from GitHub, macOS may show a security warning because it's not distributed through the App Store. This is normal for open-source apps.
 
-**Why this happens**: Gemi is an open-source app that prioritizes your privacy. We chose not to enroll in Apple's Developer Program ($99/year) because:
+**Why this happens**: Gemi is an open-source app that prioritizes your privacy. I chose not to enroll in Apple's Developer Program ($99/year) because:
 - It would require sharing user analytics with Apple
 - Privacy software should be free and open
 - The money is better spent on development
@@ -588,7 +588,7 @@ let visionRequest = VNRequest()  // Vision - no cloud options
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+I welcome contributions! Please see the [Contributing Guidelines](CONTRIBUTING.md) for details.
 
 ### Development Setup
 
@@ -659,7 +659,7 @@ Your privacy is our core principle. Gemi will **never**:
 - 🚫 Use your data for AI training
 - 🚫 Have "terms of service" that claim your content
 
-### What We DO Promise
+### What I DO Promise
 - ✅ Your data stays on YOUR device
 - ✅ You can export everything anytime
 - ✅ You can delete everything permanently
