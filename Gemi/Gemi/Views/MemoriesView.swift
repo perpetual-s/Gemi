@@ -430,182 +430,202 @@ struct ProcessEntriesView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header
+            // Window Title Bar
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Extract Memories")
-                        .font(.system(size: 20, weight: .semibold))
-                    Text("Use AI to find important details in your journal")
-                        .font(.system(size: 13))
-                        .foregroundColor(.secondary)
-                }
+                Text("Extract Memories")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.primary)
+                
                 Spacer()
+                
                 Button {
                     dismiss()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 24))
+                        .font(.system(size: 16))
                         .foregroundColor(.secondary.opacity(0.6))
-                        .background(Circle().fill(Color.clear))
+                        .symbolRenderingMode(.hierarchical)
                 }
                 .buttonStyle(.plain)
                 .disabled(isProcessing)
+                .help("Close")
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 20)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(VisualEffectView(material: .titlebar, blendingMode: .withinWindow))
             
-            Divider()
-            
-            // Content
-            VStack(spacing: 0) {
-                // Icon and description
-                VStack(spacing: 20) {
+            // Main Content
+            if isProcessing {
+                // Processing View
+                VStack(spacing: 32) {
+                    // Progress Circle
                     ZStack {
+                        // Background circle
                         Circle()
-                            .fill(LinearGradient(
-                                colors: [Theme.Colors.primaryAccent.opacity(0.2), Theme.Colors.primaryAccent.opacity(0.1)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ))
-                            .frame(width: 80, height: 80)
+                            .stroke(Color.secondary.opacity(0.15), lineWidth: 8)
+                            .frame(width: 120, height: 120)
                         
-                        Image(systemName: "brain")
-                            .font(.system(size: 40))
-                            .foregroundColor(Theme.Colors.primaryAccent)
-                            .symbolRenderingMode(.hierarchical)
-                            .symbolEffect(.pulse, options: .speed(0.5), isActive: isProcessing)
+                        // Progress circle
+                        Circle()
+                            .trim(from: 0, to: totalCount > 0 ? CGFloat(processedCount) / CGFloat(totalCount) : 0)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [Theme.Colors.primaryAccent, Theme.Colors.primaryAccent.opacity(0.7)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                            )
+                            .frame(width: 120, height: 120)
+                            .rotationEffect(.degrees(-90))
+                            .animation(.spring(response: 0.5, dampingFraction: 0.8), value: processedCount)
+                        
+                        // Percentage and icon
+                        VStack(spacing: 4) {
+                            Image(systemName: "brain")
+                                .font(.system(size: 28))
+                                .foregroundColor(Theme.Colors.primaryAccent)
+                                .symbolRenderingMode(.hierarchical)
+                                .symbolEffect(.pulse, options: .speed(0.8).repeating, isActive: isProcessing)
+                            
+                            Text("\(Int((totalCount > 0 ? Double(processedCount) / Double(totalCount) : 0) * 100))%")
+                                .font(.system(size: 24, weight: .semibold, design: .rounded))
+                                .monospacedDigit()
+                        }
                     }
                     
-                    Text("Gemi will analyze your entries and extract key memories")
-                        .font(.system(size: 15))
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(.top, 30)
-                
-                // Time range selection - only show when not processing
-                if !isProcessing {
-                    VStack(spacing: 16) {
-                        Text("Select time range")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.secondary)
+                    // Status Text
+                    VStack(spacing: 12) {
+                        Text("Processing entry \(processedCount) of \(totalCount)")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.primary)
                         
-                        VStack(spacing: 8) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 14))
+                                .foregroundColor(Theme.Colors.primaryAccent)
+                                .symbolEffect(.pulse, options: .speed(1.5).repeating, isActive: isProcessing)
+                            
+                            Text("\(extractedMemoriesCount) memories extracted")
+                                .font(.system(size: 15, weight: .regular))
+                                .foregroundColor(Theme.Colors.primaryAccent)
+                                .monospacedDigit()
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(
+                            Capsule()
+                                .fill(Theme.Colors.primaryAccent.opacity(0.1))
+                                .overlay(
+                                    Capsule()
+                                        .strokeBorder(Theme.Colors.primaryAccent.opacity(0.2), lineWidth: 1)
+                                )
+                        )
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .scale(scale: 0.95)),
+                    removal: .opacity
+                ))
+            } else {
+                // Selection View
+                VStack(spacing: 0) {
+                    // Header Section
+                    VStack(spacing: 16) {
+                        // Icon
+                        ZStack {
+                            Circle()
+                                .fill(LinearGradient(
+                                    colors: [Theme.Colors.primaryAccent.opacity(0.15), Theme.Colors.primaryAccent.opacity(0.05)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ))
+                                .frame(width: 64, height: 64)
+                            
+                            Image(systemName: "brain")
+                                .font(.system(size: 32))
+                                .foregroundColor(Theme.Colors.primaryAccent)
+                                .symbolRenderingMode(.hierarchical)
+                        }
+                        
+                        VStack(spacing: 4) {
+                            Text("Extract Key Memories")
+                                .font(.system(size: 18, weight: .semibold))
+                            
+                            Text("AI will analyze your entries and remember important details")
+                                .font(.system(size: 13))
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .frame(maxWidth: 320)
+                        }
+                    }
+                    .padding(.top, 24)
+                    .padding(.bottom, 20)
+                    
+                    Divider()
+                        .padding(.horizontal, 20)
+                    
+                    // Time Range Selection
+                    VStack(spacing: 12) {
+                        Text("Select time range")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 20)
+                        
+                        VStack(spacing: 6) {
                             ForEach(TimeRange.allCases, id: \.self) { range in
-                                TimeRangeOption(
+                                CompactTimeRangeOption(
                                     range: range,
                                     isSelected: selectedTimeRange == range,
                                     onSelect: { selectedTimeRange = range }
                                 )
                             }
                         }
-                        .padding(.horizontal, 40)
+                        .padding(.horizontal, 20)
                     }
-                    .padding(.top, 30)
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .move(edge: .top)),
-                        removal: .opacity
-                    ))
-                }
-                
-                Spacer()
-                
-                // Progress or action button with dynamic layout
-                VStack(spacing: 0) {
-                    if isProcessing {
-                        VStack(spacing: 24) {
-                            // Progress indicator
-                            ZStack {
-                                Circle()
-                                    .stroke(Color.secondary.opacity(0.2), lineWidth: 6)
-                                    .frame(width: 80, height: 80)
-                                
-                                Circle()
-                                    .trim(from: 0, to: totalCount > 0 ? CGFloat(processedCount) / CGFloat(totalCount) : 0)
-                                    .stroke(
-                                        LinearGradient(
-                                            colors: [Theme.Colors.primaryAccent, Theme.Colors.primaryAccent.opacity(0.7)],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        ),
-                                        style: StrokeStyle(lineWidth: 6, lineCap: .round)
-                                    )
-                                    .frame(width: 80, height: 80)
-                                    .rotationEffect(.degrees(-90))
-                                    .animation(.spring(response: 0.5, dampingFraction: 0.8), value: processedCount)
-                                
-                                Text("\(Int((totalCount > 0 ? Double(processedCount) / Double(totalCount) : 0) * 100))%")
-                                    .font(.system(size: 20, weight: .semibold, design: .rounded))
-                                    .monospacedDigit()
-                            }
-                            
-                            VStack(spacing: 8) {
-                                Text("Processing entry \(processedCount) of \(totalCount)")
-                                    .font(.system(size: 15, weight: .medium))
-                                    .foregroundColor(.primary)
-                                
-                                HStack(spacing: 8) {
-                                    Image(systemName: "sparkles")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(Theme.Colors.primaryAccent)
-                                        .symbolEffect(.pulse, options: .speed(1.5).repeating, isActive: isProcessing)
-                                    
-                                    Text("\(extractedMemoriesCount) memories extracted")
-                                        .font(.system(size: 14, weight: .regular))
-                                        .foregroundColor(Theme.Colors.primaryAccent)
-                                        .monospacedDigit()
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(
-                                    Capsule()
-                                        .fill(Theme.Colors.primaryAccent.opacity(0.1))
-                                )
-                            }
+                    .padding(.vertical, 20)
+                    
+                    Spacer()
+                    
+                    // Action Button
+                    Button {
+                        processEntries()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "wand.and.stars")
+                                .font(.system(size: 14))
+                            Text("Start Extraction")
+                                .font(.system(size: 14, weight: .medium))
                         }
-                        .frame(height: 180)
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .scale(scale: 0.9)),
-                            removal: .opacity
-                        ))
-                    } else {
-                        Button {
-                            processEntries()
-                        } label: {
-                            HStack(spacing: 8) {
-                                Image(systemName: "wand.and.stars")
-                                    .font(.system(size: 15))
-                                Text("Start Extraction")
-                                    .font(.system(size: 15, weight: .medium))
-                            }
-                            .padding(.horizontal, 32)
-                            .padding(.vertical, 16)
-                            .background(
-                                LinearGradient(
-                                    colors: [Theme.Colors.primaryAccent, Theme.Colors.primaryAccent.opacity(0.8)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            LinearGradient(
+                                colors: [Theme.Colors.primaryAccent, Theme.Colors.primaryAccent.opacity(0.85)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
                             )
-                            .foregroundColor(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .shadow(color: Theme.Colors.primaryAccent.opacity(0.3), radius: 8, y: 4)
-                        }
-                        .buttonStyle(AnimatedButtonStyle())
-                        .frame(height: 180)
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .scale(scale: 0.9)),
-                            removal: .opacity
-                        ))
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .shadow(color: Theme.Colors.primaryAccent.opacity(0.25), radius: 6, y: 3)
                     }
+                    .buttonStyle(AnimatedButtonStyle())
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
                 }
-                .padding(.bottom, 40)
+                .transition(.asymmetric(
+                    insertion: .opacity,
+                    removal: .opacity.combined(with: .scale(scale: 0.95))
+                ))
             }
         }
-        .frame(width: 540, height: 680)
+        .frame(width: 420, height: 520)
         .background(Theme.Colors.windowBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.15), radius: 20)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .shadow(color: Color.black.opacity(0.2), radius: 20, y: 5)
         .animation(Theme.gentleSpring, value: isProcessing)
     }
     
@@ -730,5 +750,60 @@ struct TimeRangeOption: View {
             )
         }
         .buttonStyle(.plain)
+    }
+}
+
+struct CompactTimeRangeOption: View {
+    let range: ProcessEntriesView.TimeRange
+    let isSelected: Bool
+    let onSelect: () -> Void
+    
+    @State private var isHovered = false
+    
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 10) {
+                Image(systemName: range.icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(isSelected ? Theme.Colors.primaryAccent : .secondary)
+                    .frame(width: 20)
+                
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(range.rawValue)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(isSelected ? .primary : .primary.opacity(0.9))
+                    
+                    Text(range.description)
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary.opacity(0.8))
+                }
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(Theme.Colors.primaryAccent)
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? Theme.Colors.primaryAccent.opacity(0.1) : (isHovered ? Color.secondary.opacity(0.08) : Color.secondary.opacity(0.05)))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(isSelected ? Theme.Colors.primaryAccent.opacity(0.5) : Color.clear, lineWidth: 1)
+                    )
+            )
+            .scaleEffect(isHovered && !isSelected ? 1.02 : 1)
+            .animation(.easeOut(duration: 0.15), value: isHovered)
+            .animation(.easeOut(duration: 0.2), value: isSelected)
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            isHovered = hovering
+        }
     }
 }
