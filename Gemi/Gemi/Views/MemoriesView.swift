@@ -486,6 +486,7 @@ struct ProcessEntriesView: View {
                         Text("Processing entry \(processedCount) of \(totalCount)")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.primary)
+                            .padding(.top, 24) // Add space between progress circle and text
                         
                         HStack(spacing: 8) {
                             Image(systemName: "sparkles")
