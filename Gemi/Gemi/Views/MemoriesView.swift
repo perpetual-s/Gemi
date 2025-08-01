@@ -20,7 +20,7 @@ struct MemoriesView: View {
         .background(Theme.Colors.windowBackground)
         .sheet(isPresented: $showingProcessingView) {
             ProcessEntriesView()
-                .frame(width: 480, height: 620)
+                .frame(width: 480, height: 540)
         }
         // Removed: alert for deletion confirmation
     }
@@ -512,6 +512,7 @@ struct ProcessEntriesView: View {
                     }
                     
                     Spacer()
+                        .frame(height: 40) // Fixed height spacer instead of flexible
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.horizontal, 20)
