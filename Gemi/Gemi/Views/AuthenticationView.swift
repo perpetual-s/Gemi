@@ -298,6 +298,10 @@ struct AuthenticationView: View {
             return "Password authentication required."
         case .weakPassword:
             return "Password must be at least 6 characters."
+        case .keychainAccessDenied:
+            return "Keychain access was denied. Please restart the app."
+        case .keychainItemNotFound:
+            return "Security data not found. Please set up authentication again."
         }
     }
     

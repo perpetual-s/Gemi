@@ -201,19 +201,18 @@ final class JournalStore: ObservableObject {
     
     private func createSampleEntries() async {
         let sampleEntries = JournalEntry.mockEntries()
-        for entry in sampleEntries {
-            do {
-                try await databaseManager.saveEntry(entry)
-            } catch {
-                print("Failed to save sample entry: \(error)")
-            }
-        }
         
-        // Reload entries
         do {
+            // Preload encryption key to prevent repeated keychain prompts
+            try await databaseManager.preloadEncryptionKey()
+            
+            // Save all entries using batch operation
+            try await databaseManager.saveEntries(sampleEntries)
+            
+            // Reload entries
             entries = try await databaseManager.loadEntries()
         } catch {
-            print("Failed to reload entries: \(error)")
+            print("Failed to create sample entries: \(error)")
         }
     }
     

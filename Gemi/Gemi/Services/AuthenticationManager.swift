@@ -151,6 +151,21 @@ final class AuthenticationManager: ObservableObject {
         isAuthenticated = false
         authenticationTimer?.invalidate()
         authenticationTimer = nil
+        clearPasswordCache()
+    }
+    
+    /// Clear cached password (useful for security or testing purposes)
+    func clearPasswordCache() {
+        cachedPassword = nil
+    }
+    
+    /// Preload password from keychain to improve subsequent authentication speed
+    func preloadPasswordCache() {
+        do {
+            _ = try loadPasswordFromKeychain()
+        } catch {
+            print("Failed to preload password cache: \(error)")
+        }
     }
     
     // MARK: - Private Methods
@@ -213,17 +228,19 @@ final class AuthenticationManager: ObservableObject {
         ]
         SecItemDelete(deleteQuery as CFDictionary)
         
-        // Add new password
+        // Add new password with improved accessibility policy
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: keychainService,
             kSecAttrAccount as String: passwordKey,
             kSecValueData as String: passwordData,
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked,
+            kSecAttrSynchronizable as String: false
         ]
         
         let status = SecItemAdd(query as CFDictionary, nil)
         guard status == errSecSuccess else {
+            print("Failed to save password to keychain: \(status)")
             throw AuthenticationError.keychainError(status)
         }
         
@@ -241,7 +258,8 @@ final class AuthenticationManager: ObservableObject {
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: keychainService,
             kSecAttrAccount as String: passwordKey,
-            kSecReturnData as String: true
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
         ]
         
         var item: CFTypeRef?
@@ -250,13 +268,20 @@ final class AuthenticationManager: ObservableObject {
         guard status == errSecSuccess,
               let passwordData = item as? Data,
               let password = String(data: passwordData, encoding: .utf8) else {
-            if status == errSecItemNotFound {
+            switch status {
+            case errSecItemNotFound:
                 return nil
+            case errSecInteractionNotAllowed:
+                print("Keychain access denied without user interaction")
+                throw AuthenticationError.keychainAccessDenied
+            case errSecAuthFailed:
+                throw AuthenticationError.keychainAccessDenied
+            default:
+                throw AuthenticationError.keychainError(status)
             }
-            throw AuthenticationError.keychainError(status)
         }
         
-        // Cache the password
+        // Cache the password for future use
         cachedPassword = password
         return password
     }
@@ -311,6 +336,8 @@ enum AuthenticationError: LocalizedError, Equatable {
     case invalidPassword
     case passwordRequired
     case keychainError(OSStatus)
+    case keychainAccessDenied
+    case keychainItemNotFound
     
     var errorDescription: String? {
         switch self {
@@ -327,7 +354,36 @@ enum AuthenticationError: LocalizedError, Equatable {
         case .passwordRequired:
             return "Password authentication required"
         case .keychainError(let status):
-            return "Keychain error: \(status)"
+            return "Keychain error: \(status) - \(keychainErrorDescription(status))"
+        case .keychainAccessDenied:
+            return "Keychain access denied. Please ensure the app has proper permissions."
+        case .keychainItemNotFound:
+            return "Authentication credentials not found. Please set up authentication again."
+        }
+    }
+    
+    private func keychainErrorDescription(_ status: OSStatus) -> String {
+        switch status {
+        case errSecItemNotFound:
+            return "Item not found"
+        case errSecDuplicateItem:
+            return "Duplicate item"
+        case errSecParam:
+            return "Invalid parameter"
+        case errSecAllocate:
+            return "Memory allocation failed"
+        case errSecNotAvailable:
+            return "Service not available"
+        case errSecAuthFailed:
+            return "Authentication failed"
+        case errSecInteractionNotAllowed:
+            return "User interaction not allowed"
+        case errSecUnimplemented:
+            return "Function not implemented"
+        case errSecIO:
+            return "I/O error"
+        default:
+            return "Unknown error"
         }
     }
 }

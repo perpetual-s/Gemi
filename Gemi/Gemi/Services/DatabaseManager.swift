@@ -520,11 +520,16 @@ actor DatabaseManager {
             return cachedKey
         }
         
-        // Try to retrieve existing key from Keychain
+        let service = "com.gemi.encryption"
+        let account = "database-key"
+        
+        // Try to retrieve existing key from keychain
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: encryptionKeyTag,
-            kSecReturnData as String: true
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
         ]
         
         var result: AnyObject?
@@ -536,21 +541,23 @@ actor DatabaseManager {
             return key
         }
         
-        // Generate new key
+        // Generate new key if not found
         let key = SymmetricKey(size: .bits256)
         let keyData = key.withUnsafeBytes { Data($0) }
         
-        // Store in Keychain
+        // Store in keychain with proper accessibility
         let addQuery: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: encryptionKeyTag,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
             kSecValueData as String: keyData,
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked,
+            kSecAttrSynchronizable as String: false
         ]
         
         let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
         guard addStatus == errSecSuccess else {
-            throw DatabaseError.encryptionError
+            throw DatabaseError.encryptionKeyNotAvailable
         }
         
         cachedEncryptionKey = key
@@ -582,6 +589,20 @@ actor DatabaseManager {
         }
         
         return content
+    }
+    
+    // MARK: - Key Management
+    
+    /// Clear the cached encryption key (useful for testing or security purposes)
+    func clearCachedEncryptionKey() {
+        cachedEncryptionKey = nil
+    }
+    
+    /// Preload encryption key to avoid repeated keychain access during batch operations
+    func preloadEncryptionKey() async throws {
+        if cachedEncryptionKey == nil {
+            _ = try await getOrCreateEncryptionKey()
+        }
     }
     
     // MARK: - Memory Management
@@ -689,6 +710,34 @@ actor DatabaseManager {
             throw DatabaseError.failedToDelete
         }
     }
+    
+    // MARK: - Batch Operations
+    
+    /// Save multiple entries efficiently by preloading encryption key
+    func saveEntries(_ entries: [JournalEntry]) async throws {
+        // Preload encryption key to avoid repeated keychain access
+        try await preloadEncryptionKey()
+        
+        for entry in entries {
+            try await saveEntry(entry)
+        }
+    }
+    
+    /// Load entries with batch optimization
+    func loadEntriesOptimized() async throws -> [JournalEntry] {
+        // Preload encryption key for batch decryption
+        try await preloadEncryptionKey()
+        
+        return try await loadEntries()
+    }
+    
+    /// Search entries with batch optimization
+    func searchEntriesOptimized(query: String) async throws -> [JournalEntry] {
+        // Preload encryption key for batch decryption
+        try await preloadEncryptionKey()
+        
+        return try await searchEntries(query: query)
+    }
 }
 
 // MARK: - Database Errors
@@ -702,6 +751,8 @@ enum DatabaseError: LocalizedError {
     case failedToDelete
     case encryptionError
     case decryptionError
+    case keychainAccessError(OSStatus)
+    case encryptionKeyNotAvailable
     
     var errorDescription: String? {
         switch self {
@@ -721,6 +772,35 @@ enum DatabaseError: LocalizedError {
             return "Failed to encrypt data"
         case .decryptionError:
             return "Failed to decrypt data"
+        case .keychainAccessError(let status):
+            return "Keychain access error: \(status) - \(keychainErrorDescription(status))"
+        case .encryptionKeyNotAvailable:
+            return "Encryption key not available. Please restart the application."
+        }
+    }
+    
+    private func keychainErrorDescription(_ status: OSStatus) -> String {
+        switch status {
+        case errSecItemNotFound:
+            return "Item not found"
+        case errSecDuplicateItem:
+            return "Duplicate item"
+        case errSecParam:
+            return "Invalid parameter"
+        case errSecAllocate:
+            return "Memory allocation failed"
+        case errSecNotAvailable:
+            return "Service not available"
+        case errSecAuthFailed:
+            return "Authentication failed"
+        case errSecInteractionNotAllowed:
+            return "User interaction not allowed"
+        case errSecUnimplemented:
+            return "Function not implemented"
+        case errSecIO:
+            return "I/O error"
+        default:
+            return "Unknown error"
         }
     }
 }

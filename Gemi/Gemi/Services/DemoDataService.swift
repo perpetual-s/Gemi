@@ -334,15 +334,22 @@ class DemoDataService {
             )
         ]
         
-        // Save all entries to database and create associated memories
+        // Preload encryption key to prevent repeated keychain prompts
+        try await database.preloadEncryptionKey()
+        
+        // Save all entries using batch operation
+        try await database.saveEntries(entries)
+        
+        // Create and save memories for each entry
+        var allMemories: [MemoryData] = []
         for entry in entries {
-            try await database.saveEntry(entry)
-            
-            // Create memories for specific entries
             let memories = createMemoriesForEntry(entry)
-            for memory in memories {
-                try await database.saveMemory(memory)
-            }
+            allMemories.append(contentsOf: memories)
+        }
+        
+        // Save all memories in batch
+        for memory in allMemories {
+            try await database.saveMemory(memory)
         }
         
         print("Demo entries and memories created successfully!")
