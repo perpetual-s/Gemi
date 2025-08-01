@@ -20,6 +20,7 @@ struct MemoriesView: View {
         .background(Theme.Colors.windowBackground)
         .sheet(isPresented: $showingProcessingView) {
             ProcessEntriesView()
+                .frame(width: 480, height: 620)
         }
         // Removed: alert for deletion confirmation
     }
@@ -430,34 +431,20 @@ struct ProcessEntriesView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Window Title Bar
-            HStack {
-                Text("Extract Memories")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 16))
-                        .foregroundColor(.secondary.opacity(0.6))
-                        .symbolRenderingMode(.hierarchical)
-                }
-                .buttonStyle(.plain)
-                .disabled(isProcessing)
-                .help("Close")
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            .background(VisualEffectView(material: .titlebar, blendingMode: .withinWindow))
-            
-            // Main Content
             if isProcessing {
                 // Processing View
-                VStack(spacing: 32) {
+                VStack(spacing: 0) {
+                    // Header
+                    VStack(spacing: 8) {
+                        Text("Extracting Memories")
+                            .font(.system(size: 22, weight: .semibold))
+                        Text("Analyzing your journal entries...")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.top, 40)
+                    .padding(.bottom, 40)
+                    
                     // Progress Circle
                     ZStack {
                         // Background circle
@@ -522,8 +509,11 @@ struct ProcessEntriesView: View {
                                 )
                         )
                     }
+                    
+                    Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.horizontal, 20)
                 .transition(.asymmetric(
                     insertion: .opacity.combined(with: .scale(scale: 0.95)),
                     removal: .opacity
@@ -560,21 +550,21 @@ struct ProcessEntriesView: View {
                                 .frame(maxWidth: 320)
                         }
                     }
-                    .padding(.top, 24)
-                    .padding(.bottom, 20)
+                    .padding(.top, 30)
+                    .padding(.bottom, 24)
                     
                     Divider()
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, 24)
                     
                     // Time Range Selection
-                    VStack(spacing: 12) {
+                    VStack(spacing: 16) {
                         Text("Select time range")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.system(size: 13, weight: .medium))
                             .foregroundColor(.secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 20)
+                            .padding(.horizontal, 24)
                         
-                        VStack(spacing: 6) {
+                        VStack(spacing: 8) {
                             ForEach(TimeRange.allCases, id: \.self) { range in
                                 CompactTimeRangeOption(
                                     range: range,
@@ -583,9 +573,9 @@ struct ProcessEntriesView: View {
                                 )
                             }
                         }
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, 24)
                     }
-                    .padding(.vertical, 20)
+                    .padding(.vertical, 24)
                     
                     Spacer()
                     
@@ -613,8 +603,8 @@ struct ProcessEntriesView: View {
                         .shadow(color: Theme.Colors.primaryAccent.opacity(0.25), radius: 6, y: 3)
                     }
                     .buttonStyle(AnimatedButtonStyle())
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 32)
                 }
                 .transition(.asymmetric(
                     insertion: .opacity,
@@ -622,10 +612,8 @@ struct ProcessEntriesView: View {
                 ))
             }
         }
-        .frame(width: 420, height: 520)
+        .padding(.top, 8) // Add small top padding for sheet handle
         .background(Theme.Colors.windowBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: Color.black.opacity(0.2), radius: 20, y: 5)
         .animation(Theme.gentleSpring, value: isProcessing)
     }
     
