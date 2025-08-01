@@ -473,6 +473,7 @@ struct ProcessEntriesView: View {
                             .font(.system(size: 40))
                             .foregroundColor(Theme.Colors.primaryAccent)
                             .symbolRenderingMode(.hierarchical)
+                            .symbolEffect(.pulse, options: .speed(0.5), isActive: isProcessing)
                     }
                     
                     Text("Gemi will analyze your entries and extract key memories")
@@ -482,77 +483,130 @@ struct ProcessEntriesView: View {
                 }
                 .padding(.top, 30)
                 
-                // Time range selection
-                VStack(spacing: 16) {
-                    Text("Select time range")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.secondary)
-                    
-                    VStack(spacing: 8) {
-                        ForEach(TimeRange.allCases, id: \.self) { range in
-                            TimeRangeOption(
-                                range: range,
-                                isSelected: selectedTimeRange == range,
-                                onSelect: { selectedTimeRange = range }
-                            )
+                // Time range selection - only show when not processing
+                if !isProcessing {
+                    VStack(spacing: 16) {
+                        Text("Select time range")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.secondary)
+                        
+                        VStack(spacing: 8) {
+                            ForEach(TimeRange.allCases, id: \.self) { range in
+                                TimeRangeOption(
+                                    range: range,
+                                    isSelected: selectedTimeRange == range,
+                                    onSelect: { selectedTimeRange = range }
+                                )
+                            }
                         }
+                        .padding(.horizontal, 40)
                     }
-                    .padding(.horizontal, 40)
+                    .padding(.top, 30)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .move(edge: .top)),
+                        removal: .opacity
+                    ))
                 }
-                .padding(.top, 30)
                 
                 Spacer()
                 
-                // Progress or action button
-                if isProcessing {
-                    VStack(spacing: 16) {
-                        // Progress indicator
-                        ZStack {
-                            Circle()
-                                .stroke(Color.secondary.opacity(0.2), lineWidth: 4)
-                                .frame(width: 60, height: 60)
+                // Progress or action button with dynamic layout
+                VStack(spacing: 0) {
+                    if isProcessing {
+                        VStack(spacing: 24) {
+                            // Progress indicator
+                            ZStack {
+                                Circle()
+                                    .stroke(Color.secondary.opacity(0.2), lineWidth: 6)
+                                    .frame(width: 80, height: 80)
+                                
+                                Circle()
+                                    .trim(from: 0, to: totalCount > 0 ? CGFloat(processedCount) / CGFloat(totalCount) : 0)
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [Theme.Colors.primaryAccent, Theme.Colors.primaryAccent.opacity(0.7)],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        style: StrokeStyle(lineWidth: 6, lineCap: .round)
+                                    )
+                                    .frame(width: 80, height: 80)
+                                    .rotationEffect(.degrees(-90))
+                                    .animation(.spring(response: 0.5, dampingFraction: 0.8), value: processedCount)
+                                
+                                Text("\(Int((totalCount > 0 ? Double(processedCount) / Double(totalCount) : 0) * 100))%")
+                                    .font(.system(size: 20, weight: .semibold, design: .rounded))
+                                    .monospacedDigit()
+                            }
                             
-                            Circle()
-                                .trim(from: 0, to: totalCount > 0 ? CGFloat(processedCount) / CGFloat(totalCount) : 0)
-                                .stroke(Theme.Colors.primaryAccent, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                                .frame(width: 60, height: 60)
-                                .rotationEffect(.degrees(-90))
-                                .animation(.easeInOut, value: processedCount)
-                            
-                            Text("\(Int((totalCount > 0 ? Double(processedCount) / Double(totalCount) : 0) * 100))%")
-                                .font(.system(size: 14, weight: .semibold))
+                            VStack(spacing: 8) {
+                                Text("Processing entry \(processedCount) of \(totalCount)")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(.primary)
+                                
+                                HStack(spacing: 8) {
+                                    Image(systemName: "sparkles")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(Theme.Colors.primaryAccent)
+                                        .symbolEffect(.pulse, options: .speed(1.5).repeating, isActive: isProcessing)
+                                    
+                                    Text("\(extractedMemoriesCount) memories extracted")
+                                        .font(.system(size: 14, weight: .regular))
+                                        .foregroundColor(Theme.Colors.primaryAccent)
+                                        .monospacedDigit()
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(
+                                    Capsule()
+                                        .fill(Theme.Colors.primaryAccent.opacity(0.1))
+                                )
+                            }
                         }
-                        
-                        VStack(spacing: 4) {
-                            Text("Processing entry \(processedCount) of \(totalCount)")
-                                .font(.system(size: 14, weight: .medium))
-                            Text("\(extractedMemoriesCount) memories extracted")
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
+                        .frame(height: 180)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.9)),
+                            removal: .opacity
+                        ))
+                    } else {
+                        Button {
+                            processEntries()
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "wand.and.stars")
+                                    .font(.system(size: 15))
+                                Text("Start Extraction")
+                                    .font(.system(size: 15, weight: .medium))
+                            }
+                            .padding(.horizontal, 32)
+                            .padding(.vertical, 16)
+                            .background(
+                                LinearGradient(
+                                    colors: [Theme.Colors.primaryAccent, Theme.Colors.primaryAccent.opacity(0.8)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .foregroundColor(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .shadow(color: Theme.Colors.primaryAccent.opacity(0.3), radius: 8, y: 4)
                         }
+                        .buttonStyle(AnimatedButtonStyle())
+                        .frame(height: 180)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.9)),
+                            removal: .opacity
+                        ))
                     }
-                    .padding(.bottom, 40)
-                } else {
-                    Button {
-                        processEntries()
-                    } label: {
-                        Text("Start Extraction")
-                            .font(.system(size: 15, weight: .medium))
-                        .padding(.horizontal, 28)
-                        .padding(.vertical, 14)
-                        .background(Theme.Colors.primaryAccent)
-                        .foregroundColor(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.bottom, 30)
                 }
+                .padding(.bottom, 40)
             }
         }
-        .frame(width: 520, height: 600)
+        .frame(width: 540, height: 680)
         .background(Theme.Colors.windowBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: Color.black.opacity(0.15), radius: 20)
+        .animation(Theme.gentleSpring, value: isProcessing)
     }
     
     private func processEntries() {
