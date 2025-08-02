@@ -10,7 +10,8 @@ struct GemiChatView: View {
     @State private var messageText = ""
     @FocusState private var isInputFocused: Bool
     @Namespace private var bottomID
-    @State private var showAudioRecorder = false
+    @State private var showDictationTip = false
+    @State private var showAttachmentMenu = false
     
     let contextEntry: JournalEntry?
     
@@ -62,7 +63,7 @@ struct GemiChatView: View {
                     messageInputArea
                 }
                 .background(Theme.Colors.windowBackground)
-                .onDrop(of: [.image, .fileURL, .audio, .mp3, .mpeg4Audio, .wav, .aiff], isTargeted: nil) { providers in
+                .onDrop(of: [.image, .fileURL], isTargeted: nil) { providers in
                     handleDrop(providers: providers)
                     return true
                 }
@@ -105,12 +106,40 @@ struct GemiChatView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
             viewModel.saveMessages()
         }
-        .sheet(isPresented: $showAudioRecorder) {
-            AudioRecordingView(
-                attachmentManager: attachmentManager,
-                isPresented: $showAudioRecorder
-            )
-        }
+        .overlay(
+            // Dictation tip overlay
+            Group {
+                if showDictationTip {
+                    ZStack {
+                        // Background dimming
+                        Color.black.opacity(0.3)
+                            .ignoresSafeArea()
+                            .onTapGesture {
+                                withAnimation(.easeOut(duration: 0.2)) {
+                                    showDictationTip = false
+                                }
+                            }
+                        
+                        // Dictation tip positioned above input area
+                        VStack {
+                            Spacer()
+                            
+                            DictationTipView {
+                                withAnimation(.easeOut(duration: 0.2)) {
+                                    showDictationTip = false
+                                }
+                            }
+                            .padding(.bottom, 100) // Position above input area
+                            .transition(.asymmetric(
+                                insertion: .scale(scale: 0.8, anchor: .bottom).combined(with: .opacity),
+                                removal: .scale(scale: 0.8, anchor: .bottom).combined(with: .opacity)
+                            ))
+                        }
+                    }
+                    .animation(.easeOut(duration: 0.2), value: showDictationTip)
+                }
+            }
+        )
     }
     
     // MARK: - Header
@@ -385,10 +414,10 @@ struct GemiChatView: View {
             HStack(spacing: 8) {
                 // Refined Apple-style input field with integrated elements
                 HStack(spacing: 6) {
-                    // Attachment button with menu
-                    AttachmentButton(
+                    // Combined attachment menu button
+                    CombinedAttachmentButton(
                         attachmentManager: attachmentManager,
-                        showAudioRecorder: $showAudioRecorder
+                        showDictationTip: $showDictationTip
                     )
                     
                     // Compact text field
@@ -827,6 +856,323 @@ struct TypingIndicator: View {
 
 // MARK: - Visual Effect View
 // Note: VisualEffectView has been moved to Components/VisualEffectView.swift
+
+// MARK: - Combined Attachment Button
+
+struct CombinedAttachmentButton: View {
+    @ObservedObject var attachmentManager: AttachmentManager
+    @Binding var showDictationTip: Bool
+    @State private var showMenu = false
+    @State private var showFilePicker = false
+    
+    var body: some View {
+        Button {
+            showMenu.toggle()
+        } label: {
+            ZStack {
+                // Badge for attachment count
+                if !attachmentManager.attachments.isEmpty {
+                    Circle()
+                        .fill(Theme.Colors.primaryAccent)
+                        .frame(width: 16, height: 16)
+                        .overlay(
+                            Text("\(attachmentManager.attachments.count)")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.white)
+                        )
+                        .offset(x: 8, y: -8)
+                        .zIndex(1)
+                }
+                
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 22, weight: .regular))
+                    .foregroundColor(
+                        attachmentManager.attachments.isEmpty ?
+                        Theme.Colors.secondaryText :
+                        Theme.Colors.primaryAccent
+                    )
+                    .symbolRenderingMode(.hierarchical)
+            }
+        }
+        .buttonStyle(.plain)
+        .help("Add attachment")
+        .popover(isPresented: $showMenu, arrowEdge: .top) {
+            AttachmentMenuView(
+                attachmentManager: attachmentManager,
+                showDictationTip: $showDictationTip,
+                showFilePicker: $showFilePicker
+            )
+            .frame(width: 220)
+        }
+        .fileImporter(
+            isPresented: $showFilePicker,
+            allowedContentTypes: [.png, .jpeg, .gif, .heif, .webP, .bmp, .tiff],
+            allowsMultipleSelection: true
+        ) { result in
+            handleFileSelection(result)
+        }
+    }
+    
+    private func handleFileSelection(_ result: Result<[URL], Error>) {
+        switch result {
+        case .success(let urls):
+            Task {
+                for url in urls {
+                    do {
+                        try await attachmentManager.addAttachment(from: url)
+                    } catch {
+                        print("Failed to add attachment: \(error)")
+                    }
+                }
+            }
+            
+        case .failure(let error):
+            print("File selection error: \(error)")
+        }
+    }
+}
+
+// MARK: - Attachment Menu View
+
+struct AttachmentMenuView: View {
+    @ObservedObject var attachmentManager: AttachmentManager
+    @Binding var showDictationTip: Bool
+    @Binding var showFilePicker: Bool
+    @Environment(\.dismiss) private var dismiss
+    
+    @State private var hoveredOption: AttachmentOption?
+    
+    enum AttachmentOption: CaseIterable {
+        case photo
+        case voice
+        
+        var icon: String {
+            switch self {
+            case .photo: return "photo"
+            case .voice: return "mic.fill"
+            }
+        }
+        
+        var title: String {
+            switch self {
+            case .photo: return "Photo"
+            case .voice: return "Voice"
+            }
+        }
+        
+        var subtitle: String {
+            switch self {
+            case .photo: return "Add images"
+            case .voice: return "Use dictation"
+            }
+        }
+        
+        var color: Color {
+            switch self {
+            case .photo: return .blue
+            case .voice: return .orange
+            }
+        }
+    }
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            ForEach(AttachmentOption.allCases, id: \.self) { option in
+                AttachmentOptionButton(
+                    option: option,
+                    isHovered: hoveredOption == option,
+                    action: {
+                        handleSelection(option)
+                    }
+                )
+                .onHover { hovering in
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        hoveredOption = hovering ? option : nil
+                    }
+                }
+            }
+        }
+        .padding(8)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Theme.Colors.windowBackground)
+                .shadow(color: .black.opacity(0.15), radius: 10, x: 0, y: 5)
+        )
+    }
+    
+    private func handleSelection(_ option: AttachmentOption) {
+        switch option {
+        case .photo:
+            dismiss()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                showFilePicker = true
+            }
+            
+        case .voice:
+            dismiss()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                showDictationTip = true
+            }
+        }
+    }
+}
+
+// MARK: - Attachment Option Button
+
+struct AttachmentOptionButton: View {
+    let option: AttachmentMenuView.AttachmentOption
+    let isHovered: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                // Icon
+                ZStack {
+                    Circle()
+                        .fill(option.color.opacity(isHovered ? 0.15 : 0.1))
+                        .frame(width: 36, height: 36)
+                    
+                    Image(systemName: option.icon)
+                        .font(.system(size: 16))
+                        .foregroundColor(option.color)
+                }
+                
+                // Text
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(option.title)
+                        .font(Theme.Typography.body)
+                        .foregroundColor(.primary)
+                    
+                    Text(option.subtitle)
+                        .font(Theme.Typography.caption)
+                        .foregroundColor(Theme.Colors.secondaryText)
+                }
+                
+                Spacer()
+                
+                // Arrow
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Theme.Colors.tertiaryText)
+                    .opacity(isHovered ? 1 : 0.5)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isHovered ? Theme.Colors.cardBackground : Color.clear)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Dictation Tip View
+
+struct DictationTipView: View {
+    let onDismiss: () -> Void
+    @State private var hoveredButton = false
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Instruction with icon
+            HStack(spacing: 12) {
+                // Icon
+                ZStack {
+                    Circle()
+                        .fill(Color.orange.opacity(0.1))
+                        .frame(width: 36, height: 36)
+                    
+                    Image(systemName: "mic.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(.orange)
+                }
+                
+                // Text
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Voice Dictation")
+                        .font(Theme.Typography.body)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                    
+                    Text("Press **Fn** key twice to start dictating")
+                        .font(Theme.Typography.caption)
+                        .foregroundColor(Theme.Colors.secondaryText)
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            
+            Divider()
+                .opacity(0.5)
+            
+            // Alternative method
+            HStack(spacing: 12) {
+                // Icon
+                ZStack {
+                    Circle()
+                        .fill(Color.gray.opacity(0.1))
+                        .frame(width: 36, height: 36)
+                    
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 16))
+                        .foregroundColor(.gray)
+                }
+                
+                // Text
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("System Settings")
+                        .font(Theme.Typography.body)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                    
+                    Text("Keyboard → Dictation")
+                        .font(Theme.Typography.caption)
+                        .foregroundColor(Theme.Colors.secondaryText)
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            
+            // Got it button
+            Button(action: onDismiss) {
+                HStack {
+                    Spacer()
+                    Text("Got it")
+                        .font(Theme.Typography.body)
+                        .fontWeight(.medium)
+                    Spacer()
+                }
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(hoveredButton ? Theme.Colors.primaryAccent : Theme.Colors.primaryAccent.opacity(0.9))
+                )
+                .foregroundColor(.white)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 8)
+            .padding(.bottom, 8)
+            .onHover { hovering in
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    hoveredButton = hovering
+                }
+            }
+        }
+        .frame(width: 280)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Theme.Colors.windowBackground)
+                .shadow(color: .black.opacity(0.15), radius: 10, x: 0, y: 5)
+        )
+    }
+}
 
 // MARK: - Preview
 

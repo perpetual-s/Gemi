@@ -1,8 +1,6 @@
 import Foundation
 import SwiftUI
 import Vision
-import Speech
-import AVFoundation
 import os.log
 
 /// Coordinates multimodal processing for Gemi, converting images and audio to rich text descriptions
@@ -21,7 +19,6 @@ final class MultimodalAIService: ObservableObject {
     
     private let logger = Logger(subsystem: "com.gemi", category: "MultimodalAI")
     private let lightweightVision = LightweightVisionService.shared
-    private let quickAudio = QuickAudioService.shared
     private let attachmentManager = AttachmentManager.shared
     private let ollamaService = OllamaChatService.shared
     
@@ -48,7 +45,6 @@ final class MultimodalAIService: ObservableObject {
     enum ProcessingError: LocalizedError {
         case noAttachments
         case visionProcessingFailed(String)
-        case speechProcessingFailed(String)
         case unsupportedAttachmentType
         
         var errorDescription: String? {
@@ -57,8 +53,6 @@ final class MultimodalAIService: ObservableObject {
                 return "No attachments to process"
             case .visionProcessingFailed(let reason):
                 return "Image analysis failed: \(reason)"
-            case .speechProcessingFailed(let reason):
-                return "Audio processing failed: \(reason)"
             case .unsupportedAttachmentType:
                 return "This attachment type is not supported"
             }
@@ -161,18 +155,6 @@ final class MultimodalAIService: ObservableObject {
                 metadata: result.metadata,
                 processingTime: Date().timeIntervalSince(startTime)
             )
-            
-        case .audio(let url):
-            // Send initial analysis notification
-            postAnalysisUpdate("Transcribing audio...")
-            let result = try await processAudio(url, attachment: attachment)
-            return ProcessedAttachment(
-                id: attachment.id,
-                originalType: attachment.type,
-                textDescription: result.description,
-                metadata: result.metadata,
-                processingTime: Date().timeIntervalSince(startTime)
-            )
         }
     }
     
@@ -209,31 +191,6 @@ final class MultimodalAIService: ObservableObject {
         return (description: description.trimmingCharacters(in: .whitespaces), metadata: metadata)
     }
     
-    // MARK: - Audio Processing
-    
-    private func processAudio(_ url: URL, attachment: AttachmentManager.Attachment) async throws -> (description: String, metadata: [String: Any]) {
-        
-        // Quick transcription
-        let (text, duration) = try await quickAudio.quickTranscribe(url)
-        
-        // Generate simple description
-        let description = quickAudio.generateAudioDescription(
-            text: text,
-            duration: duration,
-            fileName: attachment.fileName
-        )
-        
-        // Build minimal metadata
-        let metadata: [String: Any] = [
-            "duration": duration,
-            "fileName": attachment.fileName,
-            "hasTranscription": !text.isEmpty
-        ]
-        
-        return (description: description, metadata: metadata)
-    }
-    
-    
     // MARK: - Prompt Building
     
     private func buildEnhancedPrompt(originalMessage: String, processedAttachments: [ProcessedAttachment]) -> String {
@@ -249,7 +206,6 @@ final class MultimodalAIService: ObservableObject {
         let attachmentTypes = processedAttachments.map { attachment in
             switch attachment.originalType {
             case .image: return "an image"
-            case .audio: return "an audio recording"
             }
         }
         
@@ -337,8 +293,8 @@ final class MultimodalAIService: ObservableObject {
     func checkAvailability() async -> (vision: Bool, speech: Bool) {
         // Vision is always available on macOS
         let visionAvailable = true
-        // Speech recognition requires checking authorization
-        let speechAvailable = await quickAudio.requestAuthorization() == .authorized
+        // Speech recognition is no longer supported
+        let speechAvailable = false
         
         return (vision: visionAvailable, speech: speechAvailable)
     }
@@ -348,7 +304,7 @@ final class MultimodalAIService: ObservableObject {
         return [
             "totalProcessed": processedAttachmentsCount,
             "averageProcessingTime": averageProcessingTime,
-            "supportedTypes": ["image", "audio"]
+            "supportedTypes": ["image"]
         ]
     }
     

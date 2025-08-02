@@ -26,9 +26,5 @@
 	<string>NSApplication</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Gemi uses Face ID to securely protect your private journal entries.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Gemi needs access to your microphone to record voice notes for your journal entries.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Gemi uses speech recognition to transcribe your voice recordings into text.</string>
 </dict>
 </plist>

@@ -127,17 +127,6 @@ struct AttachmentThumbnail: View {
                                     .frame(width: 80, height: 80)
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
                             }
-                            
-                        case .audio:
-                            VStack(spacing: 4) {
-                                Image(systemName: "waveform")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(Theme.Colors.primaryAccent)
-                                
-                                Text("Audio")
-                                    .font(Theme.Typography.footnote)
-                                    .foregroundColor(Theme.Colors.secondaryText)
-                            }
                         }
                     }
                     .overlay(

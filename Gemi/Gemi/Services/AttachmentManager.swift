@@ -12,19 +12,16 @@ final class AttachmentManager: ObservableObject {
     
     enum AttachmentType: Equatable {
         case image(NSImage)
-        case audio(URL)
         
         var icon: String {
             switch self {
             case .image: return "photo"
-            case .audio: return "waveform"
             }
         }
         
         var typeName: String {
             switch self {
             case .image: return "Image"
-            case .audio: return "Audio"
             }
         }
     }
@@ -73,12 +70,10 @@ final class AttachmentManager: ObservableObject {
     
     // Configuration
     private let maxImageSize: Int64 = 20 * 1024 * 1024 // 20MB
-    private let maxAudioSize: Int64 = 50 * 1024 * 1024 // 50MB
     private let thumbnailSize = CGSize(width: 200, height: 200)
     
     // Supported types
     private let supportedImageTypes: Set<UTType> = [.png, .jpeg, .gif, .heif, .webP, .bmp, .tiff]
-    private let supportedAudioTypes: Set<UTType> = [.mp3, .mpeg4Audio, .wav, .aiff, .audio]
     
     // MARK: - Initialization
     
@@ -105,8 +100,6 @@ final class AttachmentManager: ObservableObject {
         // Process based on type
         if supportedImageTypes.contains(typeIdentifier) {
             try await addImageAttachment(from: url, fileName: fileName, fileSize: fileSize)
-        } else if supportedAudioTypes.contains(typeIdentifier) {
-            try await addAudioAttachment(from: url, fileName: fileName, fileSize: fileSize)
         } else {
             throw AttachmentError.unsupportedType
         }
@@ -171,8 +164,6 @@ final class AttachmentManager: ObservableObject {
             switch attachment.type {
             case .image:
                 return attachment.base64Data
-            default:
-                return nil
             }
         }
     }
@@ -224,31 +215,6 @@ final class AttachmentManager: ObservableObject {
         attachments.append(attachment)
     }
     
-    private func addAudioAttachment(from url: URL, fileName: String, fileSize: Int64) async throws {
-        // Check size
-        guard fileSize <= maxAudioSize else {
-            throw AttachmentError.fileTooLarge(maxSize: maxAudioSize)
-        }
-        
-        processingProgress = 0.5
-        
-        // For now, just store the reference
-        // In the future, we could generate waveforms, transcribe, etc.
-        let attachment = Attachment(
-            type: .audio(url),
-            url: url,
-            base64Data: nil,
-            thumbnail: nil,
-            fileName: fileName,
-            fileSize: fileSize
-        )
-        
-        processingProgress = 1.0
-        
-        attachments.append(attachment)
-    }
-    
-    
     private func createThumbnail(from image: NSImage) -> NSImage? {
         let targetSize = thumbnailSize
         
@@ -277,112 +243,5 @@ final class AttachmentManager: ObservableObject {
         thumbnail.unlockFocus()
         
         return thumbnail
-    }
-}
-
-// MARK: - Audio Recording Extension
-
-extension AttachmentManager {
-    /// Audio recording functionality
-    @MainActor
-    final class AudioRecorder: NSObject, ObservableObject {
-        @Published var isRecording = false
-        @Published var recordingTime: TimeInterval = 0
-        @Published var audioLevels: [Float] = Array(repeating: 0, count: 50)
-        
-        private var audioRecorder: AVAudioRecorder?
-        private var timer: Timer?
-        private var levelTimer: Timer?
-        private let recordingURL: URL
-        
-        override init() {
-            // Create temp file for recording
-            let tempDir = FileManager.default.temporaryDirectory
-            self.recordingURL = tempDir.appendingPathComponent("gemi_recording_\(UUID().uuidString).m4a")
-            super.init()
-        }
-        
-        func startRecording() async throws {
-            // Request permission
-            let hasPermission = await AVAudioApplication.requestRecordPermission()
-            guard hasPermission else {
-                throw NSError(domain: "GemiAudioRecorder", code: 1, userInfo: [
-                    NSLocalizedDescriptionKey: "Microphone permission denied"
-                ])
-            }
-            
-            // Note: AVAudioSession is not needed on macOS
-            // macOS handles audio permissions differently
-            
-            // Settings for recording
-            let settings = [
-                AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-                AVSampleRateKey: 44100,
-                AVNumberOfChannelsKey: 1,
-                AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
-            ]
-            
-            // Create recorder
-            audioRecorder = try AVAudioRecorder(url: recordingURL, settings: settings)
-            audioRecorder?.isMeteringEnabled = true
-            audioRecorder?.record()
-            
-            isRecording = true
-            recordingTime = 0
-            
-            // Start timers
-            timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-                Task { @MainActor in
-                    self?.recordingTime += 0.1
-                }
-            }
-            
-            levelTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
-                Task { @MainActor in
-                    self?.updateAudioLevels()
-                }
-            }
-        }
-        
-        func stopRecording() -> URL? {
-            audioRecorder?.stop()
-            audioRecorder = nil
-            
-            timer?.invalidate()
-            timer = nil
-            
-            levelTimer?.invalidate()
-            levelTimer = nil
-            
-            isRecording = false
-            audioLevels = Array(repeating: 0, count: 50)
-            
-            // Check if file exists
-            if FileManager.default.fileExists(atPath: recordingURL.path) {
-                return recordingURL
-            }
-            
-            return nil
-        }
-        
-        private func updateAudioLevels() {
-            guard let recorder = audioRecorder else { return }
-            
-            recorder.updateMeters()
-            let level = recorder.averagePower(forChannel: 0)
-            let normalizedLevel = pow(10, level / 20) // Convert dB to linear
-            
-            // Update levels array
-            audioLevels.append(normalizedLevel)
-            if audioLevels.count > 50 {
-                audioLevels.removeFirst()
-            }
-        }
-        
-        var formattedTime: String {
-            let minutes = Int(recordingTime) / 60
-            let seconds = Int(recordingTime) % 60
-            return String(format: "%02d:%02d", minutes, seconds)
-        }
     }
 }
