@@ -212,6 +212,10 @@ Gemi is a revolutionary journaling application that combines the power of Google
   - Error messages and alerts
   - AI prompts and responses
 
+### 7. Zero-Friction Onboarding with Ollama
+
+A core goal for Gemi is to make the power of private, on-device AI accessible to everyone, not just technical users. This is why Ollama was chosen as the essential engine for the Gemi experience. It enables a zero-friction installation where Gemi automatically handles the setup of Ollama and the download of the Gemma 3n model, removing what would otherwise be a significant technical hurdle for everyday users. This seamless onboarding allows us to deliver a stable, high-performance experience and focus on building innovative features on a local inference engine the user never has to worry about.
+
 ## Core Technologies
 
 ### Gemma 3n Integration
