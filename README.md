@@ -6,9 +6,8 @@ An offline-first, multilingual AI diary for macOS that runs entirely on your dev
 
 <div align="center">
   <a href="https://youtu.be/NKhyMWbTi2E">
-    <img src="https://img.youtube.com/vi/NKhyMWbTi2E/maxresdefault.jpg" alt="Watch Gemi Demo" width="600">
+    <img src="https://img.shields.io/badge/▶_Watch_Demo-3_min_video-red?style=for-the-badge&logo=youtube&logoColor=white" alt="Watch Demo Video">
   </a>
-  <p><strong>Watch the 3-minute demo video</strong></p>
 </div>
 
 ![Meet Gemi](assets/meet-gemi.png)
