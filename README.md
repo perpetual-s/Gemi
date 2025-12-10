@@ -1,14 +1,14 @@
 ![Gemi Banner](assets/gemi-banner.png)
 
-# Gemi - Your Private AI Diary
-
-An offline-first, multilingual AI diary for macOS that runs entirely on your device. Built for the Google DeepMind Gemma 3n Impact Challenge.
-
 <div align="center">
   <a href="https://youtu.be/NKhyMWbTi2E">
     <img src="https://img.shields.io/badge/▶_Watch_Demo-3_min_video-red?style=for-the-badge&logo=youtube&logoColor=white" alt="Watch Demo Video">
   </a>
 </div>
+
+# Gemi - Your Private AI Diary
+
+An offline-first, multilingual AI diary for macOS that runs entirely on your device.
 
 ![Meet Gemi](assets/meet-gemi.png)
 
@@ -660,22 +660,6 @@ Gemi is released under the Creative Commons Attribution 4.0 International Licens
 **Under the following terms**:
 - **Attribution** — You must give appropriate credit, provide a link to the license, and indicate if changes were made.
 
-## Acknowledgments
-
-### Special Thanks
-- **Google DeepMind** for Gemma 3n and the Impact Challenge
-- **Ollama Team** for making local LLMs accessible
-- **Apple** for powerful ML frameworks and developer tools
-- **GRDB.swift** by Gwendal Roué for excellent SQLite integration
-
-### Inspiration
-- Anthropic's research on AI companionship
-- The growing need for private AI solutions
-- Everyone who believes in digital privacy
-
-### Beta Testers
-Thank you to our early users who provided invaluable feedback!
-
 ## Privacy Commitment
 
 Your privacy is our core principle. Gemi will **never**:
@@ -695,12 +679,6 @@ Your privacy is our core principle. Gemi will **never**:
 - ✅ Built for humans, not data harvesting
 
 **Your stories stay yours, forever.**
-
-## Goals & Recognition
-
-- 🎯 Built for Google DeepMind Gemma 3n Impact Challenge
-- 🎯 Aiming for the Grand Prize
-- 🎯 Ollama Prize Contender
 
 ## Contact & Support
 
@@ -738,10 +716,3 @@ Feng, Y., Hang, Y., Wu, W., Song, X., Xiao, X., Dong, F., & Qiao, Z. (2025). Eff
 
 National Alliance on Mental Illness. (2024). Mental Health by the Numbers. https://www.nami.org/mhstats
 
----
-
-<div align="center">
-  <h3>Built with ❤️ for the Google DeepMind Gemma 3n Impact Challenge</h3>
-  <p><strong>Gemi - Where your thoughts are truly yours</strong></p>
-  <p>⭐ Star us on GitHub if you believe in private AI!</p>
-</div>
