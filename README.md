@@ -4,6 +4,13 @@
 
 An offline-first, multilingual AI diary for macOS that runs entirely on your device. Built for the Google DeepMind Gemma 3n Impact Challenge.
 
+<div align="center">
+  <a href="https://youtu.be/NKhyMWbTi2E">
+    <img src="https://img.youtube.com/vi/NKhyMWbTi2E/maxresdefault.jpg" alt="Watch Gemi Demo" width="600">
+  </a>
+  <p><strong>Watch the 3-minute demo video</strong></p>
+</div>
+
 ![Meet Gemi](assets/meet-gemi.png)
 
 ## Overview
