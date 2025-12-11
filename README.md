@@ -448,7 +448,7 @@ Gemi/
 ├── scripts/                # Automation
 │   ├── build-dmg.sh       # DMG creation
 │   └── reset_gemi.sh      # Development reset
-└── LICENSE                # CC BY 4.0 License
+└── LICENSE                # MIT License
 ```
 
 ## Technical Architecture
@@ -651,14 +651,7 @@ I welcome contributions! Please see the [Contributing Guidelines](CONTRIBUTING.m
 
 ## License
 
-Gemi is released under the Creative Commons Attribution 4.0 International License (CC BY 4.0). See [LICENSE](LICENSE) for full details.
-
-**Summary**: You are free to:
-- **Share** — copy and redistribute the material in any medium or format
-- **Adapt** — remix, transform, and build upon the material for any purpose, even commercially
-
-**Under the following terms**:
-- **Attribution** — You must give appropriate credit, provide a link to the license, and indicate if changes were made.
+Gemi is released under the [MIT License](LICENSE).
 
 ## Privacy Commitment
 
