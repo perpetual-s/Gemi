@@ -62,7 +62,7 @@ struct MultimodalNotificationBanner: View {
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
                     
-                    Text("Gemma 3n from Google DeepMind can understand and process images, text, audio, and video in a single conversation.")
+                    Text("Gemma 3n from Google DeepMind currently helps Gemi combine images and text in a single conversation.")
                         .font(Theme.Typography.body)
                         .foregroundColor(Theme.Colors.secondaryText)
                     
@@ -97,7 +97,7 @@ struct MultimodalNotificationBanner: View {
                                 .font(.system(size: 14))
                                 .foregroundColor(.green)
                             
-                            Text("Express yourself in 140+ languages")
+                            Text("Use Gemi across 20 localized UI languages")
                                 .font(Theme.Typography.body)
                                 .foregroundColor(Theme.Colors.secondaryText)
                         }

@@ -1,7 +1,7 @@
 import Foundation
 
 /// Service for AI inference using Ollama
-/// Provides stable multimodal support for text, images, and audio
+/// Provides stable local chat and image-aware context support
 actor AIService {
     static let shared = AIService()
     

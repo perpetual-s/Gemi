@@ -361,7 +361,7 @@ struct HomeContentView: View {
                 PrivacyFeatureCard(
                     icon: "network.slash",
                     title: "No Cloud Sync",
-                    description: "Works completely offline"
+                    description: "Runs locally after setup"
                 )
                 
                 PrivacyFeatureCard(
@@ -448,14 +448,14 @@ struct HomeContentView: View {
                 GemmaFeatureCard(
                     icon: "photo.on.rectangle.angled",
                     title: "Multimodal AI",
-                    description: "Understands text, images, and audio",
+                    description: "Understands text and images",
                     color: .blue
                 )
                 
                 GemmaFeatureCard(
                     icon: "globe",
-                    title: "140+ Languages",
-                    description: "Express yourself in any language",
+                    title: "Multilingual",
+                    description: "Localized UI and language-aware AI",
                     color: .orange
                 )
                 

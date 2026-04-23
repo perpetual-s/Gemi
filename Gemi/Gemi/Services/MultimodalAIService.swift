@@ -3,7 +3,7 @@ import SwiftUI
 import Vision
 import os.log
 
-/// Coordinates multimodal processing for Gemi, converting images and audio to rich text descriptions
+/// Coordinates multimodal processing for Gemi, converting image context into richer text prompts
 @MainActor
 final class MultimodalAIService: ObservableObject {
     static let shared = MultimodalAIService()

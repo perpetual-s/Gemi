@@ -75,10 +75,12 @@ Gemi/Scripts/Diagnostics/*.md
 *.bak
 *_backup.swift
 *_backup.*
+submission_preview*.jpg
 
 # Markdown files - only allowed in Documentation/ folder
 *.md
 Gemi/**/*.md
+!SUBMISSION_BRIEF.md
 
 # Python build artifacts
 __pycache__/

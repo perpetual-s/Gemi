@@ -680,27 +680,6 @@ Your privacy is our core principle. Gemi will **never**:
 - **Feature Requests**: [Discussions](https://github.com/yourusername/gemi/discussions)
 - **Security Issues**: cogh0972@gmail.com
 
-## Roadmap 🚀
-
-### Version 1.x (Current)
-- ✅ Core journaling with AI assistance
-- ✅ Memory system
-- ✅ Multimodal support
-- ✅ 20 languages
-
-### Version 2.x (Planned)
-- 📱 iOS companion app with iCloud sync
-- 🎙️ Advanced voice journaling
-- 📊 Mood analytics and insights
-- 🎨 Custom themes
-- 🔄 Time machine (navigate entry history visually)
-
-### Future Vision
-- 🤝 End-to-end encrypted sharing (for therapists)
-- 📚 Book generation from your journals
-- 🧠 Advanced psychological insights
-- 🌍 50+ language support
-
 ## References
 
 Anthropic. (2025, June 26). How people use Claude for support, advice, and companionship. https://www.anthropic.com/news/how-people-use-claude-for-support-advice-and-companionship
@@ -708,4 +687,3 @@ Anthropic. (2025, June 26). How people use Claude for support, advice, and compa
 Feng, Y., Hang, Y., Wu, W., Song, X., Xiao, X., Dong, F., & Qiao, Z. (2025). Effectiveness of AI-Driven Conversational Agents in Improving Mental Health Among Young People: Systematic Review and Meta-Analysis. Journal of medical Internet research, 27, e69639. https://doi.org/10.2196/69639
 
 National Alliance on Mental Illness. (2024). Mental Health by the Numbers. https://www.nami.org/mhstats
-
